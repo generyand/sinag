@@ -101,7 +101,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [showCalibrationConfirm, setShowCalibrationConfirm] = useState(false);
 
   // Mobile tab state: 'indicators' | 'files' | 'validation'
-  const [mobileTab, setMobileTab] = useState<'indicators' | 'files' | 'validation'>('indicators');
+  const [mobileTab, setMobileTab] = useState<"indicators" | "files" | "validation">("indicators");
 
   // Get current user for per-area calibration check (must be called before conditional returns)
   const { user: currentUser } = useAuthStore();
@@ -380,7 +380,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   // Check if ALL responses have validation_status confirmed (via Compliance Overview)
   // This is required before finalization - validators must confirm each indicator status
-  const confirmedCount = responses.filter((r) => hasExistingValidationStatus(r.id as number)).length;
+  const confirmedCount = responses.filter((r) =>
+    hasExistingValidationStatus(r.id as number)
+  ).length;
   const allConfirmed = total > 0 && confirmedCount === total;
 
   const onSaveDraft = async () => {
@@ -436,19 +438,23 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       return;
     }
 
-    // Show loading toast
-    toast.loading(
-      `Saving ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
-      { id: "save-draft-toast" }
-    );
+    try {
+      // Serialize requests to prevent overwhelming the backend
+      // Previously used Promise.all() which caused 503 errors due to connection pool exhaustion
+      for (let i = 0; i < payloads.length; i++) {
+        const p = payloads[i];
 
-    // Use Promise.allSettled to handle partial failures gracefully
-    const results = await Promise.allSettled(
-      payloads.map((p) => {
+        // Show progress toast
+        toast.loading(
+          `Saving ${i + 1}/${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
+          { id: "save-draft-toast" }
+        );
+
         console.log(
           `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
         );
-        return validateMut.mutateAsync({
+
+        await validateMut.mutateAsync({
           responseId: p.id,
           data: {
             // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
@@ -462,38 +468,22 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             flagged_for_calibration: p.flaggedForCalibration,
           },
         });
-      })
-    );
+      }
 
-    const succeeded = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
-
-    console.log(`[SaveDraft] Results: ${succeeded} succeeded, ${failed} failed`);
-
-    // Dismiss loading toast
-    toast.dismiss("save-draft-toast");
-
-    // Invalidate queries if any saves succeeded
-    if (succeeded > 0) {
+      // Invalidate all queries to force refetch with updated response_data
       await qc.invalidateQueries();
-    }
 
-    // Show appropriate feedback
-    if (failed === 0) {
+      // Dismiss loading and show success
+      toast.dismiss("save-draft-toast");
       toast.success(
         `Saved ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""} as draft`,
         { duration: 3000 }
       );
-    } else if (succeeded > 0) {
-      toast.error("Partially saved", {
-        description: `${succeeded} item(s) saved, ${failed} failed. Please try again.`,
-        duration: 5000,
-      });
-    } else {
-      // All failed - get error info from first failure
-      const firstError = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
-      const errorInfo = classifyError(firstError?.reason);
+    } catch (error) {
+      console.error("Error saving validation:", error);
+      toast.dismiss("save-draft-toast");
 
+      const errorInfo = classifyError(error);
       if (errorInfo.type === "network") {
         toast.error("Unable to save draft", {
           description: "Check your internet connection and try again.",
@@ -510,7 +500,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           duration: 5000,
         });
       }
-      throw firstError?.reason || new Error("All save requests failed");
+      throw error;
     }
   };
 
@@ -687,14 +677,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     setSelectedIndicatorId(indicatorId);
     // On mobile, auto-switch to files tab when indicator is selected
     if (window.innerWidth < 768) {
-      setMobileTab('files');
+      setMobileTab("files");
     }
   };
 
   const handleFileClick = () => {
     // On mobile, auto-switch to validation tab when file is clicked
     if (window.innerWidth < 768) {
-      setMobileTab('validation');
+      setMobileTab("validation");
     }
   };
 
@@ -718,7 +708,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             <div className="h-6 sm:h-8 w-px bg-border shrink-0" />
             <div className="min-w-0 flex flex-col justify-center flex-1">
               <div className="text-xs sm:text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName} <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">/</span>{" "}
+                {barangayName}{" "}
+                <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">/</span>{" "}
                 <span className="hidden md:inline">{governanceArea}</span>
               </div>
               <div className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight mt-0.5 hidden sm:block">
@@ -755,7 +746,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               disabled={validateMut.isPending}
               className="text-xs sm:text-sm px-2 sm:px-4"
             >
-              <span className="hidden sm:inline">{validateMut.isPending ? "Saving..." : "Save as Draft"}</span>
+              <span className="hidden sm:inline">
+                {validateMut.isPending ? "Saving..." : "Save as Draft"}
+              </span>
               <span className="sm:hidden">Save</span>
             </Button>
           </div>
@@ -766,41 +759,35 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       <div className="md:hidden sticky top-[56px] z-10 bg-background border-b border-border">
         <div className="flex">
           <button
-            onClick={() => setMobileTab('indicators')}
+            onClick={() => setMobileTab("indicators")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              mobileTab === 'indicators'
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+              mobileTab === "indicators" ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Indicators
-            {mobileTab === 'indicators' && (
+            {mobileTab === "indicators" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
           <button
-            onClick={() => setMobileTab('files')}
+            onClick={() => setMobileTab("files")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              mobileTab === 'files'
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+              mobileTab === "files" ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Files
-            {mobileTab === 'files' && (
+            {mobileTab === "files" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
           <button
-            onClick={() => setMobileTab('validation')}
+            onClick={() => setMobileTab("validation")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              mobileTab === 'validation'
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+              mobileTab === "validation" ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Validation
-            {mobileTab === 'validation' && (
+            {mobileTab === "validation" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
@@ -812,7 +799,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         <div className="h-full max-w-[1920px] mx-auto">
           {/* Mobile: Single Panel with Tabs (< 768px) */}
           <div className="md:hidden h-[calc(100vh-168px)] bg-white">
-            {mobileTab === 'indicators' && (
+            {mobileTab === "indicators" && (
               <div className="h-full overflow-y-auto bg-muted/5">
                 <TreeNavigator
                   assessment={transformedAssessment as any}
@@ -821,7 +808,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 />
               </div>
             )}
-            {mobileTab === 'files' && (
+            {mobileTab === "files" && (
               <div className="h-full overflow-hidden flex flex-col">
                 <MiddleMovFilesPanel
                   assessment={data as any}
@@ -849,7 +836,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 />
               </div>
             )}
-            {mobileTab === 'validation' && (
+            {mobileTab === "validation" && (
               <div className="h-full overflow-y-auto">
                 <RightAssessorPanel
                   assessment={data as any}
@@ -906,28 +893,28 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               {/* Tab Bar */}
               <div className="flex border-b border-border bg-muted/30">
                 <button
-                  onClick={() => setMobileTab('files')}
+                  onClick={() => setMobileTab("files")}
                   className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                    mobileTab === 'files'
-                      ? 'text-foreground bg-white'
-                      : 'text-muted-foreground hover:text-foreground'
+                    mobileTab === "files"
+                      ? "text-foreground bg-white"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Files
-                  {mobileTab === 'files' && (
+                  {mobileTab === "files" && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                   )}
                 </button>
                 <button
-                  onClick={() => setMobileTab('validation')}
+                  onClick={() => setMobileTab("validation")}
                   className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                    mobileTab === 'validation'
-                      ? 'text-foreground bg-white'
-                      : 'text-muted-foreground hover:text-foreground'
+                    mobileTab === "validation"
+                      ? "text-foreground bg-white"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Validation
-                  {mobileTab === 'validation' && (
+                  {mobileTab === "validation" && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                   )}
                 </button>
@@ -935,7 +922,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
               {/* Tab Content */}
               <div className="flex-1 overflow-hidden bg-white">
-                {mobileTab === 'files' && (
+                {mobileTab === "files" && (
                   <div className="h-full overflow-hidden flex flex-col">
                     <MiddleMovFilesPanel
                       assessment={data as any}
@@ -963,7 +950,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     />
                   </div>
                 )}
-                {mobileTab === 'validation' && (
+                {mobileTab === "validation" && (
                   <div className="h-full overflow-y-auto">
                     <RightAssessorPanel
                       assessment={data as any}
@@ -1201,7 +1188,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               disabled={finalizeMut.isPending}
               className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
               style={{ background: allConfirmed ? "var(--success)" : "var(--muted)" }}
-              title={!allConfirmed ? `Complete Compliance Overview first (${confirmedCount}/${total} confirmed)` : undefined}
+              title={
+                !allConfirmed
+                  ? `Complete Compliance Overview first (${confirmedCount}/${total} confirmed)`
+                  : undefined
+              }
             >
               {finalizeMut.isPending ? (
                 <>

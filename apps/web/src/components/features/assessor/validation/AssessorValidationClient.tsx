@@ -47,8 +47,9 @@ interface AssessorValidationClientProps {
 type AnyRecord = Record<string, any>;
 
 export function AssessorValidationClient({ assessmentId }: AssessorValidationClientProps) {
-  const { data, isLoading, isError, error, dataUpdatedAt } =
-    useGetAssessorAssessmentsAssessmentId(assessmentId, {
+  const { data, isLoading, isError, error, dataUpdatedAt } = useGetAssessorAssessmentsAssessmentId(
+    assessmentId,
+    {
       query: {
         queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
         // CRITICAL: Disable refetchOnWindowFocus to prevent losing unsaved work
@@ -57,7 +58,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         refetchOnMount: true, // Still fetch fresh data on initial mount
         staleTime: 5 * 60 * 1000, // 5 minutes - data won't go stale while working
       },
-    });
+    }
+  );
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
@@ -85,7 +87,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   // Mobile tab state: 'indicators' | 'files' | 'validation'
-  const [mobileTab, setMobileTab] = useState<'indicators' | 'files' | 'validation'>('indicators');
+  const [mobileTab, setMobileTab] = useState<"indicators" | "files" | "validation">("indicators");
 
   // Track rework flags for assessors at FILE level (responseId → Set of movFileIds with annotations)
   // This allows us to track which specific files need re-upload, not just which indicators
@@ -666,11 +668,17 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     setIsSaving(true);
 
     try {
-      // Save all responses in parallel for faster performance
-      const savePromises = Array.from(allResponseIds).map(async (responseId) => {
+      // Serialize requests to prevent overwhelming the backend
+      // Previously used Promise.all() which caused 503 errors due to connection pool exhaustion
+      const responseIdsArray = Array.from(allResponseIds);
+
+      for (let i = 0; i < responseIdsArray.length; i++) {
+        const responseId = responseIdsArray[i];
         const formData = form[responseId];
 
-        console.log(`[onSaveDraft] Processing response ${responseId}`);
+        console.log(
+          `[onSaveDraft] Processing response ${responseId} (${i + 1}/${responseIdsArray.length})`
+        );
         console.log(`[onSaveDraft] Form data for ${responseId}:`, formData);
 
         // Extract checklist data for this response
@@ -720,79 +728,58 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
         console.log(`[onSaveDraft] Payload for response ${responseId}:`, payloadData);
 
-        return validateMut.mutateAsync({
+        await validateMut.mutateAsync({
           responseId: responseId,
           data: payloadData,
         });
-      });
-
-      console.log("[onSaveDraft] Waiting for all save promises to complete...");
-      // Use Promise.allSettled to handle partial failures gracefully
-      // This prevents one failed request from blocking others that succeeded
-      const results = await Promise.allSettled(savePromises);
-
-      const succeeded = results.filter((r) => r.status === "fulfilled").length;
-      const failed = results.filter((r) => r.status === "rejected").length;
-
-      console.log(`[onSaveDraft] Results: ${succeeded} succeeded, ${failed} failed`);
-
-      // Always invalidate queries if any saves succeeded
-      if (succeeded > 0) {
-        console.log("[onSaveDraft] Invalidating queries to refresh UI...");
-        await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
       }
 
-      // Show appropriate toast based on results
-      if (failed === 0) {
-        // All succeeded
+      console.log("[onSaveDraft] All saves completed successfully");
+
+      // Invalidate queries to refresh UI
+      console.log("[onSaveDraft] Invalidating queries to refresh UI...");
+      await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
+
+      // Show success toast
+      toast({
+        title: "Saved",
+        description: "Validation progress saved successfully",
+        duration: 2000,
+        className: "bg-green-600 text-white border-none",
+      });
+    } catch (error) {
+      console.error("Error saving validation data:", error);
+      // Reset mutation state to allow retry
+      validateMut.reset();
+
+      // Classify error for better user feedback
+      const errorInfo = classifyError(error);
+
+      // Show error toast with specific error type and message
+      if (errorInfo.type === "network") {
         toast({
-          title: "Saved",
-          description: "Validation progress saved successfully",
-          duration: 2000,
-          className: "bg-green-600 text-white border-none",
+          title: "Unable to save draft",
+          description: "Check your internet connection and try again.",
+          variant: "destructive",
         });
-      } else if (succeeded > 0) {
-        // Partial success - some saved, some failed
+      } else if (errorInfo.type === "auth") {
         toast({
-          title: "Partially saved",
-          description: `${succeeded} item(s) saved, ${failed} failed. Please try again.`,
+          title: "Session expired",
+          description: "Please log in again to save your work.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "permission") {
+        toast({
+          title: "Access denied",
+          description: "You do not have permission to validate this assessment.",
           variant: "destructive",
         });
       } else {
-        // All failed - get error info from first failure
-        const firstError = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
-        const errorInfo = classifyError(firstError?.reason);
-
-        if (errorInfo.type === "network") {
-          toast({
-            title: "Unable to save draft",
-            description: "Check your internet connection and try again.",
-            variant: "destructive",
-          });
-        } else if (errorInfo.type === "auth") {
-          toast({
-            title: "Session expired",
-            description: "Please log in again to save your work.",
-            variant: "destructive",
-          });
-        } else if (errorInfo.type === "permission") {
-          toast({
-            title: "Access denied",
-            description: "You do not have permission to validate this assessment.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: errorInfo.title,
-            description: errorInfo.message,
-            variant: "destructive",
-          });
-        }
-      }
-
-      // Reset mutation state if there were any failures
-      if (failed > 0) {
-        validateMut.reset();
+        toast({
+          title: errorInfo.title,
+          description: errorInfo.message,
+          variant: "destructive",
+        });
       }
     } finally {
       // CRITICAL: Always reset loading state, whether success or error
@@ -846,7 +833,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   const onFinalize = async () => {
     try {
-      // Save draft first (uses Promise.allSettled internally)
+      // Save draft first (serialized requests to prevent 503 errors)
       await onSaveDraft();
 
       // Then finalize
@@ -921,14 +908,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     setSelectedIndicatorId(indicatorId);
     // On mobile, auto-switch to files tab when indicator is selected
     if (window.innerWidth < 768) {
-      setMobileTab('files');
+      setMobileTab("files");
     }
   };
 
   const handleFileClick = () => {
     // On mobile, auto-switch to validation tab when file is clicked
     if (window.innerWidth < 768) {
-      setMobileTab('validation');
+      setMobileTab("validation");
     }
   };
 
@@ -952,7 +939,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             <div className="h-6 sm:h-8 w-px bg-border shrink-0" />
             <div className="min-w-0 flex flex-col justify-center flex-1">
               <div className="text-xs sm:text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName} <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">/</span>{" "}
+                {barangayName}{" "}
+                <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">/</span>{" "}
                 <span className="hidden md:inline">{governanceArea}</span>
               </div>
               <div className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight mt-0.5 hidden sm:block">
@@ -985,41 +973,35 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       <div className="md:hidden sticky top-[56px] z-10 bg-background border-b border-border">
         <div className="flex">
           <button
-            onClick={() => setMobileTab('indicators')}
+            onClick={() => setMobileTab("indicators")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              mobileTab === 'indicators'
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+              mobileTab === "indicators" ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Indicators
-            {mobileTab === 'indicators' && (
+            {mobileTab === "indicators" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
           <button
-            onClick={() => setMobileTab('files')}
+            onClick={() => setMobileTab("files")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              mobileTab === 'files'
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+              mobileTab === "files" ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Files
-            {mobileTab === 'files' && (
+            {mobileTab === "files" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
           <button
-            onClick={() => setMobileTab('validation')}
+            onClick={() => setMobileTab("validation")}
             className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              mobileTab === 'validation'
-                ? 'text-foreground'
-                : 'text-muted-foreground'
+              mobileTab === "validation" ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Validation
-            {mobileTab === 'validation' && (
+            {mobileTab === "validation" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
@@ -1031,7 +1013,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         <div className="h-full max-w-[1920px] mx-auto">
           {/* Mobile: Single Panel with Tabs (< 768px) */}
           <div className="md:hidden h-[calc(100vh-168px)] bg-white">
-            {mobileTab === 'indicators' && (
+            {mobileTab === "indicators" && (
               <div className="h-full overflow-y-auto bg-muted/5">
                 <TreeNavigator
                   assessment={transformedAssessment as any}
@@ -1040,7 +1022,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 />
               </div>
             )}
-            {mobileTab === 'files' && (
+            {mobileTab === "files" && (
               <div className="h-full overflow-hidden flex flex-col">
                 <MiddleMovFilesPanel
                   assessment={data as any}
@@ -1053,7 +1035,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 />
               </div>
             )}
-            {mobileTab === 'validation' && (
+            {mobileTab === "validation" && (
               <div className="h-full overflow-y-auto">
                 <RightAssessorPanel
                   assessment={data as any}
@@ -1106,28 +1088,28 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               {/* Tab Bar */}
               <div className="flex border-b border-border bg-muted/30">
                 <button
-                  onClick={() => setMobileTab('files')}
+                  onClick={() => setMobileTab("files")}
                   className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                    mobileTab === 'files'
-                      ? 'text-foreground bg-white'
-                      : 'text-muted-foreground hover:text-foreground'
+                    mobileTab === "files"
+                      ? "text-foreground bg-white"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Files
-                  {mobileTab === 'files' && (
+                  {mobileTab === "files" && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                   )}
                 </button>
                 <button
-                  onClick={() => setMobileTab('validation')}
+                  onClick={() => setMobileTab("validation")}
                   className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                    mobileTab === 'validation'
-                      ? 'text-foreground bg-white'
-                      : 'text-muted-foreground hover:text-foreground'
+                    mobileTab === "validation"
+                      ? "text-foreground bg-white"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Validation
-                  {mobileTab === 'validation' && (
+                  {mobileTab === "validation" && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                   )}
                 </button>
@@ -1135,7 +1117,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
               {/* Tab Content */}
               <div className="flex-1 overflow-hidden bg-white">
-                {mobileTab === 'files' && (
+                {mobileTab === "files" && (
                   <div className="h-full overflow-hidden flex flex-col">
                     <MiddleMovFilesPanel
                       assessment={data as any}
@@ -1148,7 +1130,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     />
                   </div>
                 )}
-                {mobileTab === 'validation' && (
+                {mobileTab === "validation" && (
                   <div className="h-full overflow-y-auto">
                     <RightAssessorPanel
                       assessment={data as any}

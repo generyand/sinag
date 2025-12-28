@@ -147,6 +147,9 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
 
   const [progressOpen, setProgressOpen] = React.useState(false);
   const [expandedId, setExpandedId] = React.useState<number | null>(responses[0]?.id ?? null);
+  const [saveProgress, setSaveProgress] = React.useState<{ current: number; total: number } | null>(
+    null
+  );
 
   // Keep expanded id stable if responses change
   React.useEffect(() => {
@@ -195,37 +198,46 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
     }[];
     if (payloads.length === 0) return;
 
-    await Promise.all(
-      payloads.map((p) => {
-        // Extract checklist data for this specific response
-        const responseChecklistData: Record<string, any> = {};
+    // Serialize requests to prevent overwhelming the backend
+    // Previously used Promise.all() which caused 503 errors due to connection pool exhaustion
+    setSaveProgress({ current: 0, total: payloads.length });
 
-        // Find all checklist keys for this response
-        Object.entries(checklistData).forEach(([key, value]) => {
-          // Match pattern: checklist_{responseId}_{itemId}[_yes|_no]
-          const match = key.match(/^checklist_(\d+)_(.+)$/);
-          if (match && Number(match[1]) === p.id) {
-            const itemKey = match[2]; // e.g., "item_123_yes" or "item_123"
+    for (let i = 0; i < payloads.length; i++) {
+      const p = payloads[i];
 
-            // Convert to assessor_val_ prefix for backend storage
-            // Handle YES/NO checkboxes: checklist_123_item_456_yes → assessor_val_item_456_yes
-            // Handle regular items: checklist_123_item_456 → assessor_val_item_456
-            const backendKey = `assessor_val_${itemKey}`;
-            responseChecklistData[backendKey] = value;
-          }
-        });
+      // Extract checklist data for this specific response
+      const responseChecklistData: Record<string, any> = {};
 
-        return validateMut.mutateAsync({
-          responseId: p.id,
-          data: {
-            validation_status: p.v.status!,
-            public_comment: p.v.publicComment ?? null,
-            response_data:
-              Object.keys(responseChecklistData).length > 0 ? responseChecklistData : null,
-          },
-        });
-      })
-    );
+      // Find all checklist keys for this response
+      Object.entries(checklistData).forEach(([key, value]) => {
+        // Match pattern: checklist_{responseId}_{itemId}[_yes|_no]
+        const match = key.match(/^checklist_(\d+)_(.+)$/);
+        if (match && Number(match[1]) === p.id) {
+          const itemKey = match[2]; // e.g., "item_123_yes" or "item_123"
+
+          // Convert to assessor_val_ prefix for backend storage
+          // Handle YES/NO checkboxes: checklist_123_item_456_yes → assessor_val_item_456_yes
+          // Handle regular items: checklist_123_item_456 → assessor_val_item_456
+          const backendKey = `assessor_val_${itemKey}`;
+          responseChecklistData[backendKey] = value;
+        }
+      });
+
+      await validateMut.mutateAsync({
+        responseId: p.id,
+        data: {
+          // Cast to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
+          validation_status: p.v.status?.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL",
+          public_comment: p.v.publicComment ?? null,
+          response_data:
+            Object.keys(responseChecklistData).length > 0 ? responseChecklistData : null,
+        },
+      });
+
+      setSaveProgress({ current: i + 1, total: payloads.length });
+    }
+
+    setSaveProgress(null);
     await qc.invalidateQueries();
   };
 
@@ -272,9 +284,11 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={validateMut.isPending}
+              disabled={validateMut.isPending || saveProgress !== null}
             >
-              Save as Draft
+              {saveProgress
+                ? `Saving ${saveProgress.current}/${saveProgress.total}...`
+                : "Save as Draft"}
             </Button>
           </div>
         </div>
@@ -415,10 +429,12 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
               size="default"
               type="button"
               onClick={onSaveDraft}
-              disabled={validateMut.isPending}
+              disabled={validateMut.isPending || saveProgress !== null}
               className="w-full sm:w-auto"
             >
-              Save as Draft
+              {saveProgress
+                ? `Saving ${saveProgress.current}/${saveProgress.total}...`
+                : "Save as Draft"}
             </Button>
             <Button
               variant="secondary"
