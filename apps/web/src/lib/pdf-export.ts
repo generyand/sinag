@@ -367,14 +367,14 @@ export async function exportReportToPDF(
     const badgeY = titleY + 30;
     if (filters.year) {
       pdf.setFillColor(...COLORS.dilgBlue);
-      const badgeWidth = 130;
-      const badgeHeight = 32;
+      const badgeWidth = 170;
+      const badgeHeight = 36;
       const badgeX = (pageWidth - badgeWidth) / 2;
-      pdf.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 5, 5, "F");
+      pdf.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 6, 6, "F");
       pdf.setFontSize(14);
       pdf.setTextColor(255, 255, 255);
       pdf.setFont("helvetica", "bold");
-      pdf.text(`Calendar Year ${filters.year}`, pageWidth / 2, badgeY + 21, { align: "center" });
+      pdf.text(`Calendar Year ${filters.year}`, pageWidth / 2, badgeY + 23, { align: "center" });
     }
 
     // Report Reference Number Box
@@ -472,13 +472,11 @@ export async function exportReportToPDF(
     const totalAssessments = data.table_data.total_count || 0;
     const passCount = data.chart_data.pie_chart?.find((item) => item.status === "Pass")?.count || 0;
     const failCount = data.chart_data.pie_chart?.find((item) => item.status === "Fail")?.count || 0;
-    const inProgressCount =
-      data.chart_data.pie_chart?.find((item) => item.status === "In Progress")?.count || 0;
     const passRate =
       totalAssessments > 0 ? ((passCount / totalAssessments) * 100).toFixed(1) : "0.0";
 
-    // Stats cards layout - 5 cards
-    const cardWidth = (contentWidth - 40) / 5;
+    // Stats cards layout - 4 cards
+    const cardWidth = (contentWidth - 30) / 4;
     const cardHeight = 65;
     const cardY = statsY + 15;
 
@@ -508,13 +506,7 @@ export async function exportReportToPDF(
     drawStatCard(margin, "Total", totalAssessments.toString(), COLORS.dilgBlue);
     drawStatCard(margin + cardWidth + 10, "Passed", passCount.toString(), COLORS.passGreen);
     drawStatCard(margin + (cardWidth + 10) * 2, "Failed", failCount.toString(), COLORS.failRed);
-    drawStatCard(
-      margin + (cardWidth + 10) * 3,
-      "In Progress",
-      inProgressCount.toString(),
-      COLORS.inProgressOrange
-    );
-    drawStatCard(margin + (cardWidth + 10) * 4, "Pass Rate", `${passRate}%`, COLORS.dilgBlue);
+    drawStatCard(margin + (cardWidth + 10) * 3, "Pass Rate", `${passRate}%`, COLORS.dilgBlue);
 
     // Decorative bottom border
     pdf.setFillColor(...COLORS.dilgGold);
@@ -1118,11 +1110,10 @@ export async function exportReportToPDF(
 
     // Table configuration - Enhanced columns
     const colWidths = {
-      barangay: 140,
-      status: 70,
-      areas: 70,
-      indicators: 80,
-      score: 70,
+      barangay: 160,
+      status: 90,
+      areas: 90,
+      indicators: 100,
     };
     const tableStartX = margin;
     const rowHeight = 22;
@@ -1146,16 +1137,6 @@ export async function exportReportToPDF(
       pdf.text(
         "Indicators",
         tableStartX + colWidths.barangay + colWidths.status + colWidths.areas + 10,
-        headerY
-      );
-      pdf.text(
-        "Score",
-        tableStartX +
-          colWidths.barangay +
-          colWidths.status +
-          colWidths.areas +
-          colWidths.indicators +
-          10,
         headerY
       );
 
@@ -1246,22 +1227,7 @@ export async function exportReportToPDF(
           : "N/A";
       pdf.text(
         indicatorsText,
-        tableStartX + colWidths.barangay + colWidths.status + colWidths.areas + 35,
-        textY,
-        { align: "center" }
-      );
-
-      // Compliance score
-      const scoreText =
-        row.score !== null && row.score !== undefined ? `${row.score.toFixed(1)}%` : "N/A";
-      pdf.text(
-        scoreText,
-        tableStartX +
-          colWidths.barangay +
-          colWidths.status +
-          colWidths.areas +
-          colWidths.indicators +
-          30,
+        tableStartX + colWidths.barangay + colWidths.status + colWidths.areas + 45,
         textY,
         { align: "center" }
       );
