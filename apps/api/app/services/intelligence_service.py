@@ -2997,5 +2997,123 @@ NOW GENERATE the CapDev analysis based on the ACTUAL assessment data provided ab
 
         return insights
 
+    def formulate_adjustment_reasons(
+        self, raw_comments: list[str], max_reasons: int = 5
+    ) -> list[str]:
+        """
+        Use AI to formulate raw feedback comments into proper descriptive sentences.
+
+        This method takes raw assessor/validator feedback comments and transforms them
+        into well-formulated 3rd person sentences suitable for display on the MLGOO
+        dashboard as "Top Reasons for Adjustment".
+
+        Args:
+            raw_comments: List of raw feedback comment strings from assessors/validators
+            max_reasons: Maximum number of reasons to return (default: 5)
+
+        Returns:
+            List of well-formulated reason sentences in 3rd person POV.
+            Returns empty list if API key is not configured or on failure
+            (graceful degradation - allows fallback to raw comments).
+
+        Note:
+            - Output uses 3rd person POV (e.g., "Barangay lacks X" not "You need to provide X")
+            - Reasons are specific and mention actual documents/indicators
+            - Duplicates and similar comments are merged into single reasons
+            - Language is hardcoded to English for MLGOO dashboard consistency
+        """
+        if not raw_comments:
+            return []
+
+        # Gracefully handle missing API key (return empty for fallback to raw comments)
+        if not settings.GEMINI_API_KEY:
+            logger.warning(
+                "GEMINI_API_KEY not configured - skipping AI formulation of adjustment reasons"
+            )
+            return []
+
+        # Deduplicate and limit input comments
+        unique_comments = list(dict.fromkeys(raw_comments))[:20]  # Max 20 for API efficiency
+
+        # SECURITY: Sanitize all comments to prevent prompt injection attacks
+        sanitized_comments = [
+            self._sanitize_for_prompt(comment, max_length=300) for comment in unique_comments
+        ]
+
+        # Build prompt for AI formulation
+        comments_list = chr(10).join(f"- {comment}" for comment in sanitized_comments)
+        prompt = f"""You are analyzing assessment feedback from the SGLGB system.
+
+TASK: Transform these raw feedback comments from assessors/validators into
+clear, well-formulated "reasons for adjustment" suitable for an MLGOO dashboard.
+
+RAW FEEDBACK COMMENTS:
+{comments_list}
+
+REQUIREMENTS:
+1. Use 3rd PERSON POV - These are shown on a dashboard where MLGOO officials
+   view data ABOUT multiple barangays
+   - CORRECT: "Barangay lacks Annual Budget documentation"
+   - WRONG: "You need to provide Annual Budget documentation"
+   - CORRECT: "Disaster Preparedness Plan not uploaded"
+   - WRONG: "Please upload your Disaster Preparedness Plan"
+
+2. Be SPECIFIC - Always mention the actual document, indicator, or requirement
+   - CORRECT: "Annual Investment Plan 2024 missing project timelines"
+   - WRONG: "Missing documentation"
+
+3. MERGE similar comments into single reasons - combine related issues
+
+4. Keep language SIMPLE and clear - Avoid bureaucratic jargon
+
+5. Generate at most {max_reasons} distinct reasons, prioritizing common issues
+
+OUTPUT FORMAT:
+Return a JSON array of strings, each being a well-formulated reason.
+
+EXAMPLE OUTPUT:
+[
+  "Barangay Annual Budget documentation incomplete or missing",
+  "Disaster Preparedness Plan lacks required evacuation routes",
+  "BDRRMC training records not properly documented",
+  "Financial statements missing quarterly breakdown",
+  "Social Protection programs lack beneficiary lists"
+]
+
+Generate the formulated reasons based on the raw feedback above.
+Output ONLY the JSON array, no additional text.
+"""
+
+        try:
+            # Call Gemini API with circuit breaker protection
+            response_text = self._call_gemini_with_circuit_breaker(
+                prompt=prompt,
+                operation="formulate_adjustment_reasons",
+                language="en",  # Hardcoded: MLGOO dashboard is English-only
+                max_output_tokens=2048,
+            )
+
+            # Use helper to extract JSON from response (handles markdown code blocks)
+            json_str = self._extract_json_from_response(response_text)
+            reasons = json.loads(json_str)
+
+            if isinstance(reasons, list):
+                # Ensure all items are strings and limit to max_reasons
+                return [str(r) for r in reasons if r][:max_reasons]
+            else:
+                logger.warning(
+                    f"Unexpected response format from Gemini for adjustment "
+                    f"reasons: {type(reasons)}"
+                )
+                return []
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Gemini response for adjustment reasons: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Failed to formulate adjustment reasons: {e}")
+            # Return empty list on failure - fallback to raw comments in analytics
+            return []
+
 
 intelligence_service = IntelligenceService()

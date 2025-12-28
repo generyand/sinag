@@ -356,12 +356,8 @@ function AssessorChecklistHistoryModal({
             <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2 mb-3">
                 <MessageSquareIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <h4 className="text-sm font-semibold text-foreground">
-                  Assessor's Comments/Notes
-                </h4>
-                <span className="text-xs text-muted-foreground">
-                  ({assessorComments.length})
-                </span>
+                <h4 className="text-sm font-semibold text-foreground">Assessor's Comments/Notes</h4>
+                <span className="text-xs text-muted-foreground">({assessorComments.length})</span>
               </div>
               <div className="space-y-3">
                 {assessorComments.map((comment: any, idx: number) => (
@@ -463,9 +459,11 @@ function ChecklistItemHistory({ item, responseData }: ChecklistItemHistoryProps)
   } else if (
     item.item_type === "document_count" ||
     item.requires_document_count ||
-    item.item_type === "calculation_field"
+    item.item_type === "calculation_field" ||
+    item.item_type === "date_input" ||
+    item.item_type === "text_input"
   ) {
-    // Input fields (document count or calculation)
+    // Input fields (document count, calculation, date, or text)
     const valueKey = `assessor_val_${itemId}`;
     const value = responseData[valueKey];
 
@@ -473,9 +471,25 @@ function ChecklistItemHistory({ item, responseData }: ChecklistItemHistoryProps)
     const isValidValue =
       value && String(value).trim() !== "" && String(value).trim() !== "false" && value !== false;
     if (isValidValue) {
+      // Format date values nicely for display
+      let displayText = String(value);
+      if (item.item_type === "date_input") {
+        try {
+          const dateObj = new Date(value);
+          if (!isNaN(dateObj.getTime())) {
+            displayText = dateObj.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+          }
+        } catch {
+          // Keep original value if parsing fails - this is intentional
+        }
+      }
       displayValue = (
         <span className="inline-flex items-center px-2 py-1 rounded-sm text-sm font-medium bg-blue-50 text-blue-900 dark:bg-blue-950/30 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
-          {String(value)}
+          {displayText}
         </span>
       );
     } else {
@@ -665,9 +679,10 @@ export function RightAssessorPanel({
             item.item_type === "document_count" ||
             item.item_type === "calculation_field" ||
             item.item_type === "date_input" ||
+            item.item_type === "text_input" ||
             item.requires_document_count
           ) {
-            // Input fields (document count, calculation, or date) - start empty
+            // Input fields (document count, calculation, date, or text) - start empty
             // Convert false/boolean to empty string (legacy data may have false stored)
             const rawValue = responseData[`validator_val_${item.item_id}`];
             obj[itemKey] =
@@ -695,9 +710,10 @@ export function RightAssessorPanel({
             item.item_type === "document_count" ||
             item.item_type === "calculation_field" ||
             item.item_type === "date_input" ||
+            item.item_type === "text_input" ||
             item.requires_document_count
           ) {
-            // Input fields (document count, calculation, or date)
+            // Input fields (document count, calculation, date, or text)
             // Convert false/boolean to empty string (legacy data may have false stored)
             const rawValue = responseData[`assessor_val_${item.item_id}`];
             obj[itemKey] =
@@ -737,10 +753,12 @@ export function RightAssessorPanel({
     itemKey: string,
     checklistData: Record<string, any>
   ): boolean => {
-    // For document_count or calculation_field, check if value is provided
+    // For input fields, check if value is provided
     if (
       item.item_type === "document_count" ||
       item.item_type === "calculation_field" ||
+      item.item_type === "date_input" ||
+      item.item_type === "text_input" ||
       item.requires_document_count
     ) {
       const value = checklistData[itemKey];
@@ -1467,7 +1485,10 @@ export function RightAssessorPanel({
                           name: string;
                           label: string;
                           items: any[];
-                          fieldNotes?: { title?: string; items?: { label?: string; text: string }[] } | null;
+                          fieldNotes?: {
+                            title?: string;
+                            items?: { label?: string; text: string }[];
+                          } | null;
                         }
 
                         const groupedByOptionGroup = (): OptionGroupData[] | null => {

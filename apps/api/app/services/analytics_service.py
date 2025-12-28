@@ -782,7 +782,7 @@ class AnalyticsService:
             f"📊 Extracted {total_reasons} adjustment reasons from AI summaries across {len(reason_to_assessments)} unique issues"
         )
 
-        # If no AI-generated reasons, fall back to feedback comments
+        # If no AI-generated reasons, fall back to feedback comments with AI formulation
         if not reason_to_assessments:
             # Get feedback comments from assessments with adjustments
             assessment_ids_with_adjustments = [a.id for a in assessments]
@@ -798,13 +798,56 @@ class AnalyticsService:
                     .limit(50)
                     .all()
                 )
+
+                # Collect raw comments for AI formulation
+                raw_comments: list[str] = []
+                comment_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
+
                 for fc in feedback_comments:
                     if fc.comment and fc.comment.strip():
+                        comment_text = fc.comment.strip()
+                        raw_comments.append(comment_text)
                         assessment_id = fc.response.assessment_id
                         if assessment_id in assessment_map:
-                            reason_to_assessments[fc.comment.strip()].append(
+                            comment_to_assessments[comment_text].append(
                                 assessment_map[assessment_id]
                             )
+
+                # Use AI to formulate raw comments into proper descriptive sentences
+                if raw_comments:
+                    from app.services.intelligence_service import intelligence_service
+
+                    formulated_reasons = intelligence_service.formulate_adjustment_reasons(
+                        raw_comments=list(set(raw_comments)),  # Deduplicate before sending to AI
+                        max_reasons=10,
+                    )
+
+                    if formulated_reasons:
+                        # Since AI merges similar comments into aggregated reasons,
+                        # we cannot preserve the exact comment-to-assessment mapping.
+                        # Instead, associate each reason with ALL affected assessments
+                        # as these represent common issues across them.
+                        unique_assessments_dict = {
+                            a.id: a for a_list in comment_to_assessments.values() for a in a_list
+                        }
+                        all_affected_assessments = list(unique_assessments_dict.values())
+
+                        # Associate all assessments with each formulated reason
+                        for reason in formulated_reasons:
+                            reason_to_assessments[reason] = all_affected_assessments.copy()
+
+                        logger.info(
+                            f"📊 AI formulated {len(formulated_reasons)} reasons "
+                            f"from {len(raw_comments)} raw comments "
+                            f"across {len(all_affected_assessments)} assessments"
+                        )
+                    else:
+                        # AI formulation failed, fall back to raw comments
+                        logger.warning(
+                            "⚠️ AI formulation failed, falling back to raw feedback comments"
+                        )
+                        for comment_text, assessment_list in comment_to_assessments.items():
+                            reason_to_assessments[comment_text] = assessment_list
 
         # Build TopReworkReason objects with affected barangays
         all_reasons: list[TopReworkReason] = []
@@ -1543,6 +1586,19 @@ class AnalyticsService:
         # Build table rows
         rows = []
 
+        # Governance area name mappings for 3+1 classification (defined once, outside loop)
+        # Using lowercase for case-insensitive matching
+        core_area_names_lower = {
+            "financial administration and sustainability",
+            "disaster preparedness",
+            "safety, peace and order",
+        }
+        essential_area_names_lower = {
+            "social protection and sensitivity",
+            "business-friendliness and competitiveness",
+            "environmental management",
+        }
+
         for assessment in assessments:
             # Get barangay info
             if not assessment.blgu_user or not assessment.blgu_user.barangay:
@@ -1590,6 +1646,9 @@ class AnalyticsService:
             total_indicators = 0
             governance_areas_passed = 0
             total_governance_areas = 0
+            # Initialize as None for non-completed assessments (will show "N/A" in PDF)
+            core_areas_passed: int | None = None
+            essential_areas_passed: int | None = None
 
             # Only calculate metrics if assessment is COMPLETED
             if assessment.status == AssessmentStatus.COMPLETED and assessment.responses:
@@ -1610,6 +1669,19 @@ class AnalyticsService:
                         for result in assessment.area_results.values()
                         if result and result.lower() == "passed"
                     )
+
+                    # Compute core and essential area counts for 3+1 classification
+                    # Initialize to 0 for completed assessments (None means not calculated)
+                    core_areas_passed = 0
+                    essential_areas_passed = 0
+                    for area_name, result in assessment.area_results.items():
+                        if result and result.lower() == "passed":
+                            # Case-insensitive matching for robustness
+                            area_name_lower = area_name.strip().lower()
+                            if area_name_lower in core_area_names_lower:
+                                core_areas_passed += 1
+                            elif area_name_lower in essential_area_names_lower:
+                                essential_areas_passed += 1
 
                 # Score calculation
                 total_validated = sum(
@@ -1636,6 +1708,10 @@ class AnalyticsService:
                     score=score,
                     governance_areas_passed=governance_areas_passed,
                     total_governance_areas=total_governance_areas,
+                    core_areas_passed=core_areas_passed,
+                    total_core_areas=3,
+                    essential_areas_passed=essential_areas_passed,
+                    total_essential_areas=3,
                     indicators_passed=indicators_passed,
                     total_indicators=total_indicators,
                 )

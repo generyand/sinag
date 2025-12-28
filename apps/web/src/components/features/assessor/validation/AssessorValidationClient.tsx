@@ -241,16 +241,35 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         // For indicators that passed (requires_rework=false), load their old checklist data
         const responseData = resp.response_data || {};
 
-        // Find all assessor_val_ prefixed fields and convert them to checklist format
+        // Find all assessor_val_ and validator_val_ prefixed fields and convert them to checklist format
+        // Priority: validator_val_ takes precedence over assessor_val_ (validators override assessors)
         Object.keys(responseData).forEach((key) => {
-          if (key.startsWith("assessor_val_")) {
-            // Remove the assessor_val_ prefix
-            const fieldName = key.replace("assessor_val_", "");
+          let fieldName: string | null = null;
+          let prefix: string | null = null;
+
+          if (key.startsWith("validator_val_")) {
+            fieldName = key.replace("validator_val_", "");
+            prefix = "validator_val_";
+          } else if (key.startsWith("assessor_val_")) {
+            fieldName = key.replace("assessor_val_", "");
+            prefix = "assessor_val_";
+          }
+
+          if (fieldName && prefix) {
             // Convert to checklist format: checklist_{responseId}_{fieldName}
             const checklistKey = `checklist_${responseId}_${fieldName}`;
+
+            // Only set if not already set by a higher priority prefix (validator_val_)
+            // Since we iterate Object.keys which has no guaranteed order, check if validator_val_ version exists
+            const validatorKey = `validator_val_${fieldName}`;
+            if (prefix === "assessor_val_" && validatorKey in responseData) {
+              // Skip assessor value if validator value exists
+              return;
+            }
+
             initialChecklistData[checklistKey] = responseData[key];
             console.log(
-              `[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]}`
+              `[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]} (from ${prefix})`
             );
           }
         });
@@ -411,10 +430,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             let hasPersistedComments = false;
 
             if (!resp.requires_rework) {
-              // Check backend response_data for persisted ASSESSOR checklist data
+              // Check backend response_data for persisted checklist data
+              // Check both assessor_val_ and validator_val_ prefixes
               const responseData = (resp as AnyRecord).response_data || {};
               hasPersistedChecklistData = Object.keys(responseData).some((key) => {
-                if (!key.startsWith("assessor_val_")) return false;
+                if (!key.startsWith("assessor_val_") && !key.startsWith("validator_val_"))
+                  return false;
                 const value = responseData[key];
                 return value === true || (typeof value === "string" && value.trim().length > 0);
               });
@@ -689,8 +710,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             // For assessment_field items, keep the _yes/_no suffix
             const fieldName = key.replace(`checklist_${responseId}_`, "");
 
-            // PREFIX with "assessor_val_" to avoid conflicts with BLGU assessment data
-            const prefixedFieldName = `assessor_val_${fieldName}`;
+            // PREFIX based on user role:
+            // - Validators use "validator_val_" prefix (compliance service checks this)
+            // - Assessors use "assessor_val_" prefix
+            const prefix = isValidator ? "validator_val_" : "assessor_val_";
+            const prefixedFieldName = `${prefix}${fieldName}`;
             responseChecklistData[prefixedFieldName] = checklistData[key];
             console.log(
               `[onSaveDraft] Extracted checklist: ${key} -> ${prefixedFieldName} = ${checklistData[key]}`

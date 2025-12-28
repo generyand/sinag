@@ -729,11 +729,31 @@ export interface AssessmentRow {
   governance_areas_passed?: AssessmentRowGovernanceAreasPassed;
   /** Total number of governance areas */
   total_governance_areas?: AssessmentRowTotalGovernanceAreas;
+  /** Number of core governance areas passed (FAS, DP, SPO) */
+  core_areas_passed?: AssessmentRowCoreAreasPassed;
+  /** Total number of core areas (always 3) */
+  total_core_areas?: number;
+  /** Number of essential governance areas passed (SPS, BFC, EM) */
+  essential_areas_passed?: AssessmentRowEssentialAreasPassed;
+  /** Total number of essential areas (always 3) */
+  total_essential_areas?: number;
   /** Number of indicators passed (Pass/Conditional) */
   indicators_passed?: AssessmentRowIndicatorsPassed;
   /** Total number of indicators */
   total_indicators?: AssessmentRowTotalIndicators;
 }
+
+
+/**
+ * AssessmentRowCoreAreasPassed
+ */
+export type AssessmentRowCoreAreasPassed = number | null;
+
+
+/**
+ * AssessmentRowEssentialAreasPassed
+ */
+export type AssessmentRowEssentialAreasPassed = number | null;
 
 
 /**

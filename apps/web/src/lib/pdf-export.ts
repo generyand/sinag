@@ -1108,12 +1108,13 @@ export async function exportReportToPDF(
     // ===== Barangay Assessment Table =====
     let tableY = addSectionPage("Barangay Assessment Details");
 
-    // Table configuration - Enhanced columns
+    // Table configuration - Enhanced columns with 3+1 breakdown
     const colWidths = {
-      barangay: 160,
-      status: 90,
-      areas: 90,
-      indicators: 100,
+      barangay: 150,
+      status: 80,
+      core: 70,
+      essential: 70,
+      indicators: 70,
     };
     const tableStartX = margin;
     const rowHeight = 22;
@@ -1133,10 +1134,20 @@ export async function exportReportToPDF(
       const headerY = startY + headerHeight / 2 + 3;
       pdf.text("Barangay", tableStartX + 10, headerY);
       pdf.text("Status", tableStartX + colWidths.barangay + 10, headerY);
-      pdf.text("Areas", tableStartX + colWidths.barangay + colWidths.status + 10, headerY);
+      pdf.text("Core (3+)", tableStartX + colWidths.barangay + colWidths.status + 10, headerY);
+      pdf.text(
+        "Essential (+1)",
+        tableStartX + colWidths.barangay + colWidths.status + colWidths.core + 5,
+        headerY
+      );
       pdf.text(
         "Indicators",
-        tableStartX + colWidths.barangay + colWidths.status + colWidths.areas + 10,
+        tableStartX +
+          colWidths.barangay +
+          colWidths.status +
+          colWidths.core +
+          colWidths.essential +
+          5,
         headerY
       );
 
@@ -1208,26 +1219,53 @@ export async function exportReportToPDF(
       pdf.setFontSize(7);
       pdf.text(statusText, statusX + 3, textY - 1);
 
-      // Governance Areas Passed
-      pdf.setTextColor(...COLORS.darkGray);
+      // Core Areas Passed (3+1 classification)
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8);
-      const areasText =
-        row.governance_areas_passed !== null && row.total_governance_areas !== null
-          ? `${row.governance_areas_passed}/${row.total_governance_areas}`
+      const coreText =
+        row.core_areas_passed !== null && row.core_areas_passed !== undefined
+          ? `${row.core_areas_passed}/${row.total_core_areas ?? 3}`
           : "N/A";
-      pdf.text(areasText, tableStartX + colWidths.barangay + colWidths.status + 25, textY, {
+      // Color code: green if all core areas passed (3+1 rule: all 3 core must pass)
+      const coreAllPassed = row.core_areas_passed === (row.total_core_areas ?? 3);
+      const coreColor = coreAllPassed ? COLORS.passGreen : COLORS.failRed;
+      pdf.setTextColor(coreColor[0], coreColor[1], coreColor[2]);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(coreText, tableStartX + colWidths.barangay + colWidths.status + 35, textY, {
         align: "center",
       });
 
+      // Essential Areas Passed (3+1 classification)
+      const essentialText =
+        row.essential_areas_passed !== null && row.essential_areas_passed !== undefined
+          ? `${row.essential_areas_passed}/${row.total_essential_areas ?? 3}`
+          : "N/A";
+      // Color code: green if at least 1 essential area passed, red if 0
+      const essentialMet = (row.essential_areas_passed ?? 0) >= 1;
+      const essentialColor = essentialMet ? COLORS.passGreen : COLORS.failRed;
+      pdf.setTextColor(essentialColor[0], essentialColor[1], essentialColor[2]);
+      pdf.text(
+        essentialText,
+        tableStartX + colWidths.barangay + colWidths.status + colWidths.core + 35,
+        textY,
+        { align: "center" }
+      );
+
       // Indicators Passed
+      pdf.setTextColor(...COLORS.darkGray);
+      pdf.setFont("helvetica", "normal");
       const indicatorsText =
         row.indicators_passed !== null && row.total_indicators !== null
           ? `${row.indicators_passed}/${row.total_indicators}`
           : "N/A";
       pdf.text(
         indicatorsText,
-        tableStartX + colWidths.barangay + colWidths.status + colWidths.areas + 45,
+        tableStartX +
+          colWidths.barangay +
+          colWidths.status +
+          colWidths.core +
+          colWidths.essential +
+          35,
         textY,
         { align: "center" }
       );

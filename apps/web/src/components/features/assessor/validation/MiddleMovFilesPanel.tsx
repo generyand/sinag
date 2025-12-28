@@ -265,14 +265,10 @@ export function MiddleMovFilesPanel({
       accepted = oldUploads.filter(
         (f: any) => f.is_rejected !== true && f.has_annotations !== true
       );
-    } else if (newUploads.length > 0 && oldUploads.length > 0) {
-      // General rework case: New files uploaded but no explicit rejection flags
-      // This means indicator was flagged for rework without specific file annotations
-      // Treat ALL old files as "replaced" since BLGU uploaded replacements
-      rejected = oldUploads;
-      accepted = [];
     } else {
-      // No new uploads - all old files are considered valid/existing
+      // No explicit rejection flags on any old files
+      // Even if there are new uploads, old files without annotations should remain as accepted
+      // Only files with explicit rejection/annotation flags should go to PREVIOUS FILES
       rejected = [];
       accepted = oldUploads;
     }
