@@ -1313,7 +1313,7 @@ export function RightAssessorPanel({
                                     );
                                   })()
                                 ) : item.item_type === "calculation_field" ? (
-                                  // Calculation/input field with optional mov_description box
+                                  // Calculation/input field with optional mov_description box (above input)
                                   <div className="space-y-2">
                                     {item.mov_description && (
                                       <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
@@ -1412,7 +1412,7 @@ export function RightAssessorPanel({
                                 )}
 
                               {/* Auto-calculated Physical/Financial Accomplishment for specific indicators */}
-                              {/* Physical: show after physical_reflected field */}
+                              {/* Physical: show after physical_accomplished field (after both inputs) */}
                               {[
                                 "2.1.4",
                                 "3.2.3",
@@ -1422,7 +1422,7 @@ export function RightAssessorPanel({
                                 "4.8.4",
                                 "6.1.4",
                               ].includes(indicatorCode) &&
-                                item.item_id?.endsWith("_physical_reflected") && (
+                                item.item_id?.endsWith("_physical_accomplished") && (
                                   <AccomplishmentAutoCalculator
                                     responseId={r.id}
                                     watched={watched}

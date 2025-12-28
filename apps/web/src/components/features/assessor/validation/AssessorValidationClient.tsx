@@ -15,8 +15,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { classifyError } from "@/lib/error-utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
+  getGetAssessorAssessmentsAssessmentIdQueryKey,
   useGetAssessorAssessmentsAssessmentId,
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
@@ -46,7 +48,16 @@ type AnyRecord = Record<string, any>;
 
 export function AssessorValidationClient({ assessmentId }: AssessorValidationClientProps) {
   const { data, isLoading, isError, error, dataUpdatedAt } =
-    useGetAssessorAssessmentsAssessmentId(assessmentId);
+    useGetAssessorAssessmentsAssessmentId(assessmentId, {
+      query: {
+        queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+        // CRITICAL: Disable refetchOnWindowFocus to prevent losing unsaved work
+        // When user alt-tabs back, we don't want to overwrite their checklist changes
+        refetchOnWindowFocus: false,
+        refetchOnMount: true, // Still fetch fresh data on initial mount
+        staleTime: 5 * 60 * 1000, // 5 minutes - data won't go stale while working
+      },
+    });
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
@@ -735,12 +746,35 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Reset mutation state to allow retry
       validateMut.reset();
 
-      // Show error toast
-      toast({
-        title: "Error saving",
-        description: "Failed to save validation progress. Please try again.",
-        variant: "destructive",
-      });
+      // Classify error for better user feedback
+      const errorInfo = classifyError(error);
+
+      // Show error toast with specific error type and message
+      if (errorInfo.type === "network") {
+        toast({
+          title: "Unable to save draft",
+          description: "Check your internet connection and try again.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "auth") {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to save your work.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "permission") {
+        toast({
+          title: "Access denied",
+          description: "You do not have permission to validate this assessment.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: errorInfo.title,
+          description: errorInfo.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       // CRITICAL: Always reset loading state, whether success or error
       isSavingRef.current = false;

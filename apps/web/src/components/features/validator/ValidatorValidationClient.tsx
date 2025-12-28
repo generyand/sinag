@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
+  getGetAssessorAssessmentsAssessmentIdQueryKey,
   useGetAssessorAssessmentsAssessmentId,
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdCalibrate,
@@ -69,7 +70,16 @@ function sortIndicatorCode(a: string, b: string): number {
 
 export function ValidatorValidationClient({ assessmentId }: ValidatorValidationClientProps) {
   const router = useRouter();
-  const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId);
+  const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId, {
+    query: {
+      queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+      // CRITICAL: Disable refetchOnWindowFocus to prevent losing unsaved work
+      // When user alt-tabs back, we don't want to overwrite their validation changes
+      refetchOnWindowFocus: false,
+      refetchOnMount: true, // Still fetch fresh data on initial mount
+      staleTime: 5 * 60 * 1000, // 5 minutes - data won't go stale while working
+    },
+  });
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const finalizeMut = usePostAssessorAssessmentsAssessmentIdFinalize();

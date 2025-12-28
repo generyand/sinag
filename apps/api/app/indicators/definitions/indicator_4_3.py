@@ -147,6 +147,7 @@ INDICATOR_4_3 = Indicator(
                 ChecklistItem(
                     id="4_3_4_physical_reflected",
                     label="Total number of activities/projects reflected in the Plan",
+                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=4,
@@ -154,7 +155,6 @@ INDICATOR_4_3 = Indicator(
                 ChecklistItem(
                     id="4_3_4_physical_accomplished",
                     label="Total number of activities/projects accomplished",
-                    mov_description="Please supply the required information:",
                     item_type="calculation_field",
                     required=False,
                     display_order=5,
