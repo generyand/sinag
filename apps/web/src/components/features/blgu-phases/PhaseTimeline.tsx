@@ -69,16 +69,14 @@ function buildTimelineEvents(
 
   // Determine phase completion based on status
   // During MLGOO RE-calibration, all phases are still considered complete
-  const isPhase1Complete = [
-    "AWAITING_FINAL_VALIDATION",
-    "AWAITING_MLGOO_APPROVAL",
-    "COMPLETED",
-  ].includes(currentStatus) ||
+  const isPhase1Complete =
+    ["AWAITING_FINAL_VALIDATION", "AWAITING_MLGOO_APPROVAL", "COMPLETED"].includes(currentStatus) ||
     (isCalibrationRework && currentStatus === "REWORK") ||
     (isMlgooRecalibration && (currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK"));
 
   // Phase 2 is complete when MLGOO approval is pending, completed, or during MLGOO RE-calibration
-  const isPhase2Complete = ["AWAITING_MLGOO_APPROVAL", "COMPLETED"].includes(currentStatus) ||
+  const isPhase2Complete =
+    ["AWAITING_MLGOO_APPROVAL", "COMPLETED"].includes(currentStatus) ||
     (isMlgooRecalibration && (currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK"));
 
   // Final verdict is only complete when assessment is COMPLETED (not during MLGOO RE-calibration)
@@ -111,7 +109,8 @@ function buildTimelineEvents(
       title: "Rework Requested",
       description: "Assessor requested corrections",
       date: formatDate(reworkRequestedAt),
-      status: currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK" ? "current" : "completed",
+      status:
+        currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK" ? "current" : "completed",
       phase: 1,
     });
   }
@@ -121,18 +120,19 @@ function buildTimelineEvents(
     const phase2Status = isPhase2Complete
       ? "completed"
       : currentStatus === "AWAITING_FINAL_VALIDATION" ||
-        (isCalibrationRework && (currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK"))
-      ? "current"
-      : "pending";
+          (isCalibrationRework && (currentStatus === "REWORK" || currentStatus === "NEEDS_REWORK"))
+        ? "current"
+        : "pending";
 
     events.push({
       id: "phase2-validation",
       title: "Phase 2: Table Validation",
-      description: phase2Status === "completed"
-        ? "Validation completed"
-        : phase2Status === "current"
-        ? "Under validator review"
-        : "Awaiting validation",
+      description:
+        phase2Status === "completed"
+          ? "Validation completed"
+          : phase2Status === "current"
+            ? "Under validator review"
+            : "Awaiting validation",
       status: phase2Status,
       phase: 2,
     });
@@ -235,9 +235,7 @@ export function PhaseTimeline({
 
   return (
     <div className={cn("relative", className)}>
-      <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">
-        Assessment Journey
-      </h3>
+      <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">Assessment Journey</h3>
 
       <div className="relative">
         {/* Vertical line */}
@@ -257,8 +255,8 @@ export function PhaseTimeline({
                     event.status === "completed"
                       ? "bg-green-500"
                       : event.status === "current"
-                      ? "bg-yellow-500"
-                      : "bg-gray-300 dark:bg-gray-600"
+                        ? "bg-yellow-500"
+                        : "bg-gray-300 dark:bg-gray-600"
                   )}
                 >
                   {event.status === "completed" ? (
@@ -284,14 +282,13 @@ export function PhaseTimeline({
                         event.status === "completed"
                           ? "text-green-700 dark:text-green-400"
                           : event.status === "current"
-                          ? "text-yellow-700 dark:text-yellow-400"
-                          : "text-gray-500 dark:text-gray-400"
+                            ? "text-yellow-700 dark:text-yellow-400"
+                            : "text-gray-500 dark:text-gray-400"
                       )}
                     >
                       {event.title}
                     </span>
-                    {event.id.includes("rework") ||
-                    event.id.includes("calibration") ? (
+                    {event.id.includes("rework") || event.id.includes("calibration") ? (
                       <AlertCircle className="w-4 h-4 text-orange-500" />
                     ) : null}
                   </div>
@@ -303,9 +300,7 @@ export function PhaseTimeline({
                   )}
 
                   {event.date && (
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">
-                      {event.date}
-                    </p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">{event.date}</p>
                   )}
                 </div>
               </div>

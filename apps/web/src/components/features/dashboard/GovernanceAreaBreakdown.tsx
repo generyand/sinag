@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface AreaData {
   areaCode: string;
@@ -49,12 +49,8 @@ export function GovernanceAreaBreakdown({ data }: GovernanceAreaBreakdownProps) 
                   {area.areaName}
                 </span>
                 <div className="flex items-center gap-4 text-xs">
-                  <span className="text-green-600 font-medium">
-                    {area.passed} passed
-                  </span>
-                  <span className="text-red-500 font-medium">
-                    {area.failed} failed
-                  </span>
+                  <span className="text-green-600 font-medium">{area.passed} passed</span>
+                  <span className="text-red-500 font-medium">{area.failed} failed</span>
                   <span className="font-semibold text-[var(--foreground)] min-w-[45px] text-right">
                     {passRate.toFixed(0)}%
                   </span>
@@ -76,13 +72,12 @@ export function GovernanceAreaBreakdown({ data }: GovernanceAreaBreakdownProps) 
       {/* Summary footer */}
       <div className="mt-6 pt-4 border-t border-[var(--border)]">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-[var(--muted-foreground)]">
-            Average Pass Rate
-          </span>
+          <span className="text-[var(--muted-foreground)]">Average Pass Rate</span>
           <span className="font-semibold text-[var(--foreground)]">
             {data.length > 0
               ? (data.reduce((sum, a) => sum + a.percentage, 0) / data.length).toFixed(1)
-              : 0}%
+              : 0}
+            %
           </span>
         </div>
       </div>

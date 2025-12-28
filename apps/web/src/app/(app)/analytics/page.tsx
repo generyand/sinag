@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
 import {
-  useGetUsersMe,
-  useGetAnalyticsReports,
-  useGetMunicipalOverviewDashboard,
-} from "@sinag/shared";
+  ANALYTICS_TABS,
+  ActiveFilterPills,
+  GARAnalyticsTab,
+  useAnalyticsFilters,
+  type AnalyticsTabId,
+} from "@/components/features/analytics";
+import { YearSelector } from "@/components/features/assessment-year/YearSelector";
+import { BBIStatusTab, type MunicipalityBBIAnalyticsData } from "@/components/features/reports";
+import {
+  AggregatedCapDevCard,
+  BarangayStatusTable,
+  ComplianceSummaryCard,
+  TopFailingIndicatorsCard,
+} from "@/components/features/municipal-overview";
+import { GovernanceAreaBreakdown } from "@/components/features/dashboard/GovernanceAreaBreakdown";
+import { ExportControls, VisualizationGrid } from "@/components/features/reports";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -17,31 +25,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, RefreshCw, Filter, BarChart3 } from "lucide-react";
-import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import { useDashboardAnalytics } from "@/hooks/useDashboardAnalytics";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
-  ComplianceRateCard,
-  CompletionStatusCard,
-  AreaBreakdownCard,
-  TopFailedIndicatorsCard,
-  BBIFunctionalityWidget,
-} from "@/components/features/dashboard-analytics";
-import { VisualizationGrid, ExportControls } from "@/components/features/reports";
-import {
-  ComplianceSummaryCard,
-  GovernanceAreaPerformanceCard,
-  TopFailingIndicatorsCard,
-  AggregatedCapDevCard,
-  BarangayStatusTable,
-} from "@/components/features/municipal-overview";
-import {
-  useAnalyticsFilters,
-  ActiveFilterPills,
-  ANALYTICS_TABS,
-  type AnalyticsTabId,
-} from "@/components/features/analytics";
+  useGetAnalyticsReports,
+  useGetMunicipalOverviewDashboard,
+  useGetUsersMe,
+} from "@sinag/shared";
+import { api } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircle, BarChart3, Filter, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -97,6 +94,24 @@ export default function AnalyticsPage() {
     error: municipalError,
   } = useGetMunicipalOverviewDashboard({
     year: selectedYear ?? undefined,
+  });
+
+  // BBI Analytics data hook for municipality-wide BBI status matrix
+  // OPTIMIZED: Long cache times since BBI data is relatively stable
+  const { data: bbiAnalytics, isLoading: isBBILoading } = useQuery<MunicipalityBBIAnalyticsData>({
+    queryKey: ["bbis", "analytics", "municipality", selectedYear],
+    queryFn: async () => {
+      const response = await api.get(`/api/v1/bbis/analytics/municipality`, {
+        params: { year: selectedYear },
+      });
+      return response.data as MunicipalityBBIAnalyticsData;
+    },
+    enabled: !!selectedYear && activeTab === "bbi",
+    // PERFORMANCE: BBI data doesn't change frequently
+    staleTime: 10 * 60 * 1000, // 10 minutes - data is stable
+    gcTime: 30 * 60 * 1000, // 30 minutes - matches backend cache TTL
+    refetchOnWindowFocus: false, // Don't refetch on tab focus for analytics
+    placeholderData: (previousData: MunicipalityBBIAnalyticsData | undefined) => previousData, // Keep showing old data while fetching
   });
 
   // Handler for viewing CapDev insights - navigates to submissions detail page
@@ -251,6 +266,7 @@ export default function AnalyticsPage() {
                         status: filters.status,
                       }}
                       reportsData={reportsData}
+                      activeTab={activeTab}
                     />
                   </div>
                 )}
@@ -264,6 +280,11 @@ export default function AnalyticsPage() {
               <TabsList className="w-full flex flex-wrap gap-1 bg-transparent h-auto p-0">
                 {ANALYTICS_TABS.map((tab) => {
                   const Icon = tab.icon;
+                  // Hide GAR tab for non-MLGOO users
+                  if (tab.id === "gar" && user?.role !== "MLGOO_DILG") {
+                    return null;
+                  }
+
                   return (
                     <TabsTrigger
                       key={tab.id}
@@ -360,8 +381,21 @@ export default function AnalyticsPage() {
 
                 {/* Two Column Layout for Analytics */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <GovernanceAreaPerformanceCard data={municipalData.governance_area_performance} />
-                  <TopFailingIndicatorsCard data={municipalData.top_failing_indicators} />
+                  <GovernanceAreaBreakdown
+                    data={
+                      municipalData.governance_area_performance?.areas?.map((area) => ({
+                        areaCode: area.id.toString(),
+                        areaName: area.name,
+                        passed: area.passed_count,
+                        failed: area.failed_count,
+                        percentage: area.pass_rate,
+                      })) ?? []
+                    }
+                  />
+                  <TopFailingIndicatorsCard
+                    data={municipalData.top_failing_indicators}
+                    year={selectedYear ?? undefined}
+                  />
                 </div>
 
                 {/* Aggregated CapDev Insights */}
@@ -381,29 +415,6 @@ export default function AnalyticsPage() {
               </>
             )}
 
-            {/* KPIs Tab - Original KPI Cards */}
-            {activeTab === "kpis" && dashboardData && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <ComplianceRateCard data={dashboardData.overall_compliance_rate} />
-                  <CompletionStatusCard data={dashboardData.completion_status} />
-                  <TopFailedIndicatorsCard data={dashboardData.top_failed_indicators || []} />
-                </div>
-                <div className="grid grid-cols-1 gap-6">
-                  <AreaBreakdownCard data={dashboardData.area_breakdown || []} />
-                </div>
-              </>
-            )}
-
-            {/* Charts Tab - Bar, Pie, Line Charts */}
-            {activeTab === "charts" && reportsData && (
-              <VisualizationGrid
-                data={reportsData}
-                isLoading={isReportsLoading}
-                showOnly={["bar", "pie", "line"]}
-              />
-            )}
-
             {/* Map Tab - Geographic Distribution */}
             {activeTab === "map" && reportsData && (
               <VisualizationGrid
@@ -413,7 +424,18 @@ export default function AnalyticsPage() {
               />
             )}
 
-            {/* Table Tab - Detailed Results */}
+            {/* BBI Tab - Municipality-wide BBI Status Matrix */}
+            {activeTab === "bbi" && (
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-sm p-6">
+                <BBIStatusTab
+                  data={bbiAnalytics ?? null}
+                  isLoading={isBBILoading}
+                  municipalityName="Sulop"
+                />
+              </div>
+            )}
+
+            {/* Table Tab - Verdict Results (formerly Detailed Results) */}
             {activeTab === "table" && reportsData && (
               <VisualizationGrid
                 data={reportsData}
@@ -422,9 +444,9 @@ export default function AnalyticsPage() {
               />
             )}
 
-            {/* BBI Tab */}
-            {activeTab === "bbi" && dashboardData && dashboardData.bbi_functionality && (
-              <BBIFunctionalityWidget data={dashboardData.bbi_functionality} />
+            {/* GAR Report Tab - MLGOO Only */}
+            {activeTab === "gar" && (
+              <GARAnalyticsTab year={selectedYear ?? new Date().getFullYear()} />
             )}
           </div>
         </div>

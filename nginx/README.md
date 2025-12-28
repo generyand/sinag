@@ -50,6 +50,7 @@ http://your-domain.com
 ### Main Configuration (`nginx.conf`)
 
 Global settings:
+
 - Worker processes: Auto (matches CPU cores)
 - Max connections: 2048 per worker
 - Upload size limit: 100MB (for MOV files)
@@ -60,6 +61,7 @@ Global settings:
 ### Server Block (`conf.d/default.conf`)
 
 Routing rules:
+
 - `/api/*` → FastAPI backend (api:8000)
 - `/docs`, `/redoc`, `/openapi.json` → FastAPI documentation
 - `/health` → API health check
@@ -103,22 +105,26 @@ client_max_body_size 500M;  # Allow larger uploads
 When SSL certificates are ready:
 
 1. Place certificates in `nginx/ssl/`:
+
    ```
    nginx/ssl/cert.pem
    nginx/ssl/key.pem
    ```
 
 2. Copy SSL configuration:
+
    ```bash
    cp nginx/conf.d/default-ssl.conf.example nginx/conf.d/default.conf
    ```
 
 3. Update domain in `default.conf`:
+
    ```nginx
    server_name sinag.gov.ph www.sinag.gov.ph;
    ```
 
 4. Uncomment SSL ports in `docker-compose.prod.yml`:
+
    ```yaml
    nginx:
      ports:
@@ -172,6 +178,7 @@ tail -f /var/log/nginx/error.log
 **Cause**: Backend services not running or not healthy
 
 **Solution**:
+
 ```bash
 ./scripts/docker-dev.sh health
 ./scripts/docker-dev.sh restart
@@ -232,4 +239,5 @@ Nginx :80 (Reverse Proxy)
 
 ## Support
 
-For issues or questions, refer to the [troubleshooting guide](/docs/guides/nginx-reverse-proxy-setup.md#troubleshooting).
+For issues or questions, refer to the
+[troubleshooting guide](/docs/guides/nginx-reverse-proxy-setup.md#troubleshooting).

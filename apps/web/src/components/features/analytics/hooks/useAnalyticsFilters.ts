@@ -69,14 +69,14 @@ export function useAnalyticsFilters(): UseAnalyticsFiltersReturn {
 
   // Sync with global effective year on mount and when it changes
   useEffect(() => {
-    if (effectiveYear !== null) {
+    if (effectiveYear !== null && selectedYear !== effectiveYear) {
       setSelectedYearState(effectiveYear);
       setFiltersState((prev) => ({
         ...prev,
         year: effectiveYear,
       }));
     }
-  }, [effectiveYear]);
+  }, [effectiveYear, selectedYear]);
 
   // Set year and sync with filters
   const setSelectedYear = useCallback((year: number | null) => {
@@ -167,9 +167,8 @@ export function useAnalyticsFilters(): UseAnalyticsFiltersReturn {
     }
 
     if (selectedPhase !== "all") {
-      const phaseLabel = selectedPhase === "phase1"
-        ? "Phase 1: Table Assessment"
-        : "Phase 2: Table Validation";
+      const phaseLabel =
+        selectedPhase === "phase1" ? "Phase 1: Table Assessment" : "Phase 2: Table Validation";
       labels.push({
         key: "phase",
         label: phaseLabel,

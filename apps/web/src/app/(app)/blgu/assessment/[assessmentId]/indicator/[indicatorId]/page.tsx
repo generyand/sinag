@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowLeft, RefreshCw, BarChart3 } from "lucide-react";
 import { DynamicFormRenderer } from "@/components/features/forms/DynamicFormRenderer";
 import { LockedStateBanner } from "@/components/features/assessments";
 import { ReworkAlertBanner, ReworkProgressTracker } from "@/components/features/rework";
@@ -62,7 +62,7 @@ export default function IndicatorFormPage() {
   );
 
   // Determine if assessment is locked (SUBMITTED, IN_REVIEW, AWAITING_FINAL_VALIDATION, COMPLETED)
-  const isLocked =
+  const isStatusLocked =
     dashboardData?.status &&
     [
       "SUBMITTED",
@@ -71,6 +71,22 @@ export default function IndicatorFormPage() {
       "COMPLETED",
       "SUBMITTED_FOR_REVIEW",
     ].includes(dashboardData.status);
+
+  // Calibration rework lock - only calibrated governance areas should be editable
+  const isCalibrationRework = (dashboardData as any)?.is_calibration_rework === true;
+  const calibrationGovernanceAreaIds: number[] = (
+    (dashboardData as any)?.calibration_governance_areas || []
+  ).map((a: any) => Number(a.governance_area_id));
+  const indicatorGovernanceAreaId = indicatorData?.governance_area_id;
+
+  // During calibration rework, lock indicators NOT in calibration areas
+  const isLockedDueToCalibration =
+    isCalibrationRework &&
+    calibrationGovernanceAreaIds.length > 0 &&
+    indicatorGovernanceAreaId !== undefined &&
+    !calibrationGovernanceAreaIds.includes(Number(indicatorGovernanceAreaId));
+
+  const isLocked = isStatusLocked || isLockedDueToCalibration;
 
   // Epic 5.0: Rework workflow context
   const reworkContext = useReworkContext(dashboardData as any, indicatorId, assessmentId);
@@ -83,6 +99,10 @@ export default function IndicatorFormPage() {
   const reworkComments = (dashboardData?.rework_comments || []).filter(
     (comment: any) => comment.indicator_id === indicatorId
   );
+
+  // Epic 5.0: Get MLGOO flagged MOV file IDs (for MLGOO recalibration workflow)
+  const mlgooFlaggedFileIds: Array<{ mov_file_id: number; comment?: string | null }> =
+    (dashboardData as any)?.mlgoo_recalibration_mov_file_ids || [];
 
   // Handle save success - could redirect or show confirmation
   const handleSaveSuccess = () => {
@@ -216,6 +236,17 @@ export default function IndicatorFormPage() {
           {indicator?.description && (
             <p className="text-muted-foreground">{indicator.description}</p>
           )}
+
+          {/* Profiling Only Badge - Dynamic based on indicator data */}
+          {indicator?.is_profiling_only && (
+            <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 w-fit">
+              <BarChart3 className="h-4 w-4 flex-shrink-0" />
+              <span className="text-sm font-medium">
+                For Profiling Only — This indicator is for data collection purposes and does not
+                affect your barangay&apos;s pass/fail status.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -237,6 +268,7 @@ export default function IndicatorFormPage() {
           isLocked={isLocked || false}
           movAnnotations={movAnnotations}
           reworkComments={reworkComments}
+          mlgooFlaggedFileIds={mlgooFlaggedFileIds}
         />
       ) : (
         <Alert>

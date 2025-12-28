@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { GovernanceAreaProgress } from "@/types/dashboard";
 import {
-    AlertCircle,
-    CheckCircle,
-    Clock,
-    Minus,
-    TrendingDown,
-    TrendingUp,
-    XCircle,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Minus,
+  TrendingDown,
+  TrendingUp,
+  XCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -21,13 +21,7 @@ interface GovernanceAreasGridProps {
 }
 
 // Mini Bar Chart Component
-const MiniBarChart = ({
-  data,
-  color = "#3b82f6",
-}: {
-  data: number[];
-  color?: string;
-}) => {
+const MiniBarChart = ({ data, color = "#3b82f6" }: { data: number[]; color?: string }) => {
   const max = Math.max(...data);
 
   return (
@@ -106,33 +100,29 @@ export function GovernanceAreasGrid({ areas }: GovernanceAreasGridProps) {
     const name = areaName.toLowerCase();
 
     if (name.includes("financial") || name.includes("admin")) {
-      return "/Assessment_Areas/financialAdmin.png";
+      return "/Assessment_Areas/financialAdmin.webp";
     } else if (name.includes("disaster") || name.includes("preparedness")) {
-      return "/Assessment_Areas/disasterPreparedness.png";
-    } else if (
-      name.includes("safety") ||
-      name.includes("peace") ||
-      name.includes("order")
-    ) {
-      return "/Assessment_Areas/safetyPeaceAndOrder.png";
+      return "/Assessment_Areas/disasterPreparedness.webp";
+    } else if (name.includes("safety") || name.includes("peace") || name.includes("order")) {
+      return "/Assessment_Areas/safetyPeaceAndOrder.webp";
     } else if (
       name.includes("social") ||
       name.includes("protection") ||
       name.includes("sensitivity")
     ) {
-      return "/Assessment_Areas/socialProtectAndSensitivity.png";
+      return "/Assessment_Areas/socialProtectAndSensitivity.webp";
     } else if (
       name.includes("business") ||
       name.includes("friendliness") ||
       name.includes("competitiveness")
     ) {
-      return "/Assessment_Areas/businessFriendliness.png";
+      return "/Assessment_Areas/businessFriendliness.webp";
     } else if (name.includes("environmental") || name.includes("management")) {
-      return "/Assessment_Areas/environmentalManagement.png";
+      return "/Assessment_Areas/environmentalManagement.webp";
     }
 
     // Default fallback
-    return "/Assessment_Areas/financialAdmin.png";
+    return "/Assessment_Areas/financialAdmin.webp";
   };
 
   const getAreaConfig = (
@@ -197,44 +187,24 @@ export function GovernanceAreasGrid({ areas }: GovernanceAreasGridProps) {
     // Status-based modifications
     const statusIcon = {
       completed: (
-        <CheckCircle
-          className="h-4 w-4"
-          style={{ color: "var(--analytics-success-text)" }}
-        />
+        <CheckCircle className="h-4 w-4" style={{ color: "var(--analytics-success-text)" }} />
       ),
       "needs-rework": (
-        <XCircle
-          className="h-4 w-4"
-          style={{ color: "var(--analytics-danger-text)" }}
-        />
+        <XCircle className="h-4 w-4" style={{ color: "var(--analytics-danger-text)" }} />
       ),
-      "in-progress": (
-        <Clock className="h-4 w-4" style={{ color: "var(--kpi-blue-text)" }} />
-      ),
+      "in-progress": <Clock className="h-4 w-4" style={{ color: "var(--kpi-blue-text)" }} />,
       "not-started": (
-        <AlertCircle
-          className="h-4 w-4"
-          style={{ color: "var(--analytics-neutral-text)" }}
-        />
+        <AlertCircle className="h-4 w-4" style={{ color: "var(--analytics-neutral-text)" }} />
       ),
     }[status];
 
     const trendIcon =
       percentage >= 70 ? (
-        <TrendingUp
-          className="h-3 w-3"
-          style={{ color: "var(--analytics-success)" }}
-        />
+        <TrendingUp className="h-3 w-3" style={{ color: "var(--analytics-success)" }} />
       ) : percentage >= 40 ? (
-        <Minus
-          className="h-3 w-3"
-          style={{ color: "var(--analytics-warning)" }}
-        />
+        <Minus className="h-3 w-3" style={{ color: "var(--analytics-warning)" }} />
       ) : (
-        <TrendingDown
-          className="h-3 w-3"
-          style={{ color: "var(--analytics-danger)" }}
-        />
+        <TrendingDown className="h-3 w-3" style={{ color: "var(--analytics-danger)" }} />
       );
 
     return { ...baseConfig, statusIcon, trendIcon };
@@ -252,12 +222,10 @@ export function GovernanceAreasGrid({ areas }: GovernanceAreasGridProps) {
     <div className="space-y-8">
       {/* Header with enhanced styling */}
       <div className="text-center space-y-3">
-        <h2 className="text-2xl font-bold text-[var(--foreground)]">
-          Assessment Areas
-        </h2>
+        <h2 className="text-2xl font-bold text-[var(--foreground)]">Assessment Areas</h2>
         <p className="text-[var(--text-secondary)] max-w-2xl mx-auto">
-          Monitor progress across all governance areas. Click on any area to
-          dive deeper into detailed assessments and requirements.
+          Monitor progress across all governance areas. Click on any area to dive deeper into
+          detailed assessments and requirements.
         </p>
         {/* Removed summary stats (quick stats) here */}
       </div>
@@ -354,25 +322,19 @@ export function GovernanceAreasGrid({ areas }: GovernanceAreasGridProps) {
                     <div className="text-lg font-bold text-[var(--foreground)]">
                       {area.completed_indicators}
                     </div>
-                    <div className="text-xs text-[var(--text-secondary)]">
-                      Done
-                    </div>
+                    <div className="text-xs text-[var(--text-secondary)]">Done</div>
                   </div>
                   <div className="bg-[var(--hover)] backdrop-blur-sm rounded-sm p-2 text-center border border-[var(--border)]">
                     <div className="text-lg font-bold text-[var(--foreground)]">
                       {area.total_indicators - area.completed_indicators}
                     </div>
-                    <div className="text-xs text-[var(--text-secondary)]">
-                      Todo
-                    </div>
+                    <div className="text-xs text-[var(--text-secondary)]">Todo</div>
                   </div>
                   <div className="bg-[var(--hover)] backdrop-blur-sm rounded-sm p-2 text-center border border-[var(--border)]">
                     <div className="text-lg font-bold text-[var(--foreground)]">
                       {area.total_indicators}
                     </div>
-                    <div className="text-xs text-[var(--text-secondary)]">
-                      Total
-                    </div>
+                    <div className="text-xs text-[var(--text-secondary)]">Total</div>
                   </div>
                 </div>
 

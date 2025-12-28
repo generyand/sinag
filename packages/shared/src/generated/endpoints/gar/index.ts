@@ -82,7 +82,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGarAssessments>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetGarAssessmentsQueryResult = NonNullable<Awaited<ReturnType<typeof getGarAssessments>>>
@@ -168,7 +168,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGar$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGar$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetGarAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getGar$AssessmentId>>>
@@ -247,7 +247,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGar$AssessmentIdExportExcel>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGar$AssessmentIdExportExcel>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetGarAssessmentIdExportExcelQueryResult = NonNullable<Awaited<ReturnType<typeof getGar$AssessmentIdExportExcel>>>
@@ -326,7 +326,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGar$AssessmentIdExportPdf>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGar$AssessmentIdExportPdf>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetGarAssessmentIdExportPdfQueryResult = NonNullable<Awaited<ReturnType<typeof getGar$AssessmentIdExportPdf>>>

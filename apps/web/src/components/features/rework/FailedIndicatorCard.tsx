@@ -25,9 +25,10 @@ interface FailedIndicatorCardProps {
 export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardProps) {
   // Get first comment preview
   const firstComment = failed.comments[0]?.comment || failed.annotations[0]?.comment;
-  const commentPreview = firstComment && firstComment.length > 100
-    ? firstComment.substring(0, 100) + "..."
-    : firstComment;
+  const commentPreview =
+    firstComment && firstComment.length > 100
+      ? firstComment.substring(0, 100) + "..."
+      : firstComment;
 
   return (
     <button
@@ -88,7 +89,8 @@ export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardP
               <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-sm">
                 <FileText className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                 <span className="font-medium">
-                  {failed.annotations.length} {failed.annotations.length === 1 ? "annotation" : "annotations"}
+                  {failed.annotations.length}{" "}
+                  {failed.annotations.length === 1 ? "annotation" : "annotations"}
                 </span>
               </div>
             )}

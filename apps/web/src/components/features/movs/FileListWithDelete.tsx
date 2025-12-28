@@ -1,9 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useDeleteMovsFilesFileId, MOVFileResponse, getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared";
-import { useQueryClient } from "@tanstack/react-query";
-import { FileList } from "./FileList";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,14 +10,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import toast from "react-hot-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { classifyError } from "@/lib/error-utils";
+import {
+  MOVFileResponse,
+  getGetAssessmentsMyAssessmentQueryKey,
+  useDeleteMovsFilesFileId,
+} from "@sinag/shared";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { FileList } from "./FileList";
 
 interface FileListWithDeleteProps {
   files: MOVFileResponse[];
@@ -33,6 +32,14 @@ interface FileListWithDeleteProps {
   onDeleteSuccess?: (fileId: number) => void;
   movAnnotations?: any[];
   hideHeader?: boolean;
+  /** Assessment ID for optimistic cache updates */
+  assessmentId?: number;
+  /** Indicator ID for optimistic cache updates */
+  indicatorId?: number;
+  /** Total required files for this field - if deleting makes count < required, mark incomplete */
+  requiredFileCount?: number;
+  /** MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
+  mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
 
 /**
@@ -55,6 +62,10 @@ export function FileListWithDelete({
   onDeleteSuccess,
   movAnnotations = [],
   hideHeader = false,
+  assessmentId,
+  indicatorId,
+  requiredFileCount = 1,
+  mlgooFlaggedFileIds = [],
 }: FileListWithDeleteProps) {
   const [fileToDelete, setFileToDelete] = useState<number | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
@@ -75,10 +86,58 @@ export function FileListWithDelete({
         setFileToDelete(null);
         setDeletingFileId(null);
 
+        // OPTIMISTIC UPDATE: Immediately update cached assessment data
+        // This ensures the UI updates instantly without waiting for refetch
+        if (indicatorId) {
+          const remainingFilesCount = files.length - 1; // One file was just deleted
+          const isNowIncomplete = remainingFilesCount < requiredFileCount;
+
+          if (isNowIncomplete) {
+            // Update the assessment cache to mark this indicator as incomplete
+            // CRITICAL: Update BOTH flat responses array AND nested governance_areas structure
+            queryClient.setQueryData(getGetAssessmentsMyAssessmentQueryKey(), (oldData: any) => {
+              if (!oldData) return oldData;
+              const updated = { ...oldData };
+
+              // Update flat responses array if it exists
+              if (updated.assessment?.responses) {
+                updated.assessment = { ...updated.assessment };
+                updated.assessment.responses = updated.assessment.responses.map((r: any) => {
+                  if (r.indicator_id === indicatorId) {
+                    return { ...r, is_completed: false };
+                  }
+                  return r;
+                });
+              }
+
+              // Update nested governance_areas structure (this is what TreeNavigator uses)
+              if (updated.governance_areas) {
+                updated.governance_areas = updated.governance_areas.map((area: any) => ({
+                  ...area,
+                  indicators:
+                    area.indicators?.map((ind: any) => {
+                      if (ind.id === indicatorId || ind.response?.indicator_id === indicatorId) {
+                        return {
+                          ...ind,
+                          response: ind.response
+                            ? { ...ind.response, is_completed: false }
+                            : { is_completed: false },
+                        };
+                      }
+                      return ind;
+                    }) || [],
+                }));
+              }
+
+              return updated;
+            });
+          }
+        }
+
         // CRITICAL: Invalidate and refetch assessment query to update progress tracking
         queryClient.invalidateQueries({
           queryKey: getGetAssessmentsMyAssessmentQueryKey(),
-          refetchType: 'active',
+          refetchType: "active",
         });
 
         // Force immediate refetch
@@ -91,16 +150,18 @@ export function FileListWithDelete({
           predicate: (query) => {
             const key = query.queryKey;
             // Match any query that looks like a MOV files query
-            return Array.isArray(key) && key.some(
-              (k) => typeof k === 'string' && k.includes('/movs/') && k.includes('/files')
+            return (
+              Array.isArray(key) &&
+              key.some((k) => typeof k === "string" && k.includes("/movs/") && k.includes("/files"))
             );
           },
         });
         queryClient.refetchQueries({
           predicate: (query) => {
             const key = query.queryKey;
-            return Array.isArray(key) && key.some(
-              (k) => typeof k === 'string' && k.includes('/movs/') && k.includes('/files')
+            return (
+              Array.isArray(key) &&
+              key.some((k) => typeof k === "string" && k.includes("/movs/") && k.includes("/files"))
             );
           },
         });
@@ -109,16 +170,18 @@ export function FileListWithDelete({
         queryClient.invalidateQueries({
           predicate: (query) => {
             const key = query.queryKey;
-            return Array.isArray(key) && key.some(
-              (k) => typeof k === 'string' && k.includes('/blgu-dashboard/')
+            return (
+              Array.isArray(key) &&
+              key.some((k) => typeof k === "string" && k.includes("/blgu-dashboard/"))
             );
           },
         });
         queryClient.refetchQueries({
           predicate: (query) => {
             const key = query.queryKey;
-            return Array.isArray(key) && key.some(
-              (k) => typeof k === 'string' && k.includes('/blgu-dashboard/')
+            return (
+              Array.isArray(key) &&
+              key.some((k) => typeof k === "string" && k.includes("/blgu-dashboard/"))
             );
           },
         });
@@ -156,9 +219,7 @@ export function FileListWithDelete({
 
   // Filter out the file being deleted for optimistic update
   const displayFiles =
-    deletingFileId !== null
-      ? files.filter((f) => f.id !== deletingFileId)
-      : files;
+    deletingFileId !== null ? files.filter((f) => f.id !== deletingFileId) : files;
 
   return (
     <>
@@ -172,6 +233,7 @@ export function FileListWithDelete({
         emptyMessage={emptyMessage}
         movAnnotations={movAnnotations}
         hideHeader={hideHeader}
+        mlgooFlaggedFileIds={mlgooFlaggedFileIds}
       />
 
       {/* Confirmation Dialog */}
@@ -199,9 +261,7 @@ export function FileListWithDelete({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelDelete}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={handleCancelDelete}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700 focus:ring-red-600"

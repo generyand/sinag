@@ -28,9 +28,7 @@ export function CompletionMetricsCard({
     <div className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-6 shadow-sm">
       {/* Header */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Completion Progress
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Completion Progress</h3>
         <p className="text-sm text-[var(--text-secondary)] mt-1">
           Track your assessment completion status
         </p>
@@ -39,9 +37,7 @@ export function CompletionMetricsCard({
       {/* Progress Bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-[var(--foreground)]">
-            Overall Completion
-          </span>
+          <span className="text-sm font-medium text-[var(--foreground)]">Overall Completion</span>
           <span className="text-2xl font-bold text-[var(--cityscape-yellow)]">
             {completionPercentage.toFixed(1)}%
           </span>
@@ -107,7 +103,8 @@ export function CompletionMetricsCard({
       ) : (
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-sm font-medium text-blue-700 dark:text-blue-300 text-center">
-            {incompleteIndicators} indicator{incompleteIndicators !== 1 ? "s" : ""} remaining to complete your assessment
+            {incompleteIndicators} indicator{incompleteIndicators !== 1 ? "s" : ""} remaining to
+            complete your assessment
           </p>
         </div>
       )}

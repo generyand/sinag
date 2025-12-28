@@ -22,12 +22,15 @@ export function FileRow({
   onDownload,
   disabled,
 }: FileRowProps) {
-  const readableSize = typeof size === "number" ? `${(size / 1024 / 1024).toFixed(1)} MB` : undefined;
+  const readableSize =
+    typeof size === "number" ? `${(size / 1024 / 1024).toFixed(1)} MB` : undefined;
 
   return (
     <div className="flex items-center justify-between text-xs py-1">
       <div className="flex items-center gap-2 min-w-0">
-        <span className="truncate max-w-[220px]" title={name}>{name}</span>
+        <span className="truncate max-w-[220px]" title={name}>
+          {name}
+        </span>
         {readableSize && <span className="text-[var(--text-secondary)]">({readableSize})</span>}
         {section && (
           <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] border border-[var(--border)] text-[var(--text-secondary)]">
@@ -47,7 +50,12 @@ export function FileRow({
           </Button>
         )}
         {onDelete && (
-          <Button variant="destructive" size="sm" disabled={disabled} onClick={() => void onDelete()}>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={disabled}
+            onClick={() => void onDelete()}
+          >
             Delete
           </Button>
         )}
@@ -55,5 +63,3 @@ export function FileRow({
     </div>
   );
 }
-
-

@@ -15,8 +15,14 @@ export interface BarangaySubmission {
   id: string;
   barangayName: string;
   areaProgress: number; // Progress percentage for the assessor's specific area
-  areaStatus: 'awaiting_review' | 'in_progress' | 'needs_rework' | 'validated';
-  overallStatus: 'draft' | 'submitted' | 'under_review' | 'needs_rework' | 'validated' | 'completed';
+  areaStatus: "awaiting_review" | "in_progress" | "needs_rework" | "validated";
+  overallStatus:
+    | "draft"
+    | "submitted"
+    | "under_review"
+    | "needs_rework"
+    | "validated"
+    | "completed";
   lastUpdated: string;
   assignedTo?: string;
 }
@@ -37,4 +43,4 @@ export interface SubmissionsData {
   kpi: SubmissionsKPI;
   submissions: BarangaySubmission[];
   governanceArea: string;
-} 
+}

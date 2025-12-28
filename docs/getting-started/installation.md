@@ -1,6 +1,7 @@
 # Installation Guide
 
 > **TODO**: Document detailed installation steps including:
+>
 > - System prerequisites
 > - Installing Node.js, pnpm, Python, uv
 > - Setting up Supabase project

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * NavIcon Component
@@ -19,8 +19,9 @@ import {
   Calendar,
   Building2,
   Clock,
+  History,
   type LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 /**
  * Mapping of icon names to lucide-react components
@@ -37,6 +38,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   calendar: Calendar,
   building: Building2,
   clock: Clock,
+  history: History,
 };
 
 interface NavIconProps {
@@ -47,7 +49,7 @@ interface NavIconProps {
 /**
  * Renders a navigation icon with proper accessibility
  */
-export function NavIcon({ name, className = 'w-5 h-5' }: NavIconProps) {
+export function NavIcon({ name, className = "w-5 h-5" }: NavIconProps) {
   const IconComponent = ICON_MAP[name];
 
   if (!IconComponent) {

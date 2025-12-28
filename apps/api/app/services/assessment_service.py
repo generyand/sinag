@@ -9,7 +9,7 @@ from fastapi import HTTPException, status  # type: ignore[reportMissingImports]
 from sqlalchemy import and_, func  # type: ignore[reportMissingImports]
 from sqlalchemy.orm import Session, joinedload, selectinload  # type: ignore[reportMissingImports]
 
-from app.db.enums import AssessmentStatus, MOVStatus
+from app.db.enums import AssessmentStatus, MOVStatus, UserRole
 from app.db.models import (
     MOV,
     Assessment,
@@ -17,6 +17,7 @@ from app.db.models import (
     FeedbackComment,
     GovernanceArea,
     Indicator,
+    MOVFile,
     User,
 )
 from app.schemas.assessment import (
@@ -266,9 +267,11 @@ class AssessmentService:
                     u.id as user_id, u.barangay_id, b.name as barangay_name,
                     a.id as assessment_id, a.status, a.created_at, a.updated_at,
                     a.submitted_at, a.validated_at, a.rework_requested_at,
+                    a.calibration_requested_at,
                     a.is_mlgoo_recalibration, a.mlgoo_recalibration_requested_at,
                     a.mlgoo_recalibration_indicator_ids, a.mlgoo_recalibration_comments,
-                    a.mlgoo_recalibration_count, a.assessment_year
+                    a.mlgoo_recalibration_count, a.assessment_year, a.is_calibration_rework,
+                    a.pending_calibrations, a.mlgoo_recalibration_mov_file_ids
                 FROM users u
                 LEFT JOIN barangays b ON u.barangay_id = b.id
                 LEFT JOIN assessments a ON a.blgu_user_id = u.id AND a.assessment_year = :year
@@ -295,14 +298,18 @@ class AssessmentService:
                 "submitted_at": row1[7].isoformat() + "Z" if row1[7] else None,
                 "validated_at": row1[8].isoformat() + "Z" if row1[8] else None,
                 "rework_requested_at": row1[9].isoformat() + "Z" if row1[9] else None,
-                "is_mlgoo_recalibration": row1[10],
-                "mlgoo_recalibration_requested_at": row1[11].isoformat() + "Z"
-                if row1[11]
+                "calibration_requested_at": row1[10].isoformat() + "Z" if row1[10] else None,
+                "is_mlgoo_recalibration": row1[11],
+                "mlgoo_recalibration_requested_at": row1[12].isoformat() + "Z"
+                if row1[12]
                 else None,
-                "mlgoo_recalibration_indicator_ids": row1[12],
-                "mlgoo_recalibration_comments": row1[13],
-                "mlgoo_recalibration_count": row1[14],
-                "assessment_year": row1[15] if len(row1) > 15 else assessment_year,
+                "mlgoo_recalibration_indicator_ids": row1[13],
+                "mlgoo_recalibration_comments": row1[14],
+                "mlgoo_recalibration_count": row1[15],
+                "assessment_year": row1[16] if len(row1) > 16 else assessment_year,
+                "is_calibration_rework": row1[17] if len(row1) > 17 else False,
+                "pending_calibrations": row1[18] if len(row1) > 18 else None,
+                "mlgoo_recalibration_mov_file_ids": row1[19] if len(row1) > 19 else None,
             }
 
             if not assessment_info["id"]:
@@ -318,7 +325,7 @@ class AssessmentService:
                     ga.id as ga_id, ga.name as ga_name, ga.area_type,
                     i.id as ind_id, i.name as ind_name, i.description,
                     i.indicator_code, i.form_schema, i.governance_area_id,
-                    i.parent_id, i.sort_order
+                    i.parent_id, i.sort_order, i.is_profiling_only
                 FROM governance_areas ga
                 LEFT JOIN indicators i ON i.governance_area_id = ga.id
                 ORDER BY ga.id, i.sort_order, i.indicator_code
@@ -359,6 +366,7 @@ class AssessmentService:
                             "governance_area_id": row[8],
                             "parent_id": row[9],
                             "sort_order": row[10],
+                            "is_profiling_only": row[11] if len(row) > 11 else False,
                             # Will be filled in from query 3
                             "response_id": None,
                             "response_data": None,
@@ -389,6 +397,42 @@ class AssessmentService:
             result3 = db.execute(q3, {"assessment_id": assessment_id})
             rows3 = result3.fetchall()
             logger.info(f"[PERF] Query 3 (user data): {time.time() - step_start:.2f}s")
+
+            # QUERY 3b: Get MOVFiles (Epic 4.0) - stored with indicator_id directly
+            # This is needed to auto-create AssessmentResponses for indicators with uploaded files
+            step_start = time.time()
+            q3b = text("""
+                SELECT id, indicator_id, file_name, file_size, file_type, file_url, field_id, uploaded_at
+                FROM mov_files
+                WHERE assessment_id = :assessment_id
+                  AND deleted_at IS NULL
+                ORDER BY indicator_id, uploaded_at DESC
+            """)
+            result3b = db.execute(q3b, {"assessment_id": assessment_id})
+            mov_files_rows = result3b.fetchall()
+
+            # Build MOVFiles lookup by indicator_id
+            mov_files_by_indicator: dict[int, list[dict]] = {}
+            mov_file_indicator_ids: set[int] = set()
+            for row in mov_files_rows:
+                ind_id = row[1]
+                mov_file_indicator_ids.add(ind_id)
+                mov_files_by_indicator.setdefault(ind_id, []).append(
+                    {
+                        "id": row[0],
+                        "file_name": row[2],
+                        "file_size": row[3],
+                        "file_type": row[4],
+                        "file_url": row[5],
+                        "field_id": row[6],
+                        "uploaded_at": row[7].isoformat() + "Z" if row[7] else None,
+                    }
+                )
+
+            logger.info(
+                f"[PERF] Query 3b (MOVFiles): {time.time() - step_start:.2f}s, "
+                f"found {len(mov_files_rows)} files for {len(mov_file_indicator_ids)} indicators"
+            )
 
             # Build responses, MOVs, comments lookup
             responses_by_indicator = {}
@@ -437,15 +481,101 @@ class AssessmentService:
                         "created_at": row[17].isoformat() + "Z" if row[17] else None,
                     }
 
+            # Parse pending calibrations (shifted by 1 due to calibration_requested_at at index 10)
+            pending_calibrations = row1[18] if len(row1) > 18 else None
+            is_calibration_rework = row1[17] if len(row1) > 17 else False
+
+            # Determine active calibration governance area if in calibration mode
+            calibration_ga_id = None
+            if is_calibration_rework and pending_calibrations:
+                for pc in pending_calibrations:
+                    # Find the active calibration request (not approved yet)
+                    if not pc.get("approved", False):
+                        calibration_ga_id = pc.get("governance_area_id")
+                        break
+
+            # AUTO-SYNC: Create AssessmentResponses for indicators with MOVFiles but no response
+            # This ensures progress tracking works immediately for all uploaded files
+            step_start = time.time()
+            missing_response_indicator_ids = mov_file_indicator_ids - set(
+                responses_by_indicator.keys()
+            )
+            if missing_response_indicator_ids:
+                logger.info(
+                    f"[AUTO-SYNC] Found {len(missing_response_indicator_ids)} indicators with files but no response. "
+                    f"Creating responses..."
+                )
+                from sqlalchemy.orm import joinedload
+
+                from app.db.models.assessment import AssessmentResponse
+
+                for ind_id in missing_response_indicator_ids:
+                    # Create new AssessmentResponse
+                    new_response = AssessmentResponse(
+                        assessment_id=assessment_id,
+                        indicator_id=ind_id,
+                        response_data={},
+                        is_completed=False,
+                        requires_rework=False,
+                    )
+                    db.add(new_response)
+                    db.flush()
+
+                    # Load with relationships for completion check
+                    new_response = (
+                        db.query(AssessmentResponse)
+                        .options(
+                            joinedload(AssessmentResponse.indicator),
+                            joinedload(AssessmentResponse.assessment),
+                            joinedload(AssessmentResponse.movs),
+                        )
+                        .filter(AssessmentResponse.id == new_response.id)
+                        .first()
+                    )
+
+                    # Recalculate completion status
+                    is_completed = self.recompute_response_completion(new_response)
+
+                    # Add to lookup for this request
+                    responses_by_indicator[ind_id] = {
+                        "id": new_response.id,
+                        "response_data": {},
+                        "is_completed": is_completed,
+                        "requires_rework": False,
+                        "generated_remark": None,
+                    }
+
+                db.commit()
+                logger.info(
+                    f"[AUTO-SYNC] Created {len(missing_response_indicator_ids)} responses in "
+                    f"{time.time() - step_start:.2f}s"
+                )
+
             # Merge response data into indicators
             for ind in indicators_raw:
                 ind_id = ind["id"]
+                ind_ga_id = ind["governance_area_id"]
+
+                # Always include MOVFiles (Epic 4.0) for this indicator
+                ind["mov_files"] = mov_files_by_indicator.get(ind_id, [])
+
                 if ind_id in responses_by_indicator:
                     resp = responses_by_indicator[ind_id]
                     ind["response_id"] = resp["id"]
                     ind["response_data"] = resp["response_data"]
+
+                    # LOGIC FIX: During calibration rework (Phase 2), ONLY indicators in the
+                    # calibrated governance area should show as needing rework.
+                    # Stale rework flags from Phase 1 should be ignored.
+                    should_show_rework = resp["requires_rework"]
+
+                    if is_calibration_rework and calibration_ga_id is not None:
+                        # If filtering is active, only show rework for the specific governance area
+                        if ind_ga_id != calibration_ga_id:
+                            should_show_rework = False
+
                     ind["is_completed"] = resp["is_completed"]
-                    ind["requires_rework"] = resp["requires_rework"]
+                    ind["requires_rework"] = should_show_rework
                     ind["generated_remark"] = resp["generated_remark"]
                     ind["movs"] = list(movs_by_response.get(resp["id"], {}).values())
                     ind["comments"] = list(comments_by_response.get(resp["id"], {}).values())
@@ -474,6 +604,7 @@ class AssessmentService:
             "submitted_at": assessment_info.get("submitted_at"),
             "validated_at": assessment_info.get("validated_at"),
             "rework_requested_at": assessment_info.get("rework_requested_at"),
+            "calibration_requested_at": assessment_info.get("calibration_requested_at"),
             "is_mlgoo_recalibration": assessment_info.get("is_mlgoo_recalibration"),
             "mlgoo_recalibration_requested_at": assessment_info.get(
                 "mlgoo_recalibration_requested_at"
@@ -483,6 +614,9 @@ class AssessmentService:
             ),
             "mlgoo_recalibration_comments": assessment_info.get("mlgoo_recalibration_comments"),
             "mlgoo_recalibration_count": assessment_info.get("mlgoo_recalibration_count"),
+            "mlgoo_recalibration_mov_file_ids": assessment_info.get(
+                "mlgoo_recalibration_mov_file_ids"
+            ),
         }
 
         # Build lookup structures
@@ -516,6 +650,7 @@ class AssessmentService:
                 "name": ind.get("name"),
                 "description": ind.get("description"),
                 "form_schema": ind.get("form_schema"),
+                "is_profiling_only": ind.get("is_profiling_only", False),
                 "response": response_obj,
                 "movs": movs_list,
                 "feedback_comments": comments_list,
@@ -1098,13 +1233,43 @@ class AssessmentService:
 
         # Initialize completion based on current schema if available
         try:
+            # Epic 4.0: Fetch MOVFiles for validation
+            mov_files = []
+            try:
+                from sqlalchemy.orm import joinedload
+
+                from app.db.models.assessment import MOVFile
+
+                # Note: For strict CREATE, mov_files might be empty unless uploaded before response creation
+                # But since frontend can upload first, we should check.
+                if assessment:
+                    mov_files = (
+                        db.query(MOVFile)
+                        .options(joinedload(MOVFile.annotations))
+                        .filter(
+                            MOVFile.assessment_id == assessment.id,
+                            MOVFile.indicator_id == response_create.indicator_id,
+                            MOVFile.deleted_at.is_(None),
+                        )
+                        .all()
+                    )
+            except Exception:
+                pass
+
             if db_response.indicator and db_response.indicator.form_schema:
                 db_response.is_completed = self._check_response_completion(
                     form_schema=db_response.indicator.form_schema,
                     response_data=initial_data,
                     movs=[],
+                    mov_files=mov_files,
                     assessment_status=assessment.status.value if assessment else None,
                     rework_requested_at=assessment.rework_requested_at if assessment else None,
+                    is_mlgoo_recalibration=assessment.is_mlgoo_recalibration
+                    if assessment
+                    else False,
+                    mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at
+                    if assessment
+                    else None,
                 )
             else:
                 db_response.is_completed = bool(initial_data)
@@ -1153,14 +1318,39 @@ class AssessmentService:
         # Get assessment to check status and rework timestamp
         assessment = db.query(Assessment).filter(Assessment.id == db_response.assessment_id).first()
 
+        # Epic 4.0: Fetch MOVFiles for validation (supports granular rework)
+        mov_files = []
+        try:
+            from sqlalchemy.orm import joinedload
+
+            from app.db.models.assessment import MOVFile
+
+            mov_files = (
+                db.query(MOVFile)
+                .options(joinedload(MOVFile.annotations))
+                .filter(
+                    MOVFile.assessment_id == db_response.assessment_id,
+                    MOVFile.indicator_id == db_response.indicator_id,
+                    MOVFile.deleted_at.is_(None),
+                )
+                .all()
+            )
+        except Exception:
+            pass
+
         # Auto-set completion status based on response_data
         if response_update.response_data is not None:
             db_response.is_completed = self._check_response_completion(
                 form_schema=db_response.indicator.form_schema,
                 response_data=response_update.response_data,
                 movs=db_response.movs,
+                mov_files=mov_files,
                 assessment_status=assessment.status.value if assessment else None,
                 rework_requested_at=assessment.rework_requested_at if assessment else None,
+                is_mlgoo_recalibration=assessment.is_mlgoo_recalibration if assessment else False,
+                mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at
+                if assessment
+                else None,
             )
 
         # Generate remark if response is completed and indicator has calculation_schema
@@ -1242,8 +1432,12 @@ class AssessmentService:
         form_schema: dict[str, Any],
         response_data: dict[str, Any],
         movs: list[MOV] | None = None,
+        mov_files: list[MOVFile] | None = None,
         assessment_status: str | None = None,
         rework_requested_at: datetime | None = None,
+        is_mlgoo_recalibration: bool = False,
+        mlgoo_recalibration_requested_at: datetime | None = None,
+        feedback_count: int = 0,
     ) -> bool:
         """
         Check if a response is completed based on form schema requirements.
@@ -1251,47 +1445,126 @@ class AssessmentService:
         For indicators with multiple requirements (like 1.1.1), all required fields
         must have valid compliance values (yes/no/na) for the response to be considered complete.
 
-        During REWORK status, only MOV files uploaded AFTER rework_requested_at are counted.
+        During REWORK status, files are filtered based on "Hybrid Granular Rework" rules:
+        1. If Annotations exist: Invalidate ONLY annotated/old files (Granular). Unannotated old files are KEPT.
+        2. If NO Annotations but YES Comments: Invalidate ALL old files (Strict).
+        3. If NO Feedback: Keep ALL files.
+
+        Effective Rework Timestamp logic:
+        - If is_mlgoo_recalibration is True, use mlgoo_recalibration_requested_at
+        - Else, use rework_requested_at
+
+        This supports the granular rework workflow where unflagged files don't need re-uploading.
 
         Args:
             form_schema: JSON schema defining the expected form structure
-            response_data: User's response data to check (may be nested for areas 2-6, or flat for child indicators)
-            movs: List of MOV files for this response
+            response_data: User's response data to check
+            movs: List of legacy MOV files for this response
+            mov_files: List of new MOVFile files for this indicator (Epic 4.0+)
             assessment_status: Current assessment status (e.g., REWORK, DRAFT)
             rework_requested_at: Timestamp when rework was requested (for filtering files)
+            is_mlgoo_recalibration: Flag if this is a calibration rework
+            mlgoo_recalibration_requested_at: Timestamp when calibration rework was requested
+            feedback_count: Number of feedback comments (for Hybrid Rework Logic)
 
         Returns:
             True if response is completed, False otherwise
         """
+        # Normalize response_data to empty dict if None/invalid
         if not response_data or not isinstance(response_data, dict):
-            # For new format with fields array, allow empty response_data
-            # since completion is based on MOV uploads
-            if not form_schema.get("fields"):
-                return False
+            response_data = {}
 
-        # Filter MOVs during rework status - only count files uploaded AFTER rework was requested
-        filtered_movs = movs or []
+        # For new format with fields array, completion is based on MOV uploads
+        # so we continue to validation even with empty response_data.
+        # For legacy format without fields array, we also continue if MOV files
+        # exist - this supports rework scenarios where BLGU only uploads MOVs.
+        # The validation logic below will determine actual completion status.
+
+        # Combine Legacy MOVs and New MOVFiles for validation
+        # We wrap them in a unified structure for checking
+        class UnifiedMOV:
+            def __init__(self, obj, is_legacy=False):
+                self.obj = obj
+                self.is_legacy = is_legacy
+                self.uploaded_at = obj.uploaded_at
+                self.storage_path = getattr(obj, "storage_path", "") or getattr(obj, "file_url", "")
+                # Only MOVFile (new) has annotations
+                self.has_annotations = (
+                    len(getattr(obj, "annotations", [])) > 0 if not is_legacy else False
+                )
+
+        all_movs = []
+        if movs:
+            all_movs.extend([UnifiedMOV(m, is_legacy=True) for m in movs])
+        if mov_files:
+            all_movs.extend([UnifiedMOV(m, is_legacy=False) for m in mov_files])
+
+        # Determine effective rework timestamp
+        effective_rework_requested_at = rework_requested_at
+        if is_mlgoo_recalibration and mlgoo_recalibration_requested_at:
+            effective_rework_requested_at = mlgoo_recalibration_requested_at
+
+        # Filter MOVs during rework status
+        filtered_movs = all_movs
         if (
             assessment_status
             and assessment_status.upper() in ("REWORK", "NEEDS_REWORK")
-            and rework_requested_at
-            and movs
+            and effective_rework_requested_at
+            and all_movs
         ):
-            filtered_movs = [
-                mov for mov in movs if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
-            ]
+            # Hybrid Granular Rework Logic
+            annotation_count = sum(1 for m in all_movs if m.has_annotations)  # From UnifiedMOV
+
+            if annotation_count > 0:
+                # Case 1: Specific Annotations -> Granular Filter
+                # Keep New files OR Unannotated Old files
+                filtered_movs = []
+                for mov in all_movs:
+                    is_new = mov.uploaded_at and mov.uploaded_at >= effective_rework_requested_at
+                    is_valid_old = not is_new and not mov.has_annotations
+
+                    if is_new or is_valid_old:
+                        filtered_movs.append(mov)
+                print(
+                    f"[DEBUG] _check_response_completion: REWORK - Granular Filter (Annotations={annotation_count})"
+                )
+
+            elif feedback_count > 0:
+                # Case 2: General Comment Only -> Strict Filter
+                # Drop ALL old files
+                filtered_movs = [
+                    m
+                    for m in all_movs
+                    if m.uploaded_at and m.uploaded_at >= effective_rework_requested_at
+                ]
+                print(
+                    f"[DEBUG] _check_response_completion: REWORK - Strict Filter (Comments={feedback_count})"
+                )
+
+            else:
+                # Case 3: No Feedback -> Keep All
+                # (filtered_movs is already all_movs)
+                pass
+
             print(
-                f"[DEBUG] _check_response_completion: REWORK mode - filtered {len(movs)} MOVs to {len(filtered_movs)} (uploaded after {rework_requested_at})"
+                f"[DEBUG] _check_response_completion: Result - {len(all_movs)} total MOVs -> {len(filtered_movs)} valid MOVs"
             )
 
         # Check if this is the new Epic 4.0 format with 'fields' array
         # Use completeness_validation_service for these schemas
         if "fields" in form_schema and isinstance(form_schema.get("fields"), list):
             try:
+                # Convert UnifiedMOV back to objects expected by validator
+                # The validator likely expects objects with storage_path/file_url attributes
+                # We pass the original objects of the filtered MOVs
+                valid_mov_objects = [m.obj for m in filtered_movs]
+
+                # NOTE: completeness_validation_service expects 'uploaded_movs' argument
+                # it handles both MOV and MOVFile if they have correct attributes
                 result = completeness_validation_service.validate_completeness(
                     form_schema=form_schema,
                     response_data=response_data or {},
-                    uploaded_movs=filtered_movs,
+                    uploaded_movs=valid_mov_objects,
                 )
                 print(
                     f"[DEBUG] _check_response_completion (new format): is_complete={result['is_complete']}, "
@@ -1304,8 +1577,8 @@ class AssessmentService:
                 )
                 return False
 
-        # Use filtered_movs instead of movs for all MOV checks below
-        movs = filtered_movs
+        # Legacy Area 1 / Nested Logic Validation
+        # Use filtered_movs for all MOV checks below
 
         def extract_compliance_values(data: dict[str, Any]) -> list:
             """Recursively extract compliance values (yes/no/na) from nested structures."""
@@ -1317,9 +1590,7 @@ class AssessmentService:
                     values.append(v.lower())
             return values
 
-        # Check if response_data contains flat compliance fields (like "bpoc_documents_compliance" or "bfdp_monitoring_forms_compliance")
-        # This happens for areas 1-6 where child indicators save flat data to parent response
-        # This check should run FIRST before checking form_schema, as it handles both Area 1 and areas 2-6
+        # Check if response_data contains flat compliance fields (areas 1-6 child indicators)
         flat_compliance_fields = {
             k: v
             for k, v in response_data.items()
@@ -1329,47 +1600,29 @@ class AssessmentService:
             and v.lower() in {"yes", "no", "na"}
         }
 
-        # If we have flat compliance fields, use the same logic as Area 1 (areas 2-6 follow same pattern)
         if flat_compliance_fields:
-            # Handle flat structure for areas 2-6 child indicators (same as Area 1)
-            # Only require MOVs for sections where the compliance answer is "yes"
-            # Sections with "no" or "na" don't need MOVs
-
-            # Check all compliance fields have valid values
+            # Validate compliance values
             valid_compliance_values = {"yes", "no", "na"}
             for field_name, value in flat_compliance_fields.items():
                 if value.lower() not in valid_compliance_values:
-                    print(
-                        f"[DEBUG] _check_response_completion: Invalid value '{value}' for field '{field_name}'"
-                    )
                     return False
 
             # Extract sections that require MOVs (only those with "yes" answer)
             required_sections_flat = set()
             for field_name, value in flat_compliance_fields.items():
                 if value.lower() == "yes":
-                    # Extract section from field name: "bfdp_monitoring_forms_compliance" -> "bfdp_monitoring_forms"
                     section = field_name.replace("_compliance", "")
                     required_sections_flat.add(section)
 
-            # Only check MOVs for sections that have "yes" answers
+            # Check MOVs for sections that have "yes" answers
             if required_sections_flat:
                 mov_section_hits = {s: False for s in required_sections_flat}
-                for m in movs or []:
-                    spath = getattr(m, "storage_path", "") or ""
-                    # Storage path format: "assessmentId/responseId/section/filename" or "assessmentId/responseId/sectionSegmentfilename"
-                    # Check if any required section appears in the path
+                for m in filtered_movs:
+                    spath = m.storage_path
                     for s in required_sections_flat:
-                        # Check if section appears in path (e.g., "bfdp_monitoring_forms" in "1/207/bfdp_monitoring_forms/file.pdf")
                         if s in spath:
                             mov_section_hits[s] = True
-                            print(
-                                f"[DEBUG] _check_response_completion: Found MOV for section '{s}' in path '{spath}'"
-                            )
 
-                print(
-                    f"[DEBUG] _check_response_completion: MOV section hits: {mov_section_hits}, required_sections_flat: {required_sections_flat}"
-                )
                 if not all(mov_section_hits.values()):
                     missing = [s for s, hit in mov_section_hits.items() if not hit]
                     print(
@@ -1377,31 +1630,37 @@ class AssessmentService:
                     )
                     return False
 
-            print(
-                f"[DEBUG] _check_response_completion: All checks passed for flat compliance fields: {flat_compliance_fields}"
-            )
             return True
 
-        # Get required fields from schema (original logic for Area 1 and nested structures)
+        # Standard Legacy Validation
         required_fields = form_schema.get("required", [])
 
         # If no explicit required fields, check all fields in response_data for "yes" answers with MOVs
         if not required_fields:
-            # Recursively check nested structures for compliance values
             compliance_values = extract_compliance_values(response_data)
             has_any_yes = any(v == "yes" for v in compliance_values)
-            mov_count = len(movs or [])
+            mov_count = len(filtered_movs)
+
+            # If "yes" exists, we need MOVs
             if has_any_yes and mov_count <= 0:
+                print("[DEBUG] _check_response_completion: Has 'yes' but no valid MOVs")
                 return False
+
+            # For rework scenarios: if response_data is empty but MOVs exist,
+            # consider it complete (BLGU uploaded new MOVs for rework)
+            if not response_data and mov_count > 0:
+                print(
+                    f"[DEBUG] _check_response_completion: Empty response_data but has {mov_count} valid MOVs - marking complete"
+                )
+                return True
+
             return bool(response_data)
 
         # Check that all required fields have valid compliance values
-        # For nested structures (areas 2-6), recursively search for the fields
         def get_nested_value(data: dict[str, Any], field_path: str) -> Any:
             """Get a value from nested data structure using dot notation or direct key."""
             if field_path in data:
                 return data[field_path]
-            # Try nested search for areas 2-6 structure
             for v in data.values():
                 if isinstance(v, dict):
                     result = get_nested_value(v, field_path)
@@ -1417,48 +1676,38 @@ class AssessmentService:
                 return False
 
         # Only require MOVs for sections where the answer is "yes"
-        # Sections with "no" or "na" don't need MOVs
         props = form_schema.get("properties", {}) or {}
 
-        # Build a map of field_name -> section for fields with mov_upload_section
         field_to_section: dict[str, str] = {}
         for field_name, field_props in props.items():
             section = (field_props or {}).get("mov_upload_section")
             if isinstance(section, str):
                 field_to_section[field_name] = section
 
-        # Only check MOVs for sections where the field answer is "yes"
         required_sections_with_yes: list[str] = []
         for field in required_fields:
             value = get_nested_value(response_data, field)
             if value == "yes" and field in field_to_section:
                 required_sections_with_yes.append(field_to_section[field])
 
-        # Only check MOVs for sections that have "yes" answers
         if required_sections_with_yes:
             section_set = set(required_sections_with_yes)
             mov_section_hits = {s: False for s in section_set}
-            for m in movs or []:
-                spath = getattr(m, "storage_path", "") or ""
+            for m in filtered_movs:
+                spath = m.storage_path
                 for s in section_set:
                     if s in spath:
                         mov_section_hits[s] = True
+
             if not all(mov_section_hits.values()):
-                print(
-                    f"[DEBUG] _check_response_completion: Missing MOVs for 'yes' sections: {[s for s, hit in mov_section_hits.items() if not hit]}"
-                )
                 return False
         else:
-            # If no sections require MOVs (all "no" or "na"), check if there's at least one "yes" that needs general MOVs
+            # If no sections require MOVs, check if there's at least one "yes" that needs general MOVs
             has_any_yes = any(
                 get_nested_value(response_data, field) == "yes" for field in required_fields
             )
             if has_any_yes and not field_to_section:
-                # Has "yes" but no section-based uploads, so require at least one MOV overall
-                if len(movs or []) <= 0:
-                    print(
-                        "[DEBUG] _check_response_completion: Has 'yes' but no MOVs found (no section-based uploads)"
-                    )
+                if len(filtered_movs) <= 0:
                     return False
 
         return True
@@ -1483,20 +1732,95 @@ class AssessmentService:
         if not isinstance(response_data, dict):
             response_data = {}
         mov_count = len(getattr(response, "movs", []) or [])
-        movs_list = getattr(response, "movs", []) or []
+
+        # Epic 4.0: Fetch MOVFiles for this indicator to support granular rework
+        mov_files = []
+        try:
+            # Need a session to query MOVFiles. Since this method is usually called within a session context
+            # via object_session(response), we can assume a session exists if response is attached.
+            # However, response might be detached or this might be called without session.
+            # For now, we attempt to access via relationship if possible, or query if session available.
+
+            # Assuming assessment and indicator are loaded, check if we can get mov_files
+            # Assessment generally eager loads mov_files in some flows.
+            # But here we are on Response.
+
+            from sqlalchemy.orm import object_session
+
+            db = object_session(response)
+            if db:
+                from sqlalchemy.orm import joinedload
+
+                from app.db.models.assessment import MOVFile
+
+                mov_files = (
+                    db.query(MOVFile)
+                    .options(joinedload(MOVFile.annotations))
+                    .filter(
+                        MOVFile.assessment_id == response.assessment_id,
+                        MOVFile.indicator_id == response.indicator_id,
+                        MOVFile.deleted_at.is_(None),
+                    )
+                    .all()
+                )
+        except Exception as e:
+            print(f"[WARN] recompute_response_completion: Failed to fetch MOVFiles: {e}")
+
+        # Get assessment status and rework timestamp
+        assessment_status = None
+        rework_requested_at = None
+        is_mlgoo_recalibration = False
+        mlgoo_recalibration_requested_at = None
+
+        if response.assessment:
+            assessment_status = response.assessment.status.value
+            rework_requested_at = response.assessment.rework_requested_at
+            is_mlgoo_recalibration = response.assessment.is_mlgoo_recalibration
+            mlgoo_recalibration_requested_at = response.assessment.mlgoo_recalibration_requested_at
 
         # Debug: log input data
         try:
-            mov_paths = [getattr(m, "storage_path", "") for m in movs_list]
+            # mov_paths = [getattr(m, "storage_path", "") for m in movs_list]
             print(
                 f"[DEBUG] recompute_response_completion: response_id={getattr(response, 'id', None)}, "
                 f"indicator_id={getattr(response, 'indicator_id', None)}, "
-                f"response_data={response_data}, mov_count={mov_count}, mov_paths={mov_paths}"
+                f"response_data={response_data}, mov_count={mov_count}, "
+                f"mov_file_count={len(mov_files)}, status={assessment_status}"
             )
         except Exception:
             pass
 
-        completion = self._check_response_completion(form_schema, response_data, response.movs)
+        # Check for feedback comments (for Hybrid Rework Logic)
+        feedback_count = 0
+        try:
+            from sqlalchemy.orm import object_session
+
+            db = object_session(response)
+            if db:
+                from app.db.models.assessment import FeedbackComment
+
+                feedback_count = (
+                    db.query(FeedbackComment)
+                    .filter(
+                        FeedbackComment.response_id == response.id,
+                        FeedbackComment.is_internal_note == False,
+                    )
+                    .count()
+                )
+        except Exception as e:
+            print(f"[WARN] recompute_response_completion: Failed to fetch FeedbackComments: {e}")
+
+        completion = self._check_response_completion(
+            form_schema=form_schema,
+            response_data=response_data,
+            movs=response.movs,
+            mov_files=mov_files,
+            assessment_status=assessment_status,
+            rework_requested_at=rework_requested_at,
+            is_mlgoo_recalibration=is_mlgoo_recalibration,
+            mlgoo_recalibration_requested_at=mlgoo_recalibration_requested_at,
+            feedback_count=feedback_count,
+        )
 
         # Debug: trace recompute outputs
         try:
@@ -1506,6 +1830,28 @@ class AssessmentService:
             )
         except Exception:
             pass
+
+        # REWORK COMPLETION FIX: If completion is False but we're in REWORK status with new MOVs,
+        # check if the indicator has new MOVs uploaded after rework_requested_at.
+        # This handles the case where BLGU uploaded new MOVs to address rework.
+        if (
+            not completion
+            and assessment_status
+            and assessment_status.upper() in ("REWORK", "NEEDS_REWORK")
+            and rework_requested_at
+            and mov_files
+        ):
+            # Count MOVs uploaded after rework request
+            new_mov_count = sum(
+                1 for m in mov_files if m.uploaded_at and m.uploaded_at >= rework_requested_at
+            )
+            if new_mov_count > 0:
+                print(
+                    f"[DEBUG] recompute_response_completion: REWORK FIX - Found {new_mov_count} new MOVs "
+                    f"uploaded after rework_requested_at. Marking as complete."
+                )
+                completion = True
+
         response.is_completed = completion
         return completion
 
@@ -1567,6 +1913,7 @@ class AssessmentService:
         if assessment.status not in (
             AssessmentStatus.DRAFT,
             AssessmentStatus.NEEDS_REWORK,
+            AssessmentStatus.REWORK,
         ):
             return AssessmentSubmissionValidation(
                 is_valid=False,
@@ -1577,16 +1924,85 @@ class AssessmentService:
                 ],
             )
 
-        # Run preliminary compliance check
+        # FIX: Run full completeness validation BEFORE proceeding
+        # This prevents submission of assessments with 0% completion
+        from app.services.submission_validation_service import submission_validation_service
+
+        full_validation = submission_validation_service.validate_submission(
+            assessment_id=assessment_id, db=db
+        )
+        if not full_validation.is_valid:
+            return AssessmentSubmissionValidation(
+                is_valid=False,
+                errors=[
+                    {
+                        "error": full_validation.error_message
+                        or "Assessment validation failed: incomplete indicators or missing MOVs",
+                        "incomplete_indicators": full_validation.incomplete_indicators,
+                        "missing_movs": full_validation.missing_movs,
+                    }
+                ],
+            )
+
+        # Run preliminary compliance check (for additional MOV checks)
         validation_result = self._run_preliminary_compliance_check(assessment)
 
+        # CRITICAL: Create empty AssessmentResponse records for ALL indicators without responses
+        # This ensures Assessors can review and mark ALL indicators for rework, even those
+        # where BLGU didn't upload any files
+        existing_indicator_ids = {r.indicator_id for r in assessment.responses}
+        all_indicators = db.query(Indicator).filter(Indicator.is_active == True).all()
+
+        created_empty_responses = 0
+        for indicator in all_indicators:
+            if indicator.id not in existing_indicator_ids:
+                empty_response = AssessmentResponse(
+                    assessment_id=assessment_id,
+                    indicator_id=indicator.id,
+                    response_data={},
+                    is_completed=False,  # No files = incomplete
+                    requires_rework=False,
+                )
+                db.add(empty_response)
+                created_empty_responses += 1
+
+        if created_empty_responses > 0:
+            db.flush()
+            self.logger.info(
+                f"[SUBMIT] Created {created_empty_responses} empty responses for indicators without files (assessment {assessment_id})"
+            )
+            # Refresh assessment to include newly created responses
+            db.refresh(assessment)
+
         if validation_result.is_valid:
-            # Check if this is a resubmission after rework
-            is_resubmission = assessment.rework_requested_at is not None
+            # Check if this is a resubmission after rework/calibration
+            is_rework_resubmission = (
+                assessment.rework_requested_at is not None and not assessment.is_calibration_rework
+            )
+            is_calibration_resubmission = (
+                assessment.is_calibration_rework and assessment.calibration_requested_at is not None
+            )
+            is_mlgoo_recalibration_resubmission = (
+                assessment.is_mlgoo_recalibration
+                and assessment.mlgoo_recalibration_requested_at is not None
+            )
+            is_resubmission = (
+                is_rework_resubmission
+                or is_calibration_resubmission
+                or is_mlgoo_recalibration_resubmission
+            )
 
             # Update assessment status
             assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
             assessment.submitted_at = datetime.utcnow()
+
+            # Set specific resubmission timestamps for timeline tracking
+            if is_rework_resubmission:
+                assessment.rework_submitted_at = datetime.utcnow()
+            if is_calibration_resubmission:
+                assessment.calibration_submitted_at = datetime.utcnow()
+            if is_mlgoo_recalibration_resubmission:
+                assessment.mlgoo_recalibration_submitted_at = datetime.utcnow()
 
             # CRITICAL: If resubmitting after rework, clear checklist data for reworked indicators
             # This ensures assessors review them with clean checklists
@@ -1596,8 +2012,11 @@ class AssessmentService:
                         # Clear validation_status for fresh review
                         response.validation_status = None
 
-                        # Mark as incomplete so assessor needs to review
-                        response.is_completed = False
+                        # NOTE: Do NOT reset is_completed here!
+                        # is_completed represents whether BLGU completed their uploads,
+                        # not whether assessor has reviewed. Resetting it causes the tree
+                        # to show indicators as incomplete even when all MOVs are uploaded.
+                        # Assessor review status is tracked via validation_status.
 
                         # Clear assessor checklist data (assessor_val_ prefix)
                         if response.response_data:
@@ -1607,7 +2026,7 @@ class AssessmentService:
                                 if not k.startswith("assessor_val_")
                             }
                         self.logger.info(
-                            f"[RESUBMISSION] Cleared checklist & marked incomplete for response {response.id} (requires_rework=True)"
+                            f"[RESUBMISSION] Cleared checklist for response {response.id} (requires_rework=True)"
                         )
 
             db.commit()
@@ -2707,12 +3126,49 @@ class AssessmentService:
             submitted_at=assessment.submitted_at,
         )
 
+        # Determine calibration governance area name and AI summary if applicable
+        calibration_governance_area_name = None
+        current_ai_summary = assessment.ai_recommendations  # Default to general insights
+
+        if assessment.is_calibration_rework and assessment.pending_calibrations:
+            # Find the active calibration request (not yet approved/resubmitted by BLGU)
+            # In a rework state, the pending calibration is the one awaiting action
+            for pc in assessment.pending_calibrations:
+                if not pc.get("approved", False):
+                    calibration_governance_area_name = pc.get("governance_area_name")
+
+                    # Try to get specific calibration summary for this area
+                    ga_id = pc.get("governance_area_id")
+                    if ga_id and assessment.calibration_summaries_by_area:
+                        # Keys in JSON might be strings
+                        area_summary = assessment.calibration_summaries_by_area.get(
+                            str(ga_id)
+                        ) or assessment.calibration_summaries_by_area.get(ga_id)
+
+                        if area_summary:
+                            current_ai_summary = area_summary
+
+                    break
+
         return AssessmentDashboardResponse(
             assessment_id=assessment.id,
             blgu_user_id=blgu_user_id,
             barangay_name=barangay_name,
             performance_year=current_year,
             assessment_year=current_year,
+            # Status & Workflow
+            status=assessment.status,
+            submitted_at=assessment.submitted_at,
+            validated_at=assessment.validated_at,
+            rework_requested_at=assessment.rework_requested_at,
+            rework_count=assessment.rework_count,
+            # Calibration & Rework
+            is_calibration_rework=assessment.is_calibration_rework,
+            calibration_governance_area_name=calibration_governance_area_name,
+            is_mlgoo_recalibration=assessment.is_mlgoo_recalibration,
+            mlgoo_recalibration_requested_at=assessment.mlgoo_recalibration_requested_at,
+            # Insights
+            ai_summary=current_ai_summary,
             stats=dashboard_stats,
             feedback=recent_feedback_data,
             upcoming_deadlines=[],  # TODO: Implement deadline logic if needed
@@ -2812,8 +3268,8 @@ class AssessmentService:
                     barangay_name = assessment.blgu_user.barangay.name
 
             # Get validators/assessors who worked on this assessment
-            # Include: reviewed_by (assessor), calibration_validator_id (validator),
-            # and users who left feedback comments
+            # Include: reviewed_by (assessor), validators who validated their areas,
+            # calibration_validator_id (legacy), and users who left feedback comments
             try:
                 validators_dict = {}  # Use dict to avoid duplicates by user ID
 
@@ -2830,24 +3286,65 @@ class AssessmentService:
                         "role": "assessor",
                     }
 
-                # 2. Add the validator who calibrated (if any)
+                # 2. Add validators who have validated their governance areas
+                # Get all governance area IDs that have validated responses in this assessment
+                validated_area_ids = (
+                    db.query(Indicator.governance_area_id)
+                    .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
+                    .filter(
+                        AssessmentResponse.assessment_id == assessment.id,
+                        AssessmentResponse.validation_status.isnot(None),
+                    )
+                    .distinct()
+                    .all()
+                )
+                validated_area_ids = [area_id for (area_id,) in validated_area_ids]
+
+                # Find validators assigned to these validated areas
+                if validated_area_ids:
+                    area_validators = (
+                        db.query(User)
+                        .filter(
+                            User.role == UserRole.VALIDATOR,
+                            User.validator_area_id.in_(validated_area_ids),
+                        )
+                        .all()
+                    )
+                    for validator in area_validators:
+                        if validator.id not in validators_dict:
+                            validators_dict[validator.id] = {
+                                "id": validator.id,
+                                "name": validator.name,
+                                "email": validator.email,
+                                "initials": "".join(
+                                    [word[0].upper() for word in validator.name.split()[:2]]
+                                )
+                                if validator.name
+                                else "V",
+                                "role": "validator",
+                                "governance_area_id": validator.validator_area_id,
+                            }
+
+                # 3. Add the calibration validator (legacy - for backward compatibility)
                 if assessment.calibration_validator_id and assessment.calibration_validator:
                     validator = assessment.calibration_validator
-                    validators_dict[validator.id] = {
-                        "id": validator.id,
-                        "name": validator.name,
-                        "email": validator.email,
-                        "initials": "".join(
-                            [word[0].upper() for word in validator.name.split()[:2]]
-                        )
-                        if validator.name
-                        else "V",
-                        "role": "validator",
-                    }
+                    if validator.id not in validators_dict:
+                        validators_dict[validator.id] = {
+                            "id": validator.id,
+                            "name": validator.name,
+                            "email": validator.email,
+                            "initials": "".join(
+                                [word[0].upper() for word in validator.name.split()[:2]]
+                            )
+                            if validator.name
+                            else "V",
+                            "role": "validator",
+                            "governance_area_id": validator.validator_area_id,
+                        }
 
-                # 3. Add users who left feedback comments (existing logic)
+                # 4. Add users who left feedback comments
                 feedback_users = (
-                    db.query(User.id, User.name, User.email)
+                    db.query(User.id, User.name, User.email, User.role)
                     .join(FeedbackComment, FeedbackComment.assessor_id == User.id)
                     .join(
                         AssessmentResponse,
@@ -2860,6 +3357,12 @@ class AssessmentService:
 
                 for v in feedback_users:
                     if v.id not in validators_dict:
+                        # Determine role based on user's actual role
+                        role = (
+                            "validator"
+                            if v.role == UserRole.VALIDATOR
+                            else ("assessor" if v.role == UserRole.ASSESSOR else None)
+                        )
                         validators_dict[v.id] = {
                             "id": v.id,
                             "name": v.name,
@@ -2867,6 +3370,7 @@ class AssessmentService:
                             "initials": "".join([word[0].upper() for word in v.name.split()[:2]])
                             if v.name
                             else "?",
+                            "role": role,
                         }
 
                 validators = list(validators_dict.values())

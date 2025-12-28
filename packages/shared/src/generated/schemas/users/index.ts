@@ -3,6 +3,9 @@
 // 📁 Users-related types
 // 🏷️  Based on FastAPI tag: "users"
 
+import type { TourPreferences } from '../tourpreferences';
+import type { TourPreferencesUpdate } from '../tourpreferences';
+
 /**
  * AppSchemasIndicatorUserNested
  */
@@ -90,6 +93,18 @@ export type PatchUsersMeLanguageParams = {
 /**
  * Language code: ceb (Bisaya), fil (Tagalog), or en (English)
  * @pattern ^(ceb|fil|en)$
+ */
+language: string;
+};
+
+
+/**
+ * PatchUsersMePreferencesTourLanguageParams
+ */
+export type PatchUsersMePreferencesTourLanguageParams = {
+/**
+ * Language code: en (English), fil (Filipino), or ceb (Cebuano)
+ * @pattern ^(en|fil|ceb)$
  */
 language: string;
 };
@@ -270,6 +285,28 @@ export interface UserListResponse {
  * UserPhoneNumber
  */
 export type UserPhoneNumber = string | null;
+
+
+/**
+ * UserPreferencesResponse
+ */
+export interface UserPreferencesResponse {
+  tour?: TourPreferences;
+}
+
+
+/**
+ * UserPreferencesUpdate
+ */
+export interface UserPreferencesUpdate {
+  tour?: UserPreferencesUpdateTour;
+}
+
+
+/**
+ * UserPreferencesUpdateTour
+ */
+export type UserPreferencesUpdateTour = TourPreferencesUpdate | null;
 
 
 /**

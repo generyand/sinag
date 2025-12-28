@@ -14,10 +14,7 @@
  */
 
 import { PhaseCard, PhaseStatus } from "./PhaseCard";
-import {
-  CompletionMetricsCard,
-  IndicatorNavigationList,
-} from "@/components/features/dashboard";
+import { CompletionMetricsCard, IndicatorNavigationList } from "@/components/features/dashboard";
 import {
   SubmitAssessmentButton,
   ResubmitAssessmentButton,
@@ -140,9 +137,7 @@ export function Phase1Section({
     area.indicators.map((indicator) => ({
       indicator_id: indicator.indicator_id,
       title: indicator.indicator_name,
-      completion_status: indicator.is_complete
-        ? ("complete" as const)
-        : ("incomplete" as const),
+      completion_status: indicator.is_complete ? ("complete" as const) : ("incomplete" as const),
       route_path: `/blgu/assessments?indicator=${indicator.indicator_id}`,
       governance_area_name: area.governance_area_name,
       governance_area_id: area.governance_area_id,
@@ -157,36 +152,43 @@ export function Phase1Section({
       statusLabel={statusLabel}
       isActive={isActive}
       defaultExpanded={isActive}
+      data-tour="phase-1-section"
     >
       <div className="space-y-6">
         {/* AI Summary Panel - Shows AI-generated guidance for rework */}
         {showReworkFeedback && dashboardData.ai_summary && (
-          <AISummaryPanel
-            summary={dashboardData.ai_summary as AISummary}
-            availableLanguages={dashboardData.ai_summary_available_languages || ["ceb", "en"]}
-            currentLanguage={selectedLanguage}
-            onLanguageChange={onLanguageChange}
-            isLoading={isFetchingDashboard}
-          />
+          <div data-tour="ai-summary-panel">
+            <AISummaryPanel
+              summary={dashboardData.ai_summary as AISummary}
+              availableLanguages={dashboardData.ai_summary_available_languages || ["ceb", "en"]}
+              currentLanguage={selectedLanguage}
+              onLanguageChange={onLanguageChange}
+              isLoading={isFetchingDashboard}
+            />
+          </div>
         )}
 
         {/* Rework Indicators Panel - Shows failed indicators grouped by area */}
         {showReworkFeedback &&
           (dashboardData.rework_comments || dashboardData.mov_annotations_by_indicator) && (
-            <ReworkIndicatorsPanel
-              dashboardData={dashboardData as any}
-              assessmentId={assessmentId}
-            />
+            <div data-tour="rework-indicators-list">
+              <ReworkIndicatorsPanel
+                dashboardData={dashboardData as any}
+                assessmentId={assessmentId}
+              />
+            </div>
           )}
 
         {/* Completion Metrics - Only show when editable */}
         {isEditable && (
-          <CompletionMetricsCard
-            totalIndicators={dashboardData.total_indicators}
-            completedIndicators={dashboardData.completed_indicators}
-            incompleteIndicators={dashboardData.incomplete_indicators}
-            completionPercentage={dashboardData.completion_percentage}
-          />
+          <div data-tour="completion-metrics">
+            <CompletionMetricsCard
+              totalIndicators={dashboardData.total_indicators}
+              completedIndicators={dashboardData.completed_indicators}
+              incompleteIndicators={dashboardData.incomplete_indicators}
+              completionPercentage={dashboardData.completion_percentage}
+            />
+          </div>
         )}
 
         {/* Completed Phase Summary - Show when Phase 1 is completed */}
@@ -206,25 +208,19 @@ export function Phase1Section({
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {dashboardData.total_indicators}
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  Total Indicators
-                </div>
+                <div className="text-xs text-green-600 dark:text-green-400">Total Indicators</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {dashboardData.completed_indicators}
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  Completed
-                </div>
+                <div className="text-xs text-green-600 dark:text-green-400">Completed</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {dashboardData.completion_percentage.toFixed(0)}%
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400">
-                  Completion
-                </div>
+                <div className="text-xs text-green-600 dark:text-green-400">Completion</div>
               </div>
             </div>
           </div>
@@ -232,11 +228,13 @@ export function Phase1Section({
 
         {/* Action Buttons */}
         {isEditable && (
-          <div className="flex gap-4">
+          <div className="flex gap-4" data-tour="submit-button">
             {dashboardData.status === "DRAFT" && (
               <SubmitAssessmentButton
                 assessmentId={assessmentId}
                 isComplete={dashboardData.completion_percentage === 100}
+                completedCount={dashboardData.completed_indicators}
+                totalCount={dashboardData.total_indicators}
                 onSuccess={onRefetch}
               />
             )}

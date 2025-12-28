@@ -9,29 +9,29 @@
  * File: apps/web/src/app/(app)/mlgoo/assessments/[id]/page.tsx
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render } from "@testing-library/react";
 
 // Mock Next.js Link component
-vi.mock('next/link', () => ({
+vi.mock("next/link", () => ({
   default: vi.fn(({ children, href }) => {
     return {
-      type: 'a',
+      type: "a",
       props: { href, children },
     };
   }),
 }));
 
-describe('MLGOO Assessment Detail Page - Async Params Handling', () => {
+describe("MLGOO Assessment Detail Page - Async Params Handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Valid Assessment ID', () => {
-    it('should render with numeric string ID', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+  describe("Valid Assessment ID", () => {
+    it("should render with numeric string ID", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: '123' });
+      const params = Promise.resolve({ id: "123" });
       const result = await AssessmentDetailPage({ params });
 
       // The component should render with mock data
@@ -41,129 +41,129 @@ describe('MLGOO Assessment Detail Page - Async Params Handling', () => {
       // Verify the ID is used (in this mock implementation, it's just stored)
       // The actual component uses the ID for displaying mock data
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('123');
+      expect(resultString).toContain("123");
     });
 
-    it('should render with alphabetic ID', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should render with alphabetic ID", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'abc' });
+      const params = Promise.resolve({ id: "abc" });
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('abc');
+      expect(resultString).toContain("abc");
     });
 
-    it('should render with alphanumeric ID', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should render with alphanumeric ID", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'assessment-123-xyz' });
+      const params = Promise.resolve({ id: "assessment-123-xyz" });
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('assessment-123-xyz');
+      expect(resultString).toContain("assessment-123-xyz");
     });
 
-    it('should render with UUID-like ID', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should render with UUID-like ID", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' });
+      const params = Promise.resolve({ id: "550e8400-e29b-41d4-a716-446655440000" });
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('550e8400-e29b-41d4-a716-446655440000');
+      expect(resultString).toContain("550e8400-e29b-41d4-a716-446655440000");
     });
   });
 
-  describe('Edge Cases', () => {
-    it('should handle empty string ID', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+  describe("Edge Cases", () => {
+    it("should handle empty string ID", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: '' });
+      const params = Promise.resolve({ id: "" });
       const result = await AssessmentDetailPage({ params });
 
       // No validation in current implementation, so it should render
       expect(result).toBeDefined();
     });
 
-    it('should handle ID with special characters', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should handle ID with special characters", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'test@#$%' });
+      const params = Promise.resolve({ id: "test@#$%" });
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('test@#$%');
+      expect(resultString).toContain("test@#$%");
     });
 
-    it('should handle ID with spaces', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should handle ID with spaces", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'test id with spaces' });
+      const params = Promise.resolve({ id: "test id with spaces" });
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('test id with spaces');
+      expect(resultString).toContain("test id with spaces");
     });
 
-    it('should handle very long ID', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should handle very long ID", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const longId = 'a'.repeat(1000);
+      const longId = "a".repeat(1000);
       const params = Promise.resolve({ id: longId });
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
     });
 
-    it('should handle ID with encoded characters', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should handle ID with encoded characters", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'test%20id%20encoded' });
+      const params = Promise.resolve({ id: "test%20id%20encoded" });
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('test%20id%20encoded');
+      expect(resultString).toContain("test%20id%20encoded");
     });
   });
 
-  describe('Async Params Handling', () => {
-    it('should properly await params before accessing properties', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+  describe("Async Params Handling", () => {
+    it("should properly await params before accessing properties", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
       // Create a params promise that resolves after a delay
       const params = new Promise<{ id: string }>((resolve) => {
-        setTimeout(() => resolve({ id: 'delayed-456' }), 10);
+        setTimeout(() => resolve({ id: "delayed-456" }), 10);
       });
 
       const result = await AssessmentDetailPage({ params });
 
       expect(result).toBeDefined();
       const resultString = JSON.stringify(result);
-      expect(resultString).toContain('delayed-456');
+      expect(resultString).toContain("delayed-456");
     });
 
-    it('should handle params promise rejection gracefully', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should handle params promise rejection gracefully", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
       // Create a params promise that rejects
-      const params = Promise.reject(new Error('Params error'));
+      const params = Promise.reject(new Error("Params error"));
 
       await expect(async () => {
         await AssessmentDetailPage({ params });
-      }).rejects.toThrow('Params error');
+      }).rejects.toThrow("Params error");
     });
 
-    it('should handle multiple rapid calls with different IDs', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should handle multiple rapid calls with different IDs", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const ids = ['id1', 'id2', 'id3', 'id4', 'id5'];
+      const ids = ["id1", "id2", "id3", "id4", "id5"];
       const results = await Promise.all(
         ids.map((id) => AssessmentDetailPage({ params: Promise.resolve({ id }) }))
       );
@@ -177,50 +177,50 @@ describe('MLGOO Assessment Detail Page - Async Params Handling', () => {
     });
   });
 
-  describe('Component Rendering', () => {
-    it('should render assessment details with mock data', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+  describe("Component Rendering", () => {
+    it("should render assessment details with mock data", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'test-123' });
+      const params = Promise.resolve({ id: "test-123" });
       const component = await AssessmentDetailPage({ params });
 
       // Verify key elements are present in the rendered component
       const componentString = JSON.stringify(component);
 
       // Should contain mock data elements
-      expect(componentString).toContain('Leadership Assessment');
-      expect(componentString).toContain('Strategic Leadership');
-      expect(componentString).toContain('Team Management');
-      expect(componentString).toContain('Communication');
-      expect(componentString).toContain('Decision Making');
+      expect(componentString).toContain("Leadership Assessment");
+      expect(componentString).toContain("Strategic Leadership");
+      expect(componentString).toContain("Team Management");
+      expect(componentString).toContain("Communication");
+      expect(componentString).toContain("Decision Making");
     });
 
-    it('should render back link to assessments page', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should render back link to assessments page", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'test-456' });
+      const params = Promise.resolve({ id: "test-456" });
       const component = await AssessmentDetailPage({ params });
 
       const componentString = JSON.stringify(component);
-      expect(componentString).toContain('Back to Assessments');
-      expect(componentString).toContain('/assessments');
+      expect(componentString).toContain("Back to Assessments");
+      expect(componentString).toContain("/assessments");
     });
 
-    it('should display score and status information', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+    it("should display score and status information", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
-      const params = Promise.resolve({ id: 'test-789' });
+      const params = Promise.resolve({ id: "test-789" });
       const component = await AssessmentDetailPage({ params });
 
       const componentString = JSON.stringify(component);
-      expect(componentString).toContain('Overall Score');
-      expect(componentString).toContain('Completed');
+      expect(componentString).toContain("Overall Score");
+      expect(componentString).toContain("Completed");
     });
   });
 
-  describe('Performance', () => {
-    it('should handle rapid successive renders efficiently', async () => {
-      const { default: AssessmentDetailPage } = await import('../[id]/page');
+  describe("Performance", () => {
+    it("should handle rapid successive renders efficiently", async () => {
+      const { default: AssessmentDetailPage } = await import("../[id]/page");
 
       const startTime = Date.now();
 

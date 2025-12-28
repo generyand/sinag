@@ -1,11 +1,8 @@
 export { AIInsightsDisplay } from "./AIInsightsDisplay";
 export { AreaResultsDisplay } from "./AreaResultsDisplay";
+export { BBIStatusTab, type MunicipalityBBIAnalyticsData } from "./BBIStatusTab";
 export { ComplianceBadge } from "./ComplianceBadge";
-export {
-  AreaBreakdownBarChart,
-  ComplianceStatusPieChart,
-  TrendLineChart,
-} from "./ChartComponents";
+export { AreaBreakdownBarChart, ComplianceStatusPieChart, TrendLineChart } from "./ChartComponents";
 export { AssessmentDataTable } from "./DataTable";
 export { ExportControls } from "./ExportControls";
 export { FilterControls } from "./FilterControls";

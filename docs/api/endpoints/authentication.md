@@ -1,6 +1,7 @@
 # Authentication API
 
-The Authentication API provides endpoints for user login, password management, and session control. This API uses JWT (JSON Web Token) based authentication with role-based access control.
+The Authentication API provides endpoints for user login, password management, and session control.
+This API uses JWT (JSON Web Token) based authentication with role-based access control.
 
 ## Overview
 
@@ -8,9 +9,11 @@ The Authentication API provides endpoints for user login, password management, a
 
 **Authentication**: Most endpoints are public (login), while others require active authentication.
 
-**Security**: All passwords are hashed using bcrypt. JWTs include user ID, role, and password change flags.
+**Security**: All passwords are hashed using bcrypt. JWTs include user ID, role, and password change
+flags.
 
-**Type Generation**: After modifying any authentication endpoint or schema, run `pnpm generate-types` to update frontend types.
+**Type Generation**: After modifying any authentication endpoint or schema, run
+`pnpm generate-types` to update frontend types.
 
 ---
 
@@ -24,9 +27,12 @@ Authenticate user and return JWT token.
 
 **Workflow Stage**: Authentication
 
-**Description**: Validates user credentials against the database, checks if the user account is active, generates a secure JWT token, and returns token with expiration info. Supports "remember me" functionality for extended session duration.
+**Description**: Validates user credentials against the database, checks if the user account is
+active, generates a secure JWT token, and returns token with expiration info. Supports "remember me"
+functionality for extended session duration.
 
 **Request Body**:
+
 ```json
 {
   "email": "juan@barangay-sanisidro.gov.ph",
@@ -36,6 +42,7 @@ Authenticate user and return JWT token.
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -45,10 +52,12 @@ Authenticate user and return JWT token.
 ```
 
 **Token Expiration**:
+
 - `remember_me = false`: 7 days (604800 seconds)
 - `remember_me = true`: 30 days (2592000 seconds)
 
 **Errors**:
+
 - `401 Unauthorized`: Incorrect email or password
 - `400 Bad Request`: Inactive user account
 
@@ -62,9 +71,11 @@ Change user password.
 
 **Workflow Stage**: Password Management
 
-**Description**: Verifies the current password, updates the user's password, sets `must_change_password` to false, and returns success message.
+**Description**: Verifies the current password, updates the user's password, sets
+`must_change_password` to false, and returns success message.
 
 **Request Body**:
+
 ```json
 {
   "current_password": "OldPassword123!",
@@ -73,6 +84,7 @@ Change user password.
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "message": "Password changed successfully"
@@ -80,6 +92,7 @@ Change user password.
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Incorrect current password
 - `401 Unauthorized`: User not authenticated
 
@@ -93,11 +106,13 @@ Logout user and invalidate session.
 
 **Workflow Stage**: Session Management
 
-**Description**: Invalidates the user session. Currently returns success message. In production, this will blacklist the JWT token and clear any session data.
+**Description**: Invalidates the user session. Currently returns success message. In production,
+this will blacklist the JWT token and clear any session data.
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "message": "Successfully logged out"
@@ -123,6 +138,7 @@ Logout user and invalidate session.
 ```
 
 **Fields**:
+
 - `sub`: User ID (subject)
 - `role`: User role (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER)
 - `must_change_password`: Boolean flag for forced password change

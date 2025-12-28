@@ -7,9 +7,9 @@
  * - Authentication context
  */
 
-import { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactElement } from "react";
+import { render, RenderOptions } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 /**
  * Create a new QueryClient for each test to ensure isolation
@@ -31,22 +31,15 @@ export function createTestQueryClient() {
 /**
  * Custom render function that wraps components with necessary providers
  */
-interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
+interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
   queryClient?: QueryClient;
 }
 
-export function renderWithProviders(
-  ui: ReactElement,
-  options?: CustomRenderOptions
-) {
+export function renderWithProviders(ui: ReactElement, options?: CustomRenderOptions) {
   const { queryClient = createTestQueryClient(), ...renderOptions } = options || {};
 
   function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   }
 
   return {
@@ -60,11 +53,14 @@ export function renderWithProviders(
  * Useful when waiting for all async operations to complete
  */
 export async function waitForQueryToSettle(queryClient: QueryClient) {
-  await queryClient.getQueryCache().getAll().forEach((query) => {
-    query.fetch();
-  });
+  await queryClient
+    .getQueryCache()
+    .getAll()
+    .forEach((query) => {
+      query.fetch();
+    });
 }
 
 // Re-export everything from React Testing Library
-export * from '@testing-library/react';
-export { default as userEvent } from '@testing-library/user-event';
+export * from "@testing-library/react";
+export { default as userEvent } from "@testing-library/user-event";

@@ -6,11 +6,15 @@
  * 
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -20,6 +24,8 @@ import type {
   GetAnalyticsDashboardParams,
   GetAnalyticsReportsParams,
   HTTPValidationError,
+  PostAnalyticsDashboardRefreshAnalysisParams,
+  RefreshAnalysisResponse,
   ReportsDataResponse
 } from '../../schemas';
 
@@ -89,7 +95,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalyticsDashboard>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalyticsDashboard>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAnalyticsDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalyticsDashboard>>>
@@ -118,6 +124,80 @@ export function useGetAnalyticsDashboard<TData = Awaited<ReturnType<typeof getAn
 
 
 /**
+ * Refresh the AI-generated analysis for the dashboard, including top rework/calibration reasons.
+
+This endpoint invalidates the cached dashboard data and recalculates the AI-generated
+analysis from the latest assessment data.
+
+**Use cases:**
+- After new rework/calibration summaries have been generated
+- When cached data appears stale or incomplete
+- To force fresh analysis of recent assessments
+
+**Access:** Requires MLGOO_DILG role.
+ * @summary Refresh Dashboard AI Analysis
+ */
+export const postAnalyticsDashboardRefreshAnalysis = (
+    params?: PostAnalyticsDashboardRefreshAnalysisParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<RefreshAnalysisResponse>(
+      {url: `/api/v1/analytics/dashboard/refresh-analysis`, method: 'POST',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAnalyticsDashboardRefreshAnalysisMutationOptions = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAnalyticsDashboardRefreshAnalysis>>, TError,{params?: PostAnalyticsDashboardRefreshAnalysisParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAnalyticsDashboardRefreshAnalysis>>, TError,{params?: PostAnalyticsDashboardRefreshAnalysisParams}, TContext> => {
+
+const mutationKey = ['postAnalyticsDashboardRefreshAnalysis'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAnalyticsDashboardRefreshAnalysis>>, {params?: PostAnalyticsDashboardRefreshAnalysisParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  postAnalyticsDashboardRefreshAnalysis(params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAnalyticsDashboardRefreshAnalysisMutationResult = NonNullable<Awaited<ReturnType<typeof postAnalyticsDashboardRefreshAnalysis>>>
+    
+    export type PostAnalyticsDashboardRefreshAnalysisMutationError = void | HTTPValidationError
+
+    /**
+ * @summary Refresh Dashboard AI Analysis
+ */
+export const usePostAnalyticsDashboardRefreshAnalysis = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAnalyticsDashboardRefreshAnalysis>>, TError,{params?: PostAnalyticsDashboardRefreshAnalysisParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAnalyticsDashboardRefreshAnalysis>>,
+        TError,
+        {params?: PostAnalyticsDashboardRefreshAnalysisParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAnalyticsDashboardRefreshAnalysisMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
  * Retrieve comprehensive reports data with flexible filtering and role-based access.
 
 **Data included:**
@@ -181,7 +261,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalyticsReports>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalyticsReports>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAnalyticsReportsQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalyticsReports>>>

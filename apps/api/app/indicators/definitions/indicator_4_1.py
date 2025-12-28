@@ -138,20 +138,27 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.4
         SubIndicator(
             code="4.1.4",
-            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO",
-            upload_instructions=(
-                "Upload: Accomplishment Report covering {Q1_Q3_CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO\n\n"
-                "Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay "
-                "with the following information at the minimum: total number of VAW cases received, assistance provided to victim-survivors, "
-                "total number of cases documented for violating RA 9262 and other VAW-related laws, total barangay population, number of male "
-                "and female in the barangay, and minor to adult ratio"
-            ),
+            name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
+            upload_instructions="Upload: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
             validation_rule="ALL_ITEMS_REQUIRED",
+            notes=FormNotes(
+                title="Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay containing relevant information such as:",
+                items=[
+                    NoteItem(text="total number of VAW cases received"),
+                    NoteItem(text="assistance provided to victim-survivors"),
+                    NoteItem(
+                        text="total number of cases documented for violating RA 9262 and other VAW-related laws"
+                    ),
+                    NoteItem(text="total barangay population"),
+                    NoteItem(text="number of male and female in the barangay"),
+                    NoteItem(text="minor to adult ratio"),
+                ],
+            ),
             checklist_items=[
                 # Upload Verification
                 ChecklistItem(
                     id="4_1_4_upload_1",
-                    label="Accomplishment Report covering 1st to 3rd quarter with received stamp by the C/MSWDO and C/MLGOO",
+                    label="Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
                     mov_description="Verification of uploaded quarterly accomplishment reports based on VAW cases database/records",
                     required=True,
                     display_order=1,
@@ -248,10 +255,10 @@ INDICATOR_4_1 = Indicator(
                 "SHARED (Required):\n"
                 "- GAD Accomplishment Report\n\n"
                 "PLUS ONE of the following (PHYSICAL or FINANCIAL):\n\n"
-                "OPTION A - PHYSICAL:\n"
+                "OPTION A - PHYSICAL: At least 50% accomplishment of the physical targets in the GAD Plan\n"
                 "- Certification on the submitted GAD Accomplishment Report indicating at least 50% accomplishment of the physical targets in the GAD Plan signed by the C/MSWDO or C/MLGOO\n\n"
                 "OR\n\n"
-                "OPTION B - FINANCIAL:\n"
+                "OPTION B - FINANCIAL: At least 50% fund utilization of the GAD Budget\n"
                 "- Certification on the submitted GAD Accomplishment Report indicating at least 50% fund utilization of the GAD Budget signed by the C/MSWDO or C/MLGOO"
             ),
             validation_rule="SHARED_PLUS_OR_LOGIC",  # SHARED + (A OR B)
@@ -343,18 +350,19 @@ INDICATOR_4_1 = Indicator(
         # Sub-Indicator 4.1.7 (FOR PROFILING ONLY)
         SubIndicator(
             code="4.1.7",
-            name="Referral Network (For Profiling): Presence of referral system and directory",
+            name="Referral Network: Presence of referral system and directory (FOR PROFILING)",
             upload_instructions=(
                 "Upload the following (both required):\n\n"
-                "1. 4.1.7.1. Presence of Referral System Flow Chart (For profiling)\n"
-                "2. 4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling)"
+                "1. Flow Chart based on Annex C - Establishment of Referral System\n"
+                "2. Annex J - Directory Form"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
+            is_profiling_only=True,  # FOR PROFILING ONLY - doesn't affect pass/fail
             checklist_items=[
                 # Upload Verification for Flow Chart
                 ChecklistItem(
                     id="4_1_7_1_upload",
-                    label="4.1.7.1. Presence of Referral System Flow Chart (For profiling) - Flow Chart based on Annex C - Establishment of Referral System",
+                    label="Flow Chart based on Annex C - Establishment of Referral System",
                     mov_description="Verification of uploaded Flow Chart based on Annex C (For profiling only)",
                     required=False,  # Not required for pass/fail - profiling only
                     display_order=1,
@@ -362,7 +370,7 @@ INDICATOR_4_1 = Indicator(
                 # Upload Verification for Directory
                 ChecklistItem(
                     id="4_1_7_2_upload",
-                    label="4.1.7.2. Presence of Directory of agencies/individuals providing services to victim-survivors (For profiling) - Annex J - Directory Form",
+                    label="Annex J - Directory Form",
                     mov_description="Verification of uploaded Annex J - Directory Form (For profiling only)",
                     required=False,  # Not required for pass/fail - profiling only
                     display_order=2,

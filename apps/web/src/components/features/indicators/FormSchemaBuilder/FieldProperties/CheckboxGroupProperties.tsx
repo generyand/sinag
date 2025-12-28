@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { isCheckboxGroupField, useFormBuilderStore } from '@/store/useFormBuilderStore';
-import type { CheckboxGroupField } from '@sinag/shared';
-import { GripVertical, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { isCheckboxGroupField, useFormBuilderStore } from "@/store/useFormBuilderStore";
+import type { CheckboxGroupField } from "@sinag/shared";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 
 interface CheckboxGroupPropertiesProps {
   fieldId: string;
@@ -42,13 +42,13 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
   const defaultValues = useMemo<FormValues>(() => {
     if (!checkboxField) {
       return {
-        label: '',
-        field_id: '',
+        label: "",
+        field_id: "",
         required: false,
-        help_text: '',
+        help_text: "",
         options: [
-          { label: 'Option 1', value: 'option_1' },
-          { label: 'Option 2', value: 'option_2' },
+          { label: "Option 1", value: "option_1" },
+          { label: "Option 2", value: "option_2" },
         ],
       };
     }
@@ -56,15 +56,14 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
     return {
       label: checkboxField.label,
       field_id: checkboxField.field_id,
-        required: checkboxField.required ?? false,
-      help_text: checkboxField.help_text || '',
-      options:
-        checkboxField.options?.length
-          ? checkboxField.options
-          : [
-              { label: 'Option 1', value: 'option_1' },
-              { label: 'Option 2', value: 'option_2' },
-            ],
+      required: checkboxField.required ?? false,
+      help_text: checkboxField.help_text || "",
+      options: checkboxField.options?.length
+        ? checkboxField.options
+        : [
+            { label: "Option 1", value: "option_1" },
+            { label: "Option 2", value: "option_2" },
+          ],
     };
   }, [checkboxField]);
 
@@ -79,9 +78,13 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
     defaultValues,
   });
 
-  const { fields: optionFields, append, remove } = useFieldArray({
+  const {
+    fields: optionFields,
+    append,
+    remove,
+  } = useFieldArray({
     control,
-    name: 'options',
+    name: "options",
   });
 
   // Watch for changes
@@ -93,11 +96,7 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
   }, [watch]);
 
   if (!checkboxField) {
-    return (
-      <div className="text-sm text-red-600">
-        Error: Field not found or wrong type
-      </div>
-    );
+    return <div className="text-sm text-red-600">Error: Field not found or wrong type</div>;
   }
 
   // Handle save
@@ -120,14 +119,13 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
       label: checkboxField.label,
       field_id: checkboxField.field_id,
       required: checkboxField.required ?? false,
-      help_text: checkboxField.help_text || '',
-      options:
-        checkboxField.options?.length
-          ? checkboxField.options
-          : [
-              { label: 'Option 1', value: 'option_1' },
-              { label: 'Option 2', value: 'option_2' },
-            ],
+      help_text: checkboxField.help_text || "",
+      options: checkboxField.options?.length
+        ? checkboxField.options
+        : [
+            { label: "Option 1", value: "option_1" },
+            { label: "Option 2", value: "option_2" },
+          ],
     });
     setHasChanges(false);
   };
@@ -150,12 +148,10 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
         </Label>
         <Input
           id="label"
-          {...register('label', { required: 'Label is required' })}
+          {...register("label", { required: "Label is required" })}
           placeholder="Enter field label"
         />
-        {errors.label && (
-          <p className="text-sm text-red-600">{errors.label.message}</p>
-        )}
+        {errors.label && <p className="text-sm text-red-600">{errors.label.message}</p>}
       </div>
 
       {/* Field ID */}
@@ -165,21 +161,17 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
         </Label>
         <Input
           id="field_id"
-          {...register('field_id', {
-            required: 'Field ID is required',
+          {...register("field_id", {
+            required: "Field ID is required",
             pattern: {
               value: /^[a-z0-9_]+$/,
-              message: 'Only lowercase letters, numbers, and underscores',
+              message: "Only lowercase letters, numbers, and underscores",
             },
           })}
           placeholder="field_id"
         />
-        {errors.field_id && (
-          <p className="text-sm text-red-600">{errors.field_id.message}</p>
-        )}
-        <p className="text-xs text-gray-500">
-          Used to identify this field in the form data
-        </p>
+        {errors.field_id && <p className="text-sm text-red-600">{errors.field_id.message}</p>}
+        <p className="text-xs text-gray-500">Used to identify this field in the form data</p>
       </div>
 
       {/* Required Toggle */}
@@ -188,14 +180,12 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
           <Label htmlFor="required" className="cursor-pointer">
             Required field
           </Label>
-          <p className="text-xs text-gray-500">
-            User must select at least one option
-          </p>
+          <p className="text-xs text-gray-500">User must select at least one option</p>
         </div>
         <input
           id="required"
           type="checkbox"
-          {...register('required')}
+          {...register("required")}
           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
       </div>
@@ -205,7 +195,7 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
         <Label htmlFor="help_text">Help text (optional)</Label>
         <Textarea
           id="help_text"
-          {...register('help_text')}
+          {...register("help_text")}
           placeholder="Provide additional context or instructions"
           rows={3}
         />
@@ -217,13 +207,7 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
           <Label>
             Options <span className="text-red-600">*</span>
           </Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addOption}
-            className="h-8"
-          >
+          <Button type="button" variant="outline" size="sm" onClick={addOption} className="h-8">
             <Plus className="mr-1 h-3 w-3" />
             Add Option
           </Button>
@@ -231,9 +215,7 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
 
         {/* Validation: Minimum 2 options */}
         {optionFields.length < 2 && (
-          <p className="text-sm text-red-600">
-            At least 2 options are required
-          </p>
+          <p className="text-sm text-red-600">At least 2 options are required</p>
         )}
 
         {/* Options List */}
@@ -256,17 +238,17 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
               <div className="flex-1 space-y-2">
                 <Input
                   {...register(`options.${index}.label` as const, {
-                    required: 'Option label is required',
+                    required: "Option label is required",
                   })}
                   placeholder="Option label"
                   className="bg-white"
                 />
                 <Input
                   {...register(`options.${index}.value` as const, {
-                    required: 'Option value is required',
+                    required: "Option value is required",
                     pattern: {
                       value: /^[a-z0-9_]+$/,
-                      message: 'Only lowercase letters, numbers, and underscores',
+                      message: "Only lowercase letters, numbers, and underscores",
                     },
                   })}
                   placeholder="option_value"
@@ -274,8 +256,7 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
                 />
                 {errors.options?.[index] && (
                   <p className="text-xs text-red-600">
-                    {errors.options[index]?.label?.message ||
-                      errors.options[index]?.value?.message}
+                    {errors.options[index]?.label?.message || errors.options[index]?.value?.message}
                   </p>
                 )}
               </div>
@@ -294,35 +275,20 @@ export function CheckboxGroupProperties({ fieldId }: CheckboxGroupPropertiesProp
           ))}
         </div>
 
-        <p className="text-xs text-gray-500">
-          Drag to reorder • Minimum 2 options required
-        </p>
+        <p className="text-xs text-gray-500">Drag to reorder • Minimum 2 options required</p>
       </div>
 
       {/* Action Buttons */}
       <div className="flex gap-3 pt-4 border-t border-gray-200">
-        <Button
-          type="submit"
-          disabled={!hasChanges || optionFields.length < 2}
-          className="flex-1"
-        >
+        <Button type="submit" disabled={!hasChanges || optionFields.length < 2} className="flex-1">
           Save Changes
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={!hasChanges}
-        >
+        <Button type="button" variant="outline" onClick={onCancel} disabled={!hasChanges}>
           Cancel
         </Button>
       </div>
 
-      {hasChanges && (
-        <p className="text-xs text-yellow-600">
-          You have unsaved changes
-        </p>
-      )}
+      {hasChanges && <p className="text-xs text-yellow-600">You have unsaved changes</p>}
     </form>
   );
 }

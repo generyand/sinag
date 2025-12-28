@@ -4,15 +4,15 @@ Comprehensive troubleshooting guide for Docker development in SINAG.
 
 ## Quick Fixes
 
-| Issue | Quick Fix |
-|-------|-----------|
-| Network overlaps | Change subnet in docker-compose.yml |
-| Permission denied | `sudo` or add user to docker group |
-| Build fails | `docker-compose build --no-cache` |
-| Env vars missing | Check `apps/api/.env` and `apps/web/.env.local` |
-| Containers not communicating | Check `depends_on` and healthcheck |
-| Port already in use | `./scripts/docker-dev.sh kill-ports` |
-| Out of disk space | `docker system prune -a` |
+| Issue                        | Quick Fix                                       |
+| ---------------------------- | ----------------------------------------------- |
+| Network overlaps             | Change subnet in docker-compose.yml             |
+| Permission denied            | `sudo` or add user to docker group              |
+| Build fails                  | `docker-compose build --no-cache`               |
+| Env vars missing             | Check `apps/api/.env` and `apps/web/.env.local` |
+| Containers not communicating | Check `depends_on` and healthcheck              |
+| Port already in use          | `./scripts/docker-dev.sh kill-ports`            |
+| Out of disk space            | `docker system prune -a`                        |
 
 ## Common Issues
 
@@ -34,7 +34,7 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.26.0.0/16  # Change this
+        - subnet: 172.26.0.0/16 # Change this
           gateway: 172.26.0.1
 ```
 
@@ -69,6 +69,7 @@ newgrp docker  # or logout/login
 **Cause**: Incorrect Docker build context.
 
 **Solution**: Build context is correctly configured as:
+
 - API: `apps/api`
 - Web: root directory (`.`)
 
@@ -82,8 +83,8 @@ If errors persist, verify Dockerfile `COPY` commands reference correct paths.
 
 ```yaml
 volumes:
-  - ./apps/api:/app              # API code
-  - ./packages/shared:/packages/shared  # Shared types
+  - ./apps/api:/app # API code
+  - ./packages/shared:/packages/shared # Shared types
 ```
 
 #### ASGI Import Error
@@ -103,6 +104,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 #### "DATABASE_URL variable is not set"
 
 **Solution**:
+
 1. Ensure `apps/api/.env` exists with Supabase credentials
 2. Verify variables are not commented out
 3. Restart containers after changing `.env`:
@@ -113,6 +115,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 #### Environment Variables Not Loading
 
 **Check**:
+
 1. `env_file` directive points to correct file in `docker-compose.yml`
 2. File exists and is readable
 3. No trailing spaces or invalid syntax
@@ -122,6 +125,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 #### API Container Failing Health Check
 
 **Diagnosis**:
+
 ```bash
 # Check API logs
 docker logs sinag-api
@@ -133,6 +137,7 @@ docker logs sinag-api
 ```
 
 **Solution**:
+
 1. Verify `apps/api/.env` has correct Supabase credentials
 2. Test database connection manually:
    ```bash
@@ -142,6 +147,7 @@ docker logs sinag-api
 #### Celery Worker Not Starting
 
 **Diagnosis**:
+
 ```bash
 # Check if Redis is healthy
 docker ps | grep redis
@@ -154,6 +160,7 @@ docker exec sinag-api python -c "from app.core.celery_app import celery_app; pri
 ```
 
 **Solution**:
+
 - Ensure Redis container is running
 - Verify `CELERY_BROKER_URL` in `.env` points to `redis://redis:6379/0`
 
@@ -164,6 +171,7 @@ docker exec sinag-api python -c "from app.core.celery_app import celery_app; pri
 **Symptoms**: Network errors, ERR_FAILED, connection reset
 
 **Root Cause**: Next.js has different runtime environments:
+
 - **Server-side (SSR)**: Inside Docker, needs `http://api:8000`
 - **Client-side (Browser)**: On host machine, needs `http://localhost:8000`
 
@@ -186,13 +194,15 @@ const getBaseURL = () => {
 **Environment Setup**:
 
 `docker-compose.yml`:
+
 ```yaml
 web:
   environment:
-    - API_BASE_URL=http://api:8000  # Server-side
+    - API_BASE_URL=http://api:8000 # Server-side
 ```
 
 `apps/web/.env.local`:
+
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000  # Client-side
 ```
@@ -203,7 +213,8 @@ If API immediately resets connections:
 
 **Cause**: API container crashing during startup (e.g., Supabase connection failures)
 
-**Solution**: The API is configured with resilient startup checks. If you see warnings like "Startup checks failed but continuing", provide valid Supabase credentials in `apps/api/.env`.
+**Solution**: The API is configured with resilient startup checks. If you see warnings like "Startup
+checks failed but continuing", provide valid Supabase credentials in `apps/api/.env`.
 
 ### Port Conflicts
 
@@ -212,6 +223,7 @@ If API immediately resets connections:
 **Symptoms**: `bind: address already in use` when starting containers
 
 **Common Causes**:
+
 - Local dev server (uvicorn, next dev) already running on same ports
 - Another Docker container using the port
 - Zombie processes from previous runs
@@ -219,6 +231,7 @@ If API immediately resets connections:
 **Solutions**:
 
 **Option 1: Use helper script**
+
 ```bash
 # Check what's using Docker ports
 ./scripts/docker-dev.sh check-ports
@@ -228,6 +241,7 @@ If API immediately resets connections:
 ```
 
 **Option 2: Manual process kill**
+
 ```bash
 # Find what's using port 8000
 lsof -i :8000
@@ -245,10 +259,11 @@ pkill -f "uvicorn"
 ```
 
 **Option 3: Change port mapping**
+
 ```yaml
 # In docker-compose.yml
 ports:
-  - "8001:8000"  # Use 8001 on host instead
+  - "8001:8000" # Use 8001 on host instead
 ```
 
 ### Performance Issues
@@ -260,13 +275,14 @@ Already configured with polling for compatibility. If still slow:
 ```yaml
 # In docker-compose.yml web service
 environment:
-  - CHOKIDAR_USEPOLLING=true    # For Linux
-  - WATCHPACK_POLLING=true       # For Next.js
+  - CHOKIDAR_USEPOLLING=true # For Linux
+  - WATCHPACK_POLLING=true # For Next.js
 ```
 
 #### High Docker Resource Usage
 
 **Solutions**:
+
 1. Limit Docker Desktop resources in settings
 2. Use BuildKit for faster builds:
    ```bash
@@ -418,7 +434,8 @@ If issues persist:
 
 1. Check logs: `./scripts/docker-dev.sh logs`
 2. Verify environment files exist and are configured correctly
-3. Try clean rebuild: `docker-compose down -v && docker-compose build --no-cache && docker-compose up`
+3. Try clean rebuild:
+   `docker-compose down -v && docker-compose build --no-cache && docker-compose up`
 4. Check Docker Desktop/system resources (CPU, memory, disk)
 5. Review `docker-compose.yml` and `.env` files
 6. Check [Common Errors](./common-errors.md)

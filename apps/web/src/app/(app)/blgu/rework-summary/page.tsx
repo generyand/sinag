@@ -12,13 +12,7 @@
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
-import {
-  Sparkles,
-  Clock,
-  ArrowLeft,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { Sparkles, Clock, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -67,11 +61,7 @@ function ReworkSummaryContent() {
             <p className="text-sm text-red-800">
               No assessment ID was provided. Please access this page from the rework workflow.
             </p>
-            <Button
-              onClick={() => router.push("/blgu")}
-              className="mt-4"
-              variant="outline"
-            >
+            <Button onClick={() => router.push("/blgu")} className="mt-4" variant="outline">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
@@ -86,12 +76,7 @@ function ReworkSummaryContent() {
     return (
       <div className="container max-w-4xl mx-auto py-8">
         <div className="mb-6">
-          <Button
-            onClick={() => router.back()}
-            variant="ghost"
-            size="sm"
-            className="gap-2"
-          >
+          <Button onClick={() => router.back()} variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
@@ -114,11 +99,7 @@ function ReworkSummaryContent() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-red-800">{error}</p>
-            <Button
-              onClick={() => router.back()}
-              className="mt-4"
-              variant="outline"
-            >
+            <Button onClick={() => router.back()} className="mt-4" variant="outline">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Go Back
             </Button>
@@ -143,11 +124,7 @@ function ReworkSummaryContent() {
             <p className="text-sm text-muted-foreground">
               The rework summary is not yet available. It may still be generating.
             </p>
-            <Button
-              onClick={() => router.back()}
-              className="mt-4"
-              variant="outline"
-            >
+            <Button onClick={() => router.back()} className="mt-4" variant="outline">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Go Back
             </Button>
@@ -162,12 +139,7 @@ function ReworkSummaryContent() {
     <div className="container max-w-5xl mx-auto py-8">
       {/* Header */}
       <div className="mb-8">
-        <Button
-          onClick={() => router.back()}
-          variant="ghost"
-          size="sm"
-          className="gap-2 mb-4"
-        >
+        <Button onClick={() => router.back()} variant="ghost" size="sm" className="gap-2 mb-4">
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
@@ -213,9 +185,7 @@ function ReworkSummaryContent() {
           <CardTitle className="text-lg">Overall Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-800 leading-relaxed">
-            {reworkSummary.overall_summary}
-          </p>
+          <p className="text-gray-800 leading-relaxed">{reworkSummary.overall_summary}</p>
         </CardContent>
       </Card>
 
@@ -229,9 +199,7 @@ function ReworkSummaryContent() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-3">
-              Start with these most critical actions:
-            </p>
+            <p className="text-sm text-gray-600 mb-3">Start with these most critical actions:</p>
             <ol className="space-y-2 pl-6">
               {reworkSummary.priority_actions.map((action, index) => (
                 <li
@@ -250,9 +218,7 @@ function ReworkSummaryContent() {
 
       {/* Indicator-by-Indicator Breakdown */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Indicator-by-Indicator Guidance
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900">Indicator-by-Indicator Guidance</h2>
         <p className="text-muted-foreground">
           Detailed breakdown of issues and suggested actions for each indicator
         </p>
@@ -269,9 +235,7 @@ function ReworkSummaryContent() {
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-semibold text-sm flex-shrink-0">
                     {index + 1}
                   </div>
-                  <span className="font-semibold">
-                    {indicator.indicator_name}
-                  </span>
+                  <span className="font-semibold">{indicator.indicator_name}</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
@@ -287,9 +251,7 @@ function ReworkSummaryContent() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold text-lg text-gray-900">
-                Ready to Start Fixing?
-              </h3>
+              <h3 className="font-semibold text-lg text-gray-900">Ready to Start Fixing?</h3>
               <p className="text-sm text-gray-600 mt-1">
                 Go back to your assessment and address the issues one by one
               </p>

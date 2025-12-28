@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore } from "@/store/useAuthStore";
+import { useEffect, useState } from "react";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -14,8 +14,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     // Hydrate auth state from localStorage on mount
     hydrate();
-    setIsHydrated(true);
-  }, [hydrate]);
+    const timer = setTimeout(() => setIsHydrated(true), 0);
+    return () => clearTimeout(timer);
+  }, [hydrate, setIsHydrated]);
 
   // Show loading until hydration is complete
   if (!isHydrated) {
@@ -30,4 +31,4 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return <>{children}</>;
-} 
+}

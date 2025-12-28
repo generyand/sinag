@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Calendar, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePicker } from '@/components/ui/date-picker';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Calendar, Save } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Form,
   FormControl,
@@ -15,20 +15,22 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { AssessmentPeriodDeadlines, UpdateDeadlinesRequest } from '@/types/system-settings';
+} from "@/components/ui/form";
+import { AssessmentPeriodDeadlines, UpdateDeadlinesRequest } from "@/types/system-settings";
 
-const deadlinesSchema = z.object({
-  blguSubmissionDeadline: z.date({
-    message: 'BLGU submission deadline is required',
-  }),
-  reworkCompletionDeadline: z.date({
-    message: 'Rework completion deadline is required',
-  }),
-}).refine((data) => data.reworkCompletionDeadline > data.blguSubmissionDeadline, {
-  message: 'Rework completion deadline must be after BLGU submission deadline',
-  path: ['reworkCompletionDeadline'],
-});
+const deadlinesSchema = z
+  .object({
+    blguSubmissionDeadline: z.date({
+      message: "BLGU submission deadline is required",
+    }),
+    reworkCompletionDeadline: z.date({
+      message: "Rework completion deadline is required",
+    }),
+  })
+  .refine((data) => data.reworkCompletionDeadline > data.blguSubmissionDeadline, {
+    message: "Rework completion deadline must be after BLGU submission deadline",
+    path: ["reworkCompletionDeadline"],
+  });
 
 type DeadlinesFormData = z.infer<typeof deadlinesSchema>;
 
@@ -50,11 +52,11 @@ export function DeadlinesCard({
   const form = useForm<DeadlinesFormData>({
     resolver: zodResolver(deadlinesSchema),
     defaultValues: {
-      blguSubmissionDeadline: deadlines?.blguSubmissionDeadline 
-        ? new Date(deadlines.blguSubmissionDeadline) 
+      blguSubmissionDeadline: deadlines?.blguSubmissionDeadline
+        ? new Date(deadlines.blguSubmissionDeadline)
         : undefined,
-      reworkCompletionDeadline: deadlines?.reworkCompletionDeadline 
-        ? new Date(deadlines.reworkCompletionDeadline) 
+      reworkCompletionDeadline: deadlines?.reworkCompletionDeadline
+        ? new Date(deadlines.reworkCompletionDeadline)
         : undefined,
     },
   });
@@ -67,7 +69,7 @@ export function DeadlinesCard({
         reworkCompletionDeadline: data.reworkCompletionDeadline.toISOString(),
       });
     } catch (error) {
-      console.error('Error saving deadlines:', error);
+      console.error("Error saving deadlines:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -122,15 +124,11 @@ export function DeadlinesCard({
                 )}
               />
             </div>
-            
+
             <div className="flex justify-end">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || isLoading}
-                className="min-w-[120px]"
-              >
+              <Button type="submit" disabled={isSubmitting || isLoading} className="min-w-[120px]">
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? 'Saving...' : 'Save Deadlines'}
+                {isSubmitting ? "Saving..." : "Save Deadlines"}
               </Button>
             </div>
           </form>
@@ -138,4 +136,4 @@ export function DeadlinesCard({
       </CardContent>
     </Card>
   );
-} 
+}

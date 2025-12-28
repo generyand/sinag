@@ -1,6 +1,7 @@
 # Local Development Guide
 
 > **TODO**: Document local development workflow including:
+>
 > - Starting development servers
 > - Development commands (dev, test, lint, build)
 > - Hot reloading behavior
@@ -28,6 +29,7 @@ pnpm generate-types   # After API changes
 ## Common Development Tasks
 
 > **TODO**: Document common tasks:
+>
 > - Adding a new API endpoint
 > - Creating a new React component
 > - Running specific tests

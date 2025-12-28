@@ -25,16 +25,37 @@ rating system.
 
 ## 4-Tier Rating System
 
-Per DILG MC 2024-417, BBI functionality is determined by compliance rate:
+Per DILG MC 2024-417, BBI functionality is determined by count-based thresholds specific to each
+BBI:
 
-| Compliance Rate | Adjectival Rating     | Color Code   |
-| --------------- | --------------------- | ------------ |
-| 75% - 100%      | HIGHLY_FUNCTIONAL     | Green        |
-| 50% - 74%       | MODERATELY_FUNCTIONAL | Yellow/Amber |
-| 1% - 49%        | LOW_FUNCTIONAL        | Orange       |
-| 0%              | NON_FUNCTIONAL        | Red          |
+| Passed Count (per BBI) | Adjectival Rating     | Color Code   |
+| ---------------------- | --------------------- | ------------ |
+| BBI-specific threshold | HIGHLY_FUNCTIONAL     | Green        |
+| BBI-specific threshold | MODERATELY_FUNCTIONAL | Yellow/Amber |
+| BBI-specific threshold | LOW_FUNCTIONAL        | Orange       |
+| 0 passed               | NON_FUNCTIONAL        | Red          |
+
+### BBI-Specific Thresholds
+
+Each BBI has custom thresholds defined in `BBI_CONFIG`:
+
+| BBI      | Highly Functional | Moderately Functional | Low Functional | Non-Functional |
+| -------- | ----------------- | --------------------- | -------------- | -------------- |
+| BDRRMC   | 3-4 passed        | 2 passed              | 1 passed       | 0 passed       |
+| BADAC    | 7-10 passed       | 5-6 passed            | 1-4 passed     | 0 passed       |
+| BPOC     | 3 passed          | 2 passed              | 1 passed       | 0 passed       |
+| VAW Desk | 5-7 passed        | 3-4 passed            | 1-2 passed     | 0 passed       |
+| BDC      | 3-4 passed        | 2 passed              | 1 passed       | 0 passed       |
+| BCPC     | 4-6 passed        | 3 passed              | 1-2 passed     | 0 passed       |
+| BESWMC   | 3-4 passed        | 2 passed              | 1 passed       | 0 passed       |
 
 ### Calculation Formula
+
+```
+Rating = get_bbi_rating_by_count(indicator_code, passed_count)
+```
+
+The system also calculates a compliance percentage for display:
 
 ```
 Compliance Rate = (Passed Sub-Indicators / Total Sub-Indicators) x 100%

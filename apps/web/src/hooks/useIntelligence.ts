@@ -1,40 +1,51 @@
 /**
  * Hook for AI-powered insights generation with polling support
- * 
+ *
  * Handles asynchronous insights generation with automatic polling
  * to detect when insights are ready.
  */
 
-import { useQueryClient } from '@tanstack/react-query';
-import { usePostAssessmentsIdGenerateInsights } from '@sinag/shared/src/generated/endpoints/assessments';
-import { useEffect, useRef } from 'react';
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  usePostAssessmentsIdGenerateInsights,
+  usePostAssessmentsIdRegenerateInsights,
+} from "@sinag/shared";
+import { useEffect, useRef } from "react";
 
 interface UseIntelligenceResult {
   generateInsights: (assessmentId: number) => Promise<void>;
+  regenerateInsights: (assessmentId: number) => Promise<void>;
   isGenerating: boolean;
+  isRegenerating: boolean;
   error: unknown;
 }
 
 /**
  * Hook for generating AI-powered insights with polling
- * 
+ *
  * This hook provides a `generateInsights` function that:
  * 1. Dispatches a Celery task via POST /api/v1/assessments/{id}/generate-insights
  * 2. Expects a 202 Accepted response
  * 3. Initiates polling every 5 seconds to check for ai_recommendations field
  * 4. Automatically stops polling when data appears
- * 
+ *
  * @returns Object with generateInsights function, isGenerating state, and error
  */
 export function useIntelligence(): UseIntelligenceResult {
   const queryClient = useQueryClient();
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const {
     mutate: generateInsightsMutation,
     isPending: isGenerating,
-    error,
+    error: generateError,
   } = usePostAssessmentsIdGenerateInsights();
+
+  const {
+    mutate: regenerateInsightsMutation,
+    isPending: isRegenerating,
+    error: regenerateError,
+  } = usePostAssessmentsIdRegenerateInsights();
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -58,13 +69,11 @@ export function useIntelligence(): UseIntelligenceResult {
               try {
                 // Refetch the assessment data to check for ai_recommendations
                 await queryClient.refetchQueries({
-                  queryKey: ['getAssessmentsMyAssessment'],
+                  queryKey: ["getAssessmentsMyAssessment"],
                 });
 
                 // Check if ai_recommendations exists by looking at the cached data
-                const cachedData = queryClient.getQueryData([
-                  'getAssessmentsMyAssessment',
-                ]);
+                const cachedData = queryClient.getQueryData(["getAssessmentsMyAssessment"]);
 
                 // The exact structure depends on the API response
                 // This is a simplified check - in real usage, you'd check the actual structure
@@ -97,10 +106,60 @@ export function useIntelligence(): UseIntelligenceResult {
     });
   };
 
+  const regenerateInsights = async (assessmentId: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      // Regenerate insights via mutation with force=true
+      regenerateInsightsMutation(
+        { id: assessmentId, params: { force: true } },
+        {
+          onSuccess: async () => {
+            // Start polling every 5 seconds to check for updated ai_recommendations
+            const pollForResults = async () => {
+              try {
+                // Refetch the assessment data to check for ai_recommendations
+                await queryClient.refetchQueries({
+                  queryKey: ["getAssessmentsMyAssessment"],
+                });
+
+                // Also refetch CapDev data since insights may be related
+                await queryClient.refetchQueries({
+                  queryKey: ["getCapdevAssessmentsAssessmentId"],
+                });
+
+                const cachedData = queryClient.getQueryData(["getAssessmentsMyAssessment"]);
+
+                if (cachedData) {
+                  if (pollingIntervalRef.current) {
+                    clearInterval(pollingIntervalRef.current);
+                    pollingIntervalRef.current = null;
+                    resolve();
+                  }
+                }
+              } catch (err) {
+                if (pollingIntervalRef.current) {
+                  clearInterval(pollingIntervalRef.current);
+                  pollingIntervalRef.current = null;
+                }
+                reject(err);
+              }
+            };
+
+            // Start polling
+            pollingIntervalRef.current = setInterval(pollForResults, 5000);
+          },
+          onError: (error: unknown) => {
+            reject(error);
+          },
+        }
+      );
+    });
+  };
+
   return {
     generateInsights,
+    regenerateInsights,
     isGenerating,
-    error,
+    isRegenerating,
+    error: generateError || regenerateError,
   };
 }
-

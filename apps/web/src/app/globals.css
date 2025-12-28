@@ -9,6 +9,57 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+
+  --animate-accordion-down: accordion-down 0.3s ease-in-out;
+  --animate-accordion-up: accordion-up 0.3s ease-in-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
 /*
  * Tailwind CSS v4 Dark Mode Configuration
  * This enables the dark: variant to respond to the .dark class on <html>
@@ -21,16 +72,14 @@
 
 /* Theme-aware background styling - no forced overrides */
 
-
-
 /* THEME COLOR VARIABLES (see @styling.mdc) */
 :root {
   --radius: 0.625rem;
-  
+
   /* Palette: backgrounds */
   --background: #f8f9fa;
   --card: #ffffff;
-  --overlay: rgba(0,0,0,0.5);
+  --overlay: rgba(0, 0, 0, 0.5);
 
   /* Palette: text */
   --foreground: #212529;
@@ -48,7 +97,7 @@
   --icon-muted: #adb5bd;
 
   /* Palette: interactive */
-  --focus: #F7B520;
+  --focus: #f7b520;
   --hover: #f8f9fa;
 
   /* Palette: gradients */
@@ -74,10 +123,10 @@
   --cityscape-black: #000000;
   --cityscape-dark: #1a1a1a;
   --cityscape-gray: #2d2d2d;
-  --cityscape-yellow: #F7B520;
+  --cityscape-yellow: #f7b520;
   --cityscape-yellow-light: #fcd34d;
   --cityscape-yellow-dark: #d99b0a;
-  --cityscape-accent: #F7B520;
+  --cityscape-accent: #f7b520;
   --cityscape-accent-foreground: #000000;
 
   /* KPI Card Theme Colors - Light Mode */
@@ -86,19 +135,19 @@
   --kpi-blue-text: #1d4ed8;
   --kpi-blue-bg: #dbeafe;
   --kpi-blue-progress: #2563eb;
-  
+
   --kpi-orange-from: #fff7ed;
   --kpi-orange-to: #fed7aa;
   --kpi-orange-text: #c2410c;
   --kpi-orange-bg: #fed7aa;
   --kpi-orange-progress: #ea580c;
-  
+
   --kpi-green-from: #f0fdf4;
   --kpi-green-to: #dcfce7;
   --kpi-green-text: #166534;
   --kpi-green-bg: #dcfce7;
   --kpi-green-progress: #16a34a;
-  
+
   --kpi-purple-from: #faf5ff;
   --kpi-purple-to: #e9d5ff;
   --kpi-purple-text: #7c3aed;
@@ -112,21 +161,21 @@
   --dashboard-default-icon-bg: #dbeafe;
   --dashboard-default-icon-text: #2563eb;
   --dashboard-default-accent: #2563eb;
-  
+
   --dashboard-success-from: #ecfdf580;
   --dashboard-success-via: #f0fdf499;
   --dashboard-success-to: #f0fdfa66;
   --dashboard-success-icon-bg: #dcfce7;
   --dashboard-success-icon-text: #16a34a;
   --dashboard-success-accent: #16a34a;
-  
+
   --dashboard-warning-from: #fffbeb80;
   --dashboard-warning-via: #fef3c799;
   --dashboard-warning-to: #fef2f266;
   --dashboard-warning-icon-bg: #fed7aa;
   --dashboard-warning-icon-text: #ea580c;
   --dashboard-warning-accent: #ea580c;
-  
+
   --dashboard-danger-from: #fef2f280;
   --dashboard-danger-via: #fce7f399;
   --dashboard-danger-to: #fdf2f866;
@@ -140,19 +189,19 @@
   --analytics-success-border: #d1fae5;
   --analytics-success-text: #065f46;
   --analytics-success-text-light: #047857;
-  
+
   --analytics-danger: #ef4444;
   --analytics-danger-bg: #fef2f2;
   --analytics-danger-border: #fecaca;
   --analytics-danger-text: #991b1b;
   --analytics-danger-text-light: #dc2626;
-  
+
   --analytics-warning: #f59e0b;
   --analytics-warning-bg: #fffbeb;
   --analytics-warning-border: #fed7aa;
   --analytics-warning-text: #92400e;
   --analytics-warning-text-light: #d97706;
-  
+
   --analytics-neutral: #6b7280;
   --analytics-neutral-bg: #f9fafb;
   --analytics-neutral-border: #e5e7eb;
@@ -161,7 +210,7 @@
 
   /* Form and system */
   --input: #f8f9fa;
-  --ring: #F7B520;
+  --ring: #f7b520;
 
   /* Radius (see @styling.mdc spacing) */
   --radius-xs: 0.25rem;
@@ -171,8 +220,8 @@
   --radius-xl: 2rem;
 
   /* Font families */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono, 'Fira Mono', monospace);
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono, "Fira Mono", monospace);
 
   /* shadcn/ui oklch variables (for compatibility) */
   --card-foreground: oklch(0.145 0 0);
@@ -200,7 +249,7 @@
 .dark {
   --background: #1a1f2e;
   --card: #252b3a;
-  --overlay: rgba(0,0,0,0.7);
+  --overlay: rgba(0, 0, 0, 0.7);
   --foreground: #ffffff;
   --text-primary: #ffffff;
   --text-secondary: #cbd5e1;
@@ -210,7 +259,7 @@
   --border-light: #252b3a;
   --icon-default: #cbd5e1;
   --icon-muted: #94a3b8;
-  --focus: #F7B520;
+  --focus: #f7b520;
   --hover: #252b3a;
   --gradient-start: #1a1f2e;
   --gradient-mid: #1f2534;
@@ -226,43 +275,43 @@
   --warning: #fd7e14;
   --destructive: #dc3545;
   --input: #252b3a;
-  --ring: #F7B520;
-  
+  --ring: #f7b520;
+
   /* Cityscape Theme Colors (NEW) - Dark mode */
   --cityscape-black: #000000;
   --cityscape-dark: #1a1f2e;
   --cityscape-gray: #252b3a;
-  --cityscape-yellow: #F7B520;
+  --cityscape-yellow: #f7b520;
   --cityscape-yellow-light: #fcd34d;
   --cityscape-yellow-dark: #d99b0a;
-  --cityscape-accent: #F7B520;
+  --cityscape-accent: #f7b520;
   --cityscape-accent-foreground: #000000;
-  
+
   /* KPI Card Theme Colors - Dark Mode */
   --kpi-blue-from: #1e3a8a20;
   --kpi-blue-to: #1e40af20;
   --kpi-blue-text: #93c5fd;
   --kpi-blue-bg: #1e40af30;
   --kpi-blue-progress: #60a5fa;
-  
+
   --kpi-orange-from: #ea580c20;
   --kpi-orange-to: #c2410c20;
   --kpi-orange-text: #fdba74;
   --kpi-orange-bg: #ea580c30;
   --kpi-orange-progress: #fb923c;
-  
+
   --kpi-green-from: #16a34a20;
   --kpi-green-to: #15803d20;
   --kpi-green-text: #86efac;
   --kpi-green-bg: #16a34a30;
   --kpi-green-progress: #4ade80;
-  
+
   --kpi-purple-from: #7c3aed20;
   --kpi-purple-to: #6d28d920;
   --kpi-purple-text: #c4b5fd;
   --kpi-purple-bg: #7c3aed30;
   --kpi-purple-progress: #a78bfa;
-  
+
   /* Dashboard KPI Card Variants - Dark Mode */
   --dashboard-default-from: #1e3a8a20;
   --dashboard-default-via: #1e40af30;
@@ -270,28 +319,28 @@
   --dashboard-default-icon-bg: #1e40af30;
   --dashboard-default-icon-text: #93c5fd;
   --dashboard-default-accent: #93c5fd;
-  
+
   --dashboard-success-from: #16a34a20;
   --dashboard-success-via: #15803d30;
   --dashboard-success-to: #14b8a620;
   --dashboard-success-icon-bg: #16a34a30;
   --dashboard-success-icon-text: #86efac;
   --dashboard-success-accent: #86efac;
-  
+
   --dashboard-warning-from: #ea580c20;
   --dashboard-warning-via: #c241c030;
   --dashboard-warning-to: #dc262620;
   --dashboard-warning-icon-bg: #ea580c30;
   --dashboard-warning-icon-text: #fdba74;
   --dashboard-warning-accent: #fdba74;
-  
+
   --dashboard-danger-from: #dc262620;
   --dashboard-danger-via: #ec489930;
   --dashboard-danger-to: #f4338f20;
   --dashboard-danger-icon-bg: #dc262630;
   --dashboard-danger-icon-text: #fca5a5;
   --dashboard-danger-accent: #fca5a5;
-  
+
   /* Analytics Chart Colors - Dark Mode */
   --analytics-success: #4ade80;
   --analytics-success-bg: #16a34a20;
@@ -305,18 +354,18 @@
   --analytics-danger-text: #fca5a5;
   --analytics-danger-text-light: #f87171;
 
-  --analytics-warning: #F7B520;
-  --analytics-warning-bg: #F7B52020;
-  --analytics-warning-border: #F7B52040;
+  --analytics-warning: #f7b520;
+  --analytics-warning-bg: #f7b52020;
+  --analytics-warning-border: #f7b52040;
   --analytics-warning-text: #fcd34d;
-  --analytics-warning-text-light: #F7B520;
-  
+  --analytics-warning-text-light: #f7b520;
+
   --analytics-neutral: #9ca3af;
   --analytics-neutral-bg: #6b728020;
   --analytics-neutral-border: #6b728040;
   --analytics-neutral-text: #d1d5db;
   --analytics-neutral-text-light: #9ca3af;
-  
+
   /* shadcn/ui oklch variables (for compatibility) */
   --card-foreground: oklch(0.985 0 0);
   --popover: #252b3a; /* Solid background matching --card */
@@ -343,7 +392,7 @@
 /* TYPOGRAPHY (see @styling.mdc) */
 @layer base {
   * {
-    font-family: 'Inter', system-ui, sans-serif !important;
+    font-family: "Inter", system-ui, sans-serif !important;
   }
   html {
     font-family: var(--font-sans);
@@ -417,19 +466,24 @@
     box-shadow: 0 0 0 3px var(--ring);
   }
   ::selection {
-    background: #F7B520;
+    background: #f7b520;
     color: #000000;
   }
 }
 
 /* FORM ELEMENTS (see @form-handling.mdc) */
 @layer base {
-  input, textarea, select, button {
+  input,
+  textarea,
+  select,
+  button {
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     background: var(--input);
     color: var(--foreground);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
     /* Use theme for placeholder and icon color */
   }
   input::placeholder,
@@ -439,14 +493,18 @@
     color: var(--text-secondary) !important;
     opacity: 1 !important;
   }
-  input svg, .input-icon {
+  input svg,
+  .input-icon {
     color: var(--icon-default);
   }
-  input:focus, textarea:focus, select:focus {
+  input:focus,
+  textarea:focus,
+  select:focus {
     border-color: var(--focus);
     box-shadow: 0 0 0 2px var(--ring);
   }
-  input[aria-invalid="true"], textarea[aria-invalid="true"] {
+  input[aria-invalid="true"],
+  textarea[aria-invalid="true"] {
     border-color: var(--destructive);
     box-shadow: 0 0 0 2px var(--destructive);
   }
@@ -457,25 +515,57 @@
 }
 
 /* UTILITY CLASSES FOR THEME TOKENS */
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-muted { color: var(--text-muted); }
-.text-inverse { color: var(--text-inverse); }
-.bg-primary { background: var(--primary); }
-.bg-secondary { background: var(--secondary); }
-.bg-success { background: var(--success); }
-.bg-warning { background: var(--warning); }
-.bg-destructive { background: var(--destructive); }
-.border-primary { border-color: var(--primary); }
-.border-secondary { border-color: var(--secondary); }
-.border-destructive { border-color: var(--destructive); }
+.text-primary {
+  color: var(--text-primary);
+}
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-inverse {
+  color: var(--text-inverse);
+}
+.bg-primary {
+  background: var(--primary);
+}
+.bg-secondary {
+  background: var(--secondary);
+}
+.bg-success {
+  background: var(--success);
+}
+.bg-warning {
+  background: var(--warning);
+}
+.bg-destructive {
+  background: var(--destructive);
+}
+.border-primary {
+  border-color: var(--primary);
+}
+.border-secondary {
+  border-color: var(--secondary);
+}
+.border-destructive {
+  border-color: var(--destructive);
+}
 
 /* RESPONSIVENESS (see @styling.mdc) */
 @media (max-width: 640px) {
-  html { font-size: 15px; }
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
+  html {
+    font-size: 15px;
+  }
+  h1 {
+    font-size: 2rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  h3 {
+    font-size: 1.25rem;
+  }
 }
 
 /* SHADCN UI SUPPORT (see @ui-components.mdc) */
@@ -484,12 +574,12 @@
     /* Used to scope shadcn/ui overrides if needed */
     color: inherit;
   }
-  
+
   /* Ensure dark mode background is applied to root elements */
   html.dark {
     background: var(--background) !important;
   }
-  
+
   html.dark body {
     background: var(--background) !important;
   }
@@ -497,33 +587,71 @@
 
 /* LANDING PAGE ANIMATIONS (moved from page.tsx) */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-16px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
-.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
 
 @keyframes fade-in-blob {
-  0% { opacity: 0; }
-  100% { opacity: 0.6; }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0.6;
+  }
 }
-.animate-fade-in-blob { animation: fade-in-blob 1.2s ease-in forwards; }
-.animate-fade-in-blob-light { animation: fade-in-blob 1.2s 0.5s ease-in forwards; }
+.animate-fade-in-blob {
+  animation: fade-in-blob 1.2s ease-in forwards;
+}
+.animate-fade-in-blob-light {
+  animation: fade-in-blob 1.2s 0.5s ease-in forwards;
+}
 
 @keyframes blob {
-  0% { transform: scale(1) translate(0px, 0px); }
-  33% { transform: scale(1.1, 0.9) translate(30px, -20px); }
-  66% { transform: scale(0.9, 1.1) translate(-20px, 30px); }
-  100% { transform: scale(1) translate(0px, 0px); }
+  0% {
+    transform: scale(1) translate(0px, 0px);
+  }
+  33% {
+    transform: scale(1.1, 0.9) translate(30px, -20px);
+  }
+  66% {
+    transform: scale(0.9, 1.1) translate(-20px, 30px);
+  }
+  100% {
+    transform: scale(1) translate(0px, 0px);
+  }
 }
-.animate-blob { animation: blob 8s infinite linear alternate; }
+.animate-blob {
+  animation: blob 8s infinite linear alternate;
+}
 
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
-.animate-spin-slow { animation: spin-slow 3s linear infinite; }
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
 
-.animation-delay-800 { animation-delay: 0.8s; }
-.animation-delay-2000 { animation-delay: 2s; }
-.animation-delay-4000 { animation-delay: 4s; }
+.animation-delay-800 {
+  animation-delay: 0.8s;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
+}

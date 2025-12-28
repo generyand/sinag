@@ -11,8 +11,8 @@ export function ProblemsSection() {
             Common Problems Students & Event Organizers Face
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Traditional attendance methods create unnecessary challenges that
-            waste time and compromise accuracy.
+            Traditional attendance methods create unnecessary challenges that waste time and
+            compromise accuracy.
           </p>
         </div>
 
@@ -22,12 +22,10 @@ export function ProblemsSection() {
             <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mb-6">
               <PenTool className="w-8 h-8 text-red-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Tedious Manual Writing
-            </h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Tedious Manual Writing</h3>
             <p className="text-gray-600 mb-6">
-              Illegible handwriting and lost records make it difficult to track
-              attendance accurately.
+              Illegible handwriting and lost records make it difficult to track attendance
+              accurately.
             </p>
             <ul className="space-y-2">
               <li className="flex items-center text-sm text-gray-500">
@@ -46,12 +44,9 @@ export function ProblemsSection() {
             <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mb-6">
               <Search className="w-8 h-8 text-orange-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Easy to Manipulate Records
-            </h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Easy to Manipulate Records</h3>
             <p className="text-gray-600 mb-6">
-              Forged, altered, or lost records and friends sign for absent
-              classmates.
+              Forged, altered, or lost records and friends sign for absent classmates.
             </p>
             <ul className="space-y-2">
               <li className="flex items-center text-sm text-gray-500">
@@ -70,12 +65,9 @@ export function ProblemsSection() {
             <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6">
               <Clock className="w-8 h-8 text-yellow-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Significant Time Wasted
-            </h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Significant Time Wasted</h3>
             <p className="text-gray-600 mb-6">
-              Long queues and hours manually counting and organizing attendance
-              data.
+              Long queues and hours manually counting and organizing attendance data.
             </p>
             <ul className="space-y-2">
               <li className="flex items-center text-sm text-gray-500">

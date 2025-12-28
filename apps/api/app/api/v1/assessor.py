@@ -19,6 +19,7 @@ from app.schemas import (
     ValidationRequest,
     ValidationResponse,
 )
+from app.schemas.assessor import ReviewHistoryDetail, ReviewHistoryResponse
 from app.services import annotation_service, assessor_service, intelligence_service
 
 router = APIRouter()
@@ -114,6 +115,7 @@ async def validate_assessment_response(
         public_comment=validation_data.public_comment,
         assessor_remarks=validation_data.assessor_remarks,
         response_data=validation_data.response_data,
+        flagged_for_calibration=validation_data.flagged_for_calibration,
     )
 
     return ValidationResponse(**result)
@@ -341,7 +343,16 @@ async def finalize_assessment(
     except ValueError as e:
         from fastapi import HTTPException
 
-        logger.error(f"[FINALIZE ROUTE] ValueError for assessment {assessment_id}: {str(e)}")
+        logger.error(f"[FINALIZE ERROR] ValueError caught for assessment {assessment_id}")
+        logger.error(f"[FINALIZE ERROR] Message: {str(e)}")
+        logger.error(f"[FINALIZE ERROR] Type: {type(e).__name__}")
+        logger.error(f"[FINALIZE ERROR] Module: {e.__class__.__module__}")
+        # Log potentially helpful attributes if available (e.g., from library-specific errors)
+        if hasattr(e, "message"):
+            logger.error(f"[FINALIZE ERROR] e.message: {getattr(e, 'message')}")
+        if hasattr(e, "details"):
+            logger.error(f"[FINALIZE ERROR] e.details: {getattr(e, 'details')}")
+
         raise HTTPException(status_code=400, detail=str(e))
     except PermissionError as e:
         from fastapi import HTTPException
@@ -350,7 +361,7 @@ async def finalize_assessment(
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(
-            f"[FINALIZE ROUTE] Unexpected error for assessment {assessment_id}: {type(e).__name__}: {str(e)}",
+            f"[FINALIZE ROUTE] Unexpected error for assessment {assessment_id}: {type(e).__name__} ({e.__class__.__module__}): {str(e)}",
             exc_info=True,
         )
         raise
@@ -416,6 +427,126 @@ async def get_assessor_analytics(
             status_code=500,
             detail=f"Failed to retrieve analytics: {str(e)}",
         )
+
+
+# ============================================================================
+# Review History Endpoints
+# ============================================================================
+
+
+@router.get(
+    "/history",
+    response_model=ReviewHistoryResponse,
+    tags=["assessor"],
+)
+async def get_review_history(
+    year: int | None = Query(
+        None,
+        description="Filter by assessment year (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
+    date_from: str | None = Query(
+        None, description="Filter by completion date >= date_from (ISO format)"
+    ),
+    date_to: str | None = Query(
+        None, description="Filter by completion date <= date_to (ISO format)"
+    ),
+    outcome: str | None = Query(
+        None, pattern="^(PASSED|FAILED)$", description="Filter by final compliance status"
+    ),
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Get paginated review history for the current assessor/validator.
+
+    Returns COMPLETED assessments that the user has reviewed:
+    - Assessors: Assessments where reviewed_by matches the current user
+    - Validators: Completed assessments in their governance area
+
+    Each item includes summary counts (pass/fail/conditional indicators)
+    without loading full indicator details (for performance).
+    """
+    from datetime import datetime
+
+    # Parse date strings to datetime objects
+    parsed_date_from = None
+    parsed_date_to = None
+    if date_from:
+        try:
+            parsed_date_from = datetime.fromisoformat(date_from.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format. Use ISO format.")
+    if date_to:
+        try:
+            parsed_date_to = datetime.fromisoformat(date_to.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format. Use ISO format.")
+
+    try:
+        result = assessor_service.get_review_history(
+            db=db,
+            user=current_assessor,
+            assessment_year=year,
+            page=page,
+            page_size=page_size,
+            date_from=parsed_date_from,
+            date_to=parsed_date_to,
+            outcome=outcome,
+        )
+        return ReviewHistoryResponse(**result)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve review history: {str(e)}",
+        )
+
+
+@router.get(
+    "/history/{assessment_id}",
+    response_model=ReviewHistoryDetail,
+    tags=["assessor"],
+)
+async def get_review_history_detail(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Get detailed per-indicator decisions for a specific completed assessment.
+
+    Used when user expands a row to see inline indicator details including:
+    - Validation status (Pass/Fail/Conditional) per indicator
+    - Feedback comments given
+    - Calibration flags
+    - MOV counts
+
+    Access control:
+    - Assessors can only view assessments they reviewed (reviewed_by == user.id)
+    - Validators can view assessments in their governance area
+    """
+    result = assessor_service.get_review_history_detail(
+        db=db,
+        user=current_assessor,
+        assessment_id=assessment_id,
+    )
+
+    if not result.get("success", True):
+        if result.get("message") == "Assessment not found":
+            raise HTTPException(status_code=404, detail=result["message"])
+        elif result.get("message") == "Access denied":
+            raise HTTPException(status_code=403, detail=result["message"])
+        else:
+            raise HTTPException(status_code=400, detail=result.get("message", "Unknown error"))
+
+    # Remove the 'success' and 'message' fields before creating the Pydantic model
+    # They are used for error handling but not part of the response schema
+    response_data = {k: v for k, v in result.items() if k not in ("success", "message")}
+
+    return ReviewHistoryDetail(**response_data)
 
 
 # ============================================================================

@@ -30,6 +30,7 @@ class ValidationRequest(BaseModel):
     public_comment: str | None = None
     assessor_remarks: str | None = None
     response_data: dict[str, Any] | None = None  # Allow assessors to update checklist data
+    flagged_for_calibration: bool | None = None  # Toggle to flag indicator for calibration
 
 
 class ValidationResponse(BaseModel):
@@ -39,6 +40,7 @@ class ValidationResponse(BaseModel):
     message: str
     assessment_response_id: int
     validation_status: ValidationStatus | None = None
+    has_mov_annotations: bool = False
 
 
 class MOVUploadResponse(BaseModel):
@@ -154,3 +156,84 @@ class AssessorAnalyticsResponse(BaseModel):
     workflow: WorkflowMetrics
     assessment_period: str | None = None
     governance_area_name: str | None = None
+
+
+# ============================================================================
+# Review History Schemas
+# ============================================================================
+
+
+class ReviewHistoryFeedbackComment(BaseModel):
+    """Feedback comment for review history detail."""
+
+    id: int
+    comment: str
+    assessor_name: str
+    assessor_role: str | None = None
+    created_at: datetime
+    is_internal_note: bool = False
+
+
+class ReviewHistoryIndicator(BaseModel):
+    """Per-indicator decision data for expandable rows in review history."""
+
+    indicator_id: int
+    indicator_code: str
+    indicator_name: str
+    governance_area_name: str | None = None
+    validation_status: ValidationStatus | None = None
+    assessor_remarks: str | None = None
+    flagged_for_calibration: bool = False
+    requires_rework: bool = False
+    feedback_comments: list[ReviewHistoryFeedbackComment] = []
+    has_mov_annotations: bool = False
+    mov_count: int = 0
+
+
+class ReviewHistoryItem(BaseModel):
+    """Single review history entry for the list view."""
+
+    assessment_id: int
+    barangay_name: str
+    municipality_name: str | None = None
+    governance_area_name: str | None = None  # For validators - their assigned area
+    submitted_at: datetime | None = None
+    completed_at: datetime | None = None  # validated_at or mlgoo_approved_at
+    final_compliance_status: str | None = None  # PASSED/FAILED
+    rework_count: int = 0
+    calibration_count: int = 0
+    was_reworked: bool = False
+    was_calibrated: bool = False
+    indicator_count: int = 0
+    pass_count: int = 0
+    fail_count: int = 0
+    conditional_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class ReviewHistoryDetail(BaseModel):
+    """Detailed review history with per-indicator data for expansion."""
+
+    assessment_id: int
+    assessment_year: int
+    barangay_name: str
+    municipality_name: str | None = None
+    governance_area_name: str | None = None
+    submitted_at: datetime | None = None
+    completed_at: datetime | None = None
+    final_compliance_status: str | None = None
+    rework_comments: str | None = None
+    calibration_comments: str | None = None
+    indicators: list[ReviewHistoryIndicator] = []
+
+
+class ReviewHistoryResponse(BaseModel):
+    """Paginated review history response."""
+
+    items: list[ReviewHistoryItem]
+    total: int
+    page: int
+    page_size: int
+    has_more: bool

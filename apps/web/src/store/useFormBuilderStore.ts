@@ -7,8 +7,8 @@ import type {
   RadioButtonField,
   TextAreaField,
   TextInputField,
-} from '@sinag/shared';
-import { create } from 'zustand';
+} from "@sinag/shared";
+import { create } from "zustand";
 
 /**
  * Type alias for all form field types
@@ -88,9 +88,7 @@ export const useFormBuilderStore = create<FormBuilderState>((set, get) => ({
   updateField: (fieldId: string, updates: Partial<FormField>) => {
     set((state) => ({
       fields: state.fields.map((field) =>
-        field.field_id === fieldId
-          ? { ...field, ...updates } as FormField
-          : field
+        field.field_id === fieldId ? ({ ...field, ...updates } as FormField) : field
       ),
       isDirty: true,
     }));
@@ -172,29 +170,29 @@ export const generateFieldId = (fieldType: string, existingIds: string[]): strin
  * Type guards for field types
  */
 export const isCheckboxGroupField = (field: FormField): field is CheckboxGroupField => {
-  return field.field_type === 'checkbox_group';
+  return field.field_type === "checkbox_group";
 };
 
 export const isRadioButtonField = (field: FormField): field is RadioButtonField => {
-  return field.field_type === 'radio_button';
+  return field.field_type === "radio_button";
 };
 
 export const isNumberInputField = (field: FormField): field is NumberInputField => {
-  return field.field_type === 'number_input';
+  return field.field_type === "number_input";
 };
 
 export const isTextInputField = (field: FormField): field is TextInputField => {
-  return field.field_type === 'text_input';
+  return field.field_type === "text_input";
 };
 
 export const isTextAreaField = (field: FormField): field is TextAreaField => {
-  return field.field_type === 'text_area';
+  return field.field_type === "text_area";
 };
 
 export const isDatePickerField = (field: FormField): field is DatePickerField => {
-  return field.field_type === 'date_picker';
+  return field.field_type === "date_picker";
 };
 
 export const isFileUploadField = (field: FormField): field is FileUploadField => {
-  return field.field_type === 'file_upload';
+  return field.field_type === "file_upload";
 };

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   AlertDialog,
@@ -9,8 +9,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { ConfirmationDialogProps } from '@/types/system-settings';
+} from "@/components/ui/alert-dialog";
+import { ConfirmationDialogProps } from "@/types/system-settings";
 
 export function ConfirmationDialog({
   isOpen,
@@ -18,31 +18,31 @@ export function ConfirmationDialog({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  variant = 'warning',
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  variant = "warning",
 }: ConfirmationDialogProps) {
   const getVariantStyles = () => {
     switch (variant) {
-      case 'danger':
+      case "danger":
         return {
-          action: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-          icon: 'text-destructive',
+          action: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          icon: "text-destructive",
         };
-      case 'warning':
+      case "warning":
         return {
-          action: 'bg-orange-600 text-white hover:bg-orange-700',
-          icon: 'text-orange-600',
+          action: "bg-orange-600 text-white hover:bg-orange-700",
+          icon: "text-orange-600",
         };
-      case 'info':
+      case "info":
         return {
-          action: 'bg-primary text-primary-foreground hover:bg-primary/90',
-          icon: 'text-primary',
+          action: "bg-primary text-primary-foreground hover:bg-primary/90",
+          icon: "text-primary",
         };
       default:
         return {
-          action: 'bg-primary text-primary-foreground hover:bg-primary/90',
-          icon: 'text-primary',
+          action: "bg-primary text-primary-foreground hover:bg-primary/90",
+          icon: "text-primary",
         };
     }
   };
@@ -57,20 +57,15 @@ export function ConfirmationDialog({
             <div className={`w-5 h-5 rounded-full ${styles.icon} bg-current opacity-20`} />
             {title}
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-left">
-            {message}
-          </AlertDialogDescription>
+          <AlertDialogDescription className="text-left">{message}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className={styles.action}
-          >
+          <AlertDialogAction onClick={onConfirm} className={styles.action}>
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
-} 
+}

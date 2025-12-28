@@ -1,19 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import {
-  Filter,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  Send,
-  AlertTriangle,
-  XCircle,
-} from "lucide-react";
+  ActiveFilterPills,
+  STATUS_FILTER_OPTIONS,
+  SubmissionsEmptyState,
+  SubmissionsMobileList,
+  SubmissionsSkeleton,
+  getProgressBarColor,
+  getStatusConfig,
+  useSubmissionsData,
+  useSubmissionsFilters,
+  type ReviewerInfo,
+  type SortableColumn,
+  type SubmissionUIModel,
+} from "@/components/features/submissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,20 +24,162 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
-  SubmissionsSkeleton,
-  SubmissionsEmptyState,
-  ActiveFilterPills,
-  SubmissionsMobileList,
-  useSubmissionsData,
-  useSubmissionsFilters,
-  getStatusConfig,
-  getProgressBarColor,
-  STATUS_FILTER_OPTIONS,
-  type SubmissionUIModel,
-  type SortableColumn,
-} from "@/components/features/submissions";
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Filter,
+  Search,
+  Send,
+  XCircle,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+/**
+ * Governance area icon mapping by ID.
+ */
+const GOVERNANCE_AREA_ICONS: Record<number, string> = {
+  1: "/Assessment_Areas/financialAdmin.png",
+  2: "/Assessment_Areas/disasterPreparedness.png",
+  3: "/Assessment_Areas/safetyPeaceAndOrder.png",
+  4: "/Assessment_Areas/socialProtectAndSensitivity.png",
+  5: "/Assessment_Areas/businessFriendliness.png",
+  6: "/Assessment_Areas/environmentalManagement.png",
+};
+
+/**
+ * Governance area names by ID.
+ */
+const GOVERNANCE_AREA_NAMES: Record<number, string> = {
+  1: "Financial Administration",
+  2: "Disaster Preparedness",
+  3: "Safety, Peace and Order",
+  4: "Social Protection",
+  5: "Business-Friendliness",
+  6: "Environmental Management",
+};
+
+/**
+ * Compact stacked avatar display for reviewers.
+ * Shows first 4 avatars with overlap, then "+N" for overflow.
+ * Validators show governance area icons, assessors show purple avatar.
+ * Hover tooltip shows full list of reviewers.
+ */
+function ReviewerAvatars({
+  reviewers,
+  maxVisible = 4,
+}: {
+  reviewers: ReviewerInfo[];
+  maxVisible?: number;
+}) {
+  if (reviewers.length === 0) {
+    return <span className="text-sm text-[var(--muted-foreground)] italic">No reviewers yet</span>;
+  }
+
+  const visibleReviewers = reviewers.slice(0, maxVisible);
+  const overflowCount = reviewers.length - maxVisible;
+
+  const getRoleLabel = (reviewer: ReviewerInfo) => {
+    switch (reviewer.role) {
+      case "assessor":
+        return "Assessor";
+      case "validator":
+        return "Validator";
+      default:
+        return "Reviewer";
+    }
+  };
+
+  const tooltipContent = (
+    <div className="space-y-1.5 text-xs">
+      <div className="font-semibold text-[var(--foreground)] border-b border-[var(--border)] pb-1 mb-1">
+        Reviewers ({reviewers.length})
+      </div>
+      {reviewers.map((reviewer) => (
+        <div key={reviewer.id} className="flex items-center gap-2">
+          {reviewer.role === "validator" && reviewer.governanceAreaId ? (
+            <img
+              src={GOVERNANCE_AREA_ICONS[reviewer.governanceAreaId]}
+              alt={GOVERNANCE_AREA_NAMES[reviewer.governanceAreaId]}
+              className="w-5 h-5 rounded-full object-cover"
+            />
+          ) : (
+            <span
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold ${
+                reviewer.role === "assessor"
+                  ? "bg-gradient-to-br from-purple-500 to-purple-600"
+                  : "bg-gradient-to-br from-gray-400 to-gray-500"
+              }`}
+            >
+              {reviewer.avatar.charAt(0)}
+            </span>
+          )}
+          <span className="text-[var(--foreground)]">{reviewer.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={200}>
+        <TooltipTrigger asChild>
+          <div className="flex items-center -space-x-2 cursor-pointer">
+            {visibleReviewers.map((reviewer, index) => (
+              <div
+                key={reviewer.id}
+                className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm ring-2 ring-[var(--background)] overflow-hidden"
+                style={{ zIndex: maxVisible - index }}
+                aria-label={`${getRoleLabel(reviewer)}: ${reviewer.name}`}
+                title={`${getRoleLabel(reviewer)}: ${reviewer.name}`}
+              >
+                {reviewer.role === "validator" && reviewer.governanceAreaId ? (
+                  <img
+                    src={GOVERNANCE_AREA_ICONS[reviewer.governanceAreaId]}
+                    alt={GOVERNANCE_AREA_NAMES[reviewer.governanceAreaId]}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center text-white text-xs font-bold ${
+                      reviewer.role === "assessor"
+                        ? "bg-gradient-to-br from-purple-500 to-purple-600"
+                        : "bg-gradient-to-br from-gray-400 to-gray-500"
+                    }`}
+                  >
+                    {reviewer.avatar}
+                  </div>
+                )}
+              </div>
+            ))}
+            {overflowCount > 0 && (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[var(--muted)] text-[var(--muted-foreground)] ring-2 ring-[var(--background)] shadow-sm"
+                style={{ zIndex: 0 }}
+                aria-label={`${overflowCount} more reviewers`}
+                title={`${overflowCount} more reviewers`}
+              >
+                +{overflowCount}
+              </div>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent
+          side="bottom"
+          align="start"
+          className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-xs"
+        >
+          {tooltipContent}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export default function AdminSubmissionsPage() {
   const { isAuthenticated } = useAuthStore();
@@ -150,7 +293,7 @@ export default function AdminSubmissionsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Header Section */}
-          <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
+          <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6 sm:p-8">
             {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/20 to-indigo-100/10 rounded-full -translate-y-20 translate-x-20"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/15 to-pink-100/10 rounded-full translate-y-16 -translate-x-16"></div>
@@ -158,7 +301,7 @@ export default function AdminSubmissionsPage() {
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-[var(--foreground)]">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
                     Assessment{" "}
                     <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
                       Submissions
@@ -167,18 +310,26 @@ export default function AdminSubmissionsPage() {
                 </div>
 
                 {/* Year Selector + Quick Stats */}
-                <div className="flex items-center gap-4 sm:gap-6">
-                  <YearSelector showLabel showIcon />
-                  <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                    <div className="text-3xl font-bold text-[var(--foreground)]">{totalCount}</div>
-                    <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                      Submissions
-                    </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
+                  <div className="w-full sm:w-auto">
+                    <YearSelector showLabel showIcon />
                   </div>
-                  <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                    <div className="text-3xl font-bold text-green-600">{completedCount}</div>
-                    <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                      Completed
+                  <div className="flex gap-4 sm:contents">
+                    <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
+                      <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
+                        {totalCount}
+                      </div>
+                      <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                        Submissions
+                      </div>
+                    </div>
+                    <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
+                      <div className="text-2xl sm:text-3xl font-bold text-green-600">
+                        {completedCount}
+                      </div>
+                      <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                        Completed
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -278,20 +429,22 @@ export default function AdminSubmissionsPage() {
             ) : (
               <>
                 {/* Mobile Card View */}
-                <SubmissionsMobileList
-                  submissions={filteredSubmissions}
-                  onView={handleViewDetails}
-                  onRemind={handleSendReminder}
-                />
+                <div className="lg:hidden max-h-[600px] overflow-y-auto">
+                  <SubmissionsMobileList
+                    submissions={filteredSubmissions}
+                    onView={handleViewDetails}
+                    onRemind={handleSendReminder}
+                  />
+                </div>
 
                 {/* Desktop Table View */}
-                <div className="hidden lg:block overflow-x-auto">
+                <div className="hidden lg:block overflow-x-auto max-h-[600px] overflow-y-auto">
                   <table className="w-full" role="table">
                     <caption className="sr-only">
                       Assessment submissions with filterable columns for barangay name, progress,
                       status, validators, and last updated date
                     </caption>
-                    <thead className="bg-[var(--muted)]/20 border-b border-[var(--border)]">
+                    <thead className="bg-[var(--card)] border-b border-[var(--border)] sticky top-0 z-10">
                       <tr role="row">
                         <th
                           role="columnheader"
@@ -328,7 +481,7 @@ export default function AdminSubmissionsPage() {
                         </th>
                         <th role="columnheader" className="px-6 py-4 text-left">
                           <div className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                            Validators
+                            Reviewers
                           </div>
                         </th>
                         <th
@@ -358,15 +511,14 @@ export default function AdminSubmissionsPage() {
                         return (
                           <tr
                             key={submission.id}
-                            role="row"
                             className="hover:bg-[var(--cityscape-yellow)]/5 transition-colors"
                           >
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="text-sm font-medium text-[var(--foreground)]">
                                 {submission.barangayName}
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <div
                                   className="flex-1 bg-[var(--border)] rounded-sm h-4 min-w-[100px]"
@@ -389,7 +541,7 @@ export default function AdminSubmissionsPage() {
                                 </span>
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div
                                 id={`status-${submission.id}`}
                                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-medium"
@@ -402,33 +554,15 @@ export default function AdminSubmissionsPage() {
                                 {submission.currentStatus}
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                {submission.assignedValidators.length > 0 ? (
-                                  submission.assignedValidators.map((validator) => (
-                                    <div
-                                      key={validator.id}
-                                      role="img"
-                                      aria-label={`Validator: ${validator.name}`}
-                                      title={validator.name}
-                                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm"
-                                    >
-                                      {validator.avatar}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-sm text-[var(--muted-foreground)] italic">
-                                    No validators yet
-                                  </span>
-                                )}
-                              </div>
+                            <td className="px-6 py-4">
+                              <ReviewerAvatars reviewers={submission.reviewers} />
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="text-sm text-[var(--muted-foreground)]">
                                 {submission.lastUpdated}
                               </div>
                             </td>
-                            <td role="cell" className="px-6 py-4">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"

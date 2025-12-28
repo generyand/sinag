@@ -253,7 +253,7 @@ class TestCompleteAssessmentSubmissionFlow:
         else:
             pytest.fail(f"Unexpected status code: {response.status_code}")
 
-    def test_cannot_submit_incomplete_assessment(
+    def test_can_submit_incomplete_assessment_with_warning(
         self,
         client: TestClient,
         auth_headers_blgu: dict[str, str],
@@ -261,24 +261,29 @@ class TestCompleteAssessmentSubmissionFlow:
         test_indicator,  # Need indicator in DB for validation to work
     ):
         """
-        Test: Incomplete assessment cannot be submitted.
+        Test: Incomplete assessment can be submitted (with warning logged).
+
+        Business Rule Change: We now allow incomplete submissions to support
+        BLGUs who genuinely don't have MOVs for certain indicators.
+        The user confirms via a warning dialog on the frontend.
 
         Verifies:
-        - POST /api/v1/assessments/{id}/submit fails for incomplete assessment
-        - Returns 400 with validation error details
-        - Assessment remains in DRAFT status
+        - POST /api/v1/assessments/{id}/submit succeeds for incomplete assessment
+        - Returns 200 with success response
+        - Assessment status changes to SUBMITTED
         """
         response = client.post(
             f"/api/v1/assessments/{test_draft_assessment.id}/submit",
             headers=auth_headers_blgu,
         )
 
-        # Should fail because assessment has no responses
-        assert response.status_code == 400
+        # Should now succeed - incomplete submissions are allowed with warning
+        assert response.status_code == 200
         data = response.json()
 
-        # Verify error structure
-        assert "detail" in data or "error" in data
+        # Verify success response structure
+        assert data.get("success") is True
+        assert "submitted_at" in data
 
     def test_blgu_cannot_submit_other_users_assessment(
         self,

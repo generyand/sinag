@@ -75,7 +75,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemMetrics>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemMetrics>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSystemMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemMetrics>>>
@@ -149,7 +149,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemHealth>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemHealth>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSystemHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemHealth>>>
@@ -218,7 +218,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystem>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSystemQueryResult = NonNullable<Awaited<ReturnType<typeof getSystem>>>
@@ -292,7 +292,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemDbStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemDbStatus>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSystemDbStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemDbStatus>>>
@@ -361,7 +361,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemHello>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemHello>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSystemHelloQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemHello>>>

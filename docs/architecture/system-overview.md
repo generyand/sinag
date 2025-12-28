@@ -1,6 +1,7 @@
 # System Architecture Overview
 
-This document provides a comprehensive visual overview of the SINAG governance assessment platform architecture, including external integrations, deployment structure, and data flow patterns.
+This document provides a comprehensive visual overview of the SINAG governance assessment platform
+architecture, including external integrations, deployment structure, and data flow patterns.
 
 ## Table of Contents
 
@@ -15,7 +16,8 @@ This document provides a comprehensive visual overview of the SINAG governance a
 
 ## C4 Context Diagram
 
-The following diagram shows how SINAG interacts with external systems and users in the DILG SGLGB assessment workflow:
+The following diagram shows how SINAG interacts with external systems and users in the DILG SGLGB
+assessment workflow:
 
 ```mermaid
 graph TB
@@ -57,15 +59,19 @@ graph TB
 
 **Key External Systems:**
 
-- **Supabase**: Provides PostgreSQL database with pooler (port 6543), file storage for MOVs, and authentication infrastructure
-- **Redis**: Manages Celery task queues for background processing (classification, intelligence generation)
-- **Google Gemini API**: Powers the intelligence layer with AI-generated CapDev recommendations and gap analysis
+- **Supabase**: Provides PostgreSQL database with pooler (port 6543), file storage for MOVs, and
+  authentication infrastructure
+- **Redis**: Manages Celery task queues for background processing (classification, intelligence
+  generation)
+- **Google Gemini API**: Powers the intelligence layer with AI-generated CapDev recommendations and
+  gap analysis
 
 ---
 
 ## High-Level System Architecture
 
-This diagram shows the three-tier architecture of SINAG with clear separation between frontend, backend, and data layers:
+This diagram shows the three-tier architecture of SINAG with clear separation between frontend,
+backend, and data layers:
 
 ```mermaid
 graph TB
@@ -112,10 +118,13 @@ graph TB
 
 **Architecture Principles:**
 
-1. **Separation of Concerns**: Frontend handles presentation, backend manages business logic, services encapsulate domain operations
+1. **Separation of Concerns**: Frontend handles presentation, backend manages business logic,
+   services encapsulate domain operations
 2. **Type Safety**: Pydantic schemas generate TypeScript types via Orval for end-to-end type safety
-3. **Asynchronous Processing**: Long-running AI operations (classification, intelligence) run in Celery workers
-4. **Role-Based Access Control**: Five user roles (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER) with different permissions
+3. **Asynchronous Processing**: Long-running AI operations (classification, intelligence) run in
+   Celery workers
+4. **Role-Based Access Control**: Five user roles (MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER,
+   KATUPARAN_CENTER_USER) with different permissions
 
 ---
 
@@ -190,7 +199,8 @@ graph TB
 **Deployment Configuration:**
 
 - **Nginx Reverse Proxy**: Entry point on port 80, routes `/api/*` to FastAPI, `/` to Next.js
-- **Networking**: Custom bridge network with static IP assignments for predictable inter-container communication
+- **Networking**: Custom bridge network with static IP assignments for predictable inter-container
+  communication
 - **Volumes**: Redis data persistence, Next.js build cache (.next/), Turbopack cache (.turbo/)
 - **Health Checks**: API container health endpoint (`/health`), Redis ping checks
 - **Environment Variables**: Loaded from `apps/api/.env` and `apps/web/.env.local`
@@ -298,11 +308,16 @@ sequenceDiagram
 
 **Key Data Flow Characteristics:**
 
-1. **Synchronous Request/Response**: User actions trigger immediate API calls with validation and database writes
-2. **JWT Authentication**: Every API request includes Bearer token, validated via dependency injection
-3. **Service Layer Abstraction**: Routers delegate all business logic to service classes (Fat Services, Thin Routers)
-4. **Asynchronous Intelligence**: Long-running AI operations (classification, recommendations) run in background workers
-5. **Query Cache Invalidation**: TanStack Query automatically invalidates relevant caches on mutations
+1. **Synchronous Request/Response**: User actions trigger immediate API calls with validation and
+   database writes
+2. **JWT Authentication**: Every API request includes Bearer token, validated via dependency
+   injection
+3. **Service Layer Abstraction**: Routers delegate all business logic to service classes (Fat
+   Services, Thin Routers)
+4. **Asynchronous Intelligence**: Long-running AI operations (classification, recommendations) run
+   in background workers
+5. **Query Cache Invalidation**: TanStack Query automatically invalidates relevant caches on
+   mutations
 6. **Optimistic Updates**: Frontend may show optimistic UI updates before server confirmation
 
 ---
@@ -364,25 +379,27 @@ graph TB
 
 **Type Generation Workflow:**
 
-1. **Backend Developer** defines Pydantic schemas and tags endpoints by feature (e.g., `tags=["assessments"]`)
+1. **Backend Developer** defines Pydantic schemas and tags endpoints by feature (e.g.,
+   `tags=["assessments"]`)
 2. **FastAPI** auto-generates OpenAPI 3.0 schema at `/openapi.json` with all request/response types
 3. **Developer runs** `pnpm generate-types` (triggers `scripts/generate-types.js`)
 4. **Orval reads** OpenAPI spec and generates:
    - **TypeScript types** in `packages/shared/src/generated/schemas/[tag]/`
    - **React Query hooks** in `packages/shared/src/generated/endpoints/[tag]/`
 5. **Frontend Developer** imports generated hooks and types from `@sinag/shared`
-6. **Type Safety Enforced** at compile-time: API contract changes immediately surface as TypeScript errors
+6. **Type Safety Enforced** at compile-time: API contract changes immediately surface as TypeScript
+   errors
 
 **Tag-Based Organization:**
 
-| FastAPI Tag | Generated Files | Purpose |
-|------------|-----------------|---------|
-| `assessments` | `endpoints/assessments/`, `schemas/assessments/` | Assessment CRUD operations |
-| `users` | `endpoints/users/`, `schemas/users/` | User management |
-| `auth` | `endpoints/auth/`, `schemas/auth/` | Authentication endpoints |
-| `assessor` | `endpoints/assessor/`, `schemas/assessor/` | Assessor validation workflow |
-| `analytics` | `endpoints/analytics/`, `schemas/analytics/` | Analytics and reporting |
-| `system` | `endpoints/system/`, `schemas/system/` | Health checks, lookups |
+| FastAPI Tag   | Generated Files                                  | Purpose                      |
+| ------------- | ------------------------------------------------ | ---------------------------- |
+| `assessments` | `endpoints/assessments/`, `schemas/assessments/` | Assessment CRUD operations   |
+| `users`       | `endpoints/users/`, `schemas/users/`             | User management              |
+| `auth`        | `endpoints/auth/`, `schemas/auth/`               | Authentication endpoints     |
+| `assessor`    | `endpoints/assessor/`, `schemas/assessor/`       | Assessor validation workflow |
+| `analytics`   | `endpoints/analytics/`, `schemas/analytics/`     | Analytics and reporting      |
+| `system`      | `endpoints/system/`, `schemas/system/`           | Health checks, lookups       |
 
 **Critical Command:**
 
@@ -588,7 +605,8 @@ graph TB
 
 1. User logs in via `/api/v1/auth/login` with email/password
 2. Backend validates credentials, generates JWT with `user_id` in `sub` claim
-3. Frontend stores JWT in memory (Zustand store) and includes in `Authorization: Bearer {token}` header
+3. Frontend stores JWT in memory (Zustand store) and includes in `Authorization: Bearer {token}`
+   header
 4. Every API request validates JWT via `get_current_user` dependency
 5. Role-specific dependencies (`get_current_admin_user`, etc.) enforce RBAC
 
@@ -613,4 +631,4 @@ graph TB
 - Nginx reverse proxy handles rate limiting, compression, and security headers
 - Five user roles provide granular access control across all system features
 
-*Last updated: December 2025*
+_Last updated: December 2025_

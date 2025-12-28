@@ -1,6 +1,7 @@
 # Service Layer Pattern
 
 > **TODO**: Document the "Fat Services, Thin Routers" pattern including:
+>
 > - Philosophy and benefits
 > - Service layer responsibilities
 > - Router layer responsibilities
@@ -17,6 +18,7 @@
 ### Why This Pattern?
 
 > **TODO**: Explain benefits:
+>
 > - Testability
 > - Reusability
 > - Separation of concerns

@@ -90,9 +90,9 @@ INDICATOR_3_5 = Indicator(
             upload_instructions=(
                 "Upload ONE of the following (only 1 required):\n\n"
                 "1. Two (2) Photo documentations of poster or tarpaulin "
-                "(Photo Requirements: One photo with Distant View and one photo with Close-up View)\n"
-                "2. Screenshot of the posting on social media with date covering {CY_CURRENT_YEAR}\n\n"
-                "Note: You only need to upload ONE option (either option 1 OR option 2)."
+                "(Photo Requirements: One photo with Distant View and one photo with Close-up View)\n\n"
+                "OR\n\n"
+                "2. Screenshot of the posting on social media with date covering {CY_CURRENT_YEAR}"
             ),
             validation_rule="ANY_ITEM_REQUIRED",  # OR logic: either photos OR screenshot
             checklist_items=[

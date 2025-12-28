@@ -1,6 +1,7 @@
 # Testing Guide
 
 > **TODO**: Document testing strategy including:
+>
 > - Testing philosophy and coverage goals
 > - Backend testing with pytest
 > - Frontend testing (Jest, React Testing Library, Playwright)

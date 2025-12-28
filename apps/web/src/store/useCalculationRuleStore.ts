@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import type {
   CalculationSchema,
   ConditionGroup,
@@ -9,7 +9,7 @@ import type {
   MatchValueRule,
   BBIFunctionalityCheckRule,
   ConditionGroupRulesItem,
-} from '@sinag/shared';
+} from "@sinag/shared";
 
 /**
  * Type alias for all calculation rule types
@@ -63,10 +63,10 @@ interface CalculationRuleBuilderState {
   deleteRuleFromGroup: (groupIndex: number, ruleIndex: number) => void;
 
   /** Set output status on pass */
-  setOutputStatusOnPass: (status: 'PASS' | 'FAIL') => void;
+  setOutputStatusOnPass: (status: "PASS" | "FAIL") => void;
 
   /** Set output status on fail */
-  setOutputStatusOnFail: (status: 'PASS' | 'FAIL') => void;
+  setOutputStatusOnFail: (status: "PASS" | "FAIL") => void;
 
   /** Select a rule for editing */
   selectRule: (ruleId: string | null) => void;
@@ -105,8 +105,8 @@ export const useCalculationRuleStore = create<CalculationRuleBuilderState>((set,
     set({
       schema: {
         condition_groups: [],
-        output_status_on_pass: 'PASS',
-        output_status_on_fail: 'FAIL',
+        output_status_on_pass: "PASS",
+        output_status_on_fail: "FAIL",
       },
       selectedRuleId: null,
       isDirty: false,
@@ -194,11 +194,7 @@ export const useCalculationRuleStore = create<CalculationRuleBuilderState>((set,
     });
   },
 
-  updateRuleInGroup: (
-    groupIndex: number,
-    ruleIndex: number,
-    updates: Partial<CalculationRule>
-  ) => {
+  updateRuleInGroup: (groupIndex: number, ruleIndex: number, updates: Partial<CalculationRule>) => {
     set((state) => {
       if (!state.schema) return state;
 
@@ -240,7 +236,7 @@ export const useCalculationRuleStore = create<CalculationRuleBuilderState>((set,
     });
   },
 
-  setOutputStatusOnPass: (status: 'PASS' | 'FAIL') => {
+  setOutputStatusOnPass: (status: "PASS" | "FAIL") => {
     set((state) => {
       if (!state.schema) return state;
 
@@ -254,7 +250,7 @@ export const useCalculationRuleStore = create<CalculationRuleBuilderState>((set,
     });
   },
 
-  setOutputStatusOnFail: (status: 'PASS' | 'FAIL') => {
+  setOutputStatusOnFail: (status: "PASS" | "FAIL") => {
     set((state) => {
       if (!state.schema) return state;
 
@@ -309,31 +305,31 @@ export const generateRuleId = (ruleType: string): string => {
  * Type guards for rule types
  */
 export const isAndAllRule = (rule: CalculationRule): rule is AndAllRule => {
-  return rule.rule_type === 'AND_ALL';
+  return rule.rule_type === "AND_ALL";
 };
 
 export const isOrAnyRule = (rule: CalculationRule): rule is OrAnyRule => {
-  return rule.rule_type === 'OR_ANY';
+  return rule.rule_type === "OR_ANY";
 };
 
 export const isPercentageThresholdRule = (
   rule: CalculationRule
 ): rule is PercentageThresholdRule => {
-  return rule.rule_type === 'PERCENTAGE_THRESHOLD';
+  return rule.rule_type === "PERCENTAGE_THRESHOLD";
 };
 
 export const isCountThresholdRule = (rule: CalculationRule): rule is CountThresholdRule => {
-  return rule.rule_type === 'COUNT_THRESHOLD';
+  return rule.rule_type === "COUNT_THRESHOLD";
 };
 
 export const isMatchValueRule = (rule: CalculationRule): rule is MatchValueRule => {
-  return rule.rule_type === 'MATCH_VALUE';
+  return rule.rule_type === "MATCH_VALUE";
 };
 
 export const isBBIFunctionalityCheckRule = (
   rule: CalculationRule
 ): rule is BBIFunctionalityCheckRule => {
-  return rule.rule_type === 'BBI_FUNCTIONALITY_CHECK';
+  return rule.rule_type === "BBI_FUNCTIONALITY_CHECK";
 };
 
 /**
@@ -341,51 +337,51 @@ export const isBBIFunctionalityCheckRule = (
  */
 export const createDefaultRule = (ruleType: string): CalculationRule | null => {
   switch (ruleType) {
-    case 'PERCENTAGE_THRESHOLD':
+    case "PERCENTAGE_THRESHOLD":
       return {
-        rule_type: 'PERCENTAGE_THRESHOLD',
-        field_id: '',
-        operator: '>=',
+        rule_type: "PERCENTAGE_THRESHOLD",
+        field_id: "",
+        operator: ">=",
         threshold: 75,
         description: undefined,
       } as PercentageThresholdRule;
 
-    case 'COUNT_THRESHOLD':
+    case "COUNT_THRESHOLD":
       return {
-        rule_type: 'COUNT_THRESHOLD',
-        field_id: '',
-        operator: '>=',
+        rule_type: "COUNT_THRESHOLD",
+        field_id: "",
+        operator: ">=",
         threshold: 1,
         description: undefined,
       } as CountThresholdRule;
 
-    case 'MATCH_VALUE':
+    case "MATCH_VALUE":
       return {
-        rule_type: 'MATCH_VALUE',
-        field_id: '',
-        operator: '==',
-        expected_value: '',
+        rule_type: "MATCH_VALUE",
+        field_id: "",
+        operator: "==",
+        expected_value: "",
         description: undefined,
       } as MatchValueRule;
 
-    case 'BBI_FUNCTIONALITY_CHECK':
+    case "BBI_FUNCTIONALITY_CHECK":
       return {
-        rule_type: 'BBI_FUNCTIONALITY_CHECK',
+        rule_type: "BBI_FUNCTIONALITY_CHECK",
         bbi_id: 0,
-        expected_status: 'Functional',
+        expected_status: "Functional",
         description: undefined,
       } as BBIFunctionalityCheckRule;
 
-    case 'AND_ALL':
+    case "AND_ALL":
       return {
-        rule_type: 'AND_ALL',
+        rule_type: "AND_ALL",
         conditions: [],
         description: undefined,
       } as AndAllRule;
 
-    case 'OR_ANY':
+    case "OR_ANY":
       return {
-        rule_type: 'OR_ANY',
+        rule_type: "OR_ANY",
         conditions: [],
         description: undefined,
       } as OrAnyRule;
@@ -400,7 +396,7 @@ export const createDefaultRule = (ruleType: string): CalculationRule | null => {
  */
 export const createDefaultConditionGroup = (): ConditionGroup => {
   return {
-    operator: 'AND',
+    operator: "AND",
     rules: [],
   };
 };

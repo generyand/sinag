@@ -26,27 +26,27 @@ export function NumberFieldComponent<TFieldValues extends FieldValues>({
         {field.required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
-      {field.help_text && (
-        <p className="text-sm text-muted-foreground">{field.help_text}</p>
-      )}
+      {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
 
       <Controller
         name={name}
         control={control}
         rules={{
           required: field.required ? `${field.label} is required` : false,
-          min: field.min_value !== undefined && field.min_value !== null
-            ? {
-                value: field.min_value,
-                message: `Minimum value is ${field.min_value}`,
-              }
-            : undefined,
-          max: field.max_value !== undefined && field.max_value !== null
-            ? {
-                value: field.max_value,
-                message: `Maximum value is ${field.max_value}`,
-              }
-            : undefined,
+          min:
+            field.min_value !== undefined && field.min_value !== null
+              ? {
+                  value: field.min_value,
+                  message: `Minimum value is ${field.min_value}`,
+                }
+              : undefined,
+          max:
+            field.max_value !== undefined && field.max_value !== null
+              ? {
+                  value: field.max_value,
+                  message: `Maximum value is ${field.max_value}`,
+                }
+              : undefined,
         }}
         render={({ field: controllerField }) => (
           <Input
@@ -59,9 +59,7 @@ export function NumberFieldComponent<TFieldValues extends FieldValues>({
             step="any"
             className={error ? "border-destructive" : ""}
             aria-invalid={error ? "true" : "false"}
-            aria-describedby={
-              error ? `${field.field_id}-error` : undefined
-            }
+            aria-describedby={error ? `${field.field_id}-error` : undefined}
             value={controllerField.value ?? ""}
             onChange={(e) => {
               const value = e.target.value === "" ? undefined : Number(e.target.value);
@@ -72,11 +70,7 @@ export function NumberFieldComponent<TFieldValues extends FieldValues>({
       />
 
       {error && (
-        <p
-          id={`${field.field_id}-error`}
-          className="text-sm text-destructive"
-          role="alert"
-        >
+        <p id={`${field.field_id}-error`} className="text-sm text-destructive" role="alert">
           {error}
         </p>
       )}

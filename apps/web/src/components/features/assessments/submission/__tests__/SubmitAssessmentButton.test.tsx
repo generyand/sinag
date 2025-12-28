@@ -104,7 +104,7 @@ describe("SubmitAssessmentButton", () => {
     await user.hover(button);
 
     // Find tooltip by role instead of text
-    const tooltip = await screen.findByRole('tooltip');
+    const tooltip = await screen.findByRole("tooltip");
     expect(tooltip).toHaveTextContent(/complete all indicators and upload required movs/i);
   });
 
@@ -128,7 +128,9 @@ describe("SubmitAssessmentButton", () => {
     await user.click(button);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /submit assessment for review/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /submit assessment for review/i })
+      ).toBeInTheDocument();
       expect(screen.getByText(/are you sure you want to submit/i)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /confirm submit/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
@@ -190,7 +192,9 @@ describe("SubmitAssessmentButton", () => {
 
     // Dialog should be closed
     await waitFor(() => {
-      expect(screen.queryByRole("heading", { name: /submit assessment for review/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("heading", { name: /submit assessment for review/i })
+      ).not.toBeInTheDocument();
     });
 
     expect(mockMutate).not.toHaveBeenCalled();

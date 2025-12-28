@@ -403,9 +403,7 @@ describe("ErrorDisplay", () => {
     });
 
     it("should visually distinguish server errors with red", () => {
-      const { container } = render(
-        <ErrorDisplay error={{ response: { status: 500 } }} />
-      );
+      const { container } = render(<ErrorDisplay error={{ response: { status: 500 } }} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("red");
@@ -413,9 +411,7 @@ describe("ErrorDisplay", () => {
     });
 
     it("should visually distinguish validation errors with amber", () => {
-      const { container } = render(
-        <ErrorDisplay error={{ response: { status: 422 } }} />
-      );
+      const { container } = render(<ErrorDisplay error={{ response: { status: 422 } }} />);
       const alert = container.querySelector('[role="alert"]');
 
       expect(alert?.className).toContain("amber");

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, TrendingUp, Users } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { AlertCircle, CheckCircle2, TrendingUp, Users } from "lucide-react";
 
 interface AIInsightsDisplayProps {
   insights: {
@@ -17,7 +17,7 @@ interface AIInsightsDisplayProps {
 export function AIInsightsDisplay({ insights, className }: AIInsightsDisplayProps) {
   if (!insights) {
     return (
-      <Card className={cn('border-muted', className)}>
+      <Card className={cn("border-muted", className)}>
         <CardContent className="p-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <AlertCircle className="h-4 w-4" />
@@ -29,7 +29,7 @@ export function AIInsightsDisplay({ insights, className }: AIInsightsDisplayProp
   }
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn("space-y-4", className)}>
       {/* Summary Section */}
       <Card>
         <CardHeader>
@@ -66,9 +66,7 @@ export function AIInsightsDisplay({ insights, className }: AIInsightsDisplayProp
                 >
                   {index + 1}
                 </Badge>
-                <p className="text-sm leading-relaxed text-foreground flex-1">
-                  {recommendation}
-                </p>
+                <p className="text-sm leading-relaxed text-foreground flex-1">{recommendation}</p>
               </div>
             ))}
           </div>
@@ -87,10 +85,7 @@ export function AIInsightsDisplay({ insights, className }: AIInsightsDisplayProp
         <CardContent>
           <div className="space-y-2">
             {insights.capacity_development_needs.map((need, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-2 p-2 rounded-sm bg-accent/50"
-              >
+              <div key={index} className="flex items-start gap-2 p-2 rounded-sm bg-accent/50">
                 <span className="text-primary text-xs font-medium">•</span>
                 <p className="text-sm leading-relaxed text-foreground">{need}</p>
               </div>
@@ -101,4 +96,3 @@ export function AIInsightsDisplay({ insights, className }: AIInsightsDisplayProp
     </div>
   );
 }
-

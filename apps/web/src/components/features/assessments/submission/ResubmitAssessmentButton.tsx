@@ -20,7 +20,14 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, AlertCircle, AlertTriangle, CheckCircle2, RotateCcw, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  RotateCcw,
+  RefreshCw,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import {
   usePostAssessmentsAssessmentIdResubmit,
@@ -64,66 +66,68 @@ export function ResubmitAssessmentButton({
   const { toast } = useToast();
 
   // Epic 5.0 mutation hook for regular resubmit (to Assessor)
-  const { mutate: resubmitAssessment, isPending: isResubmitPending } = usePostAssessmentsAssessmentIdResubmit({
-    mutation: {
-      onSuccess: (data) => {
-        toast({
-          title: "Assessment Resubmitted",
-          description: `Your assessment was successfully resubmitted on ${new Date(
-            data.resubmitted_at
-          ).toLocaleString()}. This is your final submission.`,
-          variant: "default",
-        });
+  const { mutate: resubmitAssessment, isPending: isResubmitPending } =
+    usePostAssessmentsAssessmentIdResubmit({
+      mutation: {
+        onSuccess: (data) => {
+          toast({
+            title: "Assessment Resubmitted",
+            description: `Your assessment was successfully resubmitted on ${new Date(
+              data.resubmitted_at
+            ).toLocaleString()}. This is your final submission.`,
+            variant: "default",
+          });
 
-        // Close dialog and call success callback
-        setShowConfirmDialog(false);
-        onSuccess?.();
+          // Close dialog and call success callback
+          setShowConfirmDialog(false);
+          onSuccess?.();
+        },
+        onError: (error: any) => {
+          const errorInfo = classifyError(error);
+
+          toast({
+            title: errorInfo.title,
+            description: errorInfo.message,
+            variant: "destructive",
+          });
+
+          // Close dialog on error
+          setShowConfirmDialog(false);
+        },
       },
-      onError: (error: any) => {
-        const errorInfo = classifyError(error);
-
-        toast({
-          title: errorInfo.title,
-          description: errorInfo.message,
-          variant: "destructive",
-        });
-
-        // Close dialog on error
-        setShowConfirmDialog(false);
-      },
-    },
-  });
+    });
 
   // Calibration submit mutation hook (to Validator)
-  const { mutate: submitForCalibration, isPending: isCalibrationPending } = usePostAssessmentsAssessmentIdSubmitForCalibration({
-    mutation: {
-      onSuccess: (data) => {
-        toast({
-          title: "Submitted for Calibration Review",
-          description: `Your assessment was submitted for calibration review on ${new Date(
-            data.resubmitted_at
-          ).toLocaleString()}. The Validator will review your updates.`,
-          variant: "default",
-        });
+  const { mutate: submitForCalibration, isPending: isCalibrationPending } =
+    usePostAssessmentsAssessmentIdSubmitForCalibration({
+      mutation: {
+        onSuccess: (data) => {
+          toast({
+            title: "Submitted for Calibration Review",
+            description: `Your assessment was submitted for calibration review on ${new Date(
+              data.resubmitted_at
+            ).toLocaleString()}. The Validator will review your updates.`,
+            variant: "default",
+          });
 
-        // Close dialog and call success callback
-        setShowConfirmDialog(false);
-        onSuccess?.();
+          // Close dialog and call success callback
+          setShowConfirmDialog(false);
+          onSuccess?.();
+        },
+        onError: (error: any) => {
+          const errorInfo = classifyError(error);
+
+          toast({
+            title: errorInfo.title,
+            description: errorInfo.message,
+            variant: "destructive",
+          });
+
+          // Close dialog on error
+          setShowConfirmDialog(false);
+        },
       },
-      onError: (error: any) => {
-        const errorInfo = classifyError(error);
-
-        toast({
-          title: errorInfo.title,
-          description: errorInfo.message,
-          variant: "destructive",
-        });
-
-        // Close dialog on error
-        setShowConfirmDialog(false);
-      },
-    },
-  });
+    });
 
   const isPending = isCalibrationRework ? isCalibrationPending : isResubmitPending;
 
@@ -148,13 +152,13 @@ export function ResubmitAssessmentButton({
   const buttonText = isMlgooRecalibration
     ? "Submit for MLGOO Review"
     : isCalibrationRework
-    ? "Submit for Calibration"
-    : "Resubmit Assessment";
+      ? "Submit for Calibration"
+      : "Resubmit Assessment";
   const loadingText = isMlgooRecalibration
     ? "Submitting to MLGOO..."
     : isCalibrationRework
-    ? "Submitting..."
-    : "Resubmitting...";
+      ? "Submitting..."
+      : "Resubmitting...";
   const ButtonIcon = isCalibrationRework || isMlgooRecalibration ? RefreshCw : RotateCcw;
 
   const button = (
@@ -189,8 +193,8 @@ export function ResubmitAssessmentButton({
               {isMlgooRecalibration
                 ? "Complete all MLGOO re-calibration requirements before submitting"
                 : isCalibrationRework
-                ? "Complete all calibration requirements before submitting"
-                : "Complete all rework requirements before resubmitting"}
+                  ? "Complete all calibration requirements before submitting"
+                  : "Complete all rework requirements before resubmitting"}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -202,13 +206,13 @@ export function ResubmitAssessmentButton({
   const dialogTitle = isMlgooRecalibration
     ? "Submit for MLGOO Review?"
     : isCalibrationRework
-    ? "Submit for Calibration Review?"
-    : "Resubmit Assessment?";
+      ? "Submit for Calibration Review?"
+      : "Resubmit Assessment?";
   const dialogDescription = isMlgooRecalibration
     ? "Are you sure you want to submit this assessment for MLGOO re-calibration review?"
     : isCalibrationRework
-    ? "Are you sure you want to submit this assessment for calibration review?"
-    : "Are you sure you want to resubmit this assessment?";
+      ? "Are you sure you want to submit this assessment for calibration review?"
+      : "Are you sure you want to resubmit this assessment?";
 
   return (
     <>
@@ -236,8 +240,9 @@ export function ResubmitAssessmentButton({
                           MLGOO Re-Calibration Review
                         </span>
                         <span className="text-amber-600 dark:text-amber-300 block">
-                          Your submission will be sent to the <strong>MLGOO Chairman</strong> for final review.
-                          Only the specific indicators selected for re-calibration will be reviewed.
+                          Your submission will be sent to the <strong>MLGOO Chairman</strong> for
+                          final review. Only the specific indicators selected for re-calibration
+                          will be reviewed.
                         </span>
                       </div>
                     </div>
@@ -258,8 +263,9 @@ export function ResubmitAssessmentButton({
                           Calibration Review
                         </span>
                         <span className="text-blue-600 dark:text-blue-300 block">
-                          Your submission will be sent directly to the <strong>Validator</strong> who requested
-                          calibration. Only the indicators marked for calibration will be reviewed.
+                          Your submission will be sent directly to the <strong>Validator</strong>{" "}
+                          who requested calibration. Only the indicators marked for calibration will
+                          be reviewed.
                         </span>
                       </div>
                     </div>
@@ -280,8 +286,8 @@ export function ResubmitAssessmentButton({
                           Final Submission Warning
                         </span>
                         <span className="text-orange-600 dark:text-orange-300 block">
-                          This is your <strong>final submission</strong>. You have already used your one rework cycle.
-                          No further changes will be allowed after resubmission.
+                          This is your <strong>final submission</strong>. You have already used your
+                          one rework cycle. No further changes will be allowed after resubmission.
                         </span>
                       </div>
                     </div>
@@ -300,8 +306,8 @@ export function ResubmitAssessmentButton({
                     {isMlgooRecalibration
                       ? "Please ensure all MLGOO re-calibration requirements have been addressed and all information is accurate."
                       : isCalibrationRework
-                      ? "Please ensure all calibration requirements have been addressed and all information is accurate."
-                      : "Please ensure all rework requirements have been addressed and all information is accurate."}
+                        ? "Please ensure all calibration requirements have been addressed and all information is accurate."
+                        : "Please ensure all rework requirements have been addressed and all information is accurate."}
                   </span>
                 </div>
               </div>
@@ -322,7 +328,9 @@ export function ResubmitAssessmentButton({
               ) : (
                 <>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                  {isMlgooRecalibration || isCalibrationRework ? "Confirm Submit" : "Confirm Resubmit"}
+                  {isMlgooRecalibration || isCalibrationRework
+                    ? "Confirm Submit"
+                    : "Confirm Resubmit"}
                 </>
               )}
             </AlertDialogAction>

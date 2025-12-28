@@ -5,7 +5,7 @@
  * navigation helpers, and progress metrics.
  */
 
-import type { ReworkComment } from '@sinag/shared';
+import type { ReworkComment } from "@sinag/shared";
 
 /**
  * MOV annotation with file metadata
@@ -15,7 +15,7 @@ export interface MOVAnnotationWithFile {
   mov_file_id: number;
   mov_filename: string;
   mov_file_type: string;
-  annotation_type: 'pdfRect' | 'imageRect';
+  annotation_type: "pdfRect" | "imageRect";
   page?: number;
   rect?: { x1: number; y1: number; x2: number; y2: number };
   rects?: any;
@@ -79,7 +79,7 @@ export interface ReworkContext {
 /**
  * Validation status type (from backend)
  */
-export type ValidationStatus = 'PASS' | 'FAIL' | 'CONDITIONAL' | null;
+export type ValidationStatus = "PASS" | "FAIL" | "CONDITIONAL" | null;
 
 /**
  * Indicator with validation metadata (from dashboard API)

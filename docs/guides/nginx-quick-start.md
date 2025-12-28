@@ -1,6 +1,7 @@
 # Nginx Reverse Proxy - Quick Start Guide
 
-This is a condensed guide for getting started with Nginx in the SINAG project. For detailed documentation, see the [full Nginx setup guide](nginx-reverse-proxy-setup.md).
+This is a condensed guide for getting started with Nginx in the SINAG project. For detailed
+documentation, see the [full Nginx setup guide](nginx-reverse-proxy-setup.md).
 
 ## What is Nginx Doing?
 
@@ -23,11 +24,13 @@ This starts all services including Nginx on port 80.
 ### 2. Access the Application
 
 **Recommended**: Use Nginx as the entry point
+
 ```
 http://localhost
 ```
 
 **Development Only**: Direct access (bypasses Nginx)
+
 ```
 http://localhost:3000  # Frontend
 http://localhost:8000  # Backend API
@@ -73,15 +76,15 @@ curl http://localhost/openapi.json
 
 ## Request Routing
 
-| Request Path | Destination | Notes |
-|-------------|-------------|-------|
-| `/api/*` | FastAPI (port 8000) | All API endpoints |
-| `/docs` | FastAPI | Swagger UI |
-| `/redoc` | FastAPI | ReDoc documentation |
-| `/openapi.json` | FastAPI | OpenAPI schema |
-| `/health` | FastAPI | Health check |
-| `/_next/*` | Next.js (port 3000) | Static assets (cached) |
-| `/` | Next.js | All other pages |
+| Request Path    | Destination         | Notes                  |
+| --------------- | ------------------- | ---------------------- |
+| `/api/*`        | FastAPI (port 8000) | All API endpoints      |
+| `/docs`         | FastAPI             | Swagger UI             |
+| `/redoc`        | FastAPI             | ReDoc documentation    |
+| `/openapi.json` | FastAPI             | OpenAPI schema         |
+| `/health`       | FastAPI             | Health check           |
+| `/_next/*`      | Next.js (port 3000) | Static assets (cached) |
+| `/`             | Next.js             | All other pages        |
 
 ## Configuration Files
 
@@ -98,6 +101,7 @@ nginx/
 ### Problem: "502 Bad Gateway"
 
 **Solution**: Backend services aren't running
+
 ```bash
 ./scripts/docker-dev.sh health
 ./scripts/docker-dev.sh restart
@@ -106,6 +110,7 @@ nginx/
 ### Problem: "Port 80 already in use"
 
 **Solution**: Another service is using port 80
+
 ```bash
 ./scripts/docker-dev.sh check-ports
 ./scripts/docker-dev.sh kill-ports
@@ -116,11 +121,13 @@ nginx/
 **Solution**: File upload exceeds 100MB limit
 
 Edit `nginx/nginx.conf`:
+
 ```nginx
 client_max_body_size 500M;  # Increase limit
 ```
 
 Then reload:
+
 ```bash
 ./scripts/docker-dev.sh nginx-reload
 ```
@@ -130,6 +137,7 @@ Then reload:
 **Solution**: Request took longer than 5 minutes
 
 Edit `nginx/conf.d/default.conf`:
+
 ```nginx
 location /api/ {
     proxy_read_timeout 600s;  # Increase to 10 minutes
@@ -137,6 +145,7 @@ location /api/ {
 ```
 
 Then reload:
+
 ```bash
 ./scripts/docker-dev.sh nginx-reload
 ```
@@ -144,6 +153,7 @@ Then reload:
 ## Key Features
 
 ### Security
+
 - Rate limiting: 30 requests/second per IP (burst 50)
 - Connection limit: 10 concurrent connections per IP
 - Security headers: X-Frame-Options, XSS protection
@@ -151,12 +161,14 @@ Then reload:
 - Blocked access to hidden files (.env, .git)
 
 ### Performance
+
 - Gzip compression for text content
-- Static asset caching (1 hour for /_next/*)
+- Static asset caching (1 hour for /\_next/\*)
 - Keepalive connections to backend
 - Connection pooling
 
 ### Configuration
+
 - 100MB upload limit (for MOV files)
 - 5-minute proxy timeout (for AI tasks)
 - 2048 connections per worker process
@@ -188,9 +200,11 @@ See the [full guide](nginx-reverse-proxy-setup.md#future-enhancements) for detai
 
 ## Troubleshooting
 
-For detailed troubleshooting, see the [full documentation](nginx-reverse-proxy-setup.md#troubleshooting).
+For detailed troubleshooting, see the
+[full documentation](nginx-reverse-proxy-setup.md#troubleshooting).
 
 Quick diagnostics:
+
 ```bash
 # Check if Nginx is running
 docker ps | grep nginx

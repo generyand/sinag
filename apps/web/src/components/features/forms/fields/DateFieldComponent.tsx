@@ -26,9 +26,7 @@ export function DateFieldComponent<TFieldValues extends FieldValues>({
         {field.required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
-      {field.help_text && (
-        <p className="text-sm text-muted-foreground">{field.help_text}</p>
-      )}
+      {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
 
       <Controller
         name={name}
@@ -45,19 +43,13 @@ export function DateFieldComponent<TFieldValues extends FieldValues>({
             max={field.max_date || undefined}
             className={error ? "border-destructive" : ""}
             aria-invalid={error ? "true" : "false"}
-            aria-describedby={
-              error ? `${field.field_id}-error` : undefined
-            }
+            aria-describedby={error ? `${field.field_id}-error` : undefined}
           />
         )}
       />
 
       {error && (
-        <p
-          id={`${field.field_id}-error`}
-          className="text-sm text-destructive"
-          role="alert"
-        >
+        <p id={`${field.field_id}-error`} className="text-sm text-destructive" role="alert">
           {error}
         </p>
       )}

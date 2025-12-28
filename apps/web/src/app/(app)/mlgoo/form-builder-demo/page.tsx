@@ -1,4 +1,4 @@
-import { FormSchemaBuilder } from '@/components/features/indicators/FormSchemaBuilder';
+import { FormSchemaBuilder } from "@/components/features/indicators/FormSchemaBuilder";
 
 /**
  * Form Builder Demo Page
@@ -11,9 +11,7 @@ export default function FormBuilderDemoPage() {
     <div className="h-screen flex flex-col">
       {/* Header */}
       <div className="border-b border-gray-200 bg-white px-6 py-4">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Form Schema Builder Demo
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">Form Schema Builder Demo</h1>
         <p className="mt-1 text-sm text-gray-500">
           Test the drag-and-drop form builder (Story 2.3 & 2.4 complete)
         </p>

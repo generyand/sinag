@@ -2,41 +2,26 @@
 // Tests the complete BLGU submission workflow with one-cycle rework
 // Epic 6 Story 6.1 - End-to-End Workflow Testing
 
-import { test, expect } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 import {
-  loginAsBLGU,
-  loginAsAssessor,
-  logout,
-  TEST_ASSESSMENT_ID,
   FORM_FIELD_VALUES,
   REWORK_COMMENTS,
-  WORKFLOW_STATUSES,
-  navigateToBLGUDashboard,
-  navigateToIndicatorForm,
   clickFirstIndicator,
-  fillTextField,
-  fillNumberField,
-  fillTextArea,
+  loginAsAssessor,
+  loginAsBLGU,
+  navigateToBLGUDashboard,
+  resubmitAssessment,
   saveForm,
   submitAssessment,
-  resubmitAssessment,
-  verifyAssessmentStatus,
-  verifyLockedStateBanner,
-  verifyFormIsReadOnly,
-  verifyReworkCommentsVisible,
-  navigateToAssessorReviewPage,
-  requestRework,
-  verifyReworkLimitReached,
-  verifyCompletionPercentage,
-} from './fixtures';
+} from "./fixtures";
 
-test.describe('Epic 5.0: Submission & Rework Workflow', () => {
+test.describe("Epic 5.0: Submission & Rework Workflow", () => {
   /**
    * Test 1: BLGU creates new assessment
    * Task 6.1.3
    */
-  test('BLGU user can view assessment dashboard in DRAFT status', async ({ page }) => {
-    console.log('📝 Test: BLGU views assessment dashboard');
+  test("BLGU user can view assessment dashboard in DRAFT status", async ({ page }) => {
+    console.log("📝 Test: BLGU views assessment dashboard");
 
     // Login as BLGU user
     await loginAsBLGU(page);
@@ -45,33 +30,33 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
     await navigateToBLGUDashboard(page);
 
     // Verify dashboard loads
-    await expect(page.locator('h1')).toContainText(/dashboard/i, { timeout: 10000 });
+    await expect(page.locator("h1")).toContainText(/dashboard/i, { timeout: 10000 });
 
     // Verify assessment appears (using hardcoded assessment ID 68)
     // Note: In a real test environment, you might create a new assessment here
-    const dashboardContent = page.locator('body');
+    const dashboardContent = page.locator("body");
     await expect(dashboardContent).toBeVisible();
 
-    console.log('✅ BLGU dashboard loaded successfully');
+    console.log("✅ BLGU dashboard loaded successfully");
   });
 
   /**
    * Test 2: BLGU fills dynamic form for indicators
    * Tasks 6.1.4
    */
-  test('BLGU user can fill and save dynamic form fields', async ({ page }) => {
-    console.log('📝 Test: BLGU fills dynamic form');
+  test("BLGU user can fill and save dynamic form fields", async ({ page }) => {
+    console.log("📝 Test: BLGU fills dynamic form");
 
     // Login and navigate to dashboard
     await loginAsBLGU(page);
     await navigateToBLGUDashboard(page);
 
     // Click on first indicator to open form
-    console.log('Clicking first indicator...');
+    console.log("Clicking first indicator...");
     await clickFirstIndicator(page);
 
     // Wait for form to load
-    await expect(page.locator('form')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("form")).toBeVisible({ timeout: 10000 });
 
     // Fill text fields (if present)
     const textInputs = page.locator('input[type="text"]');
@@ -92,7 +77,7 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
     }
 
     // Fill textarea fields (if present)
-    const textareas = page.locator('textarea');
+    const textareas = page.locator("textarea");
     const textareaCount = await textareas.count();
     console.log(`Found ${textareaCount} textarea(s)`);
 
@@ -110,33 +95,33 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
     }
 
     // Save form
-    console.log('Saving form...');
+    console.log("Saving form...");
     await saveForm(page);
 
     // Verify save success (look for success message or toast)
-    const successIndicator = page.locator('text=/saved|success|updated/i').first();
+    const successIndicator = page.locator("text=/saved|success|updated/i").first();
     if (await successIndicator.isVisible({ timeout: 3000 }).catch(() => false)) {
-      console.log('✅ Save success message displayed');
+      console.log("✅ Save success message displayed");
     } else {
-      console.log('⚠️ No explicit save success message (form may have auto-saved)');
+      console.log("⚠️ No explicit save success message (form may have auto-saved)");
     }
 
     // Navigate back to dashboard
     const backButton = page.locator('a[href*="/dashboard"], button:has-text("Back")').first();
     if (await backButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await backButton.click();
-      await page.waitForURL('**/dashboard**', { timeout: 5000 });
+      await page.waitForURL("**/dashboard**", { timeout: 5000 });
     }
 
-    console.log('✅ Form filled and saved successfully');
+    console.log("✅ Form filled and saved successfully");
   });
 
   /**
    * Test 3: BLGU submits assessment
    * Task 6.1.6
    */
-  test('BLGU user can submit completed assessment', async ({ page }) => {
-    console.log('📝 Test: BLGU submits assessment');
+  test("BLGU user can submit completed assessment", async ({ page }) => {
+    console.log("📝 Test: BLGU submits assessment");
 
     // Login and navigate to dashboard
     await loginAsBLGU(page);
@@ -147,10 +132,12 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
     // In a real scenario, you'd fill all indicators first
 
     // Look for Submit button
-    const submitButton = page.locator('button:has-text("Submit Assessment"), button:has-text("Submit for Review")');
+    const submitButton = page.locator(
+      'button:has-text("Submit Assessment"), button:has-text("Submit for Review")'
+    );
 
     if (await submitButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('Submit button found, clicking...');
+      console.log("Submit button found, clicking...");
 
       // Check if button is enabled
       const isEnabled = await submitButton.isEnabled();
@@ -162,7 +149,7 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
 
         // Look for locked state banner or SUBMITTED status
         const statusIndicators = [
-          page.locator('text=/submitted|in review/i'),
+          page.locator("text=/submitted|in review/i"),
           page.locator('[data-status="SUBMITTED"]'),
         ];
 
@@ -170,40 +157,44 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
         for (const indicator of statusIndicators) {
           if (await indicator.isVisible({ timeout: 3000 }).catch(() => false)) {
             foundStatus = true;
-            console.log('✅ Assessment submitted successfully - status updated');
+            console.log("✅ Assessment submitted successfully - status updated");
             break;
           }
         }
 
         if (!foundStatus) {
-          console.log('⚠️ Status may have changed but indicator not found');
+          console.log("⚠️ Status may have changed but indicator not found");
         }
       } else {
-        console.log('⚠️ Submit button disabled (assessment may not be complete)');
+        console.log("⚠️ Submit button disabled (assessment may not be complete)");
       }
     } else {
-      console.log('⚠️ Submit button not found (assessment may already be submitted or incomplete)');
+      console.log("⚠️ Submit button not found (assessment may already be submitted or incomplete)");
     }
 
-    console.log('Test completed');
+    console.log("Test completed");
   });
 
   /**
    * Test 4: Verify locked state after submission
    * Task 6.1.6 (continued)
    */
-  test('BLGU user sees locked state banner after submission', async ({ page }) => {
-    console.log('📝 Test: Verify locked state after submission');
+  test("BLGU user sees locked state banner after submission", async ({ page }) => {
+    console.log("📝 Test: Verify locked state after submission");
 
     // Login and navigate to dashboard
     await loginAsBLGU(page);
     await navigateToBLGUDashboard(page);
 
     // Look for locked state banner
-    const lockedBanner = page.locator('[class*="locked"], [class*="banner"], text=/locked|cannot edit|read-only|submitted|in review/i').first();
+    const lockedBanner = page
+      .locator(
+        '[class*="locked"], [class*="banner"], text=/locked|cannot edit|read-only|submitted|in review/i'
+      )
+      .first();
 
     if (await lockedBanner.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('✅ Locked state banner is visible');
+      console.log("✅ Locked state banner is visible");
 
       // Navigate to an indicator form
       await clickFirstIndicator(page);
@@ -213,107 +204,119 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
       const saveButtonVisible = await saveButton.isVisible({ timeout: 3000 }).catch(() => false);
 
       if (!saveButtonVisible) {
-        console.log('✅ Save button is hidden (form is read-only)');
+        console.log("✅ Save button is hidden (form is read-only)");
       } else {
-        console.log('⚠️ Save button is still visible (form may not be locked)');
+        console.log("⚠️ Save button is still visible (form may not be locked)");
       }
     } else {
-      console.log('⚠️ Assessment may not be in locked state (DRAFT or REWORK status)');
+      console.log("⚠️ Assessment may not be in locked state (DRAFT or REWORK status)");
     }
 
-    console.log('Test completed');
+    console.log("Test completed");
   });
 
   /**
    * Test 5: Assessor reviews submitted assessment
    * Task 6.1.7
    */
-  test('Assessor can view submitted assessment', async ({ page }) => {
-    console.log('📝 Test: Assessor views submitted assessment');
+  test("Assessor can view submitted assessment", async ({ page }) => {
+    console.log("📝 Test: Assessor views submitted assessment");
 
     // Login as Assessor
     await loginAsAssessor(page);
 
     // Navigate to assessor review page
     // Note: This URL pattern may need to be adjusted based on actual implementation
-    await page.goto('/assessor');
+    await page.goto("/assessor");
     await expect(page).toHaveURL(/\/assessor/);
 
     // Look for submitted assessments list
-    const assessmentsList = page.locator('[data-testid="assessments-list"], table, .assessment-item').first();
+    const assessmentsList = page
+      .locator('[data-testid="assessments-list"], table, .assessment-item')
+      .first();
     if (await assessmentsList.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('✅ Assessor can see assessments list');
+      console.log("✅ Assessor can see assessments list");
     } else {
-      console.log('⚠️ Assessments list not found (check URL or selector)');
+      console.log("⚠️ Assessments list not found (check URL or selector)");
     }
 
-    console.log('Test completed');
+    console.log("Test completed");
   });
 
   /**
    * Test 6: Assessor requests rework
    * Task 6.1.8
    */
-  test('Assessor can request rework with comments', async ({ page }) => {
-    console.log('📝 Test: Assessor requests rework');
+  test("Assessor can request rework with comments", async ({ page }) => {
+    console.log("📝 Test: Assessor requests rework");
 
     // Login as Assessor
     await loginAsAssessor(page);
 
     // Navigate to assessor page
-    await page.goto('/assessor');
+    await page.goto("/assessor");
 
     // Look for "Request Rework" button or rework form
     const requestReworkButton = page.locator('button:has-text("Request Rework")');
 
     if (await requestReworkButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('Request Rework button found');
+      console.log("Request Rework button found");
 
       // Click to open rework form
       await requestReworkButton.click();
 
       // Fill rework comment
-      const commentTextarea = page.locator('textarea[name*="comment"], textarea[placeholder*="comment"]').first();
+      const commentTextarea = page
+        .locator('textarea[name*="comment"], textarea[placeholder*="comment"]')
+        .first();
       if (await commentTextarea.isVisible({ timeout: 3000 }).catch(() => false)) {
         await commentTextarea.fill(REWORK_COMMENTS.GENERAL);
-        console.log('✅ Rework comment entered');
+        console.log("✅ Rework comment entered");
 
         // Submit rework request
-        const submitButton = page.locator('button:has-text("Submit"), button:has-text("Request Rework")').last();
+        const submitButton = page
+          .locator('button:has-text("Submit"), button:has-text("Request Rework")')
+          .last();
         await submitButton.click();
 
         // Confirm if dialog appears
-        const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Yes")').last();
+        const confirmButton = page
+          .locator('button:has-text("Confirm"), button:has-text("Yes")')
+          .last();
         if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await confirmButton.click();
         }
 
         await page.waitForTimeout(2000);
-        console.log('✅ Rework request submitted');
+        console.log("✅ Rework request submitted");
       }
     } else {
-      console.log('⚠️ Request Rework button not found (check implementation or assessment status)');
+      console.log("⚠️ Request Rework button not found (check implementation or assessment status)");
     }
 
-    console.log('Test completed');
+    console.log("Test completed");
   });
 
   /**
    * Test 7: BLGU sees rework comments and can edit
    * Task 6.1.9
    */
-  test('BLGU user sees rework comments and form is unlocked', async ({ page }) => {
-    console.log('📝 Test: BLGU sees rework comments');
+  test("BLGU user sees rework comments and form is unlocked", async ({ page }) => {
+    console.log("📝 Test: BLGU sees rework comments");
 
     // Login as BLGU user
     await loginAsBLGU(page);
     await navigateToBLGUDashboard(page);
 
     // Look for rework comments panel
-    const commentsPanel = page.locator('[class*="rework"], [class*="feedback"], text=/assessor feedback|action required|rework/i').first();
+    const commentsPanel = page
+      .locator(
+        '[class*="rework"], [class*="feedback"], text=/assessor feedback|action required|rework/i'
+      )
+      .first();
 
     if (await commentsPanel.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('✅ Rework comments panel is visible');
+      console.log("✅ Rework comments panel is visible");
 
       // Verify comments content
       const commentText = await commentsPanel.textContent();
@@ -327,91 +330,95 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
       const saveButtonVisible = await saveButton.isVisible({ timeout: 5000 }).catch(() => false);
 
       if (saveButtonVisible) {
-        console.log('✅ Save button is visible (form is unlocked for editing)');
+        console.log("✅ Save button is visible (form is unlocked for editing)");
       } else {
-        console.log('⚠️ Save button not found (form may still be locked)');
+        console.log("⚠️ Save button not found (form may still be locked)");
       }
     } else {
-      console.log('⚠️ Rework comments panel not found (assessment may not be in REWORK status)');
+      console.log("⚠️ Rework comments panel not found (assessment may not be in REWORK status)");
     }
 
-    console.log('Test completed');
+    console.log("Test completed");
   });
 
   /**
    * Test 8: BLGU resubmits after rework
    * Task 6.1.10
    */
-  test('BLGU user can resubmit assessment after rework', async ({ page }) => {
-    console.log('📝 Test: BLGU resubmits after rework');
+  test("BLGU user can resubmit assessment after rework", async ({ page }) => {
+    console.log("📝 Test: BLGU resubmits after rework");
 
     // Login and navigate to dashboard
     await loginAsBLGU(page);
     await navigateToBLGUDashboard(page);
 
     // Look for Resubmit button
-    const resubmitButton = page.locator('button:has-text("Resubmit Assessment"), button:has-text("Resubmit")');
+    const resubmitButton = page.locator(
+      'button:has-text("Resubmit Assessment"), button:has-text("Resubmit")'
+    );
 
     if (await resubmitButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('Resubmit button found');
+      console.log("Resubmit button found");
 
       const isEnabled = await resubmitButton.isEnabled();
       if (isEnabled) {
         await resubmitAssessment(page);
-        console.log('✅ Assessment resubmitted successfully');
+        console.log("✅ Assessment resubmitted successfully");
 
         await page.waitForTimeout(2000);
 
         // Verify status changed to SUBMITTED
-        const statusIndicator = page.locator('text=/submitted|in review/i').first();
+        const statusIndicator = page.locator("text=/submitted|in review/i").first();
         if (await statusIndicator.isVisible({ timeout: 3000 }).catch(() => false)) {
-          console.log('✅ Status updated to SUBMITTED');
+          console.log("✅ Status updated to SUBMITTED");
         }
       } else {
-        console.log('⚠️ Resubmit button disabled (assessment may not be complete)');
+        console.log("⚠️ Resubmit button disabled (assessment may not be complete)");
       }
     } else {
-      console.log('⚠️ Resubmit button not found (assessment may not be in REWORK status)');
+      console.log("⚠️ Resubmit button not found (assessment may not be in REWORK status)");
     }
 
-    console.log('Test completed');
+    console.log("Test completed");
   });
 
   /**
    * Test 9: Assessor cannot request second rework
    * Task 6.1.11
    */
-  test('Assessor sees rework limit reached message', async ({ page }) => {
-    console.log('📝 Test: Verify rework limit enforcement');
+  test("Assessor sees rework limit reached message", async ({ page }) => {
+    console.log("📝 Test: Verify rework limit enforcement");
 
     // Login as Assessor
     await loginAsAssessor(page);
 
     // Navigate to assessor page
-    await page.goto('/assessor');
+    await page.goto("/assessor");
 
     // Look for assessment with rework_count = 1
     // Check if Request Rework is disabled or shows limit message
-    const limitMessage = page.locator('text=/rework limit reached|maximum rework|one rework cycle/i');
+    const limitMessage = page.locator(
+      "text=/rework limit reached|maximum rework|one rework cycle/i"
+    );
 
     if (await limitMessage.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('✅ Rework limit message is displayed');
+      console.log("✅ Rework limit message is displayed");
     } else {
       // Check if Request Rework button is disabled
       const requestReworkButton = page.locator('button:has-text("Request Rework")');
       if (await requestReworkButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         const isDisabled = await requestReworkButton.isDisabled();
         if (isDisabled) {
-          console.log('✅ Request Rework button is disabled');
+          console.log("✅ Request Rework button is disabled");
         } else {
-          console.log('⚠️ Request Rework button is still enabled (limit may not be enforced)');
+          console.log("⚠️ Request Rework button is still enabled (limit may not be enforced)");
         }
       } else {
-        console.log('⚠️ Could not verify rework limit (check assessment rework_count)');
+        console.log("⚠️ Could not verify rework limit (check assessment rework_count)");
       }
     }
 
-    console.log('Test completed');
+    console.log("Test completed");
   });
 
   /**
@@ -419,8 +426,10 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
    * Task 6.1.12 - This would be a comprehensive test combining all steps above
    * Commented out as it requires complete database setup and may be time-consuming
    */
-  test.skip('Complete workflow: DRAFT → SUBMITTED → REWORK → RESUBMITTED → COMPLETED', async ({ page }) => {
-    console.log('📝 Integration Test: Complete Epic 5.0 workflow');
+  test.skip("Complete workflow: DRAFT → SUBMITTED → REWORK → RESUBMITTED → COMPLETED", async ({
+    page,
+  }) => {
+    console.log("📝 Integration Test: Complete Epic 5.0 workflow");
 
     // This test would:
     // 1. Login as BLGU, fill assessment, submit
@@ -430,6 +439,6 @@ test.describe('Epic 5.0: Submission & Rework Workflow', () => {
     // 5. Verify final COMPLETED status
 
     // Skipped for now - implement when database seeding is ready
-    console.log('⚠️ Skipped - requires complete test database setup');
+    console.log("⚠️ Skipped - requires complete test database setup");
   });
 });

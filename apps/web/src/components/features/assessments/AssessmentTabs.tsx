@@ -2,13 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Assessment } from "@/types/assessment";
-import {
-  AlertCircle,
-  CheckCircle,
-  Circle,
-  FileText,
-  Target,
-} from "lucide-react";
+import { AlertCircle, CheckCircle, Circle, FileText, Target } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { RecursiveIndicator } from "./IndicatorAccordion";
@@ -24,9 +18,7 @@ export function AssessmentTabs({
   isLocked,
   updateAssessmentData,
 }: AssessmentTabsProps) {
-  const [activeTab, setActiveTab] = useState(
-    assessment.governanceAreas[0]?.id || ""
-  );
+  const [activeTab, setActiveTab] = useState(assessment.governanceAreas[0]?.id || "");
 
   // Count only leaf indicators (actionable items)
   const countAllIndicators = (indicators: any[]): number => {
@@ -50,7 +42,7 @@ export function AssessmentTabs({
       // Check if indicator has responseData with compliance answers
       const responseData = indicator.responseData || {};
       let complianceAnswer: string | undefined;
-      
+
       // Extract compliance answer from response_data
       const complianceFields: string[] = [];
       for (const key in responseData) {
@@ -61,16 +53,19 @@ export function AssessmentTabs({
           }
         }
       }
-      
+
       if (complianceFields.length > 0) {
         const formSchema = indicator.formSchema || {};
         const requiredFields = formSchema.required || [];
-        const complianceRequiredFields = requiredFields.filter((f: string) => 
+        const complianceRequiredFields = requiredFields.filter((f: string) =>
           f.endsWith("_compliance")
         );
-        
-        if (complianceFields.length >= complianceRequiredFields.length || complianceRequiredFields.length === 0) {
-          if (complianceFields.some(v => v === "yes")) {
+
+        if (
+          complianceFields.length >= complianceRequiredFields.length ||
+          complianceRequiredFields.length === 0
+        ) {
+          if (complianceFields.some((v) => v === "yes")) {
             complianceAnswer = "yes";
           } else {
             complianceAnswer = complianceFields[0];
@@ -85,7 +80,7 @@ export function AssessmentTabs({
           complianceAnswer = String(indicator.complianceAnswer).toLowerCase();
         }
       }
-      
+
       // If we have a compliance answer, check completion based on it
       if (complianceAnswer === "yes") {
         // Check MOVs only for sections with "yes" answers
@@ -93,42 +88,45 @@ export function AssessmentTabs({
         const fieldToSection: Record<string, string> = {};
         for (const [fieldName, fieldProps] of Object.entries(props)) {
           const section = (fieldProps as any)?.mov_upload_section;
-          if (typeof section === 'string') {
+          if (typeof section === "string") {
             fieldToSection[fieldName] = section;
           }
         }
-        
+
         const requiredSectionsWithYes = new Set<string>();
         for (const [fieldName, section] of Object.entries(fieldToSection)) {
           const value = responseData[fieldName];
-          if (typeof value === 'string' && value.toLowerCase() === 'yes') {
+          if (typeof value === "string" && value.toLowerCase() === "yes") {
             requiredSectionsWithYes.add(section);
           }
         }
-        
+
         if (requiredSectionsWithYes.size > 0) {
           const present = new Set<string>();
-          for (const mov of (indicator.movFiles || [])) {
-            const sp = (mov as any).storagePath || (mov as any).storage_path || (mov as any).url || '';
+          for (const mov of indicator.movFiles || []) {
+            const sp =
+              (mov as any).storagePath || (mov as any).storage_path || (mov as any).url || "";
             const movSection = (mov as any).section;
             for (const rs of requiredSectionsWithYes) {
               if (movSection === rs) {
                 present.add(rs);
-              } else if (typeof sp === 'string' && sp.length > 0) {
-                const pathOnly = sp.split('?')[0];
-                const hasSection = 
+              } else if (typeof sp === "string" && sp.length > 0) {
+                const pathOnly = sp.split("?")[0];
+                const hasSection =
                   pathOnly.includes(`/${rs}/`) ||
                   pathOnly.endsWith(`/${rs}`) ||
                   pathOnly.includes(`/${rs}-`) ||
                   pathOnly.includes(`${rs}/`) ||
-                  new RegExp(`[/_-]${rs.replace(/_/g, '[_/]')}[_/-]`).test(pathOnly);
+                  new RegExp(`[/_-]${rs.replace(/_/g, "[_/]")}[_/-]`).test(pathOnly);
                 if (hasSection) {
                   present.add(rs);
                 }
               }
             }
           }
-          const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) => present.has(s));
+          const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) =>
+            present.has(s)
+          );
           return count + (allSectionsHaveMOVs ? 1 : 0);
         } else {
           const hasMOVs = (indicator.movFiles || []).length > 0;
@@ -141,7 +139,7 @@ export function AssessmentTabs({
         // Fallback to status if no compliance answer found
         return count + 1;
       }
-      
+
       return count;
     }, 0);
   };
@@ -162,33 +160,29 @@ export function AssessmentTabs({
     const name = areaName.toLowerCase();
 
     if (name.includes("financial") || name.includes("admin")) {
-      return "/Assessment_Areas/financialAdmin.png";
+      return "/Assessment_Areas/financialAdmin.webp";
     } else if (name.includes("disaster") || name.includes("preparedness")) {
-      return "/Assessment_Areas/disasterPreparedness.png";
-    } else if (
-      name.includes("safety") ||
-      name.includes("peace") ||
-      name.includes("order")
-    ) {
-      return "/Assessment_Areas/safetyPeaceAndOrder.png";
+      return "/Assessment_Areas/disasterPreparedness.webp";
+    } else if (name.includes("safety") || name.includes("peace") || name.includes("order")) {
+      return "/Assessment_Areas/safetyPeaceAndOrder.webp";
     } else if (
       name.includes("social") ||
       name.includes("protection") ||
       name.includes("sensitivity")
     ) {
-      return "/Assessment_Areas/socialProtectAndSensitivity.png";
+      return "/Assessment_Areas/socialProtectAndSensitivity.webp";
     } else if (
       name.includes("business") ||
       name.includes("friendliness") ||
       name.includes("competitiveness")
     ) {
-      return "/Assessment_Areas/businessFriendliness.png";
+      return "/Assessment_Areas/businessFriendliness.webp";
     } else if (name.includes("environmental") || name.includes("management")) {
-      return "/Assessment_Areas/environmentalManagement.png";
+      return "/Assessment_Areas/environmentalManagement.webp";
     }
 
     // Default fallback
-    return "/Assessment_Areas/financialAdmin.png";
+    return "/Assessment_Areas/financialAdmin.webp";
   };
 
   const getAreaStatusIcon = (areaId: string) => {
@@ -217,9 +211,7 @@ export function AssessmentTabs({
     const totalIndicators = countAllIndicators(area.indicators);
     const completedIndicators = countCompletedIndicators(area.indicators);
 
-    return totalIndicators > 0
-      ? Math.round((completedIndicators / totalIndicators) * 100)
-      : 0;
+    return totalIndicators > 0 ? Math.round((completedIndicators / totalIndicators) * 100) : 0;
   };
 
   return (
@@ -255,8 +247,7 @@ export function AssessmentTabs({
                     Essential Governance Areas
                   </h3>
                   <p className="text-sm text-[var(--text-secondary)]">
-                    Choose and complete at least 1 essential area from the 3
-                    options below
+                    Choose and complete at least 1 essential area from the 3 options below
                   </p>
                 </div>
               </div>
@@ -346,9 +337,7 @@ export function AssessmentTabs({
                                   : "text-[var(--foreground)]"
                               }`}
                             >
-                              <div className="text-lg font-bold">
-                                {progress}%
-                              </div>
+                              <div className="text-lg font-bold">{progress}%</div>
                               <div className="text-xs opacity-80">complete</div>
                             </div>
 
@@ -366,8 +355,8 @@ export function AssessmentTabs({
 
                             {/* Progress Text */}
                             <div className="text-xs text-center text-[var(--text-secondary)]">
-                              {countCompletedIndicators(area.indicators)}{" "}
-                              of {countAllIndicators(area.indicators)} indicators
+                              {countCompletedIndicators(area.indicators)} of{" "}
+                              {countAllIndicators(area.indicators)} indicators
                             </div>
                           </div>
                         </div>
@@ -461,9 +450,7 @@ export function AssessmentTabs({
                                   : "text-[var(--foreground)]"
                               }`}
                             >
-                              <div className="text-lg font-bold">
-                                {progress}%
-                              </div>
+                              <div className="text-lg font-bold">{progress}%</div>
                               <div className="text-xs opacity-80">complete</div>
                             </div>
 
@@ -474,8 +461,8 @@ export function AssessmentTabs({
                                   isActive
                                     ? "bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)]"
                                     : isCompleted
-                                    ? "bg-gradient-to-r from-green-400 to-green-500"
-                                    : "bg-gradient-to-r from-blue-400 to-blue-500"
+                                      ? "bg-gradient-to-r from-green-400 to-green-500"
+                                      : "bg-gradient-to-r from-blue-400 to-blue-500"
                                 }`}
                                 style={{ width: `${progress}%` }}
                               />
@@ -483,8 +470,8 @@ export function AssessmentTabs({
 
                             {/* Progress Text */}
                             <div className="text-xs text-center text-[var(--text-secondary)]">
-                              {countCompletedIndicators(area.indicators)}{" "}
-                              of {countAllIndicators(area.indicators)} indicators
+                              {countCompletedIndicators(area.indicators)} of{" "}
+                              {countAllIndicators(area.indicators)} indicators
                             </div>
                           </div>
                         </div>
@@ -607,8 +594,7 @@ export function AssessmentTabs({
                       <div className="flex justify-between text-xs text-[var(--text-secondary)] mt-2">
                         <span>{completedIndicators} indicators completed</span>
                         <span>
-                          {countAllIndicators(area.indicators) - completedIndicators}{" "}
-                          remaining
+                          {countAllIndicators(area.indicators) - completedIndicators} remaining
                         </span>
                       </div>
                     </div>

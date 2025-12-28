@@ -6,16 +6,21 @@ import warnings
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-
-logger = logging.getLogger(__name__)
 from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.cache import cache
 from app.db.enums import UserRole
 from app.db.models.user import User
-from app.schemas.analytics import DashboardKPIResponse, ReportsDataResponse
+from app.schemas.analytics import (
+    DashboardKPIResponse,
+    RefreshAnalysisResponse,
+    ReportsDataResponse,
+)
 from app.services.analytics_service import ReportsFilters, analytics_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -169,10 +174,111 @@ async def get_dashboard(
     try:
         dashboard_kpis = analytics_service.get_dashboard_kpis(db, assessment_year=year)
         return dashboard_kpis
-    except Exception as e:
+    except Exception:
+        logger.error("Failed to retrieve dashboard KPIs", exc_info=True)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve dashboard KPIs: {str(e)}",
+            detail="Failed to retrieve dashboard KPIs. Please try again later.",
+        )
+
+
+@router.post(
+    "/dashboard/refresh-analysis",
+    response_model=RefreshAnalysisResponse,
+    tags=["analytics"],
+    summary="Refresh Dashboard AI Analysis",
+    description=(
+        "Refresh the AI-generated analysis for the dashboard, including top rework/calibration reasons.\n\n"
+        "This endpoint invalidates the cached dashboard data and recalculates the AI-generated\n"
+        "analysis from the latest assessment data.\n\n"
+        "**Use cases:**\n"
+        "- After new rework/calibration summaries have been generated\n"
+        "- When cached data appears stale or incomplete\n"
+        "- To force fresh analysis of recent assessments\n\n"
+        "**Access:** Requires MLGOO_DILG role."
+    ),
+    responses={
+        200: {
+            "description": "Analysis refreshed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Dashboard analysis refreshed successfully",
+                        "cache_invalidated": True,
+                        "top_rework_reasons": {
+                            "reasons": [
+                                {
+                                    "reason": "Missing MOV documents",
+                                    "count": 5,
+                                    "source": "adjustment",
+                                    "governance_area": None,
+                                }
+                            ],
+                            "total_adjustment_assessments": 15,
+                            "generated_by_ai": True,
+                        },
+                    }
+                }
+            },
+        },
+        401: {"description": "Not authenticated"},
+        403: {"description": "Not enough permissions (MLGOO_DILG role required)"},
+    },
+)
+async def refresh_dashboard_analysis(
+    year: int | None = Query(
+        None,
+        description="Assessment year to refresh analysis for. Defaults to active year.",
+    ),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_mlgoo_dilg_user),
+) -> RefreshAnalysisResponse:
+    """
+    Refresh the AI-generated dashboard analysis.
+
+    Invalidates the dashboard cache and recalculates the top rework/calibration
+    reasons from the latest assessment data.
+
+    Args:
+        year: Optional assessment year (defaults to active year)
+        db: Database session
+        current_user: Current authenticated MLGOO-DILG user
+
+    Returns:
+        RefreshAnalysisResponse with updated analysis data
+
+    Raises:
+        HTTPException: 401 if not authenticated, 403 if insufficient permissions
+    """
+    try:
+        # Get active year if not specified
+        if year is None:
+            from app.services.assessment_year_service import assessment_year_service
+
+            year = assessment_year_service.get_active_year_number(db)
+
+        # Invalidate ALL dashboard cache keys (pattern match for consistency with worker)
+        # This ensures we clear all cached data including year_all, year_2025, etc.
+        cache_invalidated_count = cache.delete_pattern("dashboard_kpis:*")
+
+        logger.info(
+            f"♻️  Dashboard analysis refresh requested by user {current_user.id} "
+            f"for year {year}. Cache keys invalidated: {cache_invalidated_count}"
+        )
+
+        # Recalculate the top rework reasons
+        top_rework_reasons = analytics_service.calculate_top_rework_reasons(db, year)
+
+        return RefreshAnalysisResponse(
+            message="Dashboard analysis refreshed successfully",
+            cache_invalidated=cache_invalidated_count > 0,
+            top_rework_reasons=top_rework_reasons,
+        )
+    except Exception:
+        logger.error("Failed to refresh dashboard analysis", exc_info=True)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to refresh dashboard analysis. Please try again later.",
         )
 
 
@@ -375,8 +481,9 @@ async def get_reports(
         )
 
         return reports_data
-    except Exception as e:
+    except Exception:
+        logger.error("Failed to retrieve reports data", exc_info=True)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve reports data: {str(e)}",
+            detail="Failed to retrieve reports data. Please try again later.",
         )

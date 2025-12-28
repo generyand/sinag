@@ -36,9 +36,8 @@ System design, patterns, and technical decisions.
 
 RESTful API endpoints, authentication, and schemas.
 
-- [API Overview](./api/README.md)
-- [Authentication](./api/authentication.md)
-- [Endpoints by Domain](./api/endpoints/)
+- [API Overview](./api/README.md) - API design, authentication, and conventions
+- [Endpoints by Domain](./api/endpoints/) - Detailed endpoint documentation
 
 ### 📚 Developer Guides
 
@@ -59,6 +58,14 @@ SGLGB assessment workflow documentation.
 - [Classification Algorithm](./workflows/classification-algorithm.md) - 3+1 SGLGB logic
 - [Intelligence Layer](./workflows/intelligence-layer.md) - AI-powered insights
 
+### ✨ Feature Documentation
+
+Specific feature implementations.
+
+- [BBI Compliance](./features/bbi-compliance.md) - 4-tier BBI functionality rating system
+- [Multi-Year Assessments](./features/multi-year-assessments.md) - Year-based assessment tracking
+- [External Analytics](./features/external-analytics.md) - Katuparan Center analytics access
+
 ### 📋 Product Requirements (PRDs)
 
 Detailed product requirement documents for major features (sequential by phase).
@@ -74,10 +81,10 @@ Detailed product requirement documents for major features (sequential by phase).
 
 Common issues and solutions.
 
+- [Troubleshooting Overview](./troubleshooting/README.md)
 - [Docker Issues](./troubleshooting/docker.md)
 - [Backend Issues](./troubleshooting/backend.md)
 - [Frontend Issues](./troubleshooting/frontend.md)
-- [Common Errors](./troubleshooting/common-errors.md)
 
 ### 🚢 DevOps & Deployment
 
@@ -114,4 +121,4 @@ See [CLAUDE.md](../CLAUDE.md) for project standards and conventions.
 
 ---
 
-**Last Updated**: 2025-12-07 **Maintained By**: SINAG Development Team
+**Last Updated**: 2025-12-12 **Maintained By**: SINAG Development Team

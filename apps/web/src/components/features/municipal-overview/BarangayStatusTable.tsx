@@ -1,11 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { AnalyticsEmptyState } from "@/components/features/analytics";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,24 +12,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import {
-  Search,
-  Building,
-  CheckCircle,
-  XCircle,
-  Lightbulb,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  ExternalLink,
-} from 'lucide-react';
-import { CapDevStatusBadge } from '../capdev';
-import { AnalyticsEmptyState } from '@/components/features/analytics';
-import type { BarangayStatusList, BarangayAssessmentStatus } from '@sinag/shared';
+} from "@/components/ui/table";
+import type { BarangayAssessmentStatus, BarangayStatusList } from "@sinag/shared";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 
-type SortField = 'barangay_name' | 'status' | 'compliance_status' | 'overall_score';
-type SortDirection = 'asc' | 'desc';
+interface ExtendedBarangayAssessmentStatus extends BarangayAssessmentStatus {
+  governance_areas_passed?: number;
+  total_governance_areas?: number;
+  pass_count?: number;
+  conditional_count?: number;
+  total_responses?: number;
+}
+
+type SortField = "barangay_name" | "status" | "governance_areas" | "indicators";
+type SortDirection = "asc" | "desc";
 
 interface BarangayStatusTableProps {
   data: BarangayStatusList | null | undefined;
@@ -45,14 +42,23 @@ interface BarangayStatusTableProps {
  * - "No Assessment" uses neutral gray (not alarming - just informational)
  */
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  COMPLETED: { label: 'Completed', className: 'bg-green-600 text-white' },
-  AWAITING_MLGOO_APPROVAL: { label: 'Awaiting Approval', className: 'bg-yellow-600 text-white' },
-  REWORK: { label: 'Rework', className: 'bg-orange-600 text-white' },
-  SUBMITTED: { label: 'In Review', className: 'bg-blue-600 text-white' },
-  IN_REVIEW: { label: 'In Review', className: 'bg-blue-600 text-white' },
-  DRAFT: { label: 'Draft', className: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
-  NO_ASSESSMENT: { label: 'No Assessment', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-  NO_USER_ASSIGNED: { label: 'No User', className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500' },
+  COMPLETED: { label: "Completed", className: "bg-green-600 text-white" },
+  AWAITING_MLGOO_APPROVAL: { label: "Awaiting Approval", className: "bg-yellow-600 text-white" },
+  REWORK: { label: "Rework", className: "bg-orange-600 text-white" },
+  SUBMITTED: { label: "In Review", className: "bg-blue-600 text-white" },
+  IN_REVIEW: { label: "In Review", className: "bg-blue-600 text-white" },
+  DRAFT: {
+    label: "Draft",
+    className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
+  },
+  NO_ASSESSMENT: {
+    label: "No Assessment",
+    className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  },
+  NO_USER_ASSIGNED: {
+    label: "No User",
+    className: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500",
+  },
 };
 
 /**
@@ -72,132 +78,197 @@ function getStatusPriority(status: string): number {
   return priorities[status] ?? 8;
 }
 
-export function BarangayStatusTable({ data, onViewCapDev, onViewDetails }: BarangayStatusTableProps) {
+// Render sort indicator
+const SortIndicator = ({
+  field,
+  sortField,
+  sortDirection,
+}: {
+  field: SortField;
+  sortField: SortField;
+  sortDirection: SortDirection;
+}) => {
+  if (sortField !== field) {
+    return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+  }
+  return sortDirection === "asc" ? (
+    <ArrowUp className="h-3 w-3 ml-1" />
+  ) : (
+    <ArrowDown className="h-3 w-3 ml-1" />
+  );
+};
+
+const COLORS = [
+  "bg-red-500",
+  "bg-orange-500",
+  "bg-amber-500",
+  "bg-yellow-500",
+  "bg-lime-500",
+  "bg-green-500",
+  "bg-emerald-500",
+  "bg-teal-500",
+  "bg-cyan-500",
+  "bg-sky-500",
+  "bg-blue-500",
+  "bg-indigo-500",
+  "bg-violet-500",
+  "bg-purple-500",
+  "bg-fuchsia-500",
+  "bg-pink-500",
+  "bg-rose-500",
+];
+
+const getAvatarColor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return COLORS[Math.abs(hash) % COLORS.length];
+};
+
+const BarangayAvatar = ({ name }: { name: string }) => {
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const colorClass = getAvatarColor(name);
+
+  return (
+    <div
+      className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm ${colorClass}`}
+    >
+      {initials}
+    </div>
+  );
+};
+
+/** Approximate number of rows visible in the 400px scroll container */
+const VISIBLE_ROWS_THRESHOLD = 7;
+
+export function BarangayStatusTable({
+  data,
+  onViewCapDev,
+  onViewDetails,
+}: BarangayStatusTableProps) {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortField, setSortField] = useState<SortField>('barangay_name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("barangay_name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
 
-  const hasData = data && data.barangays && data.barangays.length > 0;
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 10;
+    setIsScrolledToBottom((prev) => (prev !== atBottom ? atBottom : prev));
+  }, []);
 
-  // Handle sorting
-  const handleSort = useCallback((field: SortField) => {
+  const hasData = (data?.barangays?.length ?? 0) > 0;
+
+  const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
-  }, [sortField]);
-
-  // Render sort indicator
-  const SortIndicator = ({ field }: { field: SortField }) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
-    }
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="h-3 w-3 ml-1" />
-    ) : (
-      <ArrowDown className="h-3 w-3 ml-1" />
-    );
   };
 
   // Filter and sort barangays
   const filteredBarangays = useMemo(() => {
     if (!data?.barangays) return [];
 
-    let result = data.barangays.filter((barangay: BarangayAssessmentStatus) => {
-      const matchesSearch = barangay.barangay_name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || barangay.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
+    let result = data.barangays
+      .map((b) => b as ExtendedBarangayAssessmentStatus)
+      .filter((barangay) => {
+        const matchesSearch = barangay.barangay_name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "all" || barangay.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
 
     // Sort
     result = [...result].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
-        case 'barangay_name':
+        case "barangay_name":
           comparison = a.barangay_name.localeCompare(b.barangay_name);
           break;
-        case 'status':
+        case "status":
+          // Simplified priority: Pass/Fail (1), In Progress (2), Others (3)
+          // For now reusing getStatusPriority but it might need tweaking for merged status
           comparison = getStatusPriority(a.status) - getStatusPriority(b.status);
           break;
-        case 'compliance_status':
-          const aCompliance = a.compliance_status ?? '';
-          const bCompliance = b.compliance_status ?? '';
-          comparison = aCompliance.localeCompare(bCompliance);
+        case "governance_areas":
+          comparison = (a.governance_areas_passed || 0) - (b.governance_areas_passed || 0);
           break;
-        case 'overall_score':
-          const aScore = a.overall_score ?? -1;
-          const bScore = b.overall_score ?? -1;
-          comparison = aScore - bScore;
+        case "indicators":
+          const aInd = (a.pass_count || 0) + (a.conditional_count || 0);
+          const bInd = (b.pass_count || 0) + (b.conditional_count || 0);
+          comparison = aInd - bInd;
           break;
       }
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return sortDirection === "asc" ? comparison : -comparison;
     });
 
     return result;
   }, [data?.barangays, searchTerm, statusFilter, sortField, sortDirection]);
 
-  const getStatusBadge = (status: string) => {
-    const config = STATUS_CONFIG[status] || { label: status, className: 'border border-[var(--border)]' };
-    return (
-      <Badge className={`rounded-sm ${config.className}`}>
-        {config.label}
-      </Badge>
-    );
-  };
-
-  const getComplianceBadge = (status: string | null) => {
-    if (!status) return null;
-    if (status === 'PASSED') {
+  const getUnifiedStatusBadge = (barangay: ExtendedBarangayAssessmentStatus) => {
+    // Backend now only sets compliance_status when status === COMPLETED
+    // So we can trust compliance_status directly for Pass/Fail
+    if (barangay.compliance_status === "PASSED") {
       return (
-        <Badge className="bg-green-100 text-green-800 rounded-sm">
-          <CheckCircle className="h-3 w-3 mr-1" aria-hidden="true" />
-          Passed
+        <Badge className="bg-green-100 text-green-800 rounded-sm hover:bg-green-200 border-0">
+          Pass
         </Badge>
       );
     }
+    if (barangay.compliance_status === "FAILED") {
+      return (
+        <Badge className="bg-red-100 text-red-800 rounded-sm hover:bg-red-200 border-0">Fail</Badge>
+      );
+    }
+
+    // All other cases are "In Progress" or "No Data"
+    if (barangay.status === "NO_ASSESSMENT" || barangay.status === "NO_USER_ASSIGNED") {
+      return (
+        <Badge variant="outline" className="text-gray-500 border-gray-300">
+          No Data
+        </Badge>
+      );
+    }
+
+    // Default: In Progress (includes DRAFT, SUBMITTED, IN_REVIEW, REWORK, etc.)
     return (
-      <Badge className="bg-red-100 text-red-800 rounded-sm">
-        <XCircle className="h-3 w-3 mr-1" aria-hidden="true" />
-        Failed
+      <Badge className="bg-yellow-100 text-yellow-800 rounded-sm hover:bg-yellow-200 border-0">
+        In Progress
       </Badge>
     );
   };
 
-  const getScoreColor = (score: number | null | undefined) => {
-    if (score === null || score === undefined) return '';
-    if (score >= 70) return 'text-green-600';
-    if (score >= 50) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
   // Handle view details - navigate to submission detail
-  const handleViewDetails = useCallback((assessmentId: number) => {
-    if (onViewDetails) {
-      onViewDetails(assessmentId);
-    } else {
-      router.push(`/mlgoo/submissions/${assessmentId}`);
-    }
-  }, [onViewDetails, router]);
+  const handleViewDetails = useCallback(
+    (assessmentId: number) => {
+      if (onViewDetails) {
+        onViewDetails(assessmentId);
+      } else {
+        router.push(`/mlgoo/submissions/${assessmentId}`);
+      }
+    },
+    [onViewDetails, router]
+  );
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building className="h-5 w-5" aria-hidden="true" />
-          Barangay Assessment Status
-        </CardTitle>
-        {hasData && (
-          <p className="text-sm text-[var(--muted-foreground)]">
-            {data.total_count} barangays total
-            {filteredBarangays.length !== data.total_count && (
-              <span className="ml-1">({filteredBarangays.length} shown)</span>
-            )}
-          </p>
-        )}
+        <CardTitle className="flex items-center gap-2">Assessment Data</CardTitle>
+        <p className="text-sm text-[var(--muted-foreground)]">
+          Detailed assessment results for all barangays
+        </p>
       </CardHeader>
       <CardContent>
         {!hasData ? (
@@ -221,37 +292,37 @@ export function BarangayStatusTable({ data, onViewCapDev, onViewDetails }: Baran
               </div>
               <div className="flex gap-2" role="group" aria-label="Status filter">
                 <Button
-                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  variant={statusFilter === "all" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setStatusFilter('all')}
+                  onClick={() => setStatusFilter("all")}
                   className={`rounded-sm ${
-                    statusFilter === 'all'
-                      ? 'bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]'
-                      : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800'
+                    statusFilter === "all"
+                      ? "bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]"
+                      : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
                   All
                 </Button>
                 <Button
-                  variant={statusFilter === 'COMPLETED' ? 'default' : 'outline'}
+                  variant={statusFilter === "COMPLETED" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setStatusFilter('COMPLETED')}
+                  onClick={() => setStatusFilter("COMPLETED")}
                   className={`rounded-sm ${
-                    statusFilter === 'COMPLETED'
-                      ? 'bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]'
-                      : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800'
+                    statusFilter === "COMPLETED"
+                      ? "bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]"
+                      : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
                   Completed
                 </Button>
                 <Button
-                  variant={statusFilter === 'AWAITING_MLGOO_APPROVAL' ? 'default' : 'outline'}
+                  variant={statusFilter === "AWAITING_MLGOO_APPROVAL" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setStatusFilter('AWAITING_MLGOO_APPROVAL')}
+                  onClick={() => setStatusFilter("AWAITING_MLGOO_APPROVAL")}
                   className={`rounded-sm ${
-                    statusFilter === 'AWAITING_MLGOO_APPROVAL'
-                      ? 'bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]'
-                      : 'border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800'
+                    statusFilter === "AWAITING_MLGOO_APPROVAL"
+                      ? "bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]"
+                      : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
                   Pending
@@ -259,134 +330,138 @@ export function BarangayStatusTable({ data, onViewCapDev, onViewDetails }: Baran
               </div>
             </div>
 
-            {/* Table */}
-            <div className="border border-[var(--border)] rounded-sm overflow-hidden">
-              <Table>
-                <caption className="sr-only">
-                  Barangay assessment status table. Click column headers to sort.
-                </caption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort('barangay_name')}
-                        aria-label={`Sort by barangay name, currently ${sortField === 'barangay_name' ? sortDirection : 'unsorted'}`}
-                      >
-                        Barangay
-                        <SortIndicator field="barangay_name" />
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort('status')}
-                        aria-label={`Sort by status, currently ${sortField === 'status' ? sortDirection : 'unsorted'}`}
-                      >
-                        Status
-                        <SortIndicator field="status" />
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort('compliance_status')}
-                        aria-label={`Sort by compliance, currently ${sortField === 'compliance_status' ? sortDirection : 'unsorted'}`}
-                      >
-                        Compliance
-                        <SortIndicator field="compliance_status" />
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button
-                        className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
-                        onClick={() => handleSort('overall_score')}
-                        aria-label={`Sort by score, currently ${sortField === 'overall_score' ? sortDirection : 'unsorted'}`}
-                      >
-                        Score
-                        <SortIndicator field="overall_score" />
-                      </button>
-                    </TableHead>
-                    <TableHead>CapDev</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBarangays.map((barangay: BarangayAssessmentStatus) => (
-                    <TableRow key={barangay.barangay_id}>
-                      <TableCell className="font-medium text-[var(--foreground)]">
-                        {barangay.barangay_name}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(barangay.status)}</TableCell>
-                      <TableCell>
-                        {barangay.compliance_status ? (
-                          getComplianceBadge(barangay.compliance_status)
-                        ) : (
-                          <span className="text-[var(--muted-foreground)] text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {barangay.overall_score !== null && barangay.overall_score !== undefined ? (
-                          <span className={`font-medium ${getScoreColor(barangay.overall_score)}`}>
-                            {barangay.overall_score.toFixed(1)}%
-                          </span>
-                        ) : (
-                          <span className="text-[var(--muted-foreground)] text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {barangay.has_capdev_insights ? (
-                          <CapDevStatusBadge status={barangay.capdev_status || 'completed'} />
-                        ) : (
-                          <span className="text-[var(--muted-foreground)] text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {barangay.assessment_id && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(barangay.assessment_id!)}
-                              className="rounded-sm"
-                              aria-label={`View details for ${barangay.barangay_name}`}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-1" aria-hidden="true" />
-                              View
-                            </Button>
-                          )}
-                          {barangay.assessment_id && barangay.has_capdev_insights && onViewCapDev && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onViewCapDev(barangay.assessment_id!)}
-                              className="rounded-sm"
-                              aria-label={`View CapDev insights for ${barangay.barangay_name}`}
-                            >
-                              <Lightbulb className="h-4 w-4 mr-1" aria-hidden="true" />
-                              CapDev
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredBarangays.length === 0 && (
+            {/* Results count */}
+            <div className="text-sm text-[var(--muted-foreground)] mb-2">
+              Showing <span className="font-medium">{filteredBarangays.length}</span> of{" "}
+              <span className="font-medium">{data?.barangays?.length ?? 0}</span> barangays
+            </div>
+
+            {/* Scrollable Table Container */}
+            <div className="relative">
+              <div
+                className="h-[300px] sm:h-[400px] overflow-auto border border-[var(--border)] rounded-sm"
+                role="group"
+                aria-label="Assessment data table showing status and progress for each barangay"
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+                tabIndex={0}
+                onScroll={handleScroll}
+              >
+                <Table>
+                  <caption className="sr-only">
+                    Barangay assessment status table. Click column headers to sort. Use arrow keys
+                    to scroll within the table.
+                  </caption>
+                  <TableHeader className="sticky top-0 z-10 bg-[var(--card)] shadow-[0_1px_0_0_var(--border)]">
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <AnalyticsEmptyState
-                          variant="no-barangays"
-                          compact
-                          description={searchTerm || statusFilter !== 'all'
-                            ? 'No barangays match your search or filter criteria.'
-                            : undefined
-                          }
-                        />
-                      </TableCell>
+                      <TableHead className="bg-[var(--card)]">
+                        <button
+                          className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
+                          onClick={() => handleSort("barangay_name")}
+                          aria-label={`Sort by barangay name, currently ${sortField === "barangay_name" ? sortDirection : "unsorted"}`}
+                        >
+                          Barangay
+                          <SortIndicator
+                            field="barangay_name"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </TableHead>
+                      <TableHead className="bg-[var(--card)]">
+                        <button
+                          className="flex items-center font-medium hover:text-[var(--foreground)] transition-colors"
+                          onClick={() => handleSort("status")}
+                          aria-label={`Sort by status, currently ${sortField === "status" ? sortDirection : "unsorted"}`}
+                        >
+                          Status
+                          <SortIndicator
+                            field="status"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-right bg-[var(--card)]">
+                        Governance Areas Passed
+                      </TableHead>
+                      <TableHead className="text-right bg-[var(--card)]">
+                        Indicators Passed
+                      </TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBarangays.map((barangay) => (
+                      <TableRow key={barangay.barangay_id} className="h-14">
+                        <TableCell className="font-medium text-[var(--foreground)]">
+                          <button
+                            onClick={() =>
+                              barangay.assessment_id && handleViewDetails(barangay.assessment_id)
+                            }
+                            disabled={!barangay.assessment_id}
+                            aria-disabled={!barangay.assessment_id}
+                            className={`flex items-center gap-3 p-1 -m-1 rounded-md transition-colors w-full text-left group ${
+                              barangay.assessment_id
+                                ? "hover:bg-accent/50 cursor-pointer"
+                                : "cursor-default opacity-75"
+                            }`}
+                          >
+                            <BarangayAvatar name={barangay.barangay_name} />
+                            <span
+                              className={`font-semibold transition-colors ${
+                                barangay.assessment_id ? "group-hover:text-primary" : ""
+                              }`}
+                            >
+                              {barangay.barangay_name}
+                            </span>
+                          </button>
+                        </TableCell>
+                        <TableCell>{getUnifiedStatusBadge(barangay)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {barangay.governance_areas_passed !== undefined &&
+                          barangay.governance_areas_passed !== null
+                            ? `${barangay.governance_areas_passed}/${barangay.total_governance_areas}`
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {barangay.total_responses
+                            ? `${(barangay.pass_count || 0) + (barangay.conditional_count || 0)}/${barangay.total_responses}`
+                            : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredBarangays.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8">
+                          <AnalyticsEmptyState
+                            variant="no-barangays"
+                            compact
+                            description={
+                              searchTerm || statusFilter !== "all"
+                                ? "No barangays match your search or filter criteria."
+                                : undefined
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Scroll indicator gradient - shows when more content below */}
+              {!isScrolledToBottom && filteredBarangays.length > VISIBLE_ROWS_THRESHOLD && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--card)] to-transparent pointer-events-none rounded-b-sm"
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+
+            {/* Live region for screen readers */}
+            <div aria-live="polite" aria-atomic="true" className="sr-only">
+              {searchTerm || statusFilter !== "all"
+                ? `Filtered to ${filteredBarangays.length} of ${data?.barangays?.length ?? 0} barangays`
+                : `${filteredBarangays.length} barangays displayed`}
             </div>
           </>
         )}

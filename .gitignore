@@ -164,3 +164,4 @@ apps/api/test.db
 test.db
 *.db
 docs/temporary/
+.gemini/

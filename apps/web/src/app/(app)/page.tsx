@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function RootPage() {
   const router = useRouter();
@@ -10,28 +10,28 @@ export default function RootPage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      const isAdmin = user.role === 'MLGOO_DILG' as any;
-      const isAssessor = user.role === 'ASSESSOR' as any;
-      
+      const isAdmin = user.role === ("MLGOO_DILG" as any);
+      const isAssessor = user.role === ("ASSESSOR" as any);
+
       let dashboardPath;
       if (isAdmin) {
-        dashboardPath = '/mlgoo/dashboard';
+        dashboardPath = "/mlgoo/dashboard";
       } else if (isAssessor) {
-        dashboardPath = '/assessor/submissions';
+        dashboardPath = "/assessor/submissions";
       } else {
-        dashboardPath = '/blgu/dashboard';
+        dashboardPath = "/blgu/dashboard";
       }
-      
-      console.log('Root page redirecting:', {
+
+      console.log("Root page redirecting:", {
         userRole: user.role,
         isAdmin,
         isAssessor,
-        dashboardPath
+        dashboardPath,
       });
-      
+
       router.replace(dashboardPath);
     } else if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace("/login");
     }
   }, [isAuthenticated, user, router]);
 
@@ -43,4 +43,4 @@ export default function RootPage() {
       </div>
     </div>
   );
-} 
+}

@@ -4,13 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-    AlertTriangle,
-    CheckCircle,
-    Download,
-    FileText,
-    MessageSquare,
-    Upload,
-    XCircle
+  AlertTriangle,
+  CheckCircle,
+  Download,
+  FileText,
+  MessageSquare,
+  Upload,
+  XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { MOVPreviewer, TechnicalNotesPanel, ValidationControls } from "./";
@@ -68,9 +68,9 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
   const [showValidationForm, setShowValidationForm] = useState(false);
 
   // Debug logging to verify MOVs data
-  console.log('[AssessmentResponseCard] Indicator:', response.indicator.name);
-  console.log('[AssessmentResponseCard] MOVs count:', response.movs?.length || 0);
-  console.log('[AssessmentResponseCard] MOVs data:', response.movs);
+  console.log("[AssessmentResponseCard] Indicator:", response.indicator.name);
+  console.log("[AssessmentResponseCard] MOVs count:", response.movs?.length || 0);
+  console.log("[AssessmentResponseCard] MOVs data:", response.movs);
 
   const getValidationStatusIcon = (status: string | null) => {
     switch (status?.toLowerCase()) {
@@ -99,11 +99,11 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   return (
@@ -113,19 +113,20 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
           <div>
             <CardTitle className="text-lg">{response.indicator.name}</CardTitle>
             <p className="text-sm text-gray-600">
-              {response.indicator.governance_area.name} • {response.indicator.governance_area.area_type}
+              {response.indicator.governance_area.name} •{" "}
+              {response.indicator.governance_area.area_type}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {response.validation_status && (
-              <Badge className={`${getValidationStatusColor(response.validation_status)} flex items-center gap-1`}>
+              <Badge
+                className={`${getValidationStatusColor(response.validation_status)} flex items-center gap-1`}
+              >
                 {getValidationStatusIcon(response.validation_status)}
                 {response.validation_status}
               </Badge>
             )}
-            {response.requires_rework && (
-              <Badge variant="destructive">Requires Rework</Badge>
-            )}
+            {response.requires_rework && <Badge variant="destructive">Requires Rework</Badge>}
           </div>
         </div>
       </CardHeader>
@@ -157,9 +158,9 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
             onClick={() => setShowTechnicalNotes(!showTechnicalNotes)}
           >
             <FileText className="h-4 w-4 mr-2" />
-            {showTechnicalNotes ? 'Hide' : 'Show'} Technical Notes
+            {showTechnicalNotes ? "Hide" : "Show"} Technical Notes
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -167,22 +168,22 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
             disabled={response.movs.length === 0}
           >
             <Upload className="h-4 w-4 mr-2" />
-            {showMOVs ? 'Hide' : 'Show'} MOVs ({response.movs.length})
+            {showMOVs ? "Hide" : "Show"} MOVs ({response.movs.length})
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowValidationForm(!showValidationForm)}
           >
             <CheckCircle className="h-4 w-4 mr-2" />
-            {showValidationForm ? 'Hide' : 'Show'} Validation Controls
+            {showValidationForm ? "Hide" : "Show"} Validation Controls
           </Button>
         </div>
 
         {/* Technical Notes Panel */}
         {showTechnicalNotes && (
-          <TechnicalNotesPanel 
+          <TechnicalNotesPanel
             technicalNotes={response.indicator.technical_notes}
             indicatorName={response.indicator.name}
           />
@@ -194,7 +195,10 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
             <h4 className="font-medium text-gray-900 mb-3">Means of Verification (MOVs)</h4>
             <div className="space-y-2">
               {response.movs.map((mov) => (
-                <div key={mov.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div
+                  key={mov.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-gray-500" />
                     <div>
@@ -219,14 +223,18 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
 
         {/* Validation Controls */}
         {showValidationForm && (
-          <ValidationControls 
+          <ValidationControls
             responseId={response.id}
             assessmentId={assessmentId}
             indicatorTitle={response.indicator.name}
             indicatorDescription={response.indicator.description}
             currentValidationStatus={response.validation_status}
-            currentPublicComment={response.feedback_comments.find(c => !c.is_internal_note)?.comment || null}
-            currentInternalNote={response.feedback_comments.find(c => c.is_internal_note)?.comment || null}
+            currentPublicComment={
+              response.feedback_comments.find((c) => !c.is_internal_note)?.comment || null
+            }
+            currentInternalNote={
+              response.feedback_comments.find((c) => c.is_internal_note)?.comment || null
+            }
             technicalNotes={response.indicator.technical_notes}
           />
         )}
@@ -242,10 +250,12 @@ export function AssessmentResponseCard({ response, assessmentId }: AssessmentRes
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-medium">
-                        {comment.assessor?.name || 'Unknown Assessor'}
+                        {comment.assessor?.name || "Unknown Assessor"}
                       </span>
                       {comment.is_internal_note && (
-                        <Badge variant="secondary" className="text-xs">Internal</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Internal
+                        </Badge>
                       )}
                     </div>
                     <span className="text-xs text-gray-500">

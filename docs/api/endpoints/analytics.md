@@ -1,16 +1,21 @@
 # Analytics API
 
-The Analytics API provides endpoints for retrieving dashboard KPIs, reports data, and assessment analytics for the SGLGB platform. This API supports role-based data filtering and comprehensive visualization data.
+The Analytics API provides endpoints for retrieving dashboard KPIs, reports data, and assessment
+analytics for the SGLGB platform. This API supports role-based data filtering and comprehensive
+visualization data.
 
 ## Overview
 
 **Base Path**: `/api/v1/analytics`
 
-**Authentication**: All endpoints require authentication. Dashboard endpoint requires MLGOO_DILG role, while reports endpoint has role-based filtering.
+**Authentication**: All endpoints require authentication. Dashboard endpoint requires MLGOO_DILG
+role, while reports endpoint has role-based filtering.
 
-**Role-Based Access Control**: Different roles see different data scopes (MLGOO_DILG sees all, VALIDATOR sees assigned area, BLGU_USER sees own barangay).
+**Role-Based Access Control**: Different roles see different data scopes (MLGOO_DILG sees all,
+VALIDATOR sees assigned area, BLGU_USER sees own barangay).
 
-**Type Generation**: After modifying any analytics endpoint or schema, run `pnpm generate-types` to update frontend types.
+**Type Generation**: After modifying any analytics endpoint or schema, run `pnpm generate-types` to
+update frontend types.
 
 ---
 
@@ -24,14 +29,18 @@ Get dashboard KPIs for MLGOO-DILG dashboard.
 
 **Workflow Stage**: Admin Dashboard (Stage 4 - Reporting)
 
-**Description**: Retrieves comprehensive analytics including compliance rates, area breakdowns, failed indicators, barangay rankings, and historical trends. Data can be filtered by assessment cycle.
+**Description**: Retrieves comprehensive analytics including compliance rates, area breakdowns,
+failed indicators, barangay rankings, and historical trends. Data can be filtered by assessment
+cycle.
 
 **Query Parameters**:
+
 - `cycle_id` (integer, optional): Assessment cycle ID (defaults to latest cycle if not provided)
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "overall_compliance_rate": {
@@ -108,6 +117,7 @@ Get dashboard KPIs for MLGOO-DILG dashboard.
 ```
 
 **Errors**:
+
 - `401 Unauthorized`: Not authenticated
 - `403 Forbidden`: Not enough permissions (MLGOO_DILG role required)
 - `500 Internal Server Error`: Failed to retrieve dashboard KPIs
@@ -122,18 +132,23 @@ Get comprehensive reports data with filtering and RBAC.
 
 **Workflow Stage**: Reporting (All Stages)
 
-**Description**: Retrieves chart data (bar, pie, line), geographic map data, and paginated table data based on the provided filters and user's role. Supports flexible filtering by cycle, date range, governance area, barangay, and status.
+**Description**: Retrieves chart data (bar, pie, line), geographic map data, and paginated table
+data based on the provided filters and user's role. Supports flexible filtering by cycle, date
+range, governance area, barangay, and status.
 
 **Role-Based Data Filtering**:
+
 - **MLGOO_DILG/SUPERADMIN**: See all data
 - **VALIDATOR**: See only assigned governance area
 - **BLGU_USER**: See only own barangay
 
 **Query Parameters**:
+
 - `cycle_id` (integer, optional): Filter by assessment cycle ID
 - `start_date` (date, optional): Filter by start date (inclusive, format: YYYY-MM-DD)
 - `end_date` (date, optional): Filter by end date (inclusive, format: YYYY-MM-DD)
-- `governance_area` (array[string], optional): Filter by governance area codes (e.g., ["GA-1", "GA-2"])
+- `governance_area` (array[string], optional): Filter by governance area codes (e.g., ["GA-1",
+  "GA-2"])
 - `barangay_id` (array[integer], optional): Filter by barangay IDs
 - `status` (string, optional): Filter by assessment status (Pass/Fail/In Progress)
 - `page` (integer, optional): Page number for table pagination (default: 1, min: 1)
@@ -142,6 +157,7 @@ Get comprehensive reports data with filtering and RBAC.
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "chart_data": {
@@ -155,9 +171,9 @@ Get comprehensive reports data with filtering and RBAC.
       }
     ],
     "pie_chart": [
-      {"status": "Pass", "count": 30, "percentage": 60.0},
-      {"status": "Fail", "count": 15, "percentage": 30.0},
-      {"status": "In Progress", "count": 5, "percentage": 10.0}
+      { "status": "Pass", "count": 30, "percentage": 60.0 },
+      { "status": "Fail", "count": 15, "percentage": 30.0 },
+      { "status": "In Progress", "count": 5, "percentage": 10.0 }
     ],
     "line_chart": [
       {
@@ -207,6 +223,7 @@ Get comprehensive reports data with filtering and RBAC.
 ```
 
 **Errors**:
+
 - `401 Unauthorized`: Not authenticated
 - `403 Forbidden`: Insufficient permissions
 - `500 Internal Server Error`: Failed to retrieve reports data

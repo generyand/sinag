@@ -255,8 +255,8 @@ export function DeadlineOverrideModal({
                   step < currentStep
                     ? "bg-green-500 text-white"
                     : step === currentStep
-                    ? "bg-[#F7B520] text-white"
-                    : "bg-[var(--border)] text-[var(--text-muted)]"
+                      ? "bg-[#F7B520] text-white"
+                      : "bg-[var(--border)] text-[var(--text-muted)]"
                 }`}
               >
                 {step < currentStep ? <Check className="w-4 h-4" /> : step}
@@ -417,9 +417,7 @@ export function DeadlineOverrideModal({
                   id="new-deadline"
                   type="datetime-local"
                   value={formData.newDeadline}
-                  onChange={(e) =>
-                    setFormData({ ...formData, newDeadline: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, newDeadline: e.target.value })}
                   min={new Date().toISOString().slice(0, 16)}
                 />
               </div>
@@ -505,9 +503,7 @@ export function DeadlineOverrideModal({
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-sm p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    Summary
-                  </p>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Summary</p>
                   <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
                     You are about to extend the deadline for{" "}
                     <span className="font-semibold">{formData.indicatorIds.length}</span>{" "}

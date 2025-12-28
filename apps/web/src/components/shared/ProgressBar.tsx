@@ -1,66 +1,59 @@
-import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
-const progressBarVariants = cva(
-  'relative w-full overflow-hidden rounded-full bg-gray-200',
-  {
-    variants: {
-      size: {
-        sm: 'h-2',
-        md: 'h-3',
-        lg: 'h-4',
-      },
+const progressBarVariants = cva("relative w-full overflow-hidden rounded-full bg-gray-200", {
+  variants: {
+    size: {
+      sm: "h-2",
+      md: "h-3",
+      lg: "h-4",
     },
-    defaultVariants: {
-      size: 'md',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    size: "md",
+  },
+});
 
-const progressFillVariants = cva(
-  'h-full transition-all duration-300 ease-in-out',
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary',
-        success: 'bg-green-500',
-        warning: 'bg-yellow-500',
-        danger: 'bg-red-500',
-      },
+const progressFillVariants = cva("h-full transition-all duration-300 ease-in-out", {
+  variants: {
+    variant: {
+      default: "bg-primary",
+      success: "bg-green-500",
+      warning: "bg-yellow-500",
+      danger: "bg-red-500",
     },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
 
 export interface ProgressBarProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof progressBarVariants> {
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof progressBarVariants> {
   value: number;
   max?: number;
   showLabel?: boolean;
-  variant?: VariantProps<typeof progressFillVariants>['variant'];
+  variant?: VariantProps<typeof progressFillVariants>["variant"];
 }
 
-function ProgressBar({ 
-  className, 
-  value, 
-  max = 100, 
-  showLabel = false, 
+function ProgressBar({
+  className,
+  value,
+  max = 100,
+  showLabel = false,
   size,
   variant,
-  ...props 
+  ...props
 }: ProgressBarProps) {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
-  
+
   // Determine variant based on percentage
-  const getVariant = (): VariantProps<typeof progressFillVariants>['variant'] => {
+  const getVariant = (): VariantProps<typeof progressFillVariants>["variant"] => {
     if (variant) return variant;
-    if (percentage >= 80) return 'success';
-    if (percentage >= 50) return 'warning';
-    return 'danger';
+    if (percentage >= 80) return "success";
+    if (percentage >= 50) return "warning";
+    return "danger";
   };
 
   return (
@@ -72,12 +65,10 @@ function ProgressBar({
         />
       </div>
       {showLabel && (
-        <div className="mt-1 text-xs text-gray-600 text-right">
-          {Math.round(percentage)}%
-        </div>
+        <div className="mt-1 text-xs text-gray-600 text-right">{Math.round(percentage)}%</div>
       )}
     </div>
   );
 }
 
-export { ProgressBar, progressBarVariants }; 
+export { ProgressBar, progressBarVariants };

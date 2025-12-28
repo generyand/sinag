@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * WithLoading - Standardized loading state wrapper
@@ -19,10 +19,10 @@
  * ```
  */
 
-import { ReactNode } from 'react';
-import { AlertCircle, RefreshCw, Inbox } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { ReactNode } from "react";
+import { AlertCircle, RefreshCw, Inbox } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface WithLoadingProps<T> {
   /** The data to render when loaded */
@@ -64,13 +64,7 @@ function DefaultEmptyState({ message }: { message: string }) {
 /**
  * Default error state component
  */
-function DefaultErrorState({
-  error,
-  onRetry,
-}: {
-  error: Error;
-  onRetry?: () => void;
-}) {
+function DefaultErrorState({ error, onRetry }: { error: Error; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
@@ -78,7 +72,7 @@ function DefaultErrorState({
       </div>
       <h3 className="mb-2 font-semibold text-destructive">Failed to load data</h3>
       <p className="mb-4 max-w-md text-sm text-muted-foreground">
-        {error.message || 'An unexpected error occurred. Please try again.'}
+        {error.message || "An unexpected error occurred. Please try again."}
       </p>
       {onRetry && (
         <Button onClick={onRetry} variant="outline" size="sm">
@@ -110,16 +104,16 @@ export function WithLoading<T>({
   error,
   skeleton,
   emptyState,
-  emptyMessage = 'No data available',
+  emptyMessage = "No data available",
   onRetry,
   children,
   className,
-  minHeight = 'min-h-[200px]',
+  minHeight = "min-h-[200px]",
 }: WithLoadingProps<T>) {
   // Loading state
   if (isLoading) {
     return (
-      <div className={cn(minHeight, 'flex items-center justify-center', className)}>
+      <div className={cn(minHeight, "flex items-center justify-center", className)}>
         {skeleton || <DefaultSkeleton />}
       </div>
     );

@@ -1,16 +1,8 @@
-'use client';
+"use client";
 
-import {
-  CheckSquare,
-  Circle,
-  Hash,
-  Type,
-  AlignLeft,
-  Calendar,
-  Upload
-} from 'lucide-react';
-import { useFormBuilderStore, generateFieldId } from '@/store/useFormBuilderStore';
-import type { FormField } from '@/store/useFormBuilderStore';
+import { CheckSquare, Circle, Hash, Type, AlignLeft, Calendar, Upload } from "lucide-react";
+import { useFormBuilderStore, generateFieldId } from "@/store/useFormBuilderStore";
+import type { FormField } from "@/store/useFormBuilderStore";
 
 /**
  * Field type definitions with metadata for the palette
@@ -18,68 +10,96 @@ import type { FormField } from '@/store/useFormBuilderStore';
 const FIELD_TYPES = [
   // Selection Category
   {
-    category: 'Selection',
+    category: "Selection",
     fields: [
       {
-        type: 'checkbox_group',
-        label: 'Checkbox Group',
+        type: "checkbox_group",
+        label: "Checkbox Group",
         icon: CheckSquare,
-        description: 'Multiple selection with checkboxes',
-        colorStyle: { backgroundColor: 'rgb(59, 130, 246, 0.1)', color: 'rgb(59, 130, 246)', borderColor: 'rgb(59, 130, 246, 0.3)' },
+        description: "Multiple selection with checkboxes",
+        colorStyle: {
+          backgroundColor: "rgb(59, 130, 246, 0.1)",
+          color: "rgb(59, 130, 246)",
+          borderColor: "rgb(59, 130, 246, 0.3)",
+        },
       },
       {
-        type: 'radio_button',
-        label: 'Radio Button',
+        type: "radio_button",
+        label: "Radio Button",
         icon: Circle,
-        description: 'Single selection with radio buttons',
-        colorStyle: { backgroundColor: 'rgb(147, 51, 234, 0.1)', color: 'rgb(147, 51, 234)', borderColor: 'rgb(147, 51, 234, 0.3)' },
+        description: "Single selection with radio buttons",
+        colorStyle: {
+          backgroundColor: "rgb(147, 51, 234, 0.1)",
+          color: "rgb(147, 51, 234)",
+          borderColor: "rgb(147, 51, 234, 0.3)",
+        },
       },
     ],
   },
   // Input Category
   {
-    category: 'Input',
+    category: "Input",
     fields: [
       {
-        type: 'number_input',
-        label: 'Number Input',
+        type: "number_input",
+        label: "Number Input",
         icon: Hash,
-        description: 'Numeric input field with validation',
-        colorStyle: { backgroundColor: 'rgb(34, 197, 94, 0.1)', color: 'rgb(34, 197, 94)', borderColor: 'rgb(34, 197, 94, 0.3)' },
+        description: "Numeric input field with validation",
+        colorStyle: {
+          backgroundColor: "rgb(34, 197, 94, 0.1)",
+          color: "rgb(34, 197, 94)",
+          borderColor: "rgb(34, 197, 94, 0.3)",
+        },
       },
       {
-        type: 'text_input',
-        label: 'Text Input',
+        type: "text_input",
+        label: "Text Input",
         icon: Type,
-        description: 'Single-line text field',
-        colorStyle: { backgroundColor: 'rgb(249, 115, 22, 0.1)', color: 'rgb(249, 115, 22)', borderColor: 'rgb(249, 115, 22, 0.3)' },
+        description: "Single-line text field",
+        colorStyle: {
+          backgroundColor: "rgb(249, 115, 22, 0.1)",
+          color: "rgb(249, 115, 22)",
+          borderColor: "rgb(249, 115, 22, 0.3)",
+        },
       },
       {
-        type: 'text_area',
-        label: 'Text Area',
+        type: "text_area",
+        label: "Text Area",
         icon: AlignLeft,
-        description: 'Multi-line text field',
-        colorStyle: { backgroundColor: 'rgb(234, 179, 8, 0.1)', color: 'rgb(234, 179, 8)', borderColor: 'rgb(234, 179, 8, 0.3)' },
+        description: "Multi-line text field",
+        colorStyle: {
+          backgroundColor: "rgb(234, 179, 8, 0.1)",
+          color: "rgb(234, 179, 8)",
+          borderColor: "rgb(234, 179, 8, 0.3)",
+        },
       },
       {
-        type: 'date_picker',
-        label: 'Date Picker',
+        type: "date_picker",
+        label: "Date Picker",
         icon: Calendar,
-        description: 'Date selection field',
-        colorStyle: { backgroundColor: 'rgb(99, 102, 241, 0.1)', color: 'rgb(99, 102, 241)', borderColor: 'rgb(99, 102, 241, 0.3)' },
+        description: "Date selection field",
+        colorStyle: {
+          backgroundColor: "rgb(99, 102, 241, 0.1)",
+          color: "rgb(99, 102, 241)",
+          borderColor: "rgb(99, 102, 241, 0.3)",
+        },
       },
     ],
   },
   // Upload Category
   {
-    category: 'Upload',
+    category: "Upload",
     fields: [
       {
-        type: 'file_upload',
-        label: 'File Upload',
+        type: "file_upload",
+        label: "File Upload",
         icon: Upload,
-        description: 'File upload field with MOV support',
-        colorStyle: { backgroundColor: 'rgb(239, 68, 68, 0.1)', color: 'rgb(239, 68, 68)', borderColor: 'rgb(239, 68, 68, 0.3)' },
+        description: "File upload field with MOV support",
+        colorStyle: {
+          backgroundColor: "rgb(239, 68, 68, 0.1)",
+          color: "rgb(239, 68, 68)",
+          borderColor: "rgb(239, 68, 68, 0.3)",
+        },
       },
     ],
   },
@@ -91,58 +111,58 @@ const FIELD_TYPES = [
 function createDefaultField(fieldType: string, fieldId: string): FormField {
   const baseField = {
     field_id: fieldId,
-    label: `New ${fieldType.replace('_', ' ')}`,
+    label: `New ${fieldType.replace("_", " ")}`,
     required: true,
   };
 
   switch (fieldType) {
-    case 'checkbox_group':
+    case "checkbox_group":
       return {
         ...baseField,
-        field_type: 'checkbox_group',
+        field_type: "checkbox_group",
         options: [
-          { label: 'Option 1', value: 'option_1' },
-          { label: 'Option 2', value: 'option_2' },
+          { label: "Option 1", value: "option_1" },
+          { label: "Option 2", value: "option_2" },
         ],
       };
-    case 'radio_button':
+    case "radio_button":
       return {
         ...baseField,
-        field_type: 'radio_button',
+        field_type: "radio_button",
         options: [
-          { label: 'Option 1', value: 'option_1' },
-          { label: 'Option 2', value: 'option_2' },
+          { label: "Option 1", value: "option_1" },
+          { label: "Option 2", value: "option_2" },
         ],
       };
-    case 'number_input':
+    case "number_input":
       return {
         ...baseField,
-        field_type: 'number_input',
+        field_type: "number_input",
         min_value: 0,
       };
-    case 'text_input':
+    case "text_input":
       return {
         ...baseField,
-        field_type: 'text_input',
+        field_type: "text_input",
         max_length: 255,
       };
-    case 'text_area':
+    case "text_area":
       return {
         ...baseField,
-        field_type: 'text_area',
+        field_type: "text_area",
         max_length: 1000,
         rows: 4,
       };
-    case 'date_picker':
+    case "date_picker":
       return {
         ...baseField,
-        field_type: 'date_picker',
+        field_type: "date_picker",
       };
-    case 'file_upload':
+    case "file_upload":
       return {
         ...baseField,
-        field_type: 'file_upload',
-        allowed_file_types: ['pdf', 'jpg', 'png'],
+        field_type: "file_upload",
+        allowed_file_types: ["pdf", "jpg", "png"],
         max_file_size_mb: 10,
       };
     default:
@@ -202,9 +222,7 @@ export function FieldPalette() {
 
                   {/* Label */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[var(--foreground)]">
-                      {field.label}
-                    </p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">{field.label}</p>
                     <p className="text-xs text-[var(--text-secondary)] truncate">
                       {field.description}
                     </p>
@@ -236,8 +254,8 @@ export function FieldPalette() {
       {/* Help Text */}
       <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3">
         <p className="text-xs text-gray-600">
-          <strong>Tip:</strong> Click a field type to add it to the canvas.
-          Drag and drop coming in the next task.
+          <strong>Tip:</strong> Click a field type to add it to the canvas. Drag and drop coming in
+          the next task.
         </p>
       </div>
     </div>

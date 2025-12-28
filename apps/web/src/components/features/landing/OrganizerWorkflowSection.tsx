@@ -10,9 +10,7 @@ export function OrganizerWorkflowSection() {
           {/* Left Content - Steps */}
           <div className="space-y-8">
             <div className="inline-flex items-center space-x-2 bg-[#fbbf24]/10 px-4 py-2 rounded-full border border-[#fbbf24]/20">
-              <span className="text-sm font-medium text-gray-700">
-                For Event Organizers
-              </span>
+              <span className="text-sm font-medium text-gray-700">For Event Organizers</span>
             </div>
 
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
@@ -26,12 +24,9 @@ export function OrganizerWorkflowSection() {
                   <Calendar className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    1. Create Event
-                  </h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">1. Create Event</h3>
                   <p className="text-gray-600">
-                    Set up your event details and generate a unique registration
-                    link for attendees.
+                    Set up your event details and generate a unique registration link for attendees.
                   </p>
                 </div>
               </div>
@@ -42,12 +37,9 @@ export function OrganizerWorkflowSection() {
                   <Scan className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    2. Scan to Record
-                  </h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">2. Scan to Record</h3>
                   <p className="text-gray-600">
-                    Use the scanner to quickly record attendance by scanning
-                    attendee QR codes.
+                    Use the scanner to quickly record attendance by scanning attendee QR codes.
                   </p>
                 </div>
               </div>
@@ -58,12 +50,9 @@ export function OrganizerWorkflowSection() {
                   <BarChart3 className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    3. Track & Report
-                  </h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">3. Track & Report</h3>
                   <p className="text-gray-600">
-                    Monitor real-time attendance data and generate detailed
-                    reports when needed.
+                    Monitor real-time attendance data and generate detailed reports when needed.
                   </p>
                 </div>
               </div>
@@ -74,9 +63,7 @@ export function OrganizerWorkflowSection() {
           <div className="relative">
             <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Admin View
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-900">Admin View</h3>
               </div>
 
               <div className="space-y-6">
@@ -84,13 +71,10 @@ export function OrganizerWorkflowSection() {
                 <div className="bg-[#fbbf24]/10 rounded-xl p-4 border border-[#fbbf24]/20">
                   <div className="flex items-center space-x-3 mb-2">
                     <Calendar className="w-5 h-5 text-[#fbbf24]" />
-                    <span className="font-semibold text-gray-900">
-                      1. Create Event
-                    </span>
+                    <span className="font-semibold text-gray-900">1. Create Event</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Set up your event details and generate a unique registration
-                    link for attendees.
+                    Set up your event details and generate a unique registration link for attendees.
                   </p>
                 </div>
 
@@ -98,13 +82,10 @@ export function OrganizerWorkflowSection() {
                 <div className="bg-[#fbbf24]/10 rounded-xl p-4 border border-[#fbbf24]/20">
                   <div className="flex items-center space-x-3 mb-2">
                     <Scan className="w-5 h-5 text-[#fbbf24]" />
-                    <span className="font-semibold text-gray-900">
-                      2. Scan to Record
-                    </span>
+                    <span className="font-semibold text-gray-900">2. Scan to Record</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Use the scanner to quickly record attendance by scanning
-                    attendee QR codes.
+                    Use the scanner to quickly record attendance by scanning attendee QR codes.
                   </p>
                 </div>
 
@@ -112,13 +93,10 @@ export function OrganizerWorkflowSection() {
                 <div className="bg-[#fbbf24]/10 rounded-xl p-4 border border-[#fbbf24]/20">
                   <div className="flex items-center space-x-3 mb-2">
                     <BarChart3 className="w-5 h-5 text-[#fbbf24]" />
-                    <span className="font-semibold text-gray-900">
-                      3. Track & Report
-                    </span>
+                    <span className="font-semibold text-gray-900">3. Track & Report</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Monitor real-time attendance data and generate detailed
-                    reports when needed.
+                    Monitor real-time attendance data and generate detailed reports when needed.
                   </p>
                 </div>
               </div>

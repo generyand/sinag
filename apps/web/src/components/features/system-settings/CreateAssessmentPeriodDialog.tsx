@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -21,15 +21,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 
-const createPeriodSchema = z.object({
-  performanceYear: z.number().min(2020, 'Performance year must be 2020 or later'),
-  assessmentYear: z.number().min(2021, 'Assessment year must be 2021 or later'),
-}).refine((data) => data.assessmentYear > data.performanceYear, {
-  message: 'Assessment year must be after performance year',
-  path: ['assessmentYear'],
-});
+const createPeriodSchema = z
+  .object({
+    performanceYear: z.number().min(2020, "Performance year must be 2020 or later"),
+    assessmentYear: z.number().min(2021, "Assessment year must be 2021 or later"),
+  })
+  .refine((data) => data.assessmentYear > data.performanceYear, {
+    message: "Assessment year must be after performance year",
+    path: ["assessmentYear"],
+  });
 
 type CreatePeriodFormData = z.infer<typeof createPeriodSchema>;
 
@@ -61,7 +63,7 @@ export function CreateAssessmentPeriodDialog({
       form.reset();
       onClose();
     } catch (error) {
-      console.error('Error creating assessment period:', error);
+      console.error("Error creating assessment period:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -78,7 +80,8 @@ export function CreateAssessmentPeriodDialog({
         <DialogHeader>
           <DialogTitle>Create New Assessment Period</DialogTitle>
           <DialogDescription>
-            Create a new SGLGB assessment cycle. This will automatically generate assessment records for all barangays.
+            Create a new SGLGB assessment cycle. This will automatically generate assessment records
+            for all barangays.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -124,7 +127,7 @@ export function CreateAssessmentPeriodDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : 'Create Period'}
+                {isSubmitting ? "Creating..." : "Create Period"}
               </Button>
             </DialogFooter>
           </form>
@@ -132,4 +135,4 @@ export function CreateAssessmentPeriodDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

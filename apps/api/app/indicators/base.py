@@ -54,6 +54,7 @@ class ChecklistItem:
     display_order: int = 0  # Sort order within indicator
     option_group: str | None = None  # Option group for OR logic (e.g., "Option A", "Option B")
     field_notes: FieldNotes | None = None  # Notes displayed below this field
+    is_profiling_only: bool = False  # If true, doesn't affect pass/fail (for data collection only)
 
 
 @dataclass
@@ -119,6 +120,9 @@ class SubIndicator:
         "ALL_ITEMS_REQUIRED"  # ALL_ITEMS_REQUIRED, ANY_ITEM_REQUIRED, CUSTOM (only for leaf nodes)
     )
     notes: FormNotes | None = None  # Optional notes section displayed below form fields
+    is_profiling_only: bool = (
+        False  # Is this sub-indicator profiling-only (doesn't affect pass/fail)
+    )
 
 
 @dataclass

@@ -1,15 +1,14 @@
 # User Acceptance Testing (UAT) Criteria
 
-**Epic 6.0 - Story 6.18**
-**Version:** 1.0
-**Date:** 2025-11-09
-**Status:** Production Ready
+**Epic 6.0 - Story 6.18** **Version:** 1.0 **Date:** 2025-11-09 **Status:** Production Ready
 
 ---
 
 ## Overview
 
-This document defines the User Acceptance Testing criteria for the SINAG BLGU Table Assessment Workflow system. UAT validates that the system meets business requirements and is ready for production deployment.
+This document defines the User Acceptance Testing criteria for the SINAG BLGU Table Assessment
+Workflow system. UAT validates that the system meets business requirements and is ready for
+production deployment.
 
 ## UAT Objectives
 
@@ -25,10 +24,10 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 
 ### Scenario 1: BLGU Assessment Submission Workflow
 
-**Role:** BLGU_USER
-**Objective:** Complete BLGU can submit assessment from DRAFT to SUBMITTED
+**Role:** BLGU_USER **Objective:** Complete BLGU can submit assessment from DRAFT to SUBMITTED
 
 #### Test Steps:
+
 1. **Login** as BLGU user
    - ✅ Verify successful login
    - ✅ Verify dashboard displays with correct barangay info
@@ -70,6 +69,7 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
    - ✅ Verify compliance status NOT visible to BLGU
 
 **Acceptance Criteria:**
+
 - BLGU can complete entire workflow without errors
 - All validation messages are user-friendly
 - Submission process < 5 seconds
@@ -79,10 +79,10 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 
 ### Scenario 2: Assessor Review and Rework Request
 
-**Role:** ASSESSOR
-**Objective:** Assessor can review submission and request rework if needed
+**Role:** ASSESSOR **Objective:** Assessor can review submission and request rework if needed
 
 #### Test Steps:
+
 1. **Login** as ASSESSOR user
    - ✅ Verify successful login
    - ✅ Verify assessor dashboard displays pending assessments
@@ -112,6 +112,7 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
    - ✅ Verify BLGU receives notification
 
 **Acceptance Criteria:**
+
 - Assessor can access all submitted assessments
 - Compliance data visible and accurate
 - Rework request process clear and intuitive
@@ -122,10 +123,10 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 
 ### Scenario 3: BLGU Rework and Resubmission
 
-**Role:** BLGU_USER
-**Objective:** BLGU can address rework comments and resubmit
+**Role:** BLGU_USER **Objective:** BLGU can address rework comments and resubmit
 
 #### Test Steps:
+
 1. **Login** as BLGU user (after rework requested)
    - ✅ Verify dashboard shows REWORK status assessment
    - ✅ Verify notification about rework request
@@ -155,6 +156,7 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
    - ✅ Verify error message: "Maximum rework cycles reached"
 
 **Acceptance Criteria:**
+
 - Rework comments clearly visible
 - Editing process smooth and intuitive
 - Resubmission successful
@@ -164,10 +166,10 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 
 ### Scenario 4: Validator Governance Area Filtering
 
-**Role:** VALIDATOR
-**Objective:** Validator only sees assessments from assigned governance area
+**Role:** VALIDATOR **Objective:** Validator only sees assessments from assigned governance area
 
 #### Test Steps:
+
 1. **Login** as VALIDATOR user (assigned to "Social Protection")
    - ✅ Verify successful login
    - ✅ Verify validator dashboard displays
@@ -185,6 +187,7 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
    - ✅ Verify validation recorded with validator info
 
 **Acceptance Criteria:**
+
 - Validators only see assigned governance areas
 - Cannot access assessments outside their area
 - Validation process same as assessors
@@ -194,10 +197,10 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 
 ### Scenario 5: MLGOO Admin Full Access
 
-**Role:** MLGOO_DILG
-**Objective:** Admin can access all assessments and manage system
+**Role:** MLGOO_DILG **Objective:** Admin can access all assessments and manage system
 
 #### Test Steps:
+
 1. **Login** as MLGOO admin
    - ✅ Verify successful login
    - ✅ Verify admin dashboard with full statistics
@@ -222,6 +225,7 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
    - ✅ Verify data accuracy
 
 **Acceptance Criteria:**
+
 - Admin has unrestricted access
 - User management fully functional
 - Analytics accurate and exportable
@@ -234,6 +238,7 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 **Objective:** Verify data is protected and audit trails exist
 
 #### Test Steps:
+
 1. **Concurrent Editing Prevention**
    - ✅ Two users attempt to edit same assessment
    - ✅ Verify optimistic locking or conflict detection
@@ -259,6 +264,7 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
    - ✅ Verify forced re-authentication
 
 **Acceptance Criteria:**
+
 - No data loss during concurrent operations
 - Complete audit trail maintained
 - File access properly restricted
@@ -318,13 +324,13 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 
 ### Stakeholder Approval
 
-| Role | Name | Signature | Date |
-|------|------|-----------|------|
-| DILG Project Manager | _________________ | _________________ | ________ |
-| BLGU Representative | _________________ | _________________ | ________ |
-| Assessor Representative | _________________ | _________________ | ________ |
-| Technical Lead | _________________ | _________________ | ________ |
-| QA Lead | _________________ | _________________ | ________ |
+| Role                    | Name                       | Signature                  | Date         |
+| ----------------------- | -------------------------- | -------------------------- | ------------ |
+| DILG Project Manager    | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
+| BLGU Representative     | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
+| Assessor Representative | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
+| Technical Lead          | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
+| QA Lead                 | **\*\*\*\***\_**\*\*\*\*** | **\*\*\*\***\_**\*\*\*\*** | **\_\_\_\_** |
 
 ### UAT Result
 
@@ -335,10 +341,10 @@ This document defines the User Acceptance Testing criteria for the SINAG BLGU Ta
 ### Issues Log
 
 | Issue ID | Description | Severity | Status | Resolution |
-|----------|-------------|----------|--------|------------|
-| | | | | |
-| | | | | |
-| | | | | |
+| -------- | ----------- | -------- | ------ | ---------- |
+|          |             |          |        |            |
+|          |             |          |        |            |
+|          |             |          |        |            |
 
 ### Notes
 
@@ -372,7 +378,5 @@ _Additional comments, observations, or recommendations:_
 
 ---
 
-**Document Status:** Approved
-**Prepared By:** Development Team
-**Reviewed By:** QA Team
-**Approved By:** Project Manager
+**Document Status:** Approved **Prepared By:** Development Team **Reviewed By:** QA Team **Approved
+By:** Project Manager

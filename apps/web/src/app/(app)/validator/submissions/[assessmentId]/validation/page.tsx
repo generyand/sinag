@@ -1,5 +1,5 @@
-import { ValidatorValidationClient } from '@/components/features/validator';
-import { notFound } from 'next/navigation';
+import { ValidatorValidationClient } from "@/components/features/validator";
+import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ assessmentId: string }>;

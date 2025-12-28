@@ -3,12 +3,7 @@ import { useGetAssessmentsDashboard } from "@sinag/shared";
 // No need to map status anymore since we're using the API status directly
 
 export function useDashboard() {
-  const {
-    data: dashboardData,
-    isLoading,
-    error,
-    refetch,
-  } = useGetAssessmentsDashboard();
+  const { data: dashboardData, isLoading, error, refetch } = useGetAssessmentsDashboard();
 
   // Transform the data to match the expected structure
   const transformedData = dashboardData
@@ -29,10 +24,10 @@ export function useDashboard() {
             area.requires_rework_count > 0
               ? "needs-rework"
               : area.completion_percentage === 100
-              ? "completed"
-              : area.completion_percentage > 0
-              ? "in-progress"
-              : "not-started",
+                ? "completed"
+                : area.completion_percentage > 0
+                  ? "in-progress"
+                  : "not-started",
         })),
       }
     : undefined;

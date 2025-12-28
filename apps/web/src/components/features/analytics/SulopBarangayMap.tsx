@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Barangay data structure
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 interface BarangayData {
   id: string; // e.g., "1katipunan", "2tanwalang"
   name: string; // Display name
-  status: 'pass' | 'fail' | 'in_progress' | 'not_started';
+  status: "pass" | "fail" | "in_progress" | "not_started";
   compliance_rate?: number;
   submission_count?: number;
 }
@@ -26,17 +26,17 @@ interface SulopBarangayMapProps {
  * Color scheme for barangay status
  */
 const STATUS_COLORS = {
-  pass: '#22c55e', // Green
-  fail: '#ef4444', // Red
-  in_progress: '#f59e0b', // Orange
-  not_started: '#94a3b8', // Gray
+  pass: "#22c55e", // Green
+  fail: "#ef4444", // Red
+  in_progress: "#f59e0b", // Orange
+  not_started: "#94a3b8", // Gray
 } as const;
 
 const STATUS_LABELS = {
-  pass: 'Pass',
-  fail: 'Fail',
-  in_progress: 'In Progress',
-  not_started: 'Not Started',
+  pass: "Pass",
+  fail: "Fail",
+  in_progress: "In Progress",
+  not_started: "Not Started",
 } as const;
 
 /**
@@ -60,8 +60,8 @@ const STATUS_LABELS = {
 export function SulopBarangayMap({
   barangays,
   onBarangayClick,
-  title = 'Sulop Barangays Geographic Distribution',
-  description = 'Click on a barangay to view details',
+  title = "Sulop Barangays Geographic Distribution",
+  description = "Click on a barangay to view details",
 }: SulopBarangayMapProps) {
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
@@ -90,7 +90,7 @@ export function SulopBarangayMap({
   };
 
   // Get currently displayed barangay (hovered or selected)
-  const displayedBarangay = barangayMap.get(hoveredBarangay || selectedBarangay || '');
+  const displayedBarangay = barangayMap.get(hoveredBarangay || selectedBarangay || "");
 
   // Count barangays by status
   const statusCounts = React.useMemo(() => {
@@ -115,15 +115,8 @@ export function SulopBarangayMap({
         {/* Status Legend */}
         <div className="flex flex-wrap gap-2 pt-2">
           {Object.entries(STATUS_COLORS).map(([status, color]) => (
-            <Badge
-              key={status}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: color }}
-              />
+            <Badge key={status} variant="outline" className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
               <span className="text-xs">
                 {STATUS_LABELS[status as keyof typeof STATUS_LABELS]} (
                 {statusCounts[status as keyof typeof statusCounts]})
@@ -138,11 +131,7 @@ export function SulopBarangayMap({
           {/* Map Container */}
           <div className="lg:col-span-2">
             <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden border">
-              <svg
-                viewBox="0 0 1000 1000"
-                className="w-full h-full"
-                style={{ maxHeight: '600px' }}
-              >
+              <svg viewBox="0 0 1000 1000" className="w-full h-full" style={{ maxHeight: "600px" }}>
                 {/* Background */}
                 <rect width="1000" height="1000" fill="#f8fafc" />
 
@@ -197,9 +186,7 @@ export function SulopBarangayMap({
                         fill={getBarangayColor(brgy.id)}
                         stroke="#1e293b"
                         strokeWidth={
-                          selectedBarangay === brgy.id || hoveredBarangay === brgy.id
-                            ? 3
-                            : 1
+                          selectedBarangay === brgy.id || hoveredBarangay === brgy.id ? 3 : 1
                         }
                         className="cursor-pointer transition-all duration-200 hover:brightness-110"
                         onClick={() => handleBarangayClick(brgy.id)}
@@ -226,7 +213,7 @@ export function SulopBarangayMap({
                 <div className="absolute top-2 left-2 bg-white shadow-lg rounded-lg p-3 border pointer-events-none z-10">
                   <div className="text-sm font-semibold">{displayedBarangay.name}</div>
                   <div className="text-xs text-gray-600 mt-1">
-                    Status:{' '}
+                    Status:{" "}
                     <span
                       className="font-medium"
                       style={{ color: STATUS_COLORS[displayedBarangay.status] }}
@@ -252,9 +239,7 @@ export function SulopBarangayMap({
               {displayedBarangay ? (
                 <div className="space-y-3">
                   <div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {displayedBarangay.name}
-                    </div>
+                    <div className="text-lg font-bold text-gray-900">{displayedBarangay.name}</div>
                     <div className="text-xs text-gray-500">ID: {displayedBarangay.id}</div>
                   </div>
 
@@ -264,7 +249,7 @@ export function SulopBarangayMap({
                       <Badge
                         style={{
                           backgroundColor: STATUS_COLORS[displayedBarangay.status],
-                          color: 'white',
+                          color: "white",
                         }}
                       >
                         {STATUS_LABELS[displayedBarangay.status]}
@@ -306,19 +291,23 @@ export function SulopBarangayMap({
           </div>
           <div className="text-xs text-blue-800 space-y-1">
             <p>
-              <strong>1.</strong> Place your Sulop barangay SVG file in{' '}
-              <code className="bg-blue-100 px-1 rounded">
-                /public/maps/sulop-barangays.svg
-              </code>
+              <strong>1.</strong> Place your Sulop barangay SVG file in{" "}
+              <code className="bg-blue-100 px-1 rounded">/public/maps/sulop-barangays.svg</code>
             </p>
             <p>
-              <strong>2.</strong> Open this file and replace the placeholder <code className="bg-blue-100 px-1 rounded">&lt;rect&gt;</code> elements in the SVG with your actual <code className="bg-blue-100 px-1 rounded">&lt;path&gt;</code> elements
+              <strong>2.</strong> Open this file and replace the placeholder{" "}
+              <code className="bg-blue-100 px-1 rounded">&lt;rect&gt;</code> elements in the SVG
+              with your actual <code className="bg-blue-100 px-1 rounded">&lt;path&gt;</code>{" "}
+              elements
             </p>
             <p>
-              <strong>3.</strong> Ensure each path has an <code className="bg-blue-100 px-1 rounded">id</code> attribute matching barangay IDs (e.g., "1katipunan", "2tanwalang")
+              <strong>3.</strong> Ensure each path has an{" "}
+              <code className="bg-blue-100 px-1 rounded">id</code> attribute matching barangay IDs
+              (e.g., "1katipunan", "2tanwalang")
             </p>
             <p>
-              <strong>4.</strong> The component will automatically color-code each barangay based on performance data
+              <strong>4.</strong> The component will automatically color-code each barangay based on
+              performance data
             </p>
           </div>
         </div>

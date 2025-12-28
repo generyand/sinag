@@ -1,16 +1,16 @@
 import { Assessment } from "@/types/assessment";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AssessmentResponseUpdate,
   AssessmentStatus,
   MOVCreate,
   deleteAssessmentsMovs$MovId,
+  getGetAssessmentsMyAssessmentQueryKey,
   postAssessmentsResponses$ResponseIdMovs,
   postAssessmentsSubmit,
   putAssessmentsResponses$ResponseId,
   useGetAssessmentsMyAssessment,
 } from "@sinag/shared";
-import { getGetAssessmentsMyAssessmentQueryKey } from "@sinag/shared/src/generated/endpoints/assessments";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 // Custom debounce implementation
 function debounce<TArgs extends unknown[], TReturn>(
@@ -85,13 +85,13 @@ export function useCurrentAssessment() {
     refetch,
   } = useGetAssessmentsMyAssessment({
     query: {
-      // Use reasonable staleTime - data is fresh for 2 minutes
-      // Invalidations will trigger refetch when needed
-      staleTime: 2 * 60 * 1000, // 2 minutes
+      // Shorter staleTime for faster updates after file uploads
+      // Invalidations will trigger immediate refetch when data is stale
+      staleTime: 30 * 1000, // 30 seconds - faster updates for file uploads
       gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-      // Only refetch when explicitly invalidated, not on window focus
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
+      // Refetch on window focus to catch any missed updates
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
     },
   } as any);
 
@@ -171,11 +171,14 @@ export function useCurrentAssessment() {
       description: indicator.description,
       technicalNotes: "See form schema for requirements",
       governanceAreaId: areaId.toString(),
-      status: indicator.response
-        ? (indicator.response as any).is_completed === true
-          ? ("completed" as const)
-          : ("in_progress" as const)
-        : ("not_started" as const),
+      status: (() => {
+        const isCompleted = (indicator.response as any)?.is_completed === true;
+        return indicator.response
+          ? isCompleted
+            ? ("completed" as const)
+            : ("in_progress" as const)
+          : ("not_started" as const);
+      })(),
       // Try to infer a generalized compliance answer from various backend field names
       // For areas 1-6, check for fields ending in _compliance (like bpoc_documents_compliance)
       // For Area 1 with multiple fields, use "yes" if any field is "yes", otherwise check all are answered
@@ -289,6 +292,8 @@ export function useCurrentAssessment() {
         },
       },
       responseData: indicator.response?.response_data || {},
+      // Map is_profiling_only from API to camelCase for frontend
+      isProfilingOnly: (indicator as any).is_profiling_only === true,
       children: (indicator.children || []).map((child) => mapIndicatorTree(areaId, child)),
     };
     return mapped;
@@ -383,33 +388,132 @@ export function useCurrentAssessment() {
   );
 
   // Sync local assessment whenever the server data changes
-  // But preserve optimistic updates to prevent race conditions where server hasn't processed updates yet
+  // CRITICAL: Merge states intelligently to preserve optimistic updates
+  // The problem with simple count comparison: server might have DIFFERENT indicators
+  // marked as complete than local state, causing checkmarks to disappear
   useEffect(() => {
     if (transformedData) {
       setLocalAssessment((prev) => {
-        // If we have a previous state with optimistic updates, be smart about when to sync
-        if (prev && transformedData) {
-          const serverCompleted = (transformedData as any).completedIndicators || 0;
-          const localCompleted = prev.completedIndicators || 0;
-          const serverTotal = (transformedData as any).totalIndicators || 0;
-          const localTotal = prev.totalIndicators || 0;
-
-          // If totals don't match, always sync (schema might have changed)
-          if (serverTotal !== localTotal) {
-            return transformedData as unknown as Assessment;
-          }
-
-          // If local has higher completion count, preserve it (server might be stale)
-          // Only sync if server count is higher or equal (meaning server caught up)
-          if (serverCompleted >= localCompleted) {
-            return transformedData as unknown as Assessment;
-          }
-
-          // If server is lower, keep optimistic update but merge other changes if needed
-          // This prevents flickering when server hasn't finished processing yet
-          return prev;
+        // First time loading - just use server data
+        if (!prev) {
+          return transformedData as unknown as Assessment;
         }
-        return transformedData as unknown as Assessment;
+
+        // Schema changed - use server data
+        const serverTotal = (transformedData as any).totalIndicators || 0;
+        const localTotal = prev.totalIndicators || 0;
+        if (serverTotal !== localTotal) {
+          return transformedData as unknown as Assessment;
+        }
+
+        // INTELLIGENT MERGE: Instead of replacing entire state, merge indicator statuses
+        // Keep ANY indicator that's marked as "completed" in EITHER local OR server state
+        // This preserves optimistic updates while also incorporating server-side updates
+        const mergedData = { ...(transformedData as any) };
+
+        // Build a map of local indicator data for fast lookup (handles all levels)
+        // Key: indicator ID (as string), Value: { status, requiresRework, movFiles }
+        const localDataMap = new Map<
+          string,
+          { status: string; requiresRework: boolean; movFiles?: any[] }
+        >();
+        const buildDataMap = (indicators: any[]) => {
+          if (!indicators) return;
+          for (const ind of indicators) {
+            localDataMap.set(String(ind.id), {
+              status: ind.status,
+              requiresRework: ind.requiresRework === true,
+              movFiles: ind.movFiles,
+            });
+            if (ind.children && ind.children.length > 0) {
+              buildDataMap(ind.children);
+            }
+          }
+        };
+        // Build map from all local governance areas
+        if (prev.governanceAreas) {
+          for (const area of prev.governanceAreas) {
+            buildDataMap(area.indicators || []);
+          }
+        }
+
+        // Helper to merge indicator tree - keep "completed" status from either source
+        const mergeIndicatorTree = (serverIndicators: any[]): any[] => {
+          if (!serverIndicators) return [];
+
+          return serverIndicators.map((serverInd: any) => {
+            const indId = String(serverInd.id);
+            const localData = localDataMap.get(indId);
+            const localStatus = localData?.status;
+            const localRequiresRework = localData?.requiresRework;
+            const localMovFiles = localData?.movFiles;
+
+            // Determine which status to use:
+            // - If LOCAL says requires_rework=false (we cleared it after upload), trust local
+            // - If local says "completed" but server doesn't, keep local (optimistic update)
+            // - If server says "completed" but local doesn't, use server (server caught up)
+            // - If both agree, use server (most up-to-date)
+            const localCompleted = localStatus === "completed";
+            const serverCompleted = serverInd.status === "completed";
+            // Use LOCAL requiresRework if we've cleared it (false), otherwise use server's value
+            const requiresRework =
+              localRequiresRework === false ? false : serverInd.requiresRework === true;
+
+            let finalStatus = serverInd.status;
+            let finalRequiresRework = serverInd.requiresRework;
+            let finalMovFiles = serverInd.movFiles;
+
+            if (localCompleted && !serverCompleted && !requiresRework) {
+              // Preserve optimistic update - local knows something server doesn't yet
+              // Also preserve the local requiresRework=false and movFiles
+              finalStatus = "completed";
+              finalRequiresRework = false;
+              // If local has movFiles (from optimistic upload), use local's version
+              // Otherwise fall back to server's movFiles
+              if (localMovFiles && localMovFiles.length > 0) {
+                finalMovFiles = localMovFiles;
+              }
+            }
+
+            // Recursively merge children
+            const mergedChildren =
+              serverInd.children && serverInd.children.length > 0
+                ? mergeIndicatorTree(serverInd.children)
+                : serverInd.children;
+
+            return {
+              ...serverInd,
+              status: finalStatus,
+              requiresRework: finalRequiresRework,
+              movFiles: finalMovFiles,
+              children: mergedChildren,
+            };
+          });
+        };
+
+        // Apply merge to all governance areas
+        if (mergedData.governanceAreas) {
+          mergedData.governanceAreas = mergedData.governanceAreas.map((serverArea: any) => ({
+            ...serverArea,
+            indicators: mergeIndicatorTree(serverArea.indicators || []),
+          }));
+        }
+
+        // Recompute the completed count after merge
+        const countCompleted = (indicators: any[]): number =>
+          (indicators || []).reduce((acc: number, ind: any) => {
+            if (ind.children && ind.children.length > 0) {
+              return acc + countCompleted(ind.children);
+            }
+            return acc + (ind.status === "completed" ? 1 : 0);
+          }, 0);
+
+        mergedData.completedIndicators = (mergedData.governanceAreas || []).reduce(
+          (sum: number, area: any) => sum + countCompleted(area.indicators || []),
+          0
+        );
+
+        return mergedData as unknown as Assessment;
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -481,9 +585,10 @@ export function useAssessmentValidation(assessment: Assessment | null) {
     }
 
     const missingIndicators: string[] = [];
-    const missingMOVs: string[] = [];
+    const missingMOVs: string[] = []; // Intentionally left empty as we group everything under missingIndicators
 
     // Recursively check all indicators (including children) across all governance areas
+    // Trust backend's status which handles all complex validation logic
     const checkIndicator = (indicator: any) => {
       // If indicator has children, check children instead of parent
       if (indicator.children && indicator.children.length > 0) {
@@ -491,152 +596,11 @@ export function useAssessmentValidation(assessment: Assessment | null) {
         return;
       }
 
-      // For leaf indicators, extract complianceAnswer from responseData (same logic as counting)
-      const responseData = indicator.responseData || {};
-      let complianceAnswer: string | undefined = indicator.complianceAnswer;
-
-      // If not already set, extract from responseData
-      if (!complianceAnswer) {
-        // Check for fields ending in _compliance (for areas 1-6)
-        const complianceFields: string[] = [];
-        for (const key in responseData) {
-          if (key.endsWith("_compliance") && typeof responseData[key] === "string") {
-            const val = String(responseData[key]).toLowerCase();
-            if (val === "yes" || val === "no" || val === "na") {
-              complianceFields.push(val);
-            }
-          }
-        }
-
-        if (complianceFields.length > 0) {
-          // Check form schema to see how many compliance fields are required
-          const formSchema = indicator.formSchema || {};
-          const requiredFields = formSchema.required || [];
-          const complianceRequiredFields = requiredFields.filter((f: string) =>
-            f.endsWith("_compliance")
-          );
-
-          // If we have all required compliance fields answered
-          if (
-            complianceFields.length >= complianceRequiredFields.length ||
-            complianceRequiredFields.length === 0
-          ) {
-            // If any field is "yes", return "yes" (need MOVs)
-            if (complianceFields.some((v) => v === "yes")) {
-              complianceAnswer = "yes";
-            } else {
-              // All fields answered, use first one
-              complianceAnswer = complianceFields[0];
-            }
-          }
-        } else {
-          // Fall back to common compliance field names
-          const val = responseData.compliance || responseData.is_compliant || responseData.answer;
-          if (typeof val === "string") {
-            complianceAnswer = val.toLowerCase();
-          } else if (typeof val === "boolean") {
-            complianceAnswer = val ? "yes" : "no";
-          }
-        }
-      }
-
-      if (!complianceAnswer) {
+      // Check the indicator's status field (derived from backend is_completed)
+      // "completed" means it passed all validations (structure, data, movs)
+      if (indicator.status !== "completed") {
         missingIndicators.push(`${indicator.code} - ${indicator.name}`);
-        return;
       }
-
-      // Check MOVs only for sections with "yes" answers
-      // Sections with "no" or "na" don't need MOVs
-      // Note: responseData is already defined above
-      const props = (indicator.formSchema as any)?.properties || {};
-
-      // Build map of field_name -> section for fields with mov_upload_section
-      const fieldToSection: Record<string, string> = {};
-      for (const [fieldName, fieldProps] of Object.entries(props)) {
-        const section = (fieldProps as any)?.mov_upload_section;
-        if (typeof section === "string") {
-          fieldToSection[fieldName] = section;
-        }
-      }
-
-      // Only require MOVs for sections where the answer is "yes"
-      const requiredSectionsWithYes = new Set<string>();
-      for (const [fieldName, section] of Object.entries(fieldToSection)) {
-        const value = responseData[fieldName];
-        if (typeof value === "string" && value.toLowerCase() === "yes") {
-          requiredSectionsWithYes.add(section);
-        }
-      }
-
-      if (requiredSectionsWithYes.size > 0) {
-        // Check all required sections (with "yes" answers) have at least one MOV
-        const present = new Set<string>();
-        const movFilesList = indicator.movFiles || [];
-
-        console.log(`[VALIDATION] Checking indicator ${indicator.code}:`, {
-          requiredSectionsWithYes: Array.from(requiredSectionsWithYes),
-          movCount: movFilesList.length,
-          movs: movFilesList.map((m: any) => ({
-            storagePath: (m as any).storagePath,
-            section: (m as any).section,
-          })),
-        });
-
-        for (const mov of movFilesList) {
-          const sp =
-            (mov as any).storagePath || (mov as any).storage_path || (mov as any).url || "";
-          const movSection = (mov as any).section;
-
-          // Check both explicit section field and storage path
-          for (const rs of requiredSectionsWithYes) {
-            // If MOV has explicit section metadata, use that
-            if (movSection === rs) {
-              present.add(rs);
-              continue;
-            }
-            // Otherwise, check if section name appears in storage path
-            // Storage path format from frontend: "assessmentId/responseId/section/timestamp-filename"
-            // e.g., "1/123/bdrrmc_documents/1234567890-file.pdf"
-            if (typeof sp === "string" && sp.length > 0) {
-              // Remove any URL prefixes and get just the path
-              const pathOnly = sp.split("?")[0]; // Remove query params if present
-              // Check various patterns: /section/, /section (at end), section/ (after /)
-              const hasSection =
-                pathOnly.includes(`/${rs}/`) || // Matches: /bdrrmc_documents/
-                pathOnly.endsWith(`/${rs}`) || // Matches: .../bdrrmc_documents
-                pathOnly.includes(`/${rs}-`) || // Matches: /bdrrmc_documents-timestamp
-                pathOnly.includes(`${rs}/`) || // Matches: bdrrmc_documents/
-                new RegExp(`[/_-]${rs.replace(/_/g, "[_/]")}[_/-]`).test(pathOnly); // Flexible matching
-
-              if (hasSection) {
-                present.add(rs);
-              }
-            }
-          }
-        }
-
-        const missingSections = Array.from(requiredSectionsWithYes).filter((s) => !present.has(s));
-        console.log(`[VALIDATION] Indicator ${indicator.code} sections:`, {
-          required: Array.from(requiredSectionsWithYes),
-          present: Array.from(present),
-          missing: missingSections,
-        });
-
-        const allSectionsHaveMOVs = Array.from(requiredSectionsWithYes).every((s) =>
-          present.has(s)
-        );
-        if (!allSectionsHaveMOVs) {
-          missingMOVs.push(
-            `${indicator.code} - ${indicator.name} (missing sections: ${missingSections.join(", ")})`
-          );
-        }
-      } else if (complianceAnswer === "yes") {
-        // Has "yes" but no section-based uploads, so require at least one MOV overall
-        if ((indicator.movFiles || []).length === 0) {
-          missingMOVs.push(`${indicator.code} - ${indicator.name}`);
-        }
-      }
-      // "no" or "na" - no MOVs needed, so no validation needed
     };
 
     // Check all indicators across all governance areas
@@ -650,8 +614,6 @@ export function useAssessmentValidation(assessment: Assessment | null) {
       });
     }
 
-    // OVERRIDE: Trust backend's is_completed flags instead of frontend logic
-    // The backend handles ALL validation including grouped OR logic, conditional MOVs, etc.
     const isComplete = assessment.completedIndicators === assessment.totalIndicators;
 
     // Status comparison should be case-insensitive since backend returns lowercase
@@ -662,21 +624,10 @@ export function useAssessmentValidation(assessment: Assessment | null) {
         normalizedStatus === "rework" ||
         normalizedStatus === "needs-rework");
 
-    console.log("[VALIDATION] Trusting backend is_completed flags:", {
-      isComplete,
-      canSubmit,
-      status: assessment.status,
-      totalIndicators: assessment.totalIndicators,
-      completedIndicators: assessment.completedIndicators,
-      remainingIndicators: assessment.totalIndicators - assessment.completedIndicators,
-    });
-
     return {
       isComplete,
-      missingIndicators: isComplete
-        ? []
-        : [`${assessment.totalIndicators - assessment.completedIndicators} indicators remaining`],
-      missingMOVs: [],
+      missingIndicators,
+      missingMOVs, // Always empty now
       canSubmit,
     };
   }, [assessment]);

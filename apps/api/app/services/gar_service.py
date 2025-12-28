@@ -220,9 +220,9 @@ class GARService:
             # Build checklist items with validation results - FILTER to only minimum requirements
             gar_checklist = []
             for item in checklist_items:
-                # Filter: only include minimum requirements, not MOV items
+                # Filter: only include minimum requirements, not MOV items or profiling-only items
                 if not self._is_minimum_requirement(
-                    item.label, item.item_type, indicator.indicator_code
+                    item.label, item.item_type, indicator.indicator_code, item.is_profiling_only
                 ):
                     continue
 
@@ -243,9 +243,23 @@ class GARService:
                 )
 
             # Determine indicator validation status
+            # Priority: Use stored validation_status (from Validator/MLGOO) as authoritative source
+            # This ensures MLGOO overrides are respected in GAR
             validation_status = None
+
+            # FIRST: Check if there's a stored validation_status (set by Validator or overridden by MLGOO)
+            # This is the authoritative decision and should be used for GAR display
             if response and response.validation_status:
                 validation_status = response.validation_status.value
+
+            # FALLBACK: Only calculate from checklist if no validation_status is set
+            # This handles edge cases where indicator hasn't been validated yet
+            if validation_status is None and gar_checklist:
+                validation_status = self._calculate_indicator_status_from_checklist(
+                    gar_checklist=gar_checklist,
+                    indicator_code=indicator.indicator_code,
+                    validation_rule=indicator.validation_rule,
+                )
 
             # Determine indent level based on indicator code
             indent_level = self._get_indent_level(indicator.indicator_code)
@@ -269,12 +283,14 @@ class GARService:
                     checklist_items=gar_checklist,
                     is_header=is_header,
                     indent_level=indent_level,
+                    is_profiling_only=indicator.is_profiling_only,
                 )
             )
 
             # Count validation statuses (only for leaf indicators)
             # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
-            if not is_header and validation_status:
+            # EXCLUDE profiling-only indicators from counts - they don't affect pass/fail
+            if not is_header and validation_status and not indicator.is_profiling_only:
                 if validation_status == "PASS":
                     met_count += 1
                 elif validation_status == "CONDITIONAL":
@@ -290,15 +306,68 @@ class GARService:
         # Determine overall area result
         # Area passes if ALL leaf indicators have Pass or Conditional status
         # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
+        # EXCLUDE profiling-only indicators - they don't affect pass/fail status
+        #
+        # BBI SPECIAL RULE (4-tier system per DILG MC 2024-417):
+        # For BBI indicators, FAIL only means NON_FUNCTIONAL (0%).
+        # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL all count as PASS.
         overall_result = None
-        leaf_indicators = [i for i in gar_indicators if not i.is_header]
+        leaf_indicators = [i for i in gar_indicators if not i.is_header and not i.is_profiling_only]
+
+        # Get BBI results for this assessment to check BBI 4-tier status
+        from app.db.enums import BBIStatus
+        from app.db.models.bbi import BBIResult
+
+        bbi_results = db.query(BBIResult).filter(BBIResult.assessment_id == assessment.id).all()
+        # Map by indicator_id for O(1) lookup
+        bbi_results_map = {r.indicator_id: r for r in bbi_results if r.indicator_id}
+
+        # Create a map of indicator_id -> indicator model for BBI check
+        indicator_model_map = {ind.id: ind for ind in all_indicators}
+
         if leaf_indicators:
+            # Check if indicator truly fails (accounting for BBI 4-tier rule)
+            def is_indicator_failed(gar_ind: GARIndicator) -> bool:
+                """Check if indicator should be considered FAIL for SGLGB calculation."""
+                if gar_ind.validation_status != "FAIL":
+                    return False
+
+                # Check if this is a BBI indicator
+                indicator_model = indicator_model_map.get(gar_ind.indicator_id)
+                if indicator_model and indicator_model.is_bbi:
+                    # BBI 4-tier rule: Only NON_FUNCTIONAL (0%) counts as FAIL
+                    bbi_result = bbi_results_map.get(gar_ind.indicator_id)
+                    if bbi_result:
+                        # Only NON_FUNCTIONAL is truly a fail
+                        return bbi_result.compliance_rating == BBIStatus.NON_FUNCTIONAL.value
+                    # No BBI result yet - fall back to validation_status (FAIL)
+                    return True
+
+                # Non-BBI indicator with FAIL status
+                return True
+
+            # Check if indicator passes (accounting for BBI 4-tier rule)
+            def is_indicator_passed(gar_ind: GARIndicator) -> bool:
+                """Check if indicator should be considered PASS for SGLGB calculation."""
+                # PASS and CONDITIONAL always count as passing
+                if gar_ind.validation_status in ["PASS", "CONDITIONAL"]:
+                    return True
+
+                # For BBI indicators with FAIL status, check 4-tier rule
+                if gar_ind.validation_status == "FAIL":
+                    indicator_model = indicator_model_map.get(gar_ind.indicator_id)
+                    if indicator_model and indicator_model.is_bbi:
+                        bbi_result = bbi_results_map.get(gar_ind.indicator_id)
+                        if bbi_result:
+                            # LOW, MODERATE, HIGHLY all count as pass
+                            return bbi_result.compliance_rating != BBIStatus.NON_FUNCTIONAL.value
+
+                return False
+
             all_passed = all(
-                i.validation_status in ["PASS", "CONDITIONAL"]
-                for i in leaf_indicators
-                if i.validation_status is not None
+                is_indicator_passed(i) for i in leaf_indicators if i.validation_status is not None
             )
-            has_any_fail = any(i.validation_status == "FAIL" for i in leaf_indicators)
+            has_any_fail = any(is_indicator_failed(i) for i in leaf_indicators)
 
             if has_any_fail:
                 overall_result = "Failed"
@@ -306,7 +375,12 @@ class GARService:
                 overall_result = "Passed"
 
         # Determine area type and number
-        area_type = area.area_type or ("Core" if area.id <= 3 else "Essential")
+        # Convert enum value to title case ("CORE" -> "Core") for consistent display
+        area_type = (
+            area.area_type.value.title()
+            if area.area_type
+            else ("Core" if area.id <= 3 else "Essential")
+        )
         area_number = area.id
 
         # Map area code
@@ -341,7 +415,7 @@ class GARService:
         """
         Get validation result for a checklist item from response data.
 
-        Checks assessor_val_{item_id} in response_data.
+        Priority: validator_val_{item_id} (final decision) > assessor_val_{item_id} (initial)
         Returns: 'met', 'considered', 'unmet', or None
         """
         if not response or not response.response_data:
@@ -354,32 +428,39 @@ class GARService:
         if item.item_type == "info_text":
             return None
 
-        # Check for assessor validation data
-        val_key = f"assessor_val_{item_id}"
+        # Priority: Use validator data (final decision), fallback to assessor data
+        for prefix in ["validator_val_", "assessor_val_"]:
+            val_key = f"{prefix}{item_id}"
 
-        # Check standard checkbox validation
-        if val_key in response_data:
-            value = response_data[val_key]
-            if isinstance(value, bool):
-                return "met" if value else "unmet"
-            if isinstance(value, str):
-                return "met" if value.lower() in ["true", "yes", "1"] else "unmet"
+            # Check standard checkbox validation
+            if val_key in response_data:
+                value = response_data[val_key]
+                if isinstance(value, bool):
+                    return "met" if value else "unmet"
+                if isinstance(value, str):
+                    return "met" if value.lower() in ["true", "yes", "1"] else "unmet"
 
-        # Check yes/no pattern (assessment_field type)
-        yes_key = f"{val_key}_yes"
-        no_key = f"{val_key}_no"
+            # Check yes/no pattern (assessment_field type)
+            yes_key = f"{val_key}_yes"
+            no_key = f"{val_key}_no"
 
-        if yes_key in response_data or no_key in response_data:
-            if response_data.get(yes_key):
-                return "met"
-            elif response_data.get(no_key):
-                return "unmet"
+            if yes_key in response_data or no_key in response_data:
+                if response_data.get(yes_key):
+                    return "met"
+                elif response_data.get(no_key):
+                    return "unmet"
 
-        # Check for document_count or calculation_field
-        if item.item_type in ["document_count", "calculation_field"]:
-            if val_key in response_data and response_data[val_key]:
-                # Has a value - consider it met
-                return "met"
+            # Check for document_count or calculation_field
+            if item.item_type in ["document_count", "calculation_field"]:
+                if val_key in response_data and response_data[val_key]:
+                    # Has a value - consider it met
+                    return "met"
+
+            # If we found validator data, use it (don't fallback to assessor)
+            if prefix == "validator_val_" and any(
+                k.startswith(f"validator_val_{item_id}") for k in response_data.keys()
+            ):
+                break
 
         return None
 
@@ -415,7 +496,11 @@ class GARService:
         return len(indicator_code.split("."))
 
     def _is_minimum_requirement(
-        self, label: str, item_type: str, indicator_code: str = None
+        self,
+        label: str,
+        item_type: str,
+        indicator_code: str = None,
+        is_profiling_only: bool = False,
     ) -> bool:
         """
         Filter to determine if a checklist item should appear in GAR.
@@ -427,14 +512,21 @@ class GARService:
         GAR does NOT show:
         - MOV items (Monitoring Forms, Photo Documentation, signatures)
         - Data entry fields (Total amount, Date of Approval, SRE, Certification)
+        - Profiling-only items (FOR PROFILING - doesn't affect pass/fail)
         """
+        # Profiling-only items never count as minimum requirements
+        if is_profiling_only:
+            return False
+
         # Skip info_text items entirely
         if item_type == "info_text":
             return False
 
         # Indicators that should NOT show any checklist items in GAR
         # (only the indicator itself is shown, no sub-items)
-        no_checklist_indicators = {"4.3.3"}
+        # 1.6.1 - Has 3 option groups, only validation status matters for GAR
+        # 4.3.3 - Similar case
+        no_checklist_indicators = {"1.6.1", "4.3.3"}
         if indicator_code in no_checklist_indicators:
             return False
 
@@ -675,6 +767,122 @@ class GARService:
                 gar_indicator.validation_status = "CONDITIONAL"
             elif all(s == "PASS" for s in child_statuses):
                 gar_indicator.validation_status = "PASS"
+
+    def _calculate_indicator_status_from_checklist(
+        self,
+        gar_checklist: list[GARChecklistItem],
+        indicator_code: str,
+        validation_rule: str,
+    ) -> str | None:
+        """
+        Calculate validation status for an indicator based on its checklist items.
+
+        This method ensures GAR shows the correct status based on actual checklist
+        validation results, not the stored validator decision.
+
+        Validation Rules:
+        - ALL_ITEMS_REQUIRED: All items must be "met" → PASS. Any "unmet" or all gray → FAIL
+        - ANY_ITEM_REQUIRED / OR_LOGIC_AT_LEAST_1_REQUIRED: At least one "met" → PASS
+        - ANY_OPTION_GROUP_REQUIRED: Handled by 1.6.1 special case (no checklist shown)
+        - Physical/Financial indicators: At least one of Physical/Financial must be "met"
+
+        Returns:
+            "PASS", "FAIL", or None (if no checklist items or header indicator)
+        """
+        # No checklist items = header indicator or special case, return None
+        if not gar_checklist:
+            return None
+
+        # Physical/Financial indicators (special OR logic)
+        physical_financial_indicators = {
+            "2.1.4",
+            "3.2.3",
+            "4.1.6",
+            "4.3.4",
+            "4.5.6",
+            "4.8.4",
+            "6.1.4",
+        }
+        if indicator_code in physical_financial_indicators:
+            return self._calculate_physical_financial_status(gar_checklist)
+
+        # Collect validation results
+        met_count = 0
+        unmet_count = 0
+        no_data_count = 0
+
+        for item in gar_checklist:
+            if item.validation_result == "met":
+                met_count += 1
+            elif item.validation_result == "unmet":
+                unmet_count += 1
+            else:
+                # None or any other value = no data (gray)
+                no_data_count += 1
+
+        total_items = len(gar_checklist)
+
+        # Apply validation rule logic
+        if validation_rule in ("ANY_ITEM_REQUIRED", "OR_LOGIC_AT_LEAST_1_REQUIRED"):
+            # OR logic: at least one item must be met
+            if met_count >= 1:
+                return "PASS"
+            else:
+                return "FAIL"
+
+        elif validation_rule == "ALL_ITEMS_REQUIRED":
+            # AND logic: all items must be met
+            if met_count == total_items:
+                return "PASS"
+            elif unmet_count > 0:
+                # Any explicit unmet = FAIL
+                return "FAIL"
+            else:
+                # All gray (no data) = FAIL (can't pass without validation)
+                return "FAIL"
+
+        elif validation_rule == "SHARED_PLUS_OR_LOGIC":
+            # Complex: some shared items + OR logic
+            # For now, treat as: at least one met = PASS
+            if met_count >= 1:
+                return "PASS"
+            else:
+                return "FAIL"
+
+        else:
+            # Default: ALL_ITEMS_REQUIRED behavior
+            if met_count == total_items:
+                return "PASS"
+            elif unmet_count > 0 or no_data_count > 0:
+                return "FAIL"
+            else:
+                return None
+
+    def _calculate_physical_financial_status(self, gar_checklist: list[GARChecklistItem]) -> str:
+        """
+        Calculate validation status for Physical/Financial OR-logic indicators.
+
+        These indicators (2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4) pass
+        if at least ONE of Physical Report or Financial Report is met.
+
+        Returns:
+            "PASS" if at least one report is met
+            "FAIL" if neither report is met
+        """
+        physical_met = False
+        financial_met = False
+
+        for item in gar_checklist:
+            if item.label == "Physical Report" and item.validation_result == "met":
+                physical_met = True
+            elif item.label == "Financial Report" and item.validation_result == "met":
+                financial_met = True
+
+        # OR logic: at least one must be met
+        if physical_met or financial_met:
+            return "PASS"
+        else:
+            return "FAIL"
 
     def _sort_key_for_indicator_code(self, indicator_code: str) -> tuple:
         """

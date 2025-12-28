@@ -243,7 +243,9 @@ describe("ReworkCommentsPanel", () => {
 
       expect(screen.getByText("Rework Requested")).toBeInTheDocument();
       expect(
-        screen.getByText("Please address the assessor's feedback below and resubmit your assessment.")
+        screen.getByText(
+          "Please address the assessor's feedback below and resubmit your assessment."
+        )
       ).toBeInTheDocument();
     });
 
@@ -470,7 +472,7 @@ describe("ReworkCommentsPanel", () => {
 
       const { container } = render(<ReworkCommentsPanel assessmentId={mockAssessmentId} />);
 
-      const card = container.querySelector('.border-orange-200');
+      const card = container.querySelector(".border-orange-200");
       expect(card).toBeInTheDocument();
     });
   });

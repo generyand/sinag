@@ -23,13 +23,17 @@ export function ReworkProgressTracker({ progress, assessmentId }: ReworkProgress
 
   const handlePrevious = () => {
     if (progress.previous_indicator_id) {
-      router.push(`/blgu/assessment/${assessmentId}/indicator/${progress.previous_indicator_id}?from=rework`);
+      router.push(
+        `/blgu/assessment/${assessmentId}/indicator/${progress.previous_indicator_id}?from=rework`
+      );
     }
   };
 
   const handleNext = () => {
     if (progress.next_indicator_id) {
-      router.push(`/blgu/assessment/${assessmentId}/indicator/${progress.next_indicator_id}?from=rework`);
+      router.push(
+        `/blgu/assessment/${assessmentId}/indicator/${progress.next_indicator_id}?from=rework`
+      );
     }
   };
 
@@ -43,11 +47,10 @@ export function ReworkProgressTracker({ progress, assessmentId }: ReworkProgress
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-gray-700 dark:text-gray-300 font-medium">
-              Rework Progress
-            </span>
+            <span className="text-gray-700 dark:text-gray-300 font-medium">Rework Progress</span>
             <span className="text-gray-900 dark:text-gray-100 font-semibold">
-              {progress.fixed_count} of {progress.total_failed} Fixed ({progress.completion_percentage.toFixed(0)}%)
+              {progress.fixed_count} of {progress.total_failed} Fixed (
+              {progress.completion_percentage.toFixed(0)}%)
             </span>
           </div>
           <Progress value={progress.completion_percentage} className="h-2" />
@@ -67,12 +70,7 @@ export function ReworkProgressTracker({ progress, assessmentId }: ReworkProgress
               <ChevronLeft className="h-4 w-4" />
               Previous
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBackToDashboard}
-              className="gap-1"
-            >
+            <Button variant="outline" size="sm" onClick={handleBackToDashboard} className="gap-1">
               <Home className="h-4 w-4" />
               Dashboard
             </Button>

@@ -1,2 +1,2 @@
-export { CapDevInsightsCard } from './CapDevInsightsCard';
-export { CapDevStatusBadge } from './CapDevStatusBadge';
+export { CapDevInsightsCard } from "./CapDevInsightsCard";
+export { CapDevStatusBadge } from "./CapDevStatusBadge";

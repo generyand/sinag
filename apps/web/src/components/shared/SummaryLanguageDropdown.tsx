@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { Globe } from 'lucide-react';
+import { Globe } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   type LanguageCode,
   LANGUAGE_LABELS,
   LANGUAGE_SHORT_LABELS,
-} from '@/providers/LanguageProvider';
+} from "@/providers/LanguageProvider";
 
 interface SummaryLanguageDropdownProps {
   /** Current selected language */
@@ -38,7 +38,7 @@ export function SummaryLanguageDropdown({
   onChange,
   isLoading = false,
   compact = false,
-  className = '',
+  className = "",
 }: SummaryLanguageDropdownProps) {
   const labels = compact ? LANGUAGE_SHORT_LABELS : LANGUAGE_LABELS;
 
@@ -48,9 +48,7 @@ export function SummaryLanguageDropdown({
       onValueChange={(val) => onChange(val as LanguageCode)}
       disabled={isLoading}
     >
-      <SelectTrigger
-        className={`h-8 gap-2 ${compact ? 'w-[140px]' : 'w-[180px]'} ${className}`}
-      >
+      <SelectTrigger className={`h-8 gap-2 ${compact ? "w-[140px]" : "w-[180px]"} ${className}`}>
         <Globe className="h-4 w-4 text-muted-foreground" />
         <SelectValue placeholder="Select language" />
       </SelectTrigger>

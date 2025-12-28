@@ -31,9 +31,7 @@ export function ActiveFilterPills({
 
   return (
     <div className="flex flex-wrap items-center gap-2 px-6 py-3 bg-[var(--muted)]/20 border border-[var(--border)] rounded-sm">
-      <span className="text-sm text-[var(--muted-foreground)] mr-2">
-        Active filters:
-      </span>
+      <span className="text-sm text-[var(--muted-foreground)] mr-2">Active filters:</span>
 
       {filterLabels.map((filter) => (
         <Badge

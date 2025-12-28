@@ -6,45 +6,37 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// Function to determine theme using the app's theme system
+function getTheme(): boolean {
+  if (typeof window === "undefined") return false;
+
+  // Check for saved theme preference in localStorage using the app's key
+  const savedTheme = localStorage.getItem("sinag-theme") as "light" | "dark" | "system" | null;
+
+  // Check system preference
+  const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const systemPrefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+
+  // Priority: saved theme > system preference > default to light
+  if (savedTheme === "dark") return true;
+  if (savedTheme === "light") return false;
+  if (savedTheme === "system") {
+    return systemPrefersDark;
+  }
+
+  // If no saved theme, check system preference
+  if (systemPrefersLight) return false;
+  if (systemPrefersDark) return true;
+
+  // Default to light mode if no preference is set
+  return false;
+}
+
 // Custom hook for theme detection that integrates with the app's theme system
 function useLoginTheme() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(getTheme);
 
   useEffect(() => {
-    // Function to determine theme using the app's theme system
-    const getTheme = () => {
-      // Check for saved theme preference in localStorage using the app's key
-      const savedTheme = localStorage.getItem("sinag-theme") as
-        | "light"
-        | "dark"
-        | "system";
-
-      // Check system preference
-      const systemPrefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      const systemPrefersLight = window.matchMedia(
-        "(prefers-color-scheme: light)"
-      ).matches;
-
-      // Priority: saved theme > system preference > default to light
-      if (savedTheme === "dark") return true;
-      if (savedTheme === "light") return false;
-      if (savedTheme === "system") {
-        return systemPrefersDark;
-      }
-
-      // If no saved theme, check system preference
-      if (systemPrefersLight) return false;
-      if (systemPrefersDark) return true;
-
-      // Default to light mode if no preference is set
-      return false;
-    };
-
-    // Set initial theme
-    setIsDarkMode(getTheme());
-
     // Listen for system preference changes
     const darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const lightMediaQuery = window.matchMedia("(prefers-color-scheme: light)");
@@ -72,9 +64,7 @@ function useLoginTheme() {
         } else if (newTheme === "light") {
           setIsDarkMode(false);
         } else if (newTheme === "system") {
-          setIsDarkMode(
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-          );
+          setIsDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches);
         }
       }
     };
@@ -184,50 +174,38 @@ export default function LoginPage() {
         {/* top right - Primary yellow glow */}
         <div
           className={`absolute -top-40 -right-40 w-48 h-48 lg:w-60 lg:h-60 xl:w-80 xl:h-80 rounded-full filter blur-xl transition-all duration-500 ${
-            isDarkMode
-              ? "bg-[#fbbf24]/60 mix-blend-screen"
-              : "bg-[#fbbf24]/30 mix-blend-multiply"
+            isDarkMode ? "bg-[#fbbf24]/60 mix-blend-screen" : "bg-[#fbbf24]/30 mix-blend-multiply"
           }`}
         ></div>
         <div
           className={`absolute -top-20 -right-20 w-32 h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48 rounded-full filter blur-lg transition-all duration-500 ${
-            isDarkMode
-              ? "bg-[#fbbf24]/40 mix-blend-screen"
-              : "bg-[#fbbf24]/20 mix-blend-multiply"
+            isDarkMode ? "bg-[#fbbf24]/40 mix-blend-screen" : "bg-[#fbbf24]/20 mix-blend-multiply"
           }`}
         ></div>
 
         {/* bottom left - Secondary amber glow */}
         <div
           className={`absolute -bottom-40 -left-40 w-48 h-48 lg:w-60 lg:h-60 xl:w-80 xl:h-80 rounded-full filter blur-xl transition-all duration-500 ${
-            isDarkMode
-              ? "bg-[#f59e0b]/60 mix-blend-screen"
-              : "bg-[#f59e0b]/30 mix-blend-multiply"
+            isDarkMode ? "bg-[#f59e0b]/60 mix-blend-screen" : "bg-[#f59e0b]/30 mix-blend-multiply"
           }`}
         ></div>
         <div
           className={`absolute -bottom-20 -left-20 w-32 h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48 rounded-full filter blur-lg transition-all duration-500 ${
-            isDarkMode
-              ? "bg-[#f59e0b]/40 mix-blend-screen"
-              : "bg-[#f59e0b]/20 mix-blend-multiply"
+            isDarkMode ? "bg-[#f59e0b]/40 mix-blend-screen" : "bg-[#f59e0b]/20 mix-blend-multiply"
           }`}
         ></div>
 
         {/* top left - Tertiary orange accent */}
         <div
           className={`absolute top-40 left-40 w-48 h-48 lg:w-60 lg:h-60 xl:w-80 xl:h-80 rounded-full filter blur-xl transition-all duration-500 ${
-            isDarkMode
-              ? "bg-[#d97706]/50 mix-blend-screen"
-              : "bg-[#d97706]/25 mix-blend-multiply"
+            isDarkMode ? "bg-[#d97706]/50 mix-blend-screen" : "bg-[#d97706]/25 mix-blend-multiply"
           }`}
         ></div>
 
         {/* Center accent glow */}
         <div
           className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full filter blur-3xl transition-all duration-500 ${
-            isDarkMode
-              ? "bg-[#fbbf24]/10 mix-blend-screen"
-              : "bg-[#fbbf24]/5 mix-blend-multiply"
+            isDarkMode ? "bg-[#fbbf24]/10 mix-blend-screen" : "bg-[#fbbf24]/5 mix-blend-multiply"
           }`}
         ></div>
       </div>
@@ -265,7 +243,7 @@ export default function LoginPage() {
                 isDarkMode ? "text-gray-300" : "text-gray-600"
               }`}
             >
-              Strategic Insights Nurturing Assessments and Governance
+              SGLGB Insights Nurturing Assessments and Governance
             </p>
           </div>
         </div>
@@ -330,12 +308,7 @@ export default function LoginPage() {
             <span>&copy; 2024 MLGRC Davao del Sur</span>
             <span className="hidden md:inline">|</span>
             <span className="flex items-center gap-1">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -346,18 +319,13 @@ export default function LoginPage() {
               Secured Platform
             </span>
           </div>
-          <div
-            className={`text-center text-xs ${
-              isDarkMode ? "text-gray-400" : "text-gray-500"
-            }`}
-          >
+          <div className={`text-center text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
             <div>Support: (02) 1234-5678 | support.sinag@mlgrc.gov.ph</div>
-            <div className="text-xs opacity-75">
-              Version 1.0.0 | Build 2024.01.15
-            </div>
+            <div className="text-xs opacity-75">Version 1.0.0 | Build 2024.01.15</div>
           </div>
         </div>
       </footer>
+      {/* eslint-disable-next-line react/no-unknown-property */}
       <style jsx global>{`
         @keyframes float {
           0% {
@@ -414,7 +382,8 @@ export default function LoginPage() {
           animation-delay: 4s;
         }
         .shadow-3xl {
-          box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25),
+          box-shadow:
+            0 35px 60px -12px rgba(0, 0, 0, 0.25),
             0 0 0 1px rgba(255, 255, 255, 0.05);
         }
       `}</style>

@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function AssessmentSkeleton() {
   return (
@@ -11,7 +11,7 @@ export function AssessmentSkeleton() {
             {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-[var(--cityscape-yellow)]/5 rounded-full -translate-y-20 translate-x-20"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-[var(--cityscape-yellow)]/3 rounded-full translate-y-16 -translate-x-16"></div>
-            
+
             <div className="relative z-10">
               {/* Header Section */}
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
@@ -30,7 +30,10 @@ export function AssessmentSkeleton() {
                   {/* Progress Stats */}
                   <div className="flex items-center gap-6">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
+                      <div
+                        key={i}
+                        className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]"
+                      >
                         <Skeleton className="h-8 w-16 mx-auto mb-1" />
                         <Skeleton className="h-3 w-20 mx-auto" />
                       </div>
@@ -54,10 +57,10 @@ export function AssessmentSkeleton() {
                     <Skeleton className="h-3 w-20 mx-auto" />
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <Skeleton className="h-3 w-full" />
-                  
+
                   <div className="flex justify-between text-sm">
                     <Skeleton className="h-4 w-32" />
                     <Skeleton className="h-4 w-24" />
@@ -85,7 +88,10 @@ export function AssessmentSkeleton() {
             <div className="bg-[var(--hover)] border-b border-[var(--border)] px-6 py-6">
               <div className="grid w-full grid-cols-6 h-auto gap-3">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="group relative flex flex-col items-center p-5 rounded-sm min-h-[180px] overflow-hidden bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)]">
+                  <div
+                    key={i}
+                    className="group relative flex flex-col items-center p-5 rounded-sm min-h-[180px] overflow-hidden bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)]"
+                  >
                     {/* Content */}
                     <div className="relative z-10 flex flex-col items-center space-y-3 w-full">
                       {/* Logo and Status */}
@@ -93,10 +99,10 @@ export function AssessmentSkeleton() {
                         <Skeleton className="w-14 h-14 rounded-sm" />
                         <Skeleton className="absolute -top-1 -right-1 w-5 h-5 rounded-full" />
                       </div>
-                      
+
                       {/* Area Code */}
                       <Skeleton className="h-8 w-16" />
-                      
+
                       {/* Progress Section */}
                       <div className="w-full space-y-2 mt-auto">
                         {/* Progress Percentage */}
@@ -104,10 +110,10 @@ export function AssessmentSkeleton() {
                           <Skeleton className="h-6 w-12 mx-auto mb-1" />
                           <Skeleton className="h-3 w-16 mx-auto" />
                         </div>
-                        
+
                         {/* Progress Bar */}
                         <Skeleton className="h-2 w-full" />
-                        
+
                         {/* Progress Text */}
                         <Skeleton className="h-3 w-24 mx-auto" />
                       </div>
@@ -124,7 +130,7 @@ export function AssessmentSkeleton() {
                 {/* Decorative elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--cityscape-yellow)]/5 rounded-full -translate-y-16 translate-x-16"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-[var(--cityscape-yellow)]/3 rounded-full translate-y-12 -translate-x-12"></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                     {/* Left side - Area info */}
@@ -139,14 +145,17 @@ export function AssessmentSkeleton() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <Skeleton className="h-4 w-2xl" />
                     </div>
 
                     {/* Right side - Stats */}
                     <div className="flex items-center gap-4">
                       {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]">
+                        <div
+                          key={i}
+                          className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)]"
+                        >
                           <Skeleton className="h-8 w-12 mx-auto mb-1" />
                           <Skeleton className="h-3 w-20 mx-auto" />
                         </div>
@@ -179,10 +188,13 @@ export function AssessmentSkeleton() {
                   <Skeleton className="h-6 w-48" />
                   <Skeleton className="h-4 w-16" />
                 </div>
-                
+
                 <div className="space-y-4">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="bg-[var(--card)] rounded-sm border border-[var(--border)] overflow-hidden">
+                    <div
+                      key={i}
+                      className="bg-[var(--card)] rounded-sm border border-[var(--border)] overflow-hidden"
+                    >
                       {/* Accordion Header */}
                       <div className="p-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -194,19 +206,19 @@ export function AssessmentSkeleton() {
                         </div>
                         <Skeleton className="h-5 w-5" />
                       </div>
-                      
+
                       {/* Accordion Content (expanded) */}
                       <div className="px-4 pb-4 space-y-4">
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-3/4" />
-                        
+
                         {/* Technical Notes */}
                         <div className="bg-[var(--hover)] p-4 rounded-sm border border-[var(--border)]">
                           <Skeleton className="h-4 w-32 mb-2" />
                           <Skeleton className="h-4 w-full mb-1" />
                           <Skeleton className="h-4 w-5/6" />
                         </div>
-                        
+
                         {/* Compliance Input */}
                         <div className="space-y-2">
                           <Skeleton className="h-4 w-24" />
@@ -219,7 +231,7 @@ export function AssessmentSkeleton() {
                             ))}
                           </div>
                         </div>
-                        
+
                         {/* MOV Uploader */}
                         <div className="space-y-2">
                           <Skeleton className="h-4 w-32" />
@@ -240,4 +252,4 @@ export function AssessmentSkeleton() {
       </div>
     </div>
   );
-} 
+}

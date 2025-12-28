@@ -5,10 +5,7 @@ import { PageHeader } from "@/components/shared";
 export function AnalyticsSkeleton() {
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Loading Analytics..."
-        description="Preparing your assessment data"
-      />
+      <PageHeader title="Loading Analytics..." description="Preparing your assessment data" />
 
       {/* Skeleton Global Filter */}
       <div className="bg-[var(--card)] rounded-sm border border-[var(--border)] p-6 shadow-sm">
@@ -47,10 +44,7 @@ export function AnalyticsSkeleton() {
             </div>
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-[var(--hover)] rounded-sm p-4"
-                >
+                <div key={i} className="bg-[var(--hover)] rounded-sm p-4">
                   <div className="flex justify-between items-center">
                     <div className="h-4 bg-[var(--border)] rounded w-32 animate-pulse"></div>
                     <div className="h-6 bg-[var(--border)] rounded w-12 animate-pulse"></div>
@@ -72,10 +66,7 @@ export function AnalyticsSkeleton() {
           </div>
           <div className="space-y-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="bg-[var(--hover)] rounded-sm p-5"
-              >
+              <div key={i} className="bg-[var(--hover)] rounded-sm p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3">
@@ -123,10 +114,7 @@ export function AnalyticsSkeleton() {
                 </div>
                 <div className="space-y-4">
                   {[1, 2].map((item) => (
-                    <div
-                      key={item}
-                      className="bg-[var(--hover)] rounded-sm p-4"
-                    >
+                    <div key={item} className="bg-[var(--hover)] rounded-sm p-4">
                       <div className="flex justify-between items-center">
                         <div className="space-y-1">
                           <div className="h-4 bg-[var(--border)] rounded w-32 animate-pulse"></div>
@@ -147,4 +135,4 @@ export function AnalyticsSkeleton() {
       </div>
     </div>
   );
-} 
+}

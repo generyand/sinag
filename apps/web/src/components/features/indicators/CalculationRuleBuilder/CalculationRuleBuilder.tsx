@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
-import type { CalculationSchema, FormSchema } from '@sinag/shared';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Plus, Info } from 'lucide-react';
-import { ConditionGroupList } from './ConditionGroupList';
-import { OutputStatusConfig } from './OutputStatusConfig';
-import { TestCalculationPanel } from './TestCalculationPanel';
+import { useState, useEffect } from "react";
+import { useCalculationRuleStore } from "@/store/useCalculationRuleStore";
+import type { CalculationSchema, FormSchema } from "@sinag/shared";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Plus, Info } from "lucide-react";
+import { ConditionGroupList } from "./ConditionGroupList";
+import { OutputStatusConfig } from "./OutputStatusConfig";
+import { TestCalculationPanel } from "./TestCalculationPanel";
 
 interface CalculationRuleBuilderProps {
   /** Existing calculation schema to load (for editing) */
@@ -43,14 +43,8 @@ export function CalculationRuleBuilder({
   formSchema,
   onChange,
 }: CalculationRuleBuilderProps) {
-  const {
-    schema,
-    isDirty,
-    initializeSchema,
-    loadSchema,
-    addConditionGroup,
-    isSchemaValid,
-  } = useCalculationRuleStore();
+  const { schema, isDirty, initializeSchema, loadSchema, addConditionGroup, isSchemaValid } =
+    useCalculationRuleStore();
 
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -64,7 +58,7 @@ export function CalculationRuleBuilder({
       }
       setIsInitialized(true);
     }
-  }, [isInitialized, initialSchema, loadSchema, initializeSchema]);
+  }, [isInitialized, initialSchema, loadSchema, initializeSchema, setIsInitialized]);
 
   // Notify parent of changes
   useEffect(() => {
@@ -76,7 +70,7 @@ export function CalculationRuleBuilder({
   // Handle adding a new condition group
   const handleAddConditionGroup = () => {
     addConditionGroup({
-      operator: 'AND',
+      operator: "AND",
       rules: [],
     });
   };
@@ -96,17 +90,16 @@ export function CalculationRuleBuilder({
         <CardHeader>
           <CardTitle>Calculation Rule Builder</CardTitle>
           <CardDescription>
-            Define rules to automatically calculate Pass/Fail status for this indicator.
-            Combine multiple conditions with AND/OR logic.
+            Define rules to automatically calculate Pass/Fail status for this indicator. Combine
+            multiple conditions with AND/OR logic.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Rules are evaluated sequentially. All condition groups must be true for the
-              indicator to pass. Each group can contain multiple rules combined with AND or OR
-              logic.
+              Rules are evaluated sequentially. All condition groups must be true for the indicator
+              to pass. Each group can contain multiple rules combined with AND or OR logic.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -122,9 +115,9 @@ export function CalculationRuleBuilder({
             <CardTitle>Condition Groups</CardTitle>
             <CardDescription>
               {schema.condition_groups.length === 0
-                ? 'Add your first condition group to get started'
+                ? "Add your first condition group to get started"
                 : `${schema.condition_groups.length} condition group${
-                    schema.condition_groups.length === 1 ? '' : 's'
+                    schema.condition_groups.length === 1 ? "" : "s"
                   } defined`}
             </CardDescription>
           </div>

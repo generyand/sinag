@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useGetUsersMe } from '@sinag/shared';
-import { AuditLogTable } from '@/components/features/admin/audit/AuditLogTable';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useGetUsersMe } from "@sinag/shared";
+import { AuditLogTable } from "@/components/features/admin/audit/AuditLogTable";
 
 /**
  * Audit Log Viewer Page
@@ -22,7 +22,7 @@ export default function AuditLogViewerPage() {
   // Redirect unauthenticated users to login
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace("/login");
     }
   }, [isAuthenticated, router]);
 
@@ -35,9 +35,9 @@ export default function AuditLogViewerPage() {
 
   // Check if user has MLGOO_DILG role
   useEffect(() => {
-    if (user && user.role !== 'MLGOO_DILG') {
+    if (user && user.role !== "MLGOO_DILG") {
       // Redirect non-admin users to their appropriate dashboard
-      router.replace('/');
+      router.replace("/");
     }
   }, [user, router]);
 
@@ -48,9 +48,9 @@ export default function AuditLogViewerPage() {
         <div className="text-center">
           <div
             className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4"
-            style={{ borderColor: 'var(--analytics-danger)' }}
+            style={{ borderColor: "var(--analytics-danger)" }}
           />
-          <p className="text-sm" style={{ color: 'var(--analytics-muted-foreground)' }}>
+          <p className="text-sm" style={{ color: "var(--analytics-muted-foreground)" }}>
             Loading...
           </p>
         </div>
@@ -59,14 +59,14 @@ export default function AuditLogViewerPage() {
   }
 
   // Show access denied for non-admin users
-  if (user.role !== 'MLGOO_DILG') {
+  if (user.role !== "MLGOO_DILG") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--analytics-danger)' }}>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: "var(--analytics-danger)" }}>
             Access Denied
           </h1>
-          <p className="text-sm" style={{ color: 'var(--analytics-muted-foreground)' }}>
+          <p className="text-sm" style={{ color: "var(--analytics-muted-foreground)" }}>
             You do not have permission to view this page.
           </p>
         </div>

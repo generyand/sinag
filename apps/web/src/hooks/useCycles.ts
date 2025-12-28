@@ -16,12 +16,12 @@ import {
   useGetAdminCyclesActive,
   usePostAdminCycles,
   usePutAdminCyclesCycleId,
-} from '@sinag/shared';
+} from "@sinag/shared";
 import type {
   AssessmentCycleCreate,
   AssessmentCycleUpdate,
   AssessmentCycleResponse,
-} from '@sinag/shared';
+} from "@sinag/shared";
 
 /**
  * Hook for managing assessment cycles.

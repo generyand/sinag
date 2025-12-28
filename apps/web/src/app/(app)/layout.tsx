@@ -1,27 +1,29 @@
 "use client";
 
-import UserNav from "@/components/shared/UserNav";
 import { NotificationBell } from "@/components/features/notifications";
+import UserNav from "@/components/shared/UserNav";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
-  X,
+  BarChart3,
+  Building2,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  Home,
   ClipboardList,
-  BarChart3,
-  Users,
-  User,
-  Settings,
-  ListTodo,
-  Layers,
-  Calendar,
-  Building2,
   Clock,
+  History,
+  Home,
+  Layers,
+  ListTodo,
   Menu,
+  Settings,
+  User,
+  Users,
+  X,
   type LucideIcon,
 } from "lucide-react";
+import { OfficialLogos } from "@/components/shared";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -43,6 +45,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   calendar: Calendar,
   building: Building2,
   clock: Clock,
+  history: History,
 };
 
 /**
@@ -58,7 +61,7 @@ function NavIcon({ name, className = "w-5 h-5" }: { name: string; className?: st
 const mlgooNavigation = [
   { name: "Dashboard", href: "/mlgoo/dashboard", icon: "home" },
   { name: "Submission Queue", href: "/mlgoo/submissions", icon: "clipboard" },
-  { name: "GAR Reports", href: "/mlgoo/gar", icon: "clipboard" },
+
   { name: "Analytics & Reports", href: "/analytics", icon: "chart" },
   { name: "Assessment Cycles", href: "/mlgoo/cycles", icon: "calendar" },
   { name: "User Management", href: "/user-management", icon: "users" },
@@ -78,6 +81,7 @@ const assessorNavigation = [
     href: "/assessor/submissions",
     icon: "clipboard",
   },
+  { name: "Review History", href: "/assessor/history", icon: "history" },
   { name: "Analytics", href: "/assessor/analytics", icon: "chart" },
   { name: "Profile", href: "/assessor/profile", icon: "user" },
 ];
@@ -88,6 +92,7 @@ const validatorNavigation = [
     href: "/validator/submissions",
     icon: "clipboard",
   },
+  { name: "Validation History", href: "/validator/history", icon: "history" },
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 
@@ -242,8 +247,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
           className="fixed inset-0 bg-[var(--overlay)] z-40 md:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setSidebarOpen(false);
+            }
+          }}
         />
       )}
 
@@ -252,13 +266,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="relative flex-1 flex flex-col max-w-xs w-full bg-[var(--card)] backdrop-blur-sm shadow-xl border-r border-[var(--border)] transition-colors duration-300">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
-          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+          <div className="flex-1 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-6 mb-8">
               <div className="flex items-center">
                 <Image
@@ -301,6 +315,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </nav>
+          </div>
+
+          {/* Official Partner Logos - Fixed at bottom */}
+          <div className="px-4 py-4 border-t border-[var(--border)]">
+            <OfficialLogos variant="compact" />
           </div>
         </div>
       </div>
@@ -375,6 +394,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </nav>
+
+            {/* Official Partner Logos */}
+            <div className="mt-auto px-1 py-5 border-t border-[var(--border)] flex justify-center items-center w-full overflow-visible">
+              <OfficialLogos
+                variant={sidebarCollapsed ? "minimal" : "compact"}
+                stacked={sidebarCollapsed}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -385,38 +412,48 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           sidebarCollapsed ? "md:pl-20" : "md:pl-64"
         }`}
       >
-        <div className="sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-[var(--background)] transition-colors duration-300">
-          <button
-            aria-label="Open navigation menu"
-            aria-expanded={sidebarOpen}
-            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-[var(--icon-default)] hover:text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--cityscape-yellow)] transition-colors duration-200"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Header */}
-        <header className="bg-[var(--card)] shadow-sm transition-colors duration-300">
+        {/* Combined Sticky Header */}
+        <header className="sticky top-0 z-40 bg-[var(--card)] shadow-sm border-b border-[var(--border)] transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div className="flex items-center">
-                <div>
-                  <h2 className="text-2xl font-bold leading-7 text-[var(--foreground)] sm:truncate">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center gap-3 md:gap-0">
+                {/* Mobile Menu Button */}
+                <button
+                  aria-label="Open navigation menu"
+                  aria-expanded={sidebarOpen}
+                  className="p-2 -ml-2 rounded-md md:hidden text-[var(--icon-default)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--cityscape-yellow)] transition-colors duration-200"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <Menu className="h-6 w-6" aria-hidden="true" />
+                </button>
+
+                {/* Mobile Logo (Icon Only) */}
+                <div className="md:hidden flex items-center">
+                  <Image
+                    src="/logo/logo.webp"
+                    alt="SINAG Logo"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 object-contain"
+                    unoptimized
+                    priority
+                  />
+                </div>
+
+                <div className="md:ml-0">
+                  <h2 className="text-xl md:text-2xl font-bold leading-7 text-[var(--foreground)] sm:truncate">
                     {isAdmin
                       ? // Admin-specific titles
-                        pathname === "/mlgoo/reports"
-                        ? "Analytics & Reports"
-                        : pathname === "/mlgoo/submissions"
-                          ? "Submission Queue"
-                          : pathname === "/mlgoo/cycles"
-                            ? "Assessment Cycles"
-                            : pathname === "/mlgoo/settings"
-                              ? "System Settings"
-                              : pathname === "/mlgoo/profile"
-                                ? "Profile"
-                                : navigation.find((item) => pathname === item.href)?.name ||
-                                  "Dashboard"
+                        pathname === "/mlgoo/submissions"
+                        ? "Submission Queue"
+                        : pathname === "/mlgoo/cycles"
+                          ? "Assessment Cycles"
+                          : pathname === "/mlgoo/settings"
+                            ? "System Settings"
+                            : pathname === "/mlgoo/profile"
+                              ? "Profile"
+                              : navigation.find((item) => pathname === item.href)?.name ||
+                                "Dashboard"
                       : isAssessor
                         ? // Assessor-specific titles
                           pathname === "/assessor/submissions"
@@ -449,7 +486,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </h2>
                   {/* Show context-specific subtitle for all users */}
                   {!isAdmin && pathname.startsWith("/blgu") && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/blgu/dashboard" &&
                         "Monitor your SGLGB performance and track assessment progress"}
                       {pathname === "/blgu/assessments" &&
@@ -459,7 +496,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </p>
                   )}
                   {isAssessor && pathname.startsWith("/assessor") && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/assessor/submissions" &&
                         `Governance Area: ${governanceAreaName || "Loading..."}`}
                       {pathname === "/assessor/analytics" &&
@@ -469,12 +506,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </p>
                   )}
                   {isAdmin && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/mlgoo/dashboard" && "Welcome to your SINAG dashboard"}
                       {pathname === "/mlgoo/submissions" &&
                         "Review and manage submitted assessments from barangays"}
-                      {pathname === "/mlgoo/reports" &&
-                        "View analytics and generate reports on assessment data"}
                       {pathname === "/analytics" &&
                         "Comprehensive analytics, municipal overview, and performance reports"}
                       {pathname.startsWith("/mlgoo/indicators") &&
@@ -491,7 +526,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </p>
                   )}
                   {isExternalUser && pathname.startsWith("/katuparan") && (
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
                       {pathname === "/katuparan/dashboard" &&
                         "High-level, anonymized insights into SGLGB performance across all barangays"}
                       {pathname === "/katuparan/reports" &&
@@ -509,10 +544,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {/* Profile dropdown */}
                 <div className="relative">
                   <button
-                    className="flex items-center space-x-2 p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2"
+                    className="flex items-center justify-center space-x-0 sm:space-x-2 p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2 aspect-square sm:aspect-auto"
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   >
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
+                    <div className="h-8 w-8 rounded-full bg-linear-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
                       {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                     </div>
                     <span className="hidden sm:block text-sm font-medium text-[var(--foreground)]">
@@ -544,7 +579,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Click outside to close dropdown */}
       {profileDropdownOpen && (
-        <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} />
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close dropdown"
+          className="fixed inset-0 z-30"
+          onClick={() => setProfileDropdownOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+              e.preventDefault();
+              setProfileDropdownOpen(false);
+            }
+          }}
+        />
       )}
     </div>
   );

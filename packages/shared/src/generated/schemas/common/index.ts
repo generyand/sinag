@@ -11,19 +11,29 @@ import type { CountThresholdRule } from '../countthresholdrule';
 import type { MatchValueRule } from '../matchvaluerule';
 import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { ApprovalQueueItemBlguUserId } from '../users';
+import type { ApprovalQueueItemComplianceStatus } from '../compliance';
 import type { ApprovalQueueItemOverallScore } from '../movs';
+import type { BarangayMapPointAssessmentStatus } from '../assessments';
 import type { BarangayAssessmentStatus } from '../assessments';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
 import type { SectionHeaderField } from '../sectionheaderfield';
 import type { InfoTextField } from '../infotextfield';
+import type { GovernanceAreaIndicator } from '../indicators';
 import type { IndicatorDetailItem } from '../indicators';
 import type { IndicatorItem } from '../indicators';
+import type { MunicipalComplianceSummary } from '../compliance';
 import type { GovernanceAreaPerformanceList } from '../governanceareaperformance';
 import type { TopFailingIndicatorsList } from '../indicators';
 import type { AggregatedCapDevSummary } from '../capdev';
 import type { MunicipalOverviewDashboardAssessmentCycle } from '../assessments';
 import type { ConditionalRemark } from '../conditionalremark';
+import type { ReviewHistoryDetailFinalComplianceStatus } from '../compliance';
+import type { ReviewHistoryIndicator } from '../indicators';
+import type { ReviewHistoryFeedbackCommentAssessorRole } from '../assessor';
+import type { ReviewHistoryItemFinalComplianceStatus } from '../compliance';
 import type { AssessmentRow } from '../assessments';
+import type { TourCompletedUpdateAssessments } from '../assessments';
+import type { TourCompletedUpdateIndicatorForm } from '../indicators';
 
 /**
  * AISummary
@@ -91,6 +101,19 @@ export const AISummarySummaryType = {
   rework: 'rework',
   calibration: 'calibration',
 } as const;
+
+
+/**
+ * AffectedBarangay
+ */
+export interface AffectedBarangay {
+  /** Unique identifier for the barangay */
+  barangay_id: number;
+  /** Name of the barangay */
+  barangay_name: string;
+  /** Associated assessment ID */
+  assessment_id: number;
+}
 
 
 /**
@@ -178,13 +201,9 @@ export interface ApprovalQueueItem {
   can_recalibrate: boolean;
   mlgoo_recalibration_count: number;
   is_mlgoo_recalibration: boolean;
+  governance_areas_passed: number;
+  total_governance_areas: number;
 }
-
-
-/**
- * ApprovalQueueItemComplianceStatus
- */
-export type ApprovalQueueItemComplianceStatus = string | null;
 
 
 /**
@@ -264,6 +283,19 @@ export interface Barangay {
 
 
 /**
+ * BarangayDistributionItem
+ */
+export interface BarangayDistributionItem {
+  /** Barangay ID */
+  barangay_id: number;
+  /** Barangay name */
+  barangay_name: string;
+  /** Compliance percentage */
+  percentage: number;
+}
+
+
+/**
  * BarangayMapPoint
  */
 export interface BarangayMapPoint {
@@ -279,6 +311,10 @@ export interface BarangayMapPoint {
   status: string;
   /** Compliance score */
   score?: BarangayMapPointScore;
+  /** Detailed governance area assessment status */
+  assessment_status?: BarangayMapPointAssessmentStatus;
+  /** Current workflow status and action needed */
+  workflow_status?: BarangayMapPointWorkflowStatus;
 }
 
 
@@ -298,6 +334,12 @@ export type BarangayMapPointLng = number | null;
  * BarangayMapPointScore
  */
 export type BarangayMapPointScore = number | null;
+
+
+/**
+ * BarangayMapPointWorkflowStatus
+ */
+export type BarangayMapPointWorkflowStatus = WorkflowStatusDetail | null;
 
 
 /**
@@ -432,25 +474,6 @@ export interface CheckboxGroupField {
  * CheckboxGroupFieldHelpText
  */
 export type CheckboxGroupFieldHelpText = string | null;
-
-
-/**
- * ComplianceRate
- */
-export interface ComplianceRate {
-  /** Total number of barangays assessed */
-  total_barangays: number;
-  /** Number of barangays that passed */
-  passed: number;
-  /** Number of barangays that failed */
-  failed: number;
-  /**
-   * Percentage of barangays that passed
-   * @minimum 0
-   * @maximum 100
-   */
-  pass_percentage: number;
-}
 
 
 /**
@@ -693,17 +716,6 @@ year?: number | null;
 
 
 /**
- * GetMunicipalOverviewComplianceSummaryParams
- */
-export type GetMunicipalOverviewComplianceSummaryParams = {
-/**
- * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
- */
-year?: number | null;
-};
-
-
-/**
  * GetMunicipalOverviewDashboardParams
  */
 export type GetMunicipalOverviewDashboardParams = {
@@ -727,6 +739,25 @@ export type GetMunicipalOverviewGovernanceAreasParams = {
  */
 year?: number | null;
 };
+
+
+/**
+ * GovernanceAreaBreakdown
+ */
+export interface GovernanceAreaBreakdown {
+  /**
+   * Number of areas passed
+   * @minimum 0
+   */
+  passed: number;
+  /**
+   * Total number of areas in this category
+   * @minimum 0
+   */
+  total: number;
+  /** Individual indicator statuses */
+  indicators?: GovernanceAreaIndicator[];
+}
 
 
 /**
@@ -814,29 +845,6 @@ export const MatchValueRuleOperator = {
   contains: 'contains',
   not_contains: 'not_contains',
 } as const;
-
-
-/**
- * MunicipalComplianceSummary
- */
-export interface MunicipalComplianceSummary {
-  /** Total number of barangays in the municipality */
-  total_barangays: number;
-  /** Number of barangays with completed assessments */
-  assessed_barangays: number;
-  /** Number of barangays that passed SGLGB */
-  passed_barangays: number;
-  /** Number of barangays that failed SGLGB */
-  failed_barangays: number;
-  /** Percentage of assessed barangays that passed (0-100) */
-  compliance_rate: number;
-  /** Percentage of barangays that have been assessed (0-100) */
-  assessment_rate: number;
-  /** Number of assessments awaiting MLGOO approval */
-  pending_mlgoo_approval: number;
-  /** Number of assessments in progress (draft/submitted/rework) */
-  in_progress: number;
-}
 
 
 /**
@@ -1089,6 +1097,119 @@ export type ResolveSchemaRequestSchemaData = { [key: string]: unknown };
 
 
 /**
+ * ReviewHistoryDetail
+ */
+export interface ReviewHistoryDetail {
+  assessment_id: number;
+  assessment_year: number;
+  barangay_name: string;
+  municipality_name?: ReviewHistoryDetailMunicipalityName;
+  governance_area_name?: ReviewHistoryDetailGovernanceAreaName;
+  submitted_at?: ReviewHistoryDetailSubmittedAt;
+  completed_at?: ReviewHistoryDetailCompletedAt;
+  final_compliance_status?: ReviewHistoryDetailFinalComplianceStatus;
+  rework_comments?: ReviewHistoryDetailReworkComments;
+  calibration_comments?: ReviewHistoryDetailCalibrationComments;
+  indicators?: ReviewHistoryIndicator[];
+}
+
+
+/**
+ * ReviewHistoryDetailCalibrationComments
+ */
+export type ReviewHistoryDetailCalibrationComments = string | null;
+
+
+/**
+ * ReviewHistoryDetailCompletedAt
+ */
+export type ReviewHistoryDetailCompletedAt = string | null;
+
+
+/**
+ * ReviewHistoryDetailGovernanceAreaName
+ */
+export type ReviewHistoryDetailGovernanceAreaName = string | null;
+
+
+/**
+ * ReviewHistoryDetailMunicipalityName
+ */
+export type ReviewHistoryDetailMunicipalityName = string | null;
+
+
+/**
+ * ReviewHistoryDetailReworkComments
+ */
+export type ReviewHistoryDetailReworkComments = string | null;
+
+
+/**
+ * ReviewHistoryDetailSubmittedAt
+ */
+export type ReviewHistoryDetailSubmittedAt = string | null;
+
+
+/**
+ * ReviewHistoryFeedbackComment
+ */
+export interface ReviewHistoryFeedbackComment {
+  id: number;
+  comment: string;
+  assessor_name: string;
+  assessor_role?: ReviewHistoryFeedbackCommentAssessorRole;
+  created_at: string;
+  is_internal_note?: boolean;
+}
+
+
+/**
+ * ReviewHistoryItem
+ */
+export interface ReviewHistoryItem {
+  assessment_id: number;
+  barangay_name: string;
+  municipality_name?: ReviewHistoryItemMunicipalityName;
+  governance_area_name?: ReviewHistoryItemGovernanceAreaName;
+  submitted_at?: ReviewHistoryItemSubmittedAt;
+  completed_at?: ReviewHistoryItemCompletedAt;
+  final_compliance_status?: ReviewHistoryItemFinalComplianceStatus;
+  rework_count?: number;
+  calibration_count?: number;
+  was_reworked?: boolean;
+  was_calibrated?: boolean;
+  indicator_count?: number;
+  pass_count?: number;
+  fail_count?: number;
+  conditional_count?: number;
+}
+
+
+/**
+ * ReviewHistoryItemCompletedAt
+ */
+export type ReviewHistoryItemCompletedAt = string | null;
+
+
+/**
+ * ReviewHistoryItemGovernanceAreaName
+ */
+export type ReviewHistoryItemGovernanceAreaName = string | null;
+
+
+/**
+ * ReviewHistoryItemMunicipalityName
+ */
+export type ReviewHistoryItemMunicipalityName = string | null;
+
+
+/**
+ * ReviewHistoryItemSubmittedAt
+ */
+export type ReviewHistoryItemSubmittedAt = string | null;
+
+
+/**
  * ReworkComment
  */
 export interface ReworkComment {
@@ -1296,6 +1417,120 @@ export type TextInputFieldPlaceholder = string | null;
 
 
 /**
+ * TopReworkReason
+ */
+export interface TopReworkReason {
+  /** The reason description */
+  reason: string;
+  /**
+   * Number of occurrences across assessments
+   * @minimum 0
+   */
+  count: number;
+  /** Source of the reason (unified as 'adjustment') */
+  source?: 'adjustment';
+  /** Related governance area if applicable */
+  governance_area?: TopReworkReasonGovernanceArea;
+  /**
+   * List of barangays affected by this reason (max 10 shown)
+   * @maxItems 10
+   */
+  affected_barangays?: AffectedBarangay[];
+}
+
+
+/**
+ * TopReworkReasonGovernanceArea
+ */
+export type TopReworkReasonGovernanceArea = string | null;
+
+
+/**
+ * TopReworkReasons
+ */
+export interface TopReworkReasons {
+  /**
+   * List of top reasons for adjustment
+   * @maxItems 10
+   */
+  reasons?: TopReworkReason[];
+  /**
+   * Total assessments that had adjustments (rework or calibration)
+   * @minimum 0
+   */
+  total_adjustment_assessments: number;
+  /** Whether the reasons were generated by AI */
+  generated_by_ai?: boolean;
+}
+
+
+/**
+ * TourCompletedState
+ */
+export interface TourCompletedState {
+  dashboard?: boolean;
+  assessments?: boolean;
+  indicator_form?: boolean;
+  rework?: boolean;
+}
+
+
+/**
+ * TourCompletedUpdate
+ */
+export interface TourCompletedUpdate {
+  dashboard?: TourCompletedUpdateDashboard;
+  assessments?: TourCompletedUpdateAssessments;
+  indicator_form?: TourCompletedUpdateIndicatorForm;
+  rework?: TourCompletedUpdateRework;
+}
+
+
+/**
+ * TourCompletedUpdateDashboard
+ */
+export type TourCompletedUpdateDashboard = boolean | null;
+
+
+/**
+ * TourCompletedUpdateRework
+ */
+export type TourCompletedUpdateRework = boolean | null;
+
+
+/**
+ * TourPreferencesTourLanguage
+ */
+export type TourPreferencesTourLanguage = typeof TourPreferencesTourLanguage[keyof typeof TourPreferencesTourLanguage];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TourPreferencesTourLanguage = {
+  en: 'en',
+  fil: 'fil',
+  ceb: 'ceb',
+} as const;
+
+
+/**
+ * TourPreferencesUpdateCompletedTours
+ */
+export type TourPreferencesUpdateCompletedTours = TourCompletedUpdate | null;
+
+
+/**
+ * TourPreferencesUpdateHasSeenTour
+ */
+export type TourPreferencesUpdateHasSeenTour = boolean | null;
+
+
+/**
+ * TourPreferencesUpdateTourLanguage
+ */
+export type TourPreferencesUpdateTourLanguage = 'en' | 'fil' | 'ceb' | null;
+
+
+/**
  * TrendData
  */
 export interface TrendData {
@@ -1330,6 +1565,40 @@ export interface WorkflowMetrics {
  * WorkflowMetricsCountsByStatus
  */
 export type WorkflowMetricsCountsByStatus = {[key: string]: number};
+
+
+/**
+ * WorkflowStatusBreakdown
+ */
+export interface WorkflowStatusBreakdown {
+  /** Barangays with no assessment started */
+  not_started?: number;
+  /** Assessments in DRAFT status */
+  draft?: number;
+  /** Assessments in SUBMITTED status */
+  submitted?: number;
+  /** Assessments in IN_REVIEW status */
+  in_review?: number;
+  /** Assessments in REWORK status */
+  rework?: number;
+  /** Assessments in AWAITING_FINAL_VALIDATION */
+  awaiting_validation?: number;
+  /** Assessments in AWAITING_MLGOO_APPROVAL */
+  awaiting_approval?: number;
+  /** Assessments in COMPLETED status */
+  completed?: number;
+}
+
+
+/**
+ * WorkflowStatusDetail
+ */
+export interface WorkflowStatusDetail {
+  /** Current phase in the workflow */
+  current_phase: string;
+  /** Action required (if any) */
+  action_needed: string;
+}
 
 
 /**

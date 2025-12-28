@@ -1,6 +1,11 @@
 "use client";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +15,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAssessorMOVUploadMutation, useAssessorValidationMutation } from "@/hooks/useAssessor";
 import { useQueryClient } from "@tanstack/react-query";
 import { ValidationStatus } from "@sinag/shared";
-import { AlertTriangle, CheckCircle, FileText, MessageSquare, Save, Upload, X, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  FileText,
+  MessageSquare,
+  Save,
+  Upload,
+  X,
+  XCircle,
+} from "lucide-react";
 import { useRef, useState } from "react";
 
 interface ValidationControlsProps {
@@ -63,8 +77,8 @@ export function ValidationControls({
       });
 
       // Invalidate the assessment details query to refresh the data
-      queryClient.invalidateQueries({ 
-        queryKey: ["assessor", "assessment", assessmentId] 
+      queryClient.invalidateQueries({
+        queryKey: ["assessor", "assessment", assessmentId],
       });
 
       alert("Validation saved successfully!");
@@ -90,8 +104,8 @@ export function ValidationControls({
       });
 
       // Invalidate the assessment details query to refresh the data
-      queryClient.invalidateQueries({ 
-        queryKey: ["assessor", "assessment", assessmentId] 
+      queryClient.invalidateQueries({
+        queryKey: ["assessor", "assessment", assessmentId],
       });
 
       alert("Draft saved successfully!");
@@ -227,11 +241,7 @@ export function ValidationControls({
         {/* Validation Status Selection */}
         <div>
           <Label className="text-sm font-medium">Validation Status *</Label>
-          <RadioGroup
-            value={validationStatus}
-            onValueChange={setValidationStatus}
-            className="mt-2"
-          >
+          <RadioGroup value={validationStatus} onValueChange={setValidationStatus} className="mt-2">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="Pass" id="pass" />
               <Label htmlFor="pass" className="flex items-center gap-2">
@@ -259,7 +269,8 @@ export function ValidationControls({
         {/* Public Comment */}
         <div>
           <Label htmlFor="public-comment" className="text-sm font-medium">
-            Public Comment {validationStatus === "Conditional" && <span className="text-red-500">*</span>}
+            Public Comment{" "}
+            {validationStatus === "Conditional" && <span className="text-red-500">*</span>}
           </Label>
           <Textarea
             id="public-comment"
@@ -369,7 +380,11 @@ export function ValidationControls({
           <Button
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={!validationStatus || (validationStatus === "Conditional" && !publicComment.trim()) || validationMutation.isPending}
+            disabled={
+              !validationStatus ||
+              (validationStatus === "Conditional" && !publicComment.trim()) ||
+              validationMutation.isPending
+            }
           >
             Save Validation
           </Button>

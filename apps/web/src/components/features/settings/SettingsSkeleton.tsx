@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Plus } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar, Plus } from "lucide-react";
 
 export function SettingsSkeleton() {
   return (
@@ -102,4 +102,4 @@ export function SettingsSkeleton() {
       </div>
     </div>
   );
-} 
+}

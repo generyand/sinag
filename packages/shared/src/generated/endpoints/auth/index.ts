@@ -292,7 +292,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthVerify>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthVerify>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAuthVerifyQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthVerify>>>

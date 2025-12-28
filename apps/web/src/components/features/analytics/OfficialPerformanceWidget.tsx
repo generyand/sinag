@@ -1,8 +1,15 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface OfficialPerformanceData {
   totalBarangays: number;
@@ -28,7 +35,8 @@ export function OfficialPerformanceWidget({ data, period }: OfficialPerformanceW
   const circumference = 2 * Math.PI * 45; // radius = 45
   const passedAngle = totalAssessed > 0 ? (data.passed / totalAssessed) * 360 : 0;
   const failedAngle = totalAssessed > 0 ? (data.failed / totalAssessed) * 360 : 0;
-  const notAssessedAngle = data.totalBarangays > 0 ? (data.notAssessed / data.totalBarangays) * 360 : 0;
+  const notAssessedAngle =
+    data.totalBarangays > 0 ? (data.notAssessed / data.totalBarangays) * 360 : 0;
 
   const passedDashArray = (passedAngle / 360) * circumference;
   const failedDashArray = (failedAngle / 360) * circumference;
@@ -93,32 +101,36 @@ export function OfficialPerformanceWidget({ data, period }: OfficialPerformanceW
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <div className="text-2xl font-bold text-[var(--foreground)]">{data.passed}</div>
-                <div className="text-sm text-[var(--text-secondary)]">/ {data.totalBarangays} Passers</div>
+                <div className="text-sm text-[var(--text-secondary)]">
+                  / {data.totalBarangays} Passers
+                </div>
               </div>
             </div>
-            
+
             {/* Legend */}
             <div className="mt-4 space-y-2">
               <div className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: 'var(--analytics-success)' }}
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: "var(--analytics-success)" }}
                 ></div>
                 <span className="text-sm text-[var(--text-primary)]">Passed ({data.passed})</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: 'var(--analytics-danger)' }}
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: "var(--analytics-danger)" }}
                 ></div>
                 <span className="text-sm text-[var(--text-primary)]">Failed ({data.failed})</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: 'var(--analytics-neutral)' }}
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: "var(--analytics-neutral)" }}
                 ></div>
-                <span className="text-sm text-[var(--text-primary)]">Not Assessed ({data.notAssessed})</span>
+                <span className="text-sm text-[var(--text-primary)]">
+                  Not Assessed ({data.notAssessed})
+                </span>
               </div>
             </div>
           </div>
@@ -126,18 +138,26 @@ export function OfficialPerformanceWidget({ data, period }: OfficialPerformanceW
           {/* Data Table */}
           <div>
             <div className="mb-4">
-              <h4 className="text-lg font-semibold mb-2 text-[var(--foreground)]">Officially Passed Barangays</h4>
+              <h4 className="text-lg font-semibold mb-2 text-[var(--foreground)]">
+                Officially Passed Barangays
+              </h4>
               <p className="text-sm text-[var(--text-secondary)]">
-                Pass Rate: <span className="font-semibold" style={{ color: 'var(--analytics-success-text-light)' }}>{passRate}%</span>
+                Pass Rate:{" "}
+                <span
+                  className="font-semibold"
+                  style={{ color: "var(--analytics-success-text-light)" }}
+                >
+                  {passRate}%
+                </span>
               </p>
             </div>
-            
+
             <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Barangay</TableHead>
-                    <TableHead>Score</TableHead>
+                    <TableHead>Compliance Rate</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -147,10 +167,10 @@ export function OfficialPerformanceWidget({ data, period }: OfficialPerformanceW
                       <TableCell className="font-medium">{barangay.name}</TableCell>
                       <TableCell>{barangay.score}%</TableCell>
                       <TableCell>
-                        <Badge 
-                          variant="default" 
+                        <Badge
+                          variant="default"
                           className="border-0 text-white"
-                          style={{ backgroundColor: 'var(--analytics-success)' }}
+                          style={{ backgroundColor: "var(--analytics-success)" }}
                         >
                           Passed
                         </Badge>
@@ -165,4 +185,4 @@ export function OfficialPerformanceWidget({ data, period }: OfficialPerformanceW
       </CardContent>
     </Card>
   );
-} 
+}

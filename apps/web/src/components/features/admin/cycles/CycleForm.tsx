@@ -184,9 +184,7 @@ export function CycleForm({
 
       {/* Assessment Period Section */}
       <div className="space-y-4 pt-4 border-t border-[var(--border)]">
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Assessment Period
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Assessment Period</h3>
         <p className="text-sm text-[var(--muted-foreground)]">
           Define the overall assessment period for this year
         </p>
@@ -201,9 +199,7 @@ export function CycleForm({
               id="assessment_period_start"
               type="datetime-local"
               value={form.assessment_period_start}
-              onChange={(e) =>
-                handleInputChange("assessment_period_start", e.target.value)
-              }
+              onChange={(e) => handleInputChange("assessment_period_start", e.target.value)}
               disabled={isLoading}
               className={errors.assessment_period_start ? "border-red-500" : ""}
             />
@@ -224,9 +220,7 @@ export function CycleForm({
               id="assessment_period_end"
               type="datetime-local"
               value={form.assessment_period_end}
-              onChange={(e) =>
-                handleInputChange("assessment_period_end", e.target.value)
-              }
+              onChange={(e) => handleInputChange("assessment_period_end", e.target.value)}
               disabled={isLoading}
               className={errors.assessment_period_end ? "border-red-500" : ""}
             />
@@ -242,26 +236,20 @@ export function CycleForm({
 
       {/* Deadlines Section */}
       <div className="space-y-4 pt-4 border-t border-[var(--border)]">
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Submission Deadlines
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Submission Deadlines</h3>
         <p className="text-sm text-[var(--muted-foreground)]">
-          All deadlines must be in chronological order: Phase 1 → Rework → Phase 2
-          → Calibration (optional)
+          All deadlines must be in chronological order: Phase 1 → Rework → Phase 2 → Calibration
+          (optional)
         </p>
 
         {/* Phase 1 Deadline */}
         <div className="space-y-2">
-          <Label htmlFor="phase1_deadline">
-            Phase 1 Deadline (Initial Submission)
-          </Label>
+          <Label htmlFor="phase1_deadline">Phase 1 Deadline (Initial Submission)</Label>
           <Input
             id="phase1_deadline"
             type="datetime-local"
             value={form.phase1_deadline || ""}
-            onChange={(e) =>
-              handleInputChange("phase1_deadline", e.target.value || null)
-            }
+            onChange={(e) => handleInputChange("phase1_deadline", e.target.value || null)}
             disabled={isLoading}
             className={errors.phase1_deadline ? "border-red-500" : ""}
           />
@@ -280,9 +268,7 @@ export function CycleForm({
             id="rework_deadline"
             type="datetime-local"
             value={form.rework_deadline || ""}
-            onChange={(e) =>
-              handleInputChange("rework_deadline", e.target.value || null)
-            }
+            onChange={(e) => handleInputChange("rework_deadline", e.target.value || null)}
             disabled={isLoading}
             className={errors.rework_deadline ? "border-red-500" : ""}
           />
@@ -296,16 +282,12 @@ export function CycleForm({
 
         {/* Phase 2 Deadline */}
         <div className="space-y-2">
-          <Label htmlFor="phase2_deadline">
-            Phase 2 Deadline (Final Submission)
-          </Label>
+          <Label htmlFor="phase2_deadline">Phase 2 Deadline (Final Submission)</Label>
           <Input
             id="phase2_deadline"
             type="datetime-local"
             value={form.phase2_deadline || ""}
-            onChange={(e) =>
-              handleInputChange("phase2_deadline", e.target.value || null)
-            }
+            onChange={(e) => handleInputChange("phase2_deadline", e.target.value || null)}
             disabled={isLoading}
             className={errors.phase2_deadline ? "border-red-500" : ""}
           />
@@ -324,9 +306,7 @@ export function CycleForm({
             id="calibration_deadline"
             type="datetime-local"
             value={form.calibration_deadline || ""}
-            onChange={(e) =>
-              handleInputChange("calibration_deadline", e.target.value || null)
-            }
+            onChange={(e) => handleInputChange("calibration_deadline", e.target.value || null)}
             disabled={isLoading}
             className={errors.calibration_deadline ? "border-red-500" : ""}
           />
@@ -345,16 +325,14 @@ export function CycleForm({
         <Textarea
           id="description"
           value={form.description || ""}
-          onChange={(e) =>
-            handleInputChange("description", e.target.value || null)
-          }
+          onChange={(e) => handleInputChange("description", e.target.value || null)}
           placeholder="Add notes about this assessment year..."
           disabled={isLoading}
           rows={3}
           maxLength={500}
         />
         <p className="text-xs text-[var(--muted-foreground)]">
-          {(form.description?.length || 0)} / 500 characters
+          {form.description?.length || 0} / 500 characters
         </p>
       </div>
 

@@ -69,7 +69,7 @@ export function IndicatorNavigationFooter({
           onClick={onPrevious}
           disabled={!hasPrevious || isLocked}
           className={cn(
-            "gap-2 min-w-[110px] transition-all duration-200",
+            "gap-2 min-w-[40px] sm:min-w-[110px] px-2 sm:px-4 transition-all duration-200",
             "border-[var(--border)] text-[var(--foreground)]",
             "hover:bg-[var(--hover)] hover:border-[var(--border)]",
             "disabled:opacity-40 disabled:cursor-not-allowed"
@@ -77,7 +77,7 @@ export function IndicatorNavigationFooter({
           aria-label="Previous indicator (Alt+Left)"
           title="Previous indicator (Alt+Left)"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline font-medium">Previous</span>
         </Button>
 
@@ -94,7 +94,7 @@ export function IndicatorNavigationFooter({
             </span>
           </div>
           <div className="h-1 w-24 bg-[var(--border)] rounded-full overflow-hidden mt-1">
-            <div 
+            <div
               className="h-full bg-[var(--cityscape-yellow)] transition-all duration-300 ease-out"
               style={{ width: `${(currentPosition / totalIndicators) * 100}%` }}
             />
@@ -107,7 +107,7 @@ export function IndicatorNavigationFooter({
           onClick={onNext}
           disabled={!hasNext || isLocked}
           className={cn(
-            "gap-2 min-w-[110px] transition-all duration-200 shadow-sm",
+            "gap-2 min-w-[40px] sm:min-w-[110px] px-2 sm:px-4 transition-all duration-200 shadow-sm",
             "bg-[var(--cityscape-yellow)] text-[var(--foreground)] border border-[var(--cityscape-yellow-dark)]/10",
             "hover:bg-[var(--cityscape-yellow)]/90 hover:translate-x-0.5",
             "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0"
@@ -116,10 +116,9 @@ export function IndicatorNavigationFooter({
           title="Next indicator (Alt+Right)"
         >
           <span className="hidden sm:inline font-semibold">Next</span>
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-5 w-5 sm:h-4 sm:w-4" />
         </Button>
       </div>
     </div>
   );
 }
-

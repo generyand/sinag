@@ -2,15 +2,19 @@
 
 **Status:** ✅ COMPLETE (November 8, 2025)
 
-**PRD Reference:** FR-1.1, FR-1.2, FR-1.3 - Dynamic form rendering with validation schema, backend calculation engine, and completeness vs. compliance separation
+**PRD Reference:** FR-1.1, FR-1.2, FR-1.3 - Dynamic form rendering with validation schema, backend
+calculation engine, and completeness vs. compliance separation
 
-**Objective:** Establish the database schema and backend calculation engine to support dynamic form rendering, backend-only compliance calculation, and two-tier validation (completeness for BLGUs, compliance for assessors).
+**Objective:** Establish the database schema and backend calculation engine to support dynamic form
+rendering, backend-only compliance calculation, and two-tier validation (completeness for BLGUs,
+compliance for assessors).
 
 ## 📊 Completion Summary
 
 **Implementation Date:** November 8, 2025
 
 **Files Created:**
+
 - `apps/api/app/services/calculation_engine_service.py` (422 lines)
 - `apps/api/app/services/completeness_validation_service.py` (332 lines)
 - `apps/api/app/services/compliance_validation_service.py` (430 lines)
@@ -21,17 +25,22 @@
 - `apps/api/test_epic1_interactive.ipynb` - Jupyter notebook for exploration
 
 **Test Results:**
+
 - ✅ 38 new tests (all passing)
 - ✅ 207 total service tests passing
 - ✅ Test coverage comprehensive
 
 **What Was Already Complete (From Previous Work):**
+
 - Stories 1.1, 1.2, 1.3: Database schema and SQLAlchemy models
 - Story 1.7: Form schema validation utilities
 
 **What Was Newly Implemented:**
-- Story 1.4: ✅ Calculation Engine Service (executes calculation schemas, determines Pass/Fail/Conditional)
-- Story 1.5: ✅ Completeness Validation Service (validates required fields, tracks completion percentage)
+
+- Story 1.4: ✅ Calculation Engine Service (executes calculation schemas, determines
+  Pass/Fail/Conditional)
+- Story 1.5: ✅ Completeness Validation Service (validates required fields, tracks completion
+  percentage)
 - Story 1.6: ✅ Compliance Validation Service (orchestrates calculation + database updates)
 - Story 1.8: ✅ Comprehensive testing suite
 
@@ -41,7 +50,8 @@
 
 ### Three-Tier Structure: Epic → Story → Atomic
 
-**Note:** Stories 1.1, 1.2, 1.3, and 1.7 were already implemented in previous work. The schema columns and validation utilities already exist in the codebase.
+**Note:** Stories 1.1, 1.2, 1.3, and 1.7 were already implemented in previous work. The schema
+columns and validation utilities already exist in the codebase.
 
 - [x] **1.1 Story: Database Schema Migration for Form Schemas** ✅ ALREADY COMPLETE
   - Add `form_schema` JSON column to store dynamic form structure for each indicator
@@ -87,7 +97,8 @@
   - [x] **1.4.1 Atomic: Create CalculationEngineService class structure**
     - **Files:** `apps/api/app/services/calculation_engine_service.py` (NEW)
     - **Dependencies:** Story 1.3 must be complete
-    - **Acceptance:** Service class created with __init__ method. Class includes method signatures for execute_calculation_schema, evaluate_condition, get_remark_for_status. Docstrings added.
+    - **Acceptance:** Service class created with **init** method. Class includes method signatures
+      for execute_calculation_schema, evaluate_condition, get_remark_for_status. Docstrings added.
     - **Tech:** Python classes, Google-style docstrings, type hints
     - **Time Estimate:** 2 hours
 
@@ -99,12 +110,14 @@
   - [x] **1.4.10 Atomic: Unit test CalculationEngineService with all calculation types** ✅
     - **Files:** `apps/api/tests/services/test_calculation_engine_service.py` (NEW)
     - **Dependencies:** Tasks 1.4.1-1.4.9 must be complete
-    - **Acceptance:** Comprehensive unit tests for score, boolean, conditional, aggregate calculations. Test edge cases: null values, missing fields, invalid schemas. All tests pass.
+    - **Acceptance:** Comprehensive unit tests for score, boolean, conditional, aggregate
+      calculations. Test edge cases: null values, missing fields, invalid schemas. All tests pass.
     - **Tech:** Pytest, mock data, parametrized tests
     - **Time Estimate:** 6 hours
 
 - [x] **1.5 Story: Completeness Validation Service** ✅ COMPLETE (Nov 8, 2025)
-  - Implement `CompletenessValidationService` in `apps/api/app/services/completeness_validation_service.py`
+  - Implement `CompletenessValidationService` in
+    `apps/api/app/services/completeness_validation_service.py`
   - Parse `form_schema` to identify required fields
   - Validate that all required fields have responses
   - Validate that conditional fields are properly filled based on visibility logic
@@ -112,18 +125,21 @@
   - Tech stack involved: Python, Pydantic, JSON schema parsing
   - Dependencies: Story 1.3 must be complete
   - **Implementation:** `apps/api/app/services/completeness_validation_service.py` (332 lines)
-  - **Tests:** `apps/api/tests/services/test_completeness_validation_service.py` (19 tests, all passing)
+  - **Tests:** `apps/api/tests/services/test_completeness_validation_service.py` (19 tests, all
+    passing)
 
   - [x] **1.5.1-1.5.6: All implementation tasks complete** ✅
   - [x] **1.5.7 Atomic: Unit test CompletenessValidationService with various form schemas** ✅
     - **Files:** `apps/api/tests/services/test_completeness_validation_service.py` (NEW)
     - **Dependencies:** Tasks 1.5.1-1.5.6 must be complete
-    - **Acceptance:** Unit tests cover: all required fields filled (pass), missing required fields (fail), conditional fields hidden/shown correctly, invalid schemas. All tests pass.
+    - **Acceptance:** Unit tests cover: all required fields filled (pass), missing required fields
+      (fail), conditional fields hidden/shown correctly, invalid schemas. All tests pass.
     - **Tech:** Pytest, mock form schemas, parametrized tests
     - **Time Estimate:** 5 hours
 
 - [x] **1.6 Story: Compliance Validation Service** ✅ COMPLETE (Nov 8, 2025)
-  - Implement `ComplianceValidationService` in `apps/api/app/services/compliance_validation_service.py`
+  - Implement `ComplianceValidationService` in
+    `apps/api/app/services/compliance_validation_service.py`
   - Use CalculationEngineService to run calculation_schema logic
   - Update AssessmentAnswer records with calculated_status and calculated_remark
   - Ensure this service is ONLY called by assessor-facing endpoints (not BLGU endpoints)
@@ -135,7 +151,8 @@
   - [x] **1.6.1-1.6.7: All implementation tasks complete** ✅
     - **Files:** `apps/api/tests/services/test_compliance_validation_service.py` (NEW)
     - **Dependencies:** Tasks 1.6.1-1.6.6 must be complete
-    - **Acceptance:** Unit tests cover: single indicator validation, bulk assessment validation, calculated_status/remark saved to database, error handling. All tests pass.
+    - **Acceptance:** Unit tests cover: single indicator validation, bulk assessment validation,
+      calculated_status/remark saved to database, error handling. All tests pass.
     - **Tech:** Pytest, SQLAlchemy test fixtures, mock CalculationEngineService
     - **Time Estimate:** 6 hours
 
@@ -162,7 +179,8 @@
 
   - [x] **1.8.3 Atomic: Run all CalculationEngineService tests** ✅ 19 tests passing
   - [x] **1.8.4 Atomic: Run all CompletenessValidationService tests** ✅ 19 tests passing
-  - [x] **1.8.8 Atomic: Verify all Epic 1 tests pass** ✅ 207 service tests passing (1 unrelated failure)
+  - [x] **1.8.8 Atomic: Verify all Epic 1 tests pass** ✅ 207 service tests passing (1 unrelated
+        failure)
 
   **Test Results Summary (Nov 8, 2025):**
   - ✅ 38 new tests for Epic 1.0 services (all passing)
@@ -174,7 +192,9 @@
 ## Key Technical Decisions
 
 ### Form Schema Structure
+
 The `form_schema` JSON will follow this structure:
+
 ```json
 {
   "sections": [
@@ -200,7 +220,9 @@ The `form_schema` JSON will follow this structure:
 ```
 
 ### Calculation Schema Structure
+
 The `calculation_schema` JSON will follow this structure:
+
 ```json
 {
   "type": "score|boolean|conditional|aggregate",
@@ -219,7 +241,9 @@ The `calculation_schema` JSON will follow this structure:
 ```
 
 ### Remark Schema Structure
+
 The `remark_schema` JSON maps calculated status to remark templates:
+
 ```json
 {
   "PASS": "Remark template for passing",
@@ -231,11 +255,13 @@ The `remark_schema` JSON maps calculated status to remark templates:
 ## Dependencies for Next Epic
 
 Epic 2.0 (BLGU Dashboard) depends on:
+
 - Story 1.3: SQLAlchemy models must be updated
 - Story 1.5: Completeness validation service must be available
 - Story 1.8: All testing must pass
 
 Epic 3.0 (Dynamic Form Rendering) depends on:
+
 - Story 1.1: form_schema column must exist
 - Story 1.7: Form schema validation must be available
 - Story 1.8: All testing must pass

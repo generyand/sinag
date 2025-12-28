@@ -7,16 +7,16 @@ import {
 } from "@/components/features/assessments";
 import { AssessmentContentPanel } from "@/components/features/assessments/AssessmentContentPanel";
 import {
-  TreeNavigator,
-  MobileTreeDrawer,
   MobileNavButton,
+  MobileTreeDrawer,
+  TreeNavigator,
   findIndicatorById,
 } from "@/components/features/assessments/tree-navigation";
 import { useAssessmentValidation, useCurrentAssessment } from "@/hooks/useAssessment";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useGetBlguDashboardAssessmentId } from "@sinag/shared";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function BLGUAssessmentsPage() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -51,16 +51,17 @@ export default function BLGUAssessmentsPage() {
   useEffect(() => {
     const indicatorParam = searchParams.get("indicator");
     if (indicatorParam && assessment) {
-      // Validate that indicator exists in assessment
       const result = findIndicatorById(assessment, indicatorParam);
-      if (result) {
+      if (result && selectedIndicatorId !== indicatorParam) {
         setSelectedIndicatorId(indicatorParam);
-      } else {
-        // Invalid indicator ID in URL, clear it
+      } else if (!result && selectedIndicatorId !== null) {
         router.replace("/blgu/assessments");
+        setSelectedIndicatorId(null);
       }
+    } else if (!indicatorParam && selectedIndicatorId !== null) {
+      setSelectedIndicatorId(null);
     }
-  }, [searchParams, assessment, router]);
+  }, [searchParams, assessment, router, selectedIndicatorId]);
 
   // Update URL when indicator is selected (without scrolling)
   const handleIndicatorSelect = (indicatorId: string) => {
@@ -70,6 +71,13 @@ export default function BLGUAssessmentsPage() {
 
     // Use window.history.pushState to update URL without triggering scroll
     window.history.pushState(null, "", `/blgu/assessments?${params.toString()}`);
+  };
+
+  // Handle back to list (mobile) - clear indicator selection
+  const handleBackToList = () => {
+    setSelectedIndicatorId(null);
+    // Remove indicator param from URL
+    window.history.pushState(null, "", "/blgu/assessments");
   };
 
   // Show loading if not authenticated or if auth state is still loading
@@ -207,21 +215,26 @@ export default function BLGUAssessmentsPage() {
 
       {/* Header (Full Width) */}
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-[1920px] mx-auto">
           <AssessmentHeader
             assessment={displayAssessment}
             validation={validation}
             isCalibrationRework={dashboardData?.is_calibration_rework === true}
             calibrationGovernanceAreaName={(dashboardData as any)?.calibration_governance_area_name}
+            calibrationGovernanceAreaNames={(
+              (dashboardData as any)?.calibration_governance_areas || []
+            ).map((a: any) => a.governance_area_name)}
+            reworkSubmittedAt={(dashboardData as any)?.rework_submitted_at}
+            calibrationSubmittedAt={(dashboardData as any)?.calibration_submitted_at}
           />
         </div>
       </header>
 
       {/* Split Panel Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop: Left Sidebar Tree Navigation */}
+        {/* Desktop & Tablet (md+): Left Sidebar Tree Navigation */}
         <nav
-          className="hidden lg:block w-48 xl:w-56 flex-shrink-0"
+          className="hidden md:block w-48 lg:w-48 xl:w-56 flex-shrink-0"
           aria-label="Assessment navigation sidebar"
         >
           <TreeNavigator
@@ -239,23 +252,32 @@ export default function BLGUAssessmentsPage() {
             isLocked={isLocked}
             updateAssessmentData={updateAssessmentData}
             onIndicatorSelect={handleIndicatorSelect}
+            onBackToList={handleBackToList}
             movAnnotations={dashboardData?.mov_annotations_by_indicator || {}}
             dashboardData={dashboardData}
+            mlgooFlaggedFileIds={(dashboardData as any)?.mlgoo_recalibration_mov_file_ids || []}
           />
         </main>
       </div>
 
-      {/* Mobile: Bottom Sheet Drawer */}
-      <MobileTreeDrawer
-        isOpen={isMobileDrawerOpen}
-        onClose={() => setIsMobileDrawerOpen(false)}
-        assessment={assessment}
-        selectedIndicatorId={selectedIndicatorId}
-        onIndicatorSelect={handleIndicatorSelect}
-      />
+      {/* Mobile: Bottom Sheet Drawer - Only show when an indicator is selected */}
+      {selectedIndicatorId && (
+        <MobileTreeDrawer
+          isOpen={isMobileDrawerOpen}
+          onClose={() => setIsMobileDrawerOpen(false)}
+          assessment={assessment}
+          selectedIndicatorId={selectedIndicatorId}
+          onIndicatorSelect={handleIndicatorSelect}
+        />
+      )}
 
-      {/* Mobile: Floating Action Button */}
-      <MobileNavButton progress={progressPercentage} onClick={() => setIsMobileDrawerOpen(true)} />
+      {/* Mobile: Floating Action Button - Only show when an indicator is selected */}
+      {selectedIndicatorId && (
+        <MobileNavButton
+          progress={progressPercentage}
+          onClick={() => setIsMobileDrawerOpen(true)}
+        />
+      )}
     </div>
   );
 }

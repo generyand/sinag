@@ -1,5 +1,5 @@
-import type { FormField } from '@/store/useFormBuilderStore';
-import type { FieldOption } from '@sinag/shared';
+import type { FormField } from "@/store/useFormBuilderStore";
+import type { FieldOption } from "@sinag/shared";
 
 /**
  * Client-side validation for form schema before save
@@ -25,7 +25,7 @@ export function validateFormSchema(fields: FormField[]): ValidationError[] {
 
   // Check if empty
   if (fields.length === 0) {
-    errors.push({ message: 'Form must have at least one field' });
+    errors.push({ message: "Form must have at least one field" });
     return errors;
   }
 
@@ -45,14 +45,14 @@ export function validateFormSchema(fields: FormField[]): ValidationError[] {
   // Validate each field
   fields.forEach((field) => {
     // Check for empty field_id or label
-    if (!field.field_id || field.field_id.trim() === '') {
+    if (!field.field_id || field.field_id.trim() === "") {
       errors.push({
         fieldId: field.field_id,
-        message: 'Field ID cannot be empty',
+        message: "Field ID cannot be empty",
       });
     }
 
-    if (!field.label || field.label.trim() === '') {
+    if (!field.label || field.label.trim() === "") {
       errors.push({
         fieldId: field.field_id,
         message: `Field "${field.field_id}": Label cannot be empty`,
@@ -68,8 +68,8 @@ export function validateFormSchema(fields: FormField[]): ValidationError[] {
     }
 
     // Validate options for checkbox_group and radio_button
-    if (field.field_type === 'checkbox_group' || field.field_type === 'radio_button') {
-      if ('options' in field && field.options) {
+    if (field.field_type === "checkbox_group" || field.field_type === "radio_button") {
+      if ("options" in field && field.options) {
         if (field.options.length < 2) {
           errors.push({
             fieldId: field.field_id,
@@ -97,10 +97,10 @@ export function validateFormSchema(fields: FormField[]): ValidationError[] {
     }
 
     // Validate min < max for number_input
-    if (field.field_type === 'number_input') {
+    if (field.field_type === "number_input") {
       if (
-        'min_value' in field &&
-        'max_value' in field &&
+        "min_value" in field &&
+        "max_value" in field &&
         field.min_value !== undefined &&
         field.min_value !== null &&
         field.max_value !== undefined &&
@@ -116,8 +116,8 @@ export function validateFormSchema(fields: FormField[]): ValidationError[] {
     }
 
     // Validate min_date < max_date for date_picker
-    if (field.field_type === 'date_picker') {
-      if ('min_date' in field && 'max_date' in field && field.min_date && field.max_date) {
+    if (field.field_type === "date_picker") {
+      if ("min_date" in field && "max_date" in field && field.min_date && field.max_date) {
         if (new Date(field.min_date) >= new Date(field.max_date)) {
           errors.push({
             fieldId: field.field_id,
@@ -128,8 +128,8 @@ export function validateFormSchema(fields: FormField[]): ValidationError[] {
     }
 
     // Validate conditional_mov_requirement for file_upload
-    if (field.field_type === 'file_upload') {
-      if ('conditional_mov_requirement' in field && field.conditional_mov_requirement) {
+    if (field.field_type === "file_upload") {
+      if ("conditional_mov_requirement" in field && field.conditional_mov_requirement) {
         const refFieldId = field.conditional_mov_requirement.field_id;
 
         // Check if referenced field exists
@@ -171,8 +171,8 @@ function detectCircularReferences(fields: FormField[]): ValidationError[] {
     dependencies.set(field.field_id, []);
 
     if (
-      field.field_type === 'file_upload' &&
-      'conditional_mov_requirement' in field &&
+      field.field_type === "file_upload" &&
+      "conditional_mov_requirement" in field &&
       field.conditional_mov_requirement
     ) {
       dependencies.get(field.field_id)!.push(field.conditional_mov_requirement.field_id);

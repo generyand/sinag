@@ -10,7 +10,7 @@
  * - Publishing/unpublishing years
  */
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetAssessmentYears,
   useGetAssessmentYearsActive,
@@ -23,13 +23,13 @@ import {
   usePostAssessmentYearsYearUnpublish,
   getGetAssessmentYearsQueryKey,
   getGetAssessmentYearsActiveQueryKey,
-} from '@sinag/shared';
+} from "@sinag/shared";
 import type {
   AssessmentYearCreate,
   AssessmentYearUpdate,
   AssessmentYearResponse,
   AssessmentYearListResponse,
-} from '@sinag/shared';
+} from "@sinag/shared";
 
 /**
  * Form data type for creating/updating assessment years
@@ -244,13 +244,13 @@ export function transformFormToApiData(formData: AssessmentYearFormData): Assess
 export function transformApiToFormData(apiData: AssessmentYearResponse): AssessmentYearFormData {
   // Convert ISO strings to datetime-local format (YYYY-MM-DDTHH:mm)
   const toDatetimeLocal = (isoString: string | null | undefined): string => {
-    if (!isoString) return '';
+    if (!isoString) return "";
     try {
       const date = new Date(isoString);
       // Format as YYYY-MM-DDTHH:mm (datetime-local input format)
       return date.toISOString().slice(0, 16);
     } catch {
-      return '';
+      return "";
     }
   };
 

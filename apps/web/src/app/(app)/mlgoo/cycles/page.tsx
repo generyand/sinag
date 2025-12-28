@@ -1,30 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useAssessmentYears, transformFormToApiData, transformApiToFormData } from "@/hooks/useAssessmentYears";
-import type { AssessmentYearFormData } from "@/hooks/useAssessmentYears";
 import { CycleForm } from "@/components/features/admin/cycles/CycleForm";
 import { DeadlineStatusDashboard } from "@/components/features/admin/deadlines/DeadlineStatusDashboard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { AssessmentYearFormData } from "@/hooks/useAssessmentYears";
 import {
-  Plus,
+  transformApiToFormData,
+  transformFormToApiData,
+  useAssessmentYears,
+} from "@/hooks/useAssessmentYears";
+import { useAuthStore } from "@/store/useAuthStore";
+import type { AssessmentYearResponse } from "@sinag/shared";
+import {
   Calendar,
+  ChevronDown,
+  ChevronUp,
   Clock,
-  Settings,
-  Users,
-  Power,
-  PowerOff,
   Globe,
   GlobeLock,
   Pencil,
+  Plus,
+  Power,
+  PowerOff,
+  Settings,
   Trash2,
-  ChevronDown,
-  ChevronUp,
+  Users,
 } from "lucide-react";
-import type { AssessmentYearResponse } from "@sinag/shared";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type TabId = "settings" | "monitoring";
 
@@ -150,7 +154,11 @@ export default function CyclesPage() {
 
   // Handle year delete
   const handleDeleteYear = async (year: number) => {
-    if (!confirm(`Are you sure you want to delete assessment year ${year}? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete assessment year ${year}? This action cannot be undone.`
+      )
+    ) {
       return;
     }
     try {
@@ -241,14 +249,24 @@ export default function CyclesPage() {
     isDeletingYear;
 
   return (
-    <main className="min-h-screen bg-[var(--background)]" role="main" aria-label="Assessment Years Management">
+    <main
+      className="min-h-screen bg-[var(--background)]"
+      role="main"
+      aria-label="Assessment Years Management"
+    >
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Enhanced Header Section */}
           <header className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-8">
             {/* Decorative background elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/40 to-indigo-100/20 rounded-full -translate-y-20 translate-x-20" aria-hidden="true"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/30 to-pink-100/20 rounded-full translate-y-16 -translate-x-16" aria-hidden="true"></div>
+            <div
+              className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/40 to-indigo-100/20 rounded-full -translate-y-20 translate-x-20"
+              aria-hidden="true"
+            ></div>
+            <div
+              className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/30 to-pink-100/20 rounded-full translate-y-16 -translate-x-16"
+              aria-hidden="true"
+            ></div>
 
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -290,24 +308,27 @@ export default function CyclesPage() {
           </header>
 
           {/* Tab Navigation */}
-          <nav className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2" aria-label="Assessment year tabs">
+          <nav
+            className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2"
+            aria-label="Assessment year tabs"
+          >
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
-              <TabsList className="w-full flex gap-1 bg-transparent h-auto p-0">
+              <TabsList className="w-full grid grid-cols-2 gap-2 bg-transparent h-auto p-0">
                 <TabsTrigger
                   value="settings"
-                  className="flex items-center gap-2 px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                  className="flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
                   aria-label="Year Settings tab"
                 >
                   <Settings className="h-4 w-4" aria-hidden="true" />
-                  Year Settings
+                  <span className="truncate">Year Settings</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="monitoring"
-                  className="flex items-center gap-2 px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
+                  className="flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
                   aria-label="Deadline Monitoring tab"
                 >
                   <Users className="h-4 w-4" aria-hidden="true" />
-                  Deadline Monitoring
+                  <span className="truncate">Deadline Monitoring</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -330,12 +351,16 @@ export default function CyclesPage() {
                 /* Empty State */
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-12">
                   <div className="text-center">
-                    <Calendar className="w-16 h-16 text-[var(--muted-foreground)] mx-auto mb-4 opacity-50" aria-hidden="true" />
+                    <Calendar
+                      className="w-16 h-16 text-[var(--muted-foreground)] mx-auto mb-4 opacity-50"
+                      aria-hidden="true"
+                    />
                     <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
                       No Assessment Years
                     </h3>
                     <p className="text-[var(--muted-foreground)] mb-6">
-                      Create your first assessment year to begin managing submission deadlines and barangay assessments.
+                      Create your first assessment year to begin managing submission deadlines and
+                      barangay assessments.
                     </p>
                     <Button
                       onClick={() => setShowCreateForm(true)}
@@ -504,7 +529,9 @@ export default function CyclesPage() {
                               <div className="p-3 bg-[var(--background)] rounded-sm border border-[var(--border)]">
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                  <h4 className="font-medium text-[var(--foreground)] text-sm">Phase 1</h4>
+                                  <h4 className="font-medium text-[var(--foreground)] text-sm">
+                                    Phase 1
+                                  </h4>
                                 </div>
                                 <p className="text-xs text-[var(--foreground)]">
                                   {formatDate(yearData.phase1_deadline)}
@@ -515,7 +542,9 @@ export default function CyclesPage() {
                               <div className="p-3 bg-[var(--background)] rounded-sm border border-[var(--border)]">
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                  <h4 className="font-medium text-[var(--foreground)] text-sm">Rework</h4>
+                                  <h4 className="font-medium text-[var(--foreground)] text-sm">
+                                    Rework
+                                  </h4>
                                 </div>
                                 <p className="text-xs text-[var(--foreground)]">
                                   {formatDate(yearData.rework_deadline)}
@@ -526,7 +555,9 @@ export default function CyclesPage() {
                               <div className="p-3 bg-[var(--background)] rounded-sm border border-[var(--border)]">
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                                  <h4 className="font-medium text-[var(--foreground)] text-sm">Phase 2</h4>
+                                  <h4 className="font-medium text-[var(--foreground)] text-sm">
+                                    Phase 2
+                                  </h4>
                                 </div>
                                 <p className="text-xs text-[var(--foreground)]">
                                   {formatDate(yearData.phase2_deadline)}
@@ -537,7 +568,9 @@ export default function CyclesPage() {
                               <div className="p-3 bg-[var(--background)] rounded-sm border border-[var(--border)]">
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                  <h4 className="font-medium text-[var(--foreground)] text-sm">Calibration</h4>
+                                  <h4 className="font-medium text-[var(--foreground)] text-sm">
+                                    Calibration
+                                  </h4>
                                 </div>
                                 <p className="text-xs text-[var(--foreground)]">
                                   {formatDate(yearData.calibration_deadline)}
@@ -549,12 +582,8 @@ export default function CyclesPage() {
                           {/* Metadata */}
                           <div className="p-4 border-t border-[var(--border)] bg-[var(--background)]/50">
                             <div className="grid grid-cols-2 gap-4 text-xs text-[var(--muted-foreground)]">
-                              <div>
-                                Created: {formatDate(yearData.created_at)}
-                              </div>
-                              <div>
-                                Last Updated: {formatDate(yearData.updated_at)}
-                              </div>
+                              <div>Created: {formatDate(yearData.created_at)}</div>
+                              <div>Last Updated: {formatDate(yearData.updated_at)}</div>
                             </div>
                           </div>
                         </>
@@ -579,11 +608,7 @@ export default function CyclesPage() {
                       Cancel
                     </Button>
                   </div>
-                  <CycleForm
-                    onSubmit={handleCreateYear}
-                    isLoading={isCreatingYear}
-                    mode="create"
-                  />
+                  <CycleForm onSubmit={handleCreateYear} isLoading={isCreatingYear} mode="create" />
                 </div>
               )}
 

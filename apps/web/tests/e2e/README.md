@@ -7,19 +7,28 @@ This directory contains Playwright E2E tests for the SINAG governance assessment
 The E2E tests cover multiple epics and user workflows:
 
 ### Epic 3: Dynamic Form Rendering Engine
-- **Form Workflow Tests** ([blgu-form-workflow.spec.ts](blgu-form-workflow.spec.ts)): Complete form filling, saving, and data persistence
-- **Completion Feedback Tests** ([completion-feedback.spec.ts](completion-feedback.spec.ts)): Real-time completion tracking as users fill forms
-- **MOV File Upload Tests** ([mov-file-upload.spec.ts](mov-file-upload.spec.ts)): File upload functionality
+
+- **Form Workflow Tests** ([blgu-form-workflow.spec.ts](blgu-form-workflow.spec.ts)): Complete form
+  filling, saving, and data persistence
+- **Completion Feedback Tests** ([completion-feedback.spec.ts](completion-feedback.spec.ts)):
+  Real-time completion tracking as users fill forms
+- **MOV File Upload Tests** ([mov-file-upload.spec.ts](mov-file-upload.spec.ts)): File upload
+  functionality
 
 ### Epic 5: Submission & Rework Workflow
-- **Submission Workflow Tests** ([epic5-submission-workflow.spec.ts](epic5-submission-workflow.spec.ts)): Complete BLGU submission and assessor rework workflow
+
+- **Submission Workflow Tests**
+  ([epic5-submission-workflow.spec.ts](epic5-submission-workflow.spec.ts)): Complete BLGU submission
+  and assessor rework workflow
   - BLGU assessment submission with locked state
   - Assessor review and rework request
   - BLGU rework with comments visibility
   - Resubmission and rework limit enforcement
 
 ### Test Fixtures
-- **Fixtures Directory** ([fixtures/](fixtures/)): Reusable authentication, test data, and helper functions
+
+- **Fixtures Directory** ([fixtures/](fixtures/)): Reusable authentication, test data, and helper
+  functions
   - See [fixtures/README.md](fixtures/README.md) for detailed documentation
 
 ## Running the Tests
@@ -27,6 +36,7 @@ The E2E tests cover multiple epics and user workflows:
 ### Prerequisites
 
 1. Install Playwright browsers:
+
    ```bash
    npx playwright install chromium
    ```
@@ -38,6 +48,7 @@ The E2E tests cover multiple epics and user workflows:
 You can run tests from either the **project root** or the **apps/web** directory:
 
 **From project root (recommended for CI/monorepo workflows):**
+
 ```bash
 # Run all E2E tests (headless mode)
 pnpm exec playwright test
@@ -56,6 +67,7 @@ pnpm exec playwright test --project=chromium
 ```
 
 **From apps/web directory (uses pnpm scripts):**
+
 ```bash
 cd apps/web
 
@@ -163,28 +175,35 @@ Tests the complete Epic 5.0 submission and rework workflow:
 ## Test Data
 
 ### Epic 3 Tests
+
 The Epic 3 tests use test user credentials:
+
 - **Email**: `blgu.test@example.com`
 - **Password**: `TestPassword123!`
 
 ### Epic 5 Tests
+
 The Epic 5 tests use fixtures from the `fixtures/` directory. Test users required:
 
 **BLGU User:**
+
 - **Email**: `blgu.test@example.com`
 - **Password**: `TestPassword123!`
 - **Role**: `BLGU_USER`
 
 **Assessor User:**
+
 - **Email**: `assessor.test@example.com`
 - **Password**: `TestPassword123!`
 - **Role**: `ASSESSOR`
 
-**Note**: Create these users in your test database before running Epic 5 tests. See [fixtures/README.md](fixtures/README.md) for detailed fixture documentation.
+**Note**: Create these users in your test database before running Epic 5 tests. See
+[fixtures/README.md](fixtures/README.md) for detailed fixture documentation.
 
 ## Configuration
 
 E2E test configuration is in the **root** `playwright.config.ts` (not in `apps/web/`):
+
 - **Test Directory**: `./apps/web/tests/e2e` - All E2E tests are here
 - **Base URL**: `http://localhost:3000` (configurable via `NEXT_PUBLIC_APP_URL`)
 - **Auto-start**: Playwright automatically starts Next.js dev server before running tests
@@ -195,11 +214,13 @@ E2E test configuration is in the **root** `playwright.config.ts` (not in `apps/w
 - **Screenshots**: Only on failure
 - **Trace**: On first retry
 
-The configuration has been consolidated to the root level for the entire monorepo. There is no separate `apps/web/playwright.config.ts`.
+The configuration has been consolidated to the root level for the entire monorepo. There is no
+separate `apps/web/playwright.config.ts`.
 
 ## Selectors and Data Attributes
 
 The tests use a combination of:
+
 - **Test IDs**: `data-testid` attributes for reliable element selection
 - **Role-based selectors**: `role="combobox"`, `role="alert"`, etc.
 - **Text matching**: For buttons and labels
@@ -209,7 +230,7 @@ The tests use a combination of:
 1. Create a new `.spec.ts` file in `tests/e2e/`
 2. Import Playwright test utilities:
    ```typescript
-   import { test, expect } from '@playwright/test';
+   import { test, expect } from "@playwright/test";
    ```
 3. Use descriptive test names and group related tests with `test.describe()`
 4. Add authentication in `beforeEach` if needed

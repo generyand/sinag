@@ -106,8 +106,12 @@ def _parse_upload_sections_from_instructions(
                     }
                 )
             # Detect option headers (e.g., "OPTION A - PHYSICAL:" or "OPTION 1:")
-            elif "OPTION" in line_upper and (
-                not line_stripped[0].isdigit() if line_stripped else True
+            # Skip lines that start with "Note:" or other informational prefixes
+            elif (
+                "OPTION" in line_upper
+                and (not line_stripped[0].isdigit() if line_stripped else True)
+                and not line_upper.startswith("NOTE:")
+                and not line_upper.startswith("NOTE ")
             ):
                 current_section = line_stripped
                 # Extract option letter (A, B, C) or number (1, 2, 3) for grouping
@@ -137,13 +141,13 @@ def _parse_upload_sections_from_instructions(
                         "option_group": current_option_id,
                     }
                 )
-            # Detect "OR" separators
-            elif line_upper == "OR":
+            # Detect "OR" or "AND/OR" separators
+            elif line_upper == "OR" or line_upper == "AND/OR":
                 upload_sections.append(
                     {
                         "field_id": f"or_separator_{len(upload_sections) + 1}",
                         "field_type": "info_text",
-                        "label": "OR",
+                        "label": line_stripped,  # Use original casing (OR or AND/OR)
                         "description": "",
                         "required": False,
                     }
@@ -228,6 +232,11 @@ def _parse_upload_sections_from_instructions(
             "components:",
             "criteria:",
             "note:",  # Notes are informational
+            "a.",  # Alphabetical list items are informational
+            "b.",
+            "c.",
+            "d.",
+            "e.",
         ]
 
         # Also check if the numbered items appear AFTER an informational header
@@ -251,6 +260,20 @@ def _parse_upload_sections_from_instructions(
             # Reset if we hit "Upload" again (new upload section)
             if line_lower.startswith("upload") and ":" in line_lower:
                 in_informational_section = False
+
+            # Detect "OR" or "AND/OR" separators in numbered sections
+            line_upper = line_stripped.upper()
+            if line_upper == "OR" or line_upper == "AND/OR":
+                upload_sections.append(
+                    {
+                        "field_id": f"or_separator_{len(upload_sections) + 1}",
+                        "field_type": "info_text",
+                        "label": line_stripped,  # Use original casing
+                        "description": "",
+                        "required": False,
+                    }
+                )
+                continue
 
             # Look for numbered items (e.g., "1.", "2.", etc.)
             if line_stripped and line_stripped[0].isdigit() and "." in line_stripped[:3]:
@@ -282,10 +305,22 @@ def _parse_upload_sections_from_instructions(
         # If no numbered sections found, check for bullet point format or extract from first line
         if not upload_sections:
             # First, check for bullet point items (lines starting with "-")
+            # But skip bullets that are part of informational sections (after a., b., etc.)
             bullet_counter = 0
+            in_info_section = False
             for line in lines:
                 line_stripped = line.strip()
+                line_lower = line_stripped.lower()
+
+                # Check if entering an informational section (a., b., etc.)
+                if any(line_lower.startswith(h) for h in informational_header_starts):
+                    in_info_section = True
+                    continue
+
+                # Skip bullets in informational sections
                 if line_stripped.startswith("-"):
+                    if in_info_section:
+                        continue
                     bullet_counter += 1
                     label = line_stripped[1:].strip()  # Remove leading "-"
                     upload_sections.append(
@@ -487,6 +522,7 @@ def _seed_sub_indicator(
         form_schema=form_schema,  # Add generated form schema
         is_active=True,
         is_auto_calculable=True,
+        is_profiling_only=sub_def.is_profiling_only,  # Preserve profiling-only flag
         sort_order=sort_order,  # Set sort_order based on position
     )
     db.add(sub_indicator)
@@ -517,6 +553,7 @@ def _seed_sub_indicator(
             display_order=item_def.display_order,
             option_group=item_def.option_group,
             field_notes=field_notes_dict,
+            is_profiling_only=item_def.is_profiling_only,  # Preserve profiling-only flag
         )
         db.add(checklist_item)
 

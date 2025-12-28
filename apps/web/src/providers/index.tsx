@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useState, useCallback } from 'react';
-import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from './AuthProvider';
-import { ThemeProvider } from './ThemeProvider';
-import { LanguageProvider } from './LanguageProvider';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { useState } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "./AuthProvider";
+import { ThemeProvider } from "./ThemeProvider";
+import { LanguageProvider } from "./LanguageProvider";
+import { TourProvider } from "./TourProvider";
 
 /**
  * Creates a QueryClient with optimized configuration for SINAG
@@ -45,8 +46,7 @@ function createQueryClient() {
         },
 
         // Exponential backoff for retries
-        retryDelay: (attemptIndex) =>
-          Math.min(1000 * 2 ** attemptIndex, 30000),
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       },
       mutations: {
         // Don't retry mutations by default (user should retry manually)
@@ -68,7 +68,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <LanguageProvider>
-            {children}
+            <TourProvider>{children}</TourProvider>
           </LanguageProvider>
         </AuthProvider>
         {/* Toast notifications */}
@@ -78,4 +78,4 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       </QueryClientProvider>
     </ThemeProvider>
   );
-} 
+}

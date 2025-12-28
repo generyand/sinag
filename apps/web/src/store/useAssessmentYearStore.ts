@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 /**
  * Assessment year state interface for the global year store
@@ -31,10 +31,7 @@ interface AssessmentYearState {
   /** Set error state */
   setError: (error: string | null) => void;
   /** Initialize state from API response */
-  initialize: (data: {
-    years: number[];
-    activeYear: number | null;
-  }) => void;
+  initialize: (data: { years: number[]; activeYear: number | null }) => void;
   /** Reset to initial state */
   reset: () => void;
 }
@@ -81,9 +78,8 @@ export const useAssessmentYearStore = create<AssessmentYearState>()(
         set((state) => ({
           accessibleYears: years,
           // If current selection is not in new list, reset to null
-          selectedYear: state.selectedYear && years.includes(state.selectedYear)
-            ? state.selectedYear
-            : null,
+          selectedYear:
+            state.selectedYear && years.includes(state.selectedYear) ? state.selectedYear : null,
         }));
       },
 
@@ -121,7 +117,7 @@ export const useAssessmentYearStore = create<AssessmentYearState>()(
         }),
     }),
     {
-      name: 'assessment-year-storage',
+      name: "assessment-year-storage",
       version: 1,
       // Only persist the selected year, not the full state
       partialize: (state) => ({

@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { NotificationResponse } from '@sinag/shared';
+import { create } from "zustand";
+import { NotificationResponse } from "@sinag/shared";
 
 /**
  * Notification state interface for the global notification store
@@ -22,11 +22,7 @@ interface NotificationState {
 
   // Actions
   /** Set notifications list and counts */
-  setNotifications: (
-    notifications: NotificationResponse[],
-    total: number,
-    unread: number
-  ) => void;
+  setNotifications: (notifications: NotificationResponse[], total: number, unread: number) => void;
   /** Update only the unread count (for polling) */
   setUnreadCount: (count: number) => void;
   /** Mark specific notifications as read locally */
@@ -98,9 +94,7 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
   markAllAsRead: () => {
     const { notifications } = get();
     const updatedNotifications = notifications.map((n) =>
-      !n.is_read
-        ? { ...n, is_read: true, read_at: new Date().toISOString() }
-        : n
+      !n.is_read ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
     );
     set({
       notifications: updatedNotifications,

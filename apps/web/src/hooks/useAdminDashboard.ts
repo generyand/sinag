@@ -1,41 +1,24 @@
-import { DashboardKPIResponse, useGetAnalyticsDashboard } from '@sinag/shared';
-import { useEffectiveYear } from './useAssessmentYear';
+import {
+  DashboardKPIResponse,
+  useGetAnalyticsDashboard,
+  TopReworkReasons,
+  BBIAnalyticsData,
+} from "@sinag/shared";
+import { useEffectiveYear } from "./useAssessmentYear";
+
+// Re-export the generated types for convenience
+export type { TopReworkReasons, BBIAnalyticsData };
 
 // Status color mapping for the municipal progress chart
 const statusColorMap: Record<string, { color: string; bgColor: string }> = {
-  'Not Started': { color: 'text-gray-600', bgColor: 'bg-gray-100' },
-  'Submitted': { color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  'In Review': { color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
-  'In Rework': { color: 'text-orange-600', bgColor: 'bg-orange-100' },
-  'Awaiting Validation': { color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-  'Awaiting MLGOO Approval': { color: 'text-purple-600', bgColor: 'bg-purple-100' },
-  'Completed': { color: 'text-green-600', bgColor: 'bg-green-100' },
+  "Not Started": { color: "text-gray-600", bgColor: "bg-gray-100" },
+  Submitted: { color: "text-blue-600", bgColor: "bg-blue-100" },
+  "In Review": { color: "text-indigo-600", bgColor: "bg-indigo-100" },
+  "In Rework": { color: "text-orange-600", bgColor: "bg-orange-100" },
+  "Awaiting Validation": { color: "text-yellow-600", bgColor: "bg-yellow-100" },
+  "Awaiting MLGOO Approval": { color: "text-purple-600", bgColor: "bg-purple-100" },
+  Completed: { color: "text-green-600", bgColor: "bg-green-100" },
 };
-
-// BBI Analytics types (matching backend schema)
-export interface BBIAnalyticsItem {
-  bbi_id: number;
-  bbi_name: string;
-  bbi_abbreviation: string;
-  average_compliance: number;
-  highly_functional_count: number;
-  moderately_functional_count: number;
-  low_functional_count: number;
-  total_barangays: number;
-}
-
-export interface BBIAnalyticsSummary {
-  total_assessments: number;
-  overall_average_compliance: number;
-  total_highly_functional: number;
-  total_moderately_functional: number;
-  total_low_functional: number;
-}
-
-export interface BBIAnalyticsData {
-  summary: BBIAnalyticsSummary;
-  bbi_breakdown: BBIAnalyticsItem[];
-}
 
 // Types for the administrator dashboard (frontend-friendly format)
 export interface AdminDashboardData {
@@ -44,6 +27,15 @@ export interface AdminDashboardData {
     awaitingReview: number;
     inRework: number;
     validatedReady: number;
+    // NEW: Enhanced KPI data for improved dashboard
+    awaitingAssessorReview: number; // Submitted + In Review
+    awaitingFinalValidation: number; // Awaiting Validation status
+    awaitingMLGOOApproval: number; // Awaiting MLGOO Approval status (ACTION REQUIRED)
+    completed: number; // Completed status
+    notStarted: number; // Not Started
+    passedCount: number; // Barangays that passed
+    failedCount: number; // Barangays that failed
+    passRate: number; // Pass rate percentage
   };
   municipalProgress: Array<{
     status: string;
@@ -75,6 +67,7 @@ export interface AdminDashboardData {
     assessmentsWithCalibration: number;
     calibrationRate: number;
   };
+  topReworkReasons?: TopReworkReasons;
   bbiAnalytics?: BBIAnalyticsData;
   municipality: string;
   performanceYear: string;
@@ -89,39 +82,39 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
 
   // Find specific status counts
   const getStatusCount = (statusName: string): number => {
-    const item = statusDistribution.find(s => s.status === statusName);
+    const item = statusDistribution.find((s) => s.status === statusName);
     return item?.count || 0;
   };
 
   // Count submissions (everything except "Not Started")
-  const notStarted = getStatusCount('Not Started');
+  const notStarted = getStatusCount("Not Started");
   const totalAssessments = statusDistribution.reduce((sum, s) => sum + s.count, 0);
   const submitted = totalAssessments - notStarted;
 
   // Transform status distribution to municipal progress with colors
   const municipalProgress = statusDistribution
-    .filter(item => item.count > 0) // Only show statuses with assessments
-    .map(item => ({
+    .filter((item) => item.count > 0) // Only show statuses with assessments
+    .map((item) => ({
       status: item.status,
       count: item.count,
       percentage: item.percentage,
-      color: statusColorMap[item.status]?.color || 'text-gray-600',
-      bgColor: statusColorMap[item.status]?.bgColor || 'bg-gray-100',
+      color: statusColorMap[item.status]?.color || "text-gray-600",
+      bgColor: statusColorMap[item.status]?.bgColor || "bg-gray-100",
     }));
 
   // Transform failed indicators
-  const failedIndicators = (apiData.top_failed_indicators || []).map((ind, index) => ({
+  const failedIndicators = (apiData.top_failed_indicators || []).map((ind) => ({
     id: String(ind.indicator_id),
-    code: `${index + 1}`, // We don't have code in the API, use index
+    code: ind.indicator_code || `IND-${ind.indicator_id}`,
     name: ind.indicator_name,
     failedCount: ind.failure_count,
     totalBarangays: apiData.total_barangays,
     percentage: ind.percentage,
-    governanceArea: '', // Not available in current API response
+    governanceArea: ind.governance_area || "",
   }));
 
   // Transform area breakdown
-  const areaBreakdown = (apiData.area_breakdown || []).map(area => ({
+  const areaBreakdown = (apiData.area_breakdown || []).map((area) => ({
     areaCode: area.area_code,
     areaName: area.area_name,
     passed: area.passed,
@@ -141,15 +134,36 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
   // Transform BBI analytics (pass through as-is since it matches our interface)
   const bbiAnalytics = apiData.bbi_analytics || undefined;
 
+  // Transform top rework reasons (pass through as-is since it matches our interface)
+  const topReworkReasons = apiData.top_rework_reasons || undefined;
+
+  // NEW: Calculate enhanced KPI values
+  const awaitingAssessorReview = getStatusCount("Submitted") + getStatusCount("In Review");
+  const awaitingFinalValidation = getStatusCount("Awaiting Validation");
+  const awaitingMLGOOApproval = getStatusCount("Awaiting MLGOO Approval");
+  const completed = getStatusCount("Completed");
+  const passedCount = apiData.overall_compliance_rate?.passed || 0;
+  const failedCount = apiData.overall_compliance_rate?.failed || 0;
+  const passRate = apiData.overall_compliance_rate?.pass_percentage || 0;
+
   return {
     kpiData: {
       barangaySubmissions: {
         current: submitted,
-        total: apiData.total_barangays
+        total: apiData.total_barangays,
       },
-      awaitingReview: getStatusCount('Submitted') + getStatusCount('In Review'),
-      inRework: getStatusCount('In Rework'),
-      validatedReady: getStatusCount('Awaiting Validation') + getStatusCount('Awaiting MLGOO Approval'),
+      awaitingReview: awaitingAssessorReview,
+      inRework: getStatusCount("In Rework"),
+      validatedReady: awaitingFinalValidation + awaitingMLGOOApproval,
+      // NEW: Enhanced KPI data
+      awaitingAssessorReview,
+      awaitingFinalValidation,
+      awaitingMLGOOApproval,
+      completed,
+      notStarted,
+      passedCount,
+      failedCount,
+      passRate,
     },
     municipalProgress,
     failedIndicators,
@@ -161,9 +175,10 @@ function transformDashboardData(apiData: DashboardKPIResponse): AdminDashboardDa
       assessmentsWithCalibration: reworkStats.assessments_with_calibration,
       calibrationRate: reworkStats.calibration_rate,
     },
+    topReworkReasons,
     bbiAnalytics,
-    municipality: 'Municipality of Sulop', // Could be fetched from user context
-    performanceYear: '2023',
+    municipality: "Municipality of Sulop", // Could be fetched from user context
+    performanceYear: "2023",
     assessmentYear: new Date().getFullYear().toString(),
     totalBarangays: apiData.total_barangays,
   };

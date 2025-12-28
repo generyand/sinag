@@ -40,15 +40,13 @@ export function HeroSection() {
       </div>
 
       <div className="max-w-7xl mx-auto w-full py-8 md:py-12 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-28 xl:gap-32 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 xl:gap-20 items-center">
           {/* Left Column - Content */}
           <div className="space-y-8 lg:pr-8 xl:pr-12">
             {/* Trust Badge */}
             <div
               className={`inline-flex items-center gap-2 bg-[#1A3A6D]/5 text-[#1A3A6D] px-4 py-2 rounded-full text-sm font-medium transition-all duration-700 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -59,38 +57,28 @@ export function HeroSection() {
             <div>
               <h1
                 className={`text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-black mb-4 transition-all duration-1000 delay-200 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-8"
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
               >
+                <span className="whitespace-nowrap block leading-tight">Empowering Barangays</span>
                 <span className="whitespace-nowrap block leading-tight">
-                  Empowering Barangays
-                </span>
-                <span className="whitespace-nowrap block leading-tight">
-                  for SGLGB{" "}
-                  <span className="text-[#fbbf24] animate-pulse">Success</span>
+                  for SGLGB <span className="text-[#fbbf24] animate-pulse">Success</span>
                 </span>
               </h1>
               <p
                 className={`text-lg text-gray-600 max-w-2xl transition-all duration-1000 delay-400 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-4"
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}
               >
-                The official pre-assessment and analytics web application for
-                the SGLGB. A guided, transparent, and efficient digital workflow
-                for the Barangays of Sulop.
+                The official assessment and analytics web application for the Barangays of Sulop. A
+                guided, transparent, and efficient digital workflow for the SGLGB.
               </p>
             </div>
 
             {/* Feature Pills Grid */}
             <ul
               className={`space-y-3 transition-all duration-1000 delay-600 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
             >
               <li className="flex items-start gap-3 group">
@@ -122,17 +110,13 @@ export function HeroSection() {
             {/* CTA Buttons */}
             <div
               className={`flex flex-col sm:flex-row gap-4 transition-all duration-1000 delay-800 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
             >
               <Button
                 onClick={handleCTAClick}
                 className={`group bg-[#fbbf24] text-black hover:bg-[#fbbf24]/90 transition-all duration-300 font-medium px-8 py-4 text-lg rounded-lg border-0 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
-                  showDemo
-                    ? "animate-pulse bg-green-500 hover:bg-green-600"
-                    : ""
+                  showDemo ? "animate-pulse bg-green-500 hover:bg-green-600" : ""
                 }`}
               >
                 {showDemo ? (
@@ -166,67 +150,62 @@ export function HeroSection() {
 
           {/* Right Column - Visual */}
           <div
-            className={`relative lg:pl-8 xl:pl-12 transition-all duration-1000 delay-1000 ${
-              isVisible
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-8"
+            className={`relative transition-all duration-1000 delay-1000 py-8 lg:py-0 flex justify-center ${
+              isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
             }`}
           >
-            {/* Main Monitor Visual */}
-            <div className="relative transform rotate-2 lg:scale-[1.15] xl:scale-[1.2] origin-center rounded-2xl overflow-hidden shadow-2xl border border-[#fbbf24] bg-[#fbbf24] p-2 hover:scale-[1.18] transition-transform duration-500">
-              <Image
-                src="/Scenery/Sulop_Hall.png"
-                alt="Sulop Municipal Hall"
-                width={1000}
-                height={750}
-                className="w-full h-auto rounded-lg border border-[#fbbf24]"
-              />
-            </div>
+            {/* Image wrapper for positioning badges */}
+            <div className="relative w-[85%] md:w-[70%] lg:w-full max-w-[500px] lg:max-w-none">
+              {/* Main Monitor Visual */}
+              <div className="relative transform rotate-1 md:rotate-2 origin-center rounded-2xl overflow-hidden shadow-2xl border border-[#fbbf24] bg-[#fbbf24] p-1.5 md:p-2 hover:scale-[1.02] transition-transform duration-500">
+                <Image
+                  src="/Scenery/Sulop_Hall.png"
+                  alt="Sulop Municipal Hall"
+                  width={1000}
+                  height={750}
+                  className="w-full h-auto rounded-lg border border-[#fbbf24]"
+                />
+              </div>
 
-            {/* Floating Data Cards - Spread Positioning with enhanced animations */}
-            {/* Top Left Badge */}
-            <div
-              className={`absolute -top-14 -left-8 md:-top-16 md:-left-10 bg-white/95 rounded-full shadow-lg border border-gray-100 px-4 py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-4"
-              }`}
-              style={{ animationDelay: "1.2s" }}
-            >
-              <CheckCircle2 className="w-4 h-4 text-green-600 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
-                Validated Submission
-              </span>
-            </div>
+              {/* Floating Data Cards - Outside image container */}
+              {/* Top Left Badge */}
+              <div
+                className={`absolute -top-2 left-0 md:-top-4 md:-left-2 lg:-top-4 lg:-left-4 bg-white/95 rounded-full shadow-lg border border-gray-100 px-2 py-1 md:px-3 md:py-1.5 flex items-center gap-1.5 w-max transform rotate-2 hover:-translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+                }`}
+                style={{ animationDelay: "1.2s" }}
+              >
+                <CheckCircle2 className="w-3 h-3 text-green-600 animate-pulse" />
+                <span className="text-[10px] md:text-xs font-semibold text-gray-800">
+                  Validated
+                </span>
+              </div>
 
-            {/* Top Right Badge */}
-            <div
-              className={`absolute -top-6 -right-6 md:-top-8 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-4 py-2 flex items-center gap-2 w-max transform rotate-2 hover:-translate-x-1 hover:scale-105 transition-all duration-300 animate-float-slow ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 -translate-y-4"
-              }`}
-              style={{ animationDelay: "1.4s" }}
-            >
-              <Users className="w-4 h-4 text-blue-600 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
-                25 Barangays Connected
-              </span>
-            </div>
+              {/* Top Right Badge */}
+              <div
+                className={`absolute -top-2 right-0 md:-top-4 md:-right-2 lg:-top-4 lg:-right-4 bg-white/95 rounded-full shadow-lg border border-gray-100 px-2 py-1 md:px-3 md:py-1.5 flex items-center gap-1.5 w-max transform -rotate-2 hover:-translate-x-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+                }`}
+                style={{ animationDelay: "1.4s" }}
+              >
+                <Users className="w-3 h-3 text-blue-600 animate-pulse" />
+                <span className="text-[10px] md:text-xs font-semibold text-gray-800">
+                  25 Barangays
+                </span>
+              </div>
 
-            {/* Bottom Right Badge */}
-            <div
-              className={`absolute -bottom-8 -right-6 md:-bottom-10 md:-right-8 bg-white/95 rounded-full shadow-lg border border-gray-100 px-4 py-2 flex items-center gap-2 w-max transform rotate-2 hover:translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
-              }`}
-              style={{ animationDelay: "1.6s" }}
-            >
-              <BarChart3 className="w-4 h-4 text-purple-600 animate-pulse" />
-              <span className="text-sm font-semibold text-gray-800">
-                95% Compliance Rate
-              </span>
+              {/* Bottom Right Badge */}
+              <div
+                className={`absolute -bottom-2 right-0 md:-bottom-4 md:-right-2 lg:-bottom-4 lg:-right-4 bg-white/95 rounded-full shadow-lg border border-gray-100 px-2 py-1 md:px-3 md:py-1.5 flex items-center gap-1.5 w-max transform rotate-2 hover:translate-y-1 hover:scale-105 transition-all duration-300 animate-float-slow z-20 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}
+                style={{ animationDelay: "1.6s" }}
+              >
+                <BarChart3 className="w-3 h-3 text-purple-600 animate-pulse" />
+                <span className="text-[10px] md:text-xs font-semibold text-gray-800">
+                  95% Pass Rate
+                </span>
+              </div>
             </div>
           </div>
         </div>

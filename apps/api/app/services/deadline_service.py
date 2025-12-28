@@ -18,6 +18,17 @@ from app.db.models.user import User
 from app.workers.notifications import send_deadline_extension_notification
 
 
+def _resolve_indicator_name(db: Session, name: str) -> str:
+    """Helper to resolve year placeholders in indicator name."""
+    from app.core.year_resolver import get_year_resolver
+
+    try:
+        year_resolver = get_year_resolver(db)
+        return year_resolver.resolve_string(name) or name
+    except ValueError:
+        return name
+
+
 class DeadlineStatusType(str, Enum):
     """Status of a barangay's submission relative to deadline."""
 
@@ -590,12 +601,15 @@ class DeadlineService:
             # Calculate extension duration
             extension_days = (override.new_deadline - override.original_deadline).days
 
+            # Resolve year placeholders in indicator name
+            indicator_name = _resolve_indicator_name(db, override.indicator.name)
+
             writer.writerow(
                 [
                     override.id,
                     override.cycle.name,
                     override.barangay.name,
-                    override.indicator.name,
+                    indicator_name,
                     override.original_deadline.strftime("%Y-%m-%d %H:%M:%S UTC"),
                     override.new_deadline.strftime("%Y-%m-%d %H:%M:%S UTC"),
                     extension_days,

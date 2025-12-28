@@ -1,33 +1,36 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { classifyError } from "@/lib/error-utils";
 import { Assessment, AssessmentValidation } from "@/types/assessment";
 import {
-    usePostAssessmentsAssessmentIdSubmit,
-    usePostAssessmentsAssessmentIdResubmit,
-    usePostAssessmentsAssessmentIdSubmitForCalibration,
+  usePostAssessmentsAssessmentIdResubmit,
+  usePostAssessmentsAssessmentIdSubmit,
+  usePostAssessmentsAssessmentIdSubmitForCalibration,
 } from "@sinag/shared";
-import { classifyError } from "@/lib/error-utils";
-import {
-    AlertCircle,
-    CheckCircle,
-    Clock,
-    Info,
-    Send
-} from "lucide-react";
+import { AlertCircle, CheckCircle, CheckCircle2, Clock, Info, Loader2, Send } from "lucide-react";
 
 interface AssessmentHeaderProps {
   assessment: Assessment;
   validation: AssessmentValidation;
   isCalibrationRework?: boolean;
   calibrationGovernanceAreaName?: string;
+  calibrationGovernanceAreaNames?: string[]; // Support multiple areas
+  reworkSubmittedAt?: string | null; // When BLGU already resubmitted after rework
+  calibrationSubmittedAt?: string | null; // When BLGU already resubmitted after calibration
 }
 
 export function AssessmentHeader({
@@ -35,8 +38,19 @@ export function AssessmentHeader({
   validation,
   isCalibrationRework = false,
   calibrationGovernanceAreaName,
+  calibrationGovernanceAreaNames = [],
+  reworkSubmittedAt,
+  calibrationSubmittedAt,
 }: AssessmentHeaderProps) {
+  // Combine legacy single name with new multiple names array
+  const allCalibrationAreaNames =
+    calibrationGovernanceAreaNames.length > 0
+      ? calibrationGovernanceAreaNames
+      : calibrationGovernanceAreaName
+        ? [calibrationGovernanceAreaName]
+        : [];
   const { toast } = useToast();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Use Epic 5.0 submit endpoint (POST /assessments/{id}/submit)
   const submitMutation = usePostAssessmentsAssessmentIdSubmit({
@@ -162,8 +176,20 @@ export function AssessmentHeader({
     },
   });
 
-  const isReworkStatus = assessment.status.toLowerCase() === "rework" ||
-                         assessment.status.toLowerCase() === "needs-rework";
+  const isReworkStatus =
+    assessment.status.toLowerCase() === "rework" ||
+    assessment.status.toLowerCase() === "needs-rework";
+
+  // Check if already resubmitted (button should be locked)
+  const hasAlreadyResubmitted = isCalibrationRework
+    ? !!calibrationSubmittedAt
+    : !!reworkSubmittedAt;
+
+  // Check if assessment is in an editable state (can be submitted)
+  const isEditableStatus =
+    assessment.status.toLowerCase() === "draft" ||
+    assessment.status.toLowerCase() === "rework" ||
+    assessment.status.toLowerCase() === "needs-rework";
 
   const getStatusIcon = () => {
     switch (assessment.status.toLowerCase()) {
@@ -213,13 +239,11 @@ export function AssessmentHeader({
     if (validation.missingIndicators.length > 0) {
       return (
         <div>
-          <p className="font-medium mb-2">Missing indicator responses:</p>
+          <p className="font-medium mb-2">Incomplete indicators:</p>
           <ul className="text-sm space-y-1">
-            {validation.missingIndicators
-              .slice(0, 3)
-              .map((indicator, index) => (
-                <li key={index}>• {indicator}</li>
-              ))}
+            {validation.missingIndicators.slice(0, 3).map((indicator, index) => (
+              <li key={index}>• {indicator}</li>
+            ))}
             {validation.missingIndicators.length > 3 && (
               <li>• ... and {validation.missingIndicators.length - 3} more</li>
             )}
@@ -228,23 +252,7 @@ export function AssessmentHeader({
       );
     }
 
-    if (validation.missingMOVs.length > 0) {
-      return (
-        <div>
-          <p className="font-medium mb-2">Missing MOV files:</p>
-          <ul className="text-sm space-y-1">
-            {validation.missingMOVs.slice(0, 3).map((indicator, index) => (
-              <li key={index}>• {indicator}</li>
-            ))}
-            {validation.missingMOVs.length > 3 && (
-              <li>• ... and {validation.missingMOVs.length - 3} more</li>
-            )}
-          </ul>
-        </div>
-      );
-    }
-
-    return "Please complete all indicators and upload required MOVs before submitting.";
+    return "Please complete all indicators before submitting.";
   };
 
   const progressPercentage = Math.round(
@@ -292,17 +300,28 @@ export function AssessmentHeader({
 
       <div className="relative z-10 max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Calibration Notice Banner */}
-        {isCalibrationRework && calibrationGovernanceAreaName && (
+        {isCalibrationRework && allCalibrationAreaNames.length > 0 && (
           <div className="mb-8 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg shadow-sm">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-orange-800 dark:text-orange-300">
-                  Calibration Required - {calibrationGovernanceAreaName}
+                  Calibration Required - {allCalibrationAreaNames.join(", ")}
                 </h3>
                 <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
-                  The Validator has requested calibration for indicators in <strong>{calibrationGovernanceAreaName}</strong>.
-                  Please review and update the affected indicators, then submit for calibration review.
+                  {allCalibrationAreaNames.length > 1 ? (
+                    <>
+                      Validators have requested calibration for indicators in{" "}
+                      <strong>{allCalibrationAreaNames.join(", ")}</strong>.
+                    </>
+                  ) : (
+                    <>
+                      The Validator has requested calibration for indicators in{" "}
+                      <strong>{allCalibrationAreaNames[0]}</strong>.
+                    </>
+                  )}{" "}
+                  Please review and update the affected indicators, then submit for calibration
+                  review.
                 </p>
               </div>
             </div>
@@ -314,7 +333,9 @@ export function AssessmentHeader({
           <div className="space-y-6 max-w-3xl">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium ${statusConfig.badgeClass}`}>
+                <div
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium ${statusConfig.badgeClass}`}
+                >
                   <span className={statusConfig.iconColor}>{getStatusIcon()}</span>
                   {getStatusText()}
                 </div>
@@ -322,7 +343,7 @@ export function AssessmentHeader({
                   • {new Date(assessment.createdAt).getFullYear()} Assessment
                 </span>
               </div>
-              
+
               <h1 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] tracking-tight leading-tight">
                 SGLGB Pre-Assessment for{" "}
                 <span className="text-[var(--cityscape-yellow-dark)]">
@@ -342,15 +363,17 @@ export function AssessmentHeader({
               <div className="text-center">
                 <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums">
                   {assessment.completedIndicators}
-                  <span className="text-lg text-[var(--text-secondary)] font-medium">/{assessment.totalIndicators}</span>
+                  <span className="text-lg text-[var(--text-secondary)] font-medium">
+                    /{assessment.totalIndicators}
+                  </span>
                 </div>
                 <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mt-1">
                   Indicators
                 </div>
               </div>
-              
+
               <div className="w-px h-12 bg-[var(--border)]"></div>
-              
+
               <div className="text-center">
                 <div className="text-3xl font-bold text-[var(--cityscape-yellow-dark)] tabular-nums">
                   {progressPercentage}%
@@ -361,61 +384,63 @@ export function AssessmentHeader({
               </div>
             </div>
 
-            {/* Submit Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => {
-                      if (isReworkStatus) {
-                        if (isCalibrationRework) {
-                          calibrationMutation.mutate({
-                            assessmentId: parseInt(assessment.id),
-                          });
-                        } else {
-                          resubmitMutation.mutate({
-                            assessmentId: parseInt(assessment.id),
-                          });
-                        }
-                      } else {
-                        submitMutation.mutate({
-                          assessmentId: parseInt(assessment.id),
-                        });
-                      }
-                    }}
-                    disabled={
-                      !validation.canSubmit ||
-                      submitMutation.isPending ||
-                      resubmitMutation.isPending ||
-                      calibrationMutation.isPending
-                    }
-                    className="h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-                  >
-                    {submitMutation.isPending || resubmitMutation.isPending || calibrationMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-3" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-5 w-5 mr-3" />
-                        {isReworkStatus
-                          ? (isCalibrationRework ? "Submit Calibration" : "Resubmit")
-                          : "Submit Assessment"}
-                      </>
+            {/* Submit Button - Only show when assessment is in editable state */}
+            {isEditableStatus ? (
+              hasAlreadyResubmitted ? (
+                // Show "Already Resubmitted" message when BLGU has already resubmitted
+                <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
+                  <CheckCircle className="h-5 w-5 mr-3" />
+                  {isCalibrationRework ? "Calibration Submitted" : "Resubmitted"}
+                </div>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-block">
+                        <Button
+                          onClick={() => setShowConfirmDialog(true)}
+                          disabled={
+                            !validation.isComplete ||
+                            submitMutation.isPending ||
+                            resubmitMutation.isPending ||
+                            calibrationMutation.isPending
+                          }
+                          className="h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        >
+                          {submitMutation.isPending ||
+                          resubmitMutation.isPending ||
+                          calibrationMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-5 w-5 mr-3" />
+                              {isReworkStatus
+                                ? isCalibrationRework
+                                  ? "Submit Calibration"
+                                  : "Resubmit"
+                                : "Submit Assessment"}
+                            </>
+                          )}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!validation.isComplete && (
+                      <TooltipContent side="bottom" className="max-w-xs">
+                        {getTooltipContent()}
+                      </TooltipContent>
                     )}
-                  </Button>
-                </TooltipTrigger>
-                {!validation.canSubmit && (
-                  <TooltipContent
-                    side="bottom"
-                    className="max-w-sm bg-[var(--card)]/95 backdrop-blur-sm border border-[var(--border)] shadow-xl p-4"
-                  >
-                    {getTooltipContent()}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+                  </Tooltip>
+                </TooltipProvider>
+              )
+            ) : (
+              <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
+                <CheckCircle className="h-5 w-5 mr-3" />
+                Submitted
+              </div>
+            )}
           </div>
         </div>
 
@@ -431,20 +456,103 @@ export function AssessmentHeader({
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
-          
+
           {/* Validation Info */}
-          {!validation.canSubmit &&
-            (validation.missingIndicators.length > 0 ||
-              validation.missingMOVs.length > 0) && (
-              <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
-                <Info className="h-5 w-5 flex-shrink-0" />
-                <span>
-                  You have {validation.missingIndicators.length} missing responses and {validation.missingMOVs.length} missing required files.
-                </span>
-              </div>
-            )}
+          {!validation.isComplete && validation.missingIndicators.length > 0 && (
+            <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
+              <Info className="h-5 w-5 flex-shrink-0" />
+              <span>You have {validation.missingIndicators.length} incomplete indicators.</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              {isReworkStatus
+                ? isCalibrationRework
+                  ? "Submit Calibration?"
+                  : "Resubmit Assessment?"
+                : "Submit Assessment for Review?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Are you sure you want to submit this assessment? Once submitted:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>Your assessment will be locked for editing</li>
+                  <li>An assessor will review your submission</li>
+                  <li>
+                    You will only be able to edit if the assessor requests rework (one rework cycle
+                    allowed)
+                  </li>
+                </ul>
+                <div className="flex items-start gap-2 p-3 bg-muted rounded-md mt-3">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    Please ensure all information is accurate before submitting.
+                  </span>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={
+                submitMutation.isPending ||
+                resubmitMutation.isPending ||
+                calibrationMutation.isPending
+              }
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (isReworkStatus) {
+                  if (isCalibrationRework) {
+                    calibrationMutation.mutate({
+                      assessmentId: parseInt(assessment.id),
+                    });
+                  } else {
+                    resubmitMutation.mutate({
+                      assessmentId: parseInt(assessment.id),
+                    });
+                  }
+                } else {
+                  submitMutation.mutate({
+                    assessmentId: parseInt(assessment.id),
+                  });
+                }
+              }}
+              disabled={
+                submitMutation.isPending ||
+                resubmitMutation.isPending ||
+                calibrationMutation.isPending
+              }
+              className="bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] font-semibold shadow-md hover:shadow-lg"
+            >
+              {submitMutation.isPending ||
+              resubmitMutation.isPending ||
+              calibrationMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Confirm Submit
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

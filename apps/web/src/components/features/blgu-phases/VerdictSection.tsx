@@ -30,6 +30,17 @@ import {
 import { ReworkIndicatorsPanel, AISummaryPanel } from "@/components/features/rework";
 import { ResubmitAssessmentButton } from "@/components/features/assessments";
 import { AISummary } from "@sinag/shared";
+import Image from "next/image";
+
+// Governance Area logo mapping
+const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
+  "Financial Administration and Sustainability": "/Assessment_Areas/financialAdmin.webp",
+  "Disaster Preparedness": "/Assessment_Areas/disasterPreparedness.webp",
+  "Safety, Peace and Order": "/Assessment_Areas/safetyPeaceAndOrder.webp",
+  "Social Protection and Sensitivity": "/Assessment_Areas/socialProtectAndSensitivity.webp",
+  "Business-Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.webp",
+  "Environmental Management": "/Assessment_Areas/environmentalManagement.webp",
+};
 
 interface VerdictSectionProps {
   dashboardData: BLGUDashboardResponse;
@@ -59,10 +70,7 @@ function getVerdictStatus(
   }
 
   // MLGOO RE-calibration: Show recalibration state (this is the active phase)
-  if (
-    isMlgooRecalibration &&
-    (status === "REWORK" || status === "NEEDS_REWORK")
-  ) {
+  if (isMlgooRecalibration && (status === "REWORK" || status === "NEEDS_REWORK")) {
     return {
       phaseStatus: "calibration",
       statusLabel: "RE-Calibration Requested",
@@ -76,7 +84,8 @@ function getVerdictStatus(
       phaseStatus: "pending",
       statusLabel: "Awaiting MLGOO Approval",
       isActive: false,
-      pendingMessage: "Your assessment has been validated and is now awaiting final approval from the MLGOO Chairman.",
+      pendingMessage:
+        "Your assessment has been validated and is now awaiting final approval from the MLGOO Chairman.",
     };
   }
 
@@ -84,7 +93,8 @@ function getVerdictStatus(
     phaseStatus: "pending",
     statusLabel: "Pending",
     isActive: false,
-    pendingMessage: "Your SGLGB classification result will be available after the table validation is completed by the DILG validator team.",
+    pendingMessage:
+      "Your SGLGB classification result will be available after the table validation is completed by the DILG validator team.",
   };
 }
 
@@ -92,7 +102,7 @@ function getVerdictStatus(
 interface AreaResult {
   area_id: number;
   area_name: string;
-  area_type: "Core" | "Essential";
+  area_type: "Core" | "Essential" | "CORE" | "ESSENTIAL" | string;
   passed: boolean;
   total_indicators: number;
   passed_indicators: number;
@@ -157,8 +167,8 @@ export function VerdictSection({
                     MLGOO RE-Calibration Requested
                   </h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    The MLGOO Chairman has requested re-calibration for specific indicators.
-                    Please review the feedback below and make the necessary corrections.
+                    The MLGOO Chairman has requested re-calibration for specific indicators. Please
+                    review the feedback below and make the necessary corrections.
                   </p>
                   {mlgooRecalibrationComments && (
                     <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
@@ -219,9 +229,7 @@ export function VerdictSection({
                 ? "Awaiting MLGOO Approval"
                 : "SGLGB Result Pending"}
             </h3>
-            <p className="text-[var(--text-secondary)] max-w-md mx-auto">
-              {pendingMessage}
-            </p>
+            <p className="text-[var(--text-secondary)] max-w-md mx-auto">{pendingMessage}</p>
             <div className="mt-6 flex justify-center gap-4">
               <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <div className="w-3 h-3 rounded-full bg-green-500" />
@@ -243,7 +251,7 @@ export function VerdictSection({
               className={`rounded-lg p-6 text-center ${
                 isPassed
                   ? "bg-green-100 dark:bg-green-900/30 border-2 border-green-500"
-                  : "bg-red-100 dark:bg-red-900/30 border-2 border-red-500"
+                  : "bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400"
               }`}
             >
               <div className="flex justify-center mb-4">
@@ -252,8 +260,8 @@ export function VerdictSection({
                     <Award className="w-10 h-10 text-white" />
                   </div>
                 ) : (
-                  <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center">
-                    <XCircle className="w-10 h-10 text-white" />
+                  <div className="w-20 h-20 bg-amber-400 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-10 h-10 text-white" />
                   </div>
                 )}
               </div>
@@ -261,78 +269,178 @@ export function VerdictSection({
                 className={`text-2xl font-bold mb-2 ${
                   isPassed
                     ? "text-green-800 dark:text-green-200"
-                    : "text-red-800 dark:text-red-200"
+                    : "text-amber-800 dark:text-amber-200"
                 }`}
               >
-                {isPassed
-                  ? "Congratulations! SGLGB Passed"
-                  : "SGLGB Not Achieved"}
+                {isPassed ? "Congratulations! SGLGB Achieved" : "SGLGB Not Yet Achieved"}
               </h2>
               <p
-                className={`text-sm ${
+                className={`text-sm max-w-lg mx-auto ${
                   isPassed
                     ? "text-green-700 dark:text-green-300"
-                    : "text-red-700 dark:text-red-300"
+                    : "text-amber-700 dark:text-amber-300"
                 }`}
               >
                 {isPassed
                   ? "Your barangay has successfully met the requirements for the Seal of Good Local Governance for Barangays."
-                  : "Your barangay did not meet all requirements. Review the area results below and the recommendations to improve."}
+                  : "Your barangay showed strong effort this cycle. Review the results below and use the recommendations to prepare for the next assessment period."}
               </p>
             </div>
 
-            {/* Area Results Breakdown */}
+            {/* Area Results Breakdown - 3+1 Rule Layout */}
             {areaResults.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
                   Governance Area Results
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {areaResults.map((area) => (
-                    <div
-                      key={area.area_id}
-                      className={`rounded-lg border p-4 ${
-                        area.passed
-                          ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-                          : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
+
+                {/* 3+1 Rule Explanation */}
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>3+1 Rule:</strong> To achieve SGLGB, a barangay must pass{" "}
+                    <span className="font-semibold">all 3 CORE areas</span> and{" "}
+                    <span className="font-semibold">at least 1 ESSENTIAL area</span>.
+                  </p>
+                </div>
+
+                {/* CORE Areas Section */}
+                {(() => {
+                  const coreAreas = areaResults.filter(
+                    (a) => a.area_type?.toLowerCase() === "core"
+                  );
+                  const corePassedCount = coreAreas.filter((a) => a.passed).length;
+                  const allCorePassed = corePassedCount === 3;
+
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            CORE
+                          </span>
+                          <span className="text-sm font-medium text-[var(--foreground)]">
+                            All 3 must pass
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
                           <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded ${
-                              area.area_type === "Core"
-                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                            className={`text-sm font-medium ${allCorePassed ? "text-green-600" : "text-red-600"}`}
+                          >
+                            {corePassedCount}/3 passed
+                          </span>
+                          {allCorePassed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-600" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {coreAreas.map((area) => (
+                          <div
+                            key={area.area_id}
+                            className={`rounded-lg border p-3 h-[72px] flex items-center ${
+                              area.passed
+                                ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                                : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
                             }`}
                           >
-                            {area.area_type}
-                          </span>
-                          <h4 className="font-medium text-[var(--foreground)] mt-1">
-                            {area.area_name}
-                          </h4>
-                        </div>
-                        {area.passed ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-600" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="text-green-600 dark:text-green-400">
-                          {area.passed_indicators} passed
-                        </span>
-                        <span className="text-red-600 dark:text-red-400">
-                          {area.failed_indicators} failed
-                        </span>
-                        <span className="text-[var(--text-secondary)]">
-                          / {area.total_indicators} total
-                        </span>
+                            {/* Logo */}
+                            {GOVERNANCE_AREA_LOGOS[area.area_name] && (
+                              <Image
+                                src={GOVERNANCE_AREA_LOGOS[area.area_name]}
+                                alt={area.area_name}
+                                width={44}
+                                height={44}
+                                className="rounded-md flex-shrink-0"
+                              />
+                            )}
+                            {/* Area Name */}
+                            <h4 className="flex-1 font-medium text-[var(--foreground)] text-sm leading-tight px-3">
+                              {area.area_name}
+                            </h4>
+                            {/* Status Icon */}
+                            {area.passed ? (
+                              <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
+
+                {/* ESSENTIAL Areas Section */}
+                {(() => {
+                  const essentialAreas = areaResults.filter(
+                    (a) => a.area_type?.toLowerCase() === "essential"
+                  );
+                  const essentialPassedCount = essentialAreas.filter((a) => a.passed).length;
+                  const atLeastOnePassed = essentialPassedCount >= 1;
+
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold px-2 py-1 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                            ESSENTIAL
+                          </span>
+                          <span className="text-sm font-medium text-[var(--foreground)]">
+                            At least 1 must pass
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-sm font-medium ${atLeastOnePassed ? "text-green-600" : "text-red-600"}`}
+                          >
+                            {essentialPassedCount}/{essentialAreas.length} passed
+                          </span>
+                          {atLeastOnePassed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-600" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {essentialAreas.map((area) => (
+                          <div
+                            key={area.area_id}
+                            className={`rounded-lg border p-3 h-[72px] flex items-center ${
+                              area.passed
+                                ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                                : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+                            }`}
+                          >
+                            {/* Logo */}
+                            {GOVERNANCE_AREA_LOGOS[area.area_name] && (
+                              <Image
+                                src={GOVERNANCE_AREA_LOGOS[area.area_name]}
+                                alt={area.area_name}
+                                width={44}
+                                height={44}
+                                className="rounded-md flex-shrink-0"
+                              />
+                            )}
+                            {/* Area Name */}
+                            <h4 className="flex-1 font-medium text-[var(--foreground)] text-sm leading-tight px-3">
+                              {area.area_name}
+                            </h4>
+                            {/* Status Icon */}
+                            {area.passed ? (
+                              <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -361,8 +469,8 @@ export function VerdictSection({
                             rec.priority === "high"
                               ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                               : rec.priority === "medium"
-                              ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
                           }`}
                         >
                           {rec.priority} priority

@@ -12,6 +12,9 @@ import type { IndicatorDetailItemAssessorRemarks } from '../assessor';
 import type { MOVFileItem } from '../movs';
 import type { IndicatorHistoryResponseArchivedByUser } from '../users';
 import type { GovernanceAreaNested } from '../common';
+import type { ReviewHistoryIndicatorAssessorRemarks } from '../assessor';
+import type { ReviewHistoryFeedbackComment } from '../common';
+import type { ValidationStatus } from '../error';
 import type { ChecklistItemResponse } from '../system';
 
 /**
@@ -108,6 +111,12 @@ export type AppSchemasBlguDashboardSubIndicatorResultValidationRule = string | n
 
 
 /**
+ * BBIInfoIndicatorCode
+ */
+export type BBIInfoIndicatorCode = string | null;
+
+
+/**
  * BBIResultResponseIndicatorId
  */
 export type BBIResultResponseIndicatorId = number | null;
@@ -172,15 +181,31 @@ export interface FailedIndicator {
   indicator_id: number;
   /** Name of the indicator */
   indicator_name: string;
+  /** Indicator code (e.g., '1.1.1') */
+  indicator_code?: FailedIndicatorIndicatorCode;
+  /** Governance area name */
+  governance_area?: FailedIndicatorGovernanceArea;
   /** Number of times this indicator failed */
   failure_count: number;
   /**
-   * Failure rate as percentage
+   * Failure rate as percentage of total barangays
    * @minimum 0
    * @maximum 100
    */
   percentage: number;
 }
+
+
+/**
+ * FailedIndicatorGovernanceArea
+ */
+export type FailedIndicatorGovernanceArea = string | null;
+
+
+/**
+ * FailedIndicatorIndicatorCode
+ */
+export type FailedIndicatorIndicatorCode = string | null;
 
 
 /**
@@ -209,6 +234,12 @@ export interface FailingIndicator {
 
 
 /**
+ * FlaggedMovFileItemIndicatorCode
+ */
+export type FlaggedMovFileItemIndicatorCode = string | null;
+
+
+/**
  * GARIndicator
  */
 export interface GARIndicator {
@@ -226,6 +257,8 @@ export interface GARIndicator {
   is_header?: boolean;
   /** Indentation level for display (0=root, 1=sub, 2=sub-sub) */
   indent_level?: number;
+  /** True if this indicator is for profiling purposes only (doesn't affect pass/fail) */
+  is_profiling_only?: boolean;
 }
 
 
@@ -233,6 +266,39 @@ export interface GARIndicator {
  * GARIndicatorValidationStatus
  */
 export type GARIndicatorValidationStatus = string | null;
+
+
+/**
+ * GetIndicatorsCodeIndicatorCodeParams
+ */
+export type GetIndicatorsCodeIndicatorCodeParams = {
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
+};
+
+
+/**
+ * GetIndicatorsCodeIndicatorCodeTreeParams
+ */
+export type GetIndicatorsCodeIndicatorCodeTreeParams = {
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
+};
+
+
+/**
+ * GetIndicatorsIndicatorIdParams
+ */
+export type GetIndicatorsIndicatorIdParams = {
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
+};
 
 
 /**
@@ -258,6 +324,10 @@ skip?: number;
  * @maximum 1000
  */
 limit?: number;
+/**
+ * Assessment year for placeholder resolution
+ */
+year?: number | null;
 };
 
 
@@ -290,6 +360,33 @@ limit?: number;
  */
 year?: number | null;
 };
+
+
+/**
+ * GovernanceAreaIndicator
+ */
+export interface GovernanceAreaIndicator {
+  /** Short code for the indicator (e.g., 'FAS', 'DP') */
+  code: string;
+  /** Full name of the governance area */
+  name: string;
+  /** Status of this governance area */
+  status: GovernanceAreaIndicatorStatus;
+}
+
+
+/**
+ * GovernanceAreaIndicatorStatus
+ */
+export type GovernanceAreaIndicatorStatus = typeof GovernanceAreaIndicatorStatus[keyof typeof GovernanceAreaIndicatorStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GovernanceAreaIndicatorStatus = {
+  passed: 'passed',
+  failed: 'failed',
+  pending: 'pending',
+} as const;
 
 
 /**
@@ -776,8 +873,8 @@ export interface IndicatorValidationUpdate {
   /** ID of the indicator to update */
   indicator_id: number;
   /**
-   * New validation status: Pass, Fail, or Conditional
-   * @pattern ^(Pass|Fail|Conditional)$
+   * New validation status: PASS, FAIL, or CONDITIONAL
+   * @pattern ^(PASS|FAIL|CONDITIONAL|Pass|Fail|Conditional)$
    */
   validation_status: string;
   /** Optional remarks for the validation decision */
@@ -789,6 +886,50 @@ export interface IndicatorValidationUpdate {
  * IndicatorValidationUpdateRemarks
  */
 export type IndicatorValidationUpdateRemarks = string | null;
+
+
+/**
+ * OverrideValidationStatusResponseIndicatorCode
+ */
+export type OverrideValidationStatusResponseIndicatorCode = string | null;
+
+
+/**
+ * ParentIndicatorCompliance
+ */
+export interface ParentIndicatorCompliance {
+  indicator_id: number;
+  indicator_code: string;
+  name: string;
+  is_bbi: boolean;
+  sub_indicators_total: number;
+  sub_indicators_passed: number;
+  sub_indicators_failed: number;
+  sub_indicators_pending: number;
+  bbi_functionality_level?: ParentIndicatorComplianceBbiFunctionalityLevel;
+  bbi_abbreviation?: ParentIndicatorComplianceBbiAbbreviation;
+  compliance_status?: ParentIndicatorComplianceComplianceStatus;
+  all_validated: boolean;
+  sub_indicators: SubIndicatorStatus[];
+}
+
+
+/**
+ * ParentIndicatorComplianceBbiAbbreviation
+ */
+export type ParentIndicatorComplianceBbiAbbreviation = string | null;
+
+
+/**
+ * ParentIndicatorComplianceBbiFunctionalityLevel
+ */
+export type ParentIndicatorComplianceBbiFunctionalityLevel = string | null;
+
+
+/**
+ * ParentIndicatorComplianceComplianceStatus
+ */
+export type ParentIndicatorComplianceComplianceStatus = 'MET' | 'UNMET' | null;
 
 
 /**
@@ -807,6 +948,36 @@ export type PostIndicatorsValidateCalculationSchema200 = { [key: string]: unknow
  * PostIndicatorsValidateFormSchema200
  */
 export type PostIndicatorsValidateFormSchema200 = { [key: string]: unknown };
+
+
+/**
+ * ReviewHistoryIndicator
+ */
+export interface ReviewHistoryIndicator {
+  indicator_id: number;
+  indicator_code: string;
+  indicator_name: string;
+  governance_area_name?: ReviewHistoryIndicatorGovernanceAreaName;
+  validation_status?: ReviewHistoryIndicatorValidationStatus;
+  assessor_remarks?: ReviewHistoryIndicatorAssessorRemarks;
+  flagged_for_calibration?: boolean;
+  requires_rework?: boolean;
+  feedback_comments?: ReviewHistoryFeedbackComment[];
+  has_mov_annotations?: boolean;
+  mov_count?: number;
+}
+
+
+/**
+ * ReviewHistoryIndicatorGovernanceAreaName
+ */
+export type ReviewHistoryIndicatorGovernanceAreaName = string | null;
+
+
+/**
+ * ReviewHistoryIndicatorValidationStatus
+ */
+export type ReviewHistoryIndicatorValidationStatus = ValidationStatus | null;
 
 
 /**
@@ -849,6 +1020,39 @@ export type SimplifiedIndicatorResponseGovernanceArea = GovernanceAreaNested | n
  * SimplifiedIndicatorResponseParentId
  */
 export type SimplifiedIndicatorResponseParentId = number | null;
+
+
+/**
+ * SubIndicatorStatus
+ */
+export interface SubIndicatorStatus {
+  indicator_id: number;
+  indicator_code: string;
+  name: string;
+  response_id?: SubIndicatorStatusResponseId;
+  validation_status?: SubIndicatorStatusValidationStatus;
+  recommended_status?: SubIndicatorStatusRecommendedStatus;
+  has_checklist_data?: boolean;
+  has_consideration_rule?: boolean;
+}
+
+
+/**
+ * SubIndicatorStatusRecommendedStatus
+ */
+export type SubIndicatorStatusRecommendedStatus = 'PASS' | 'FAIL' | null;
+
+
+/**
+ * SubIndicatorStatusResponseId
+ */
+export type SubIndicatorStatusResponseId = number | null;
+
+
+/**
+ * SubIndicatorStatusValidationStatus
+ */
+export type SubIndicatorStatusValidationStatus = 'PASS' | 'FAIL' | 'CONDITIONAL' | null;
 
 
 /**
@@ -896,6 +1100,12 @@ export interface TopFailingIndicatorsResponse {
   /** Top 5 indicators with highest failure rates */
   top_failing_indicators: TopFailingIndicator[];
 }
+
+
+/**
+ * TourCompletedUpdateIndicatorForm
+ */
+export type TourCompletedUpdateIndicatorForm = boolean | null;
 
 
 /**

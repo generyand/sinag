@@ -7,11 +7,13 @@ Frontend-specific troubleshooting for Next.js, React, and UI issues.
 ### Login Error: ERR_FAILED 500 / Network Error
 
 **Symptoms**:
+
 - `POST http://localhost:8000/api/v1/auth/login net::ERR_FAILED 500 (Internal Server Error)`
 - `AxiosError: Network Error` in browser console
 - Backend health check (`curl http://localhost:8000/health`) works fine from terminal
 
-**Root Cause**: Mismatch between environment variable and DNS resolution, often related to IPv4 vs IPv6 or incorrect base URL configuration.
+**Root Cause**: Mismatch between environment variable and DNS resolution, often related to IPv4 vs
+IPv6 or incorrect base URL configuration.
 
 **Solution**:
 
@@ -32,11 +34,13 @@ Frontend-specific troubleshooting for Next.js, React, and UI issues.
 3. **Verify in browser console** that requests now go to `http://localhost:8000`
 
 **Alternative**: If `localhost` still doesn't work, use explicit IPv4:
+
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-**Note**: The Docker IPv6 configuration has been disabled to prevent `localhost` resolution issues. Using `localhost` is now preferred over `127.0.0.1`.
+**Note**: The Docker IPv6 configuration has been disabled to prevent `localhost` resolution issues.
+Using `localhost` is now preferred over `127.0.0.1`.
 
 ### Type Generation Failures
 

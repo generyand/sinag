@@ -1,16 +1,21 @@
 # Users API
 
-The Users API provides endpoints for user management, profile updates, and user administration. This API supports creating users, assigning roles with proper governance area and barangay assignments, and managing user accounts throughout the SGLGB assessment lifecycle.
+The Users API provides endpoints for user management, profile updates, and user administration. This
+API supports creating users, assigning roles with proper governance area and barangay assignments,
+and managing user accounts throughout the SGLGB assessment lifecycle.
 
 ## Overview
 
 **Base Path**: `/api/v1/users`
 
-**Authentication**: All endpoints require authentication. Most endpoints require MLGOO_DILG (admin) role unless otherwise specified.
+**Authentication**: All endpoints require authentication. Most endpoints require MLGOO_DILG (admin)
+role unless otherwise specified.
 
-**Role-Based Assignment Rules**: The system enforces strict validation rules for user role assignments based on the six SINAG user roles.
+**Role-Based Assignment Rules**: The system enforces strict validation rules for user role
+assignments based on the six SINAG user roles.
 
-**Type Generation**: After modifying any user endpoint or schema, run `pnpm generate-types` to update frontend types.
+**Type Generation**: After modifying any user endpoint or schema, run `pnpm generate-types` to
+update frontend types.
 
 ---
 
@@ -70,11 +75,13 @@ Get current user information.
 
 **Workflow Stage**: All stages (Profile View)
 
-**Description**: Returns the profile information of the authenticated user, including their role, assignments, and account status.
+**Description**: Returns the profile information of the authenticated user, including their role,
+assignments, and account status.
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 45,
@@ -93,6 +100,7 @@ Get current user information.
 ```
 
 **Errors**:
+
 - `401 Unauthorized`: User not authenticated
 
 ---
@@ -105,9 +113,11 @@ Update current user information.
 
 **Workflow Stage**: All stages (Profile Edit)
 
-**Description**: Allows users to update their own profile information. Users cannot change their own role or admin-controlled fields.
+**Description**: Allows users to update their own profile information. Users cannot change their own
+role or admin-controlled fields.
 
 **Request Body**:
+
 ```json
 {
   "name": "Juan P. Dela Cruz",
@@ -117,6 +127,7 @@ Update current user information.
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 45,
@@ -135,6 +146,7 @@ Update current user information.
 ```
 
 **Errors**:
+
 - `404 Not Found`: User not found
 
 ---
@@ -147,9 +159,11 @@ Get paginated list of users with optional filtering.
 
 **Workflow Stage**: User Management
 
-**Description**: Returns a paginated list of all users in the system with optional search and filtering capabilities. Supports filtering by role, active status, and searching by name/email.
+**Description**: Returns a paginated list of all users in the system with optional search and
+filtering capabilities. Supports filtering by role, active status, and searching by name/email.
 
 **Query Parameters**:
+
 - `page` (integer, optional): Page number (default: 1, min: 1)
 - `size` (integer, optional): Page size (default: 10, min: 1, max: 100)
 - `search` (string, optional): Search in name and email fields
@@ -159,6 +173,7 @@ Get paginated list of users with optional filtering.
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "users": [
@@ -199,6 +214,7 @@ Get paginated list of users with optional filtering.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have MLGOO_DILG role
 
 ---
@@ -211,15 +227,18 @@ Create a new user (Admin only).
 
 **Workflow Stage**: User Management (User Creation)
 
-**Description**: Creates a new user account with role-based field validation. The service layer enforces assignment rules and returns 400 Bad Request for invalid combinations.
+**Description**: Creates a new user account with role-based field validation. The service layer
+enforces assignment rules and returns 400 Bad Request for invalid combinations.
 
 **Role-Based Requirements**:
+
 - **VALIDATOR**: Must provide `validator_area_id` (governance area assignment)
 - **BLGU_USER**: Must provide `barangay_id` (barangay assignment)
 - **ASSESSOR**: No assignments required
 - **MLGOO_DILG**: No assignments required
 
 **Request Body**:
+
 ```json
 {
   "email": "new.validator@dilg.gov.ph",
@@ -235,6 +254,7 @@ Create a new user (Admin only).
 ```
 
 **Response** (201 Created):
+
 ```json
 {
   "id": 51,
@@ -253,6 +273,7 @@ Create a new user (Admin only).
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Invalid role/assignment combination (e.g., VALIDATOR without validator_area_id)
 - `403 Forbidden`: User does not have MLGOO_DILG role
 - `409 Conflict`: Email already exists
@@ -270,11 +291,13 @@ Get user by ID.
 **Description**: Returns detailed information for a specific user by ID.
 
 **Path Parameters**:
+
 - `user_id` (integer, required): The ID of the user to retrieve
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 45,
@@ -293,6 +316,7 @@ Get user by ID.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have MLGOO_DILG role
 - `404 Not Found`: User not found
 
@@ -306,17 +330,22 @@ Update user by ID (Admin only).
 
 **Workflow Stage**: User Management (User Edit)
 
-**Description**: Updates user information with role-based assignment validation. When changing a user's role, the service layer automatically clears incompatible assignments. Returns 400 Bad Request for invalid role/assignment combinations.
+**Description**: Updates user information with role-based assignment validation. When changing a
+user's role, the service layer automatically clears incompatible assignments. Returns 400 Bad
+Request for invalid role/assignment combinations.
 
 **Role Change Behavior**:
+
 - Changing to VALIDATOR: Clears `barangay_id`, requires `validator_area_id`
 - Changing to BLGU_USER: Clears `validator_area_id`, requires `barangay_id`
 - Changing to ASSESSOR or MLGOO_DILG: Clears both `validator_area_id` and `barangay_id`
 
 **Path Parameters**:
+
 - `user_id` (integer, required): The ID of the user to update
 
 **Request Body**:
+
 ```json
 {
   "name": "Juan P. Dela Cruz Jr.",
@@ -329,6 +358,7 @@ Update user by ID (Admin only).
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 45,
@@ -347,6 +377,7 @@ Update user by ID (Admin only).
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Invalid role/assignment combination
 - `403 Forbidden`: User does not have MLGOO_DILG role
 - `404 Not Found`: User not found
@@ -361,14 +392,17 @@ Deactivate user by ID (soft delete).
 
 **Workflow Stage**: User Management (User Deactivation)
 
-**Description**: Soft deletes a user by setting `is_active` to false. The user account is preserved in the database but cannot log in. Admins cannot deactivate their own account.
+**Description**: Soft deletes a user by setting `is_active` to false. The user account is preserved
+in the database but cannot log in. Admins cannot deactivate their own account.
 
 **Path Parameters**:
+
 - `user_id` (integer, required): The ID of the user to deactivate
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 45,
@@ -387,6 +421,7 @@ Deactivate user by ID (soft delete).
 ```
 
 **Errors**:
+
 - `400 Bad Request`: Cannot deactivate your own account
 - `403 Forbidden`: User does not have MLGOO_DILG role
 - `404 Not Found`: User not found
@@ -404,11 +439,13 @@ Activate user by ID.
 **Description**: Reactivates a previously deactivated user by setting `is_active` to true.
 
 **Path Parameters**:
+
 - `user_id` (integer, required): The ID of the user to activate
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "id": 45,
@@ -427,6 +464,7 @@ Activate user by ID.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have MLGOO_DILG role
 - `404 Not Found`: User not found
 
@@ -440,12 +478,15 @@ Reset user password (Admin only).
 
 **Workflow Stage**: User Management (Password Reset)
 
-**Description**: Resets a user's password to a new value and sets `must_change_password` to true, forcing the user to change their password on next login.
+**Description**: Resets a user's password to a new value and sets `must_change_password` to true,
+forcing the user to change their password on next login.
 
 **Path Parameters**:
+
 - `user_id` (integer, required): The ID of the user whose password to reset
 
 **Request Body**:
+
 ```json
 {
   "new_password": "TemporaryPassword123!"
@@ -453,6 +494,7 @@ Reset user password (Admin only).
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "message": "Password reset successfully"
@@ -460,6 +502,7 @@ Reset user password (Admin only).
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have MLGOO_DILG role
 - `404 Not Found`: User not found
 
@@ -473,11 +516,13 @@ Get user statistics for admin dashboard.
 
 **Workflow Stage**: Admin Dashboard
 
-**Description**: Returns aggregate statistics about users in the system, including counts by role, active/inactive status, and recent user activity.
+**Description**: Returns aggregate statistics about users in the system, including counts by role,
+active/inactive status, and recent user activity.
 
 **Request Body**: None
 
 **Response** (200 OK):
+
 ```json
 {
   "total_users": 150,
@@ -495,6 +540,7 @@ Get user statistics for admin dashboard.
 ```
 
 **Errors**:
+
 - `403 Forbidden`: User does not have MLGOO_DILG role
 
 ---
@@ -512,21 +558,21 @@ BLGU_USER = "BLGU_USER"         # Barangay user
 
 ### User Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| id | integer | auto | Primary key |
-| email | string | yes | Unique email address |
-| name | string | yes | Full name |
-| password | string | yes (create) | Hashed password |
-| role | UserRole | yes | User role |
-| phone_number | string | no | Contact number |
-| validator_area_id | integer | conditional | Required for VALIDATOR role |
-| barangay_id | integer | conditional | Required for BLGU_USER role |
-| is_active | boolean | yes | Account active status |
-| is_superuser | boolean | no | Superuser flag |
-| must_change_password | boolean | yes | Force password change flag |
-| created_at | datetime | auto | Creation timestamp |
-| updated_at | datetime | auto | Last update timestamp |
+| Field                | Type     | Required     | Description                 |
+| -------------------- | -------- | ------------ | --------------------------- |
+| id                   | integer  | auto         | Primary key                 |
+| email                | string   | yes          | Unique email address        |
+| name                 | string   | yes          | Full name                   |
+| password             | string   | yes (create) | Hashed password             |
+| role                 | UserRole | yes          | User role                   |
+| phone_number         | string   | no           | Contact number              |
+| validator_area_id    | integer  | conditional  | Required for VALIDATOR role |
+| barangay_id          | integer  | conditional  | Required for BLGU_USER role |
+| is_active            | boolean  | yes          | Account active status       |
+| is_superuser         | boolean  | no           | Superuser flag              |
+| must_change_password | boolean  | yes          | Force password change flag  |
+| created_at           | datetime | auto         | Creation timestamp          |
+| updated_at           | datetime | auto         | Last update timestamp       |
 
 ---
 
@@ -574,25 +620,27 @@ The system enforces these rules at the service layer:
 
 ## Permission Matrix
 
-| Action | BLGU_USER | ASSESSOR | VALIDATOR | MLGOO_DILG |
-|--------|-----------|----------|-----------|------------|
-| View own profile | ✓ | ✓ | ✓ | ✓ |
-| Edit own profile | ✓ | ✓ | ✓ | ✓ |
-| List all users | - | - | - | ✓ |
-| View any user | - | - | - | ✓ |
-| Create user | - | - | - | ✓ |
-| Edit any user | - | - | - | ✓ |
-| Deactivate user | - | - | - | ✓ |
-| Activate user | - | - | - | ✓ |
-| Reset password | - | - | - | ✓ |
-| View user stats | - | - | - | ✓ |
+| Action           | BLGU_USER | ASSESSOR | VALIDATOR | MLGOO_DILG |
+| ---------------- | --------- | -------- | --------- | ---------- |
+| View own profile | ✓         | ✓        | ✓         | ✓          |
+| Edit own profile | ✓         | ✓        | ✓         | ✓          |
+| List all users   | -         | -        | -         | ✓          |
+| View any user    | -         | -        | -         | ✓          |
+| Create user      | -         | -        | -         | ✓          |
+| Edit any user    | -         | -        | -         | ✓          |
+| Deactivate user  | -         | -        | -         | ✓          |
+| Activate user    | -         | -        | -         | ✓          |
+| Reset password   | -         | -        | -         | ✓          |
+| View user stats  | -         | -        | -         | ✓          |
 
 ---
 
 ## Notes
 
 - **Type Generation**: Always run `pnpm generate-types` after modifying user endpoints or schemas
-- **Role Migration**: When updating from legacy SUPERADMIN or AREA_ASSESSOR roles, use MLGOO_DILG and VALIDATOR respectively
-- **Assignment Enforcement**: The service layer (not the database) enforces role-based assignment rules
+- **Role Migration**: When updating from legacy SUPERADMIN or AREA_ASSESSOR roles, use MLGOO_DILG
+  and VALIDATOR respectively
+- **Assignment Enforcement**: The service layer (not the database) enforces role-based assignment
+  rules
 - **Audit Trail**: All user changes are tracked via `updated_at` timestamp
 - **Email Uniqueness**: Email addresses must be unique across the system

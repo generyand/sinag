@@ -1,1 +1,1 @@
-export { ChallengeSection } from './ChallengeSection'; 
+export { ChallengeSection } from "./ChallengeSection";

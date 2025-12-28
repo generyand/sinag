@@ -24,6 +24,7 @@ Common issues and solutions for SINAG development.
 **Symptoms**: `pnpm generate-types` fails or generates incorrect types
 
 **Solutions**:
+
 1. Ensure backend is running: `pnpm dev:api`
 2. Check OpenAPI spec: `curl http://localhost:8000/openapi.json`
 3. Verify all Pydantic schemas are valid
@@ -36,6 +37,7 @@ See [Common Errors](./common-errors.md) for more details.
 **Symptoms**: Backend fails to start with database connection errors
 
 **Solutions**:
+
 1. Verify Supabase credentials in `apps/api/.env`
 2. Check DATABASE_URL format (use pooler endpoint, port 6543)
 3. Test connection: `psql $DATABASE_URL`
@@ -48,6 +50,7 @@ See [Backend Issues](./backend.md) for more details.
 **Symptoms**: API calls fail with network errors
 
 **Solutions**:
+
 1. Ensure backend is running on port 8000
 2. Check CORS configuration
 3. Verify `NEXT_PUBLIC_API_URL` in `apps/web/.env.local`
@@ -60,6 +63,7 @@ See [Frontend Issues](./frontend.md) for more details.
 **Symptoms**: Docker services fail to start or crash
 
 **Solutions**:
+
 1. Check Docker logs: `./scripts/docker-dev.sh logs`
 2. Verify environment variables
 3. Restart services: `./scripts/docker-dev.sh restart`

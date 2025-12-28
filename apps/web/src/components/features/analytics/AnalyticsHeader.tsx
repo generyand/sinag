@@ -1,9 +1,14 @@
-'use client';
+"use client";
 
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PageHeader } from '@/components/shared';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PageHeader } from "@/components/shared";
 
 interface AnalyticsHeaderProps {
   selectedPeriod: string;
@@ -11,9 +16,9 @@ interface AnalyticsHeaderProps {
 }
 
 const assessmentPeriods = [
-  { value: 'sglgb-2024', label: 'SGLGB 2024' },
-  { value: 'sglgb-2023', label: 'SGLGB 2023' },
-  { value: 'sglgb-2022', label: 'SGLGB 2022' },
+  { value: "sglgb-2024", label: "SGLGB 2024" },
+  { value: "sglgb-2023", label: "SGLGB 2023" },
+  { value: "sglgb-2022", label: "SGLGB 2022" },
 ];
 
 export function AnalyticsHeader({ selectedPeriod, onPeriodChange }: AnalyticsHeaderProps) {
@@ -23,7 +28,7 @@ export function AnalyticsHeader({ selectedPeriod, onPeriodChange }: AnalyticsHea
         title="Analytics & Reports"
         description="Strategic analysis and decision support for SGLGB pre-assessment effectiveness"
       />
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Global Filters</CardTitle>
@@ -52,4 +57,4 @@ export function AnalyticsHeader({ selectedPeriod, onPeriodChange }: AnalyticsHea
       </Card>
     </div>
   );
-} 
+}

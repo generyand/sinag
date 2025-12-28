@@ -1,6 +1,7 @@
 # Database Migrations Guide
 
 > **TODO**: Document Alembic migration workflow including:
+>
 > - When to create migrations
 > - Auto-generating migrations
 > - Manual migration editing
@@ -56,6 +57,7 @@ alembic upgrade head --sql
 ## Best Practices
 
 > **TODO**: Document best practices:
+>
 > - Always review auto-generated migrations
 > - Test migrations on a copy of production data
 > - Write both upgrade() and downgrade()
@@ -65,6 +67,7 @@ alembic upgrade head --sql
 ## Common Scenarios
 
 > **TODO**: Document solutions for:
+>
 > - Adding a new column
 > - Renaming a column
 > - Adding a foreign key

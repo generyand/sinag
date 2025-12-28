@@ -6,9 +6,11 @@
 import type { NotificationResult } from '../notifications';
 import type { AppSchemasBbiBBIComplianceResult } from '../bbis';
 import type { AppSchemasBbiBBIComplianceSummary } from '../bbis';
+import type { CalibrationSummaryResponse } from '../system';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
 import type { GovernanceAreaDetailItem } from '../common';
+import type { GovernanceAreaBreakdown } from '../common';
 import type { AppSchemasYearConfigUserNested } from '../users';
 
 /**
@@ -190,10 +192,39 @@ export interface AssessmentDashboardResponse {
   barangay_name: string;
   performance_year: number;
   assessment_year: number;
+  status: AssessmentStatus;
+  submitted_at?: AssessmentDashboardResponseSubmittedAt;
+  validated_at?: AssessmentDashboardResponseValidatedAt;
+  rework_requested_at?: AssessmentDashboardResponseReworkRequestedAt;
+  rework_count?: number;
+  is_calibration_rework?: boolean;
+  calibration_governance_area_name?: AssessmentDashboardResponseCalibrationGovernanceAreaName;
+  is_mlgoo_recalibration?: boolean;
+  mlgoo_recalibration_requested_at?: AssessmentDashboardResponseMlgooRecalibrationRequestedAt;
+  ai_summary?: AssessmentDashboardResponseAiSummary;
+  ai_summary_available_languages?: string[];
   stats: AssessmentDashboardStats;
   feedback?: AssessmentDashboardResponseFeedbackItem[];
   upcoming_deadlines?: AssessmentDashboardResponseUpcomingDeadlinesItem[];
 }
+
+
+/**
+ * AssessmentDashboardResponseAiSummary
+ */
+export type AssessmentDashboardResponseAiSummary = CalibrationSummaryResponse | AssessmentDashboardResponseAiSummaryAnyOf | null;
+
+
+/**
+ * AssessmentDashboardResponseAiSummaryAnyOf
+ */
+export type AssessmentDashboardResponseAiSummaryAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentDashboardResponseCalibrationGovernanceAreaName
+ */
+export type AssessmentDashboardResponseCalibrationGovernanceAreaName = string | null;
 
 
 /**
@@ -203,9 +234,33 @@ export type AssessmentDashboardResponseFeedbackItem = { [key: string]: unknown }
 
 
 /**
+ * AssessmentDashboardResponseMlgooRecalibrationRequestedAt
+ */
+export type AssessmentDashboardResponseMlgooRecalibrationRequestedAt = string | null;
+
+
+/**
+ * AssessmentDashboardResponseReworkRequestedAt
+ */
+export type AssessmentDashboardResponseReworkRequestedAt = string | null;
+
+
+/**
+ * AssessmentDashboardResponseSubmittedAt
+ */
+export type AssessmentDashboardResponseSubmittedAt = string | null;
+
+
+/**
  * AssessmentDashboardResponseUpcomingDeadlinesItem
  */
 export type AssessmentDashboardResponseUpcomingDeadlinesItem = { [key: string]: unknown };
+
+
+/**
+ * AssessmentDashboardResponseValidatedAt
+ */
+export type AssessmentDashboardResponseValidatedAt = string | null;
 
 
 /**
@@ -251,10 +306,19 @@ export interface AssessmentDetailResponse {
   governance_areas: GovernanceAreaDetailItem[];
   can_approve: boolean;
   can_recalibrate: boolean;
+  rework_requested_at: AssessmentDetailResponseReworkRequestedAt;
+  rework_submitted_at: AssessmentDetailResponseReworkSubmittedAt;
+  rework_count: number;
+  calibration_requested_at: AssessmentDetailResponseCalibrationRequestedAt;
+  calibration_submitted_at: AssessmentDetailResponseCalibrationSubmittedAt;
   mlgoo_recalibration_count: number;
   is_mlgoo_recalibration: boolean;
+  mlgoo_recalibration_requested_at: AssessmentDetailResponseMlgooRecalibrationRequestedAt;
+  mlgoo_recalibration_submitted_at: AssessmentDetailResponseMlgooRecalibrationSubmittedAt;
   mlgoo_recalibration_indicator_ids: AssessmentDetailResponseMlgooRecalibrationIndicatorIds;
+  mlgoo_recalibration_mov_file_ids: AssessmentDetailResponseMlgooRecalibrationMovFileIds;
   mlgoo_recalibration_comments: AssessmentDetailResponseMlgooRecalibrationComments;
+  mlgoo_approved_at: AssessmentDetailResponseMlgooApprovedAt;
   grace_period_expires_at: AssessmentDetailResponseGracePeriodExpiresAt;
   is_locked_for_deadline: boolean;
 }
@@ -285,6 +349,18 @@ export type AssessmentDetailResponseBlguUserName = string | null;
 
 
 /**
+ * AssessmentDetailResponseCalibrationRequestedAt
+ */
+export type AssessmentDetailResponseCalibrationRequestedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseCalibrationSubmittedAt
+ */
+export type AssessmentDetailResponseCalibrationSubmittedAt = string | null;
+
+
+/**
  * AssessmentDetailResponseComplianceStatus
  */
 export type AssessmentDetailResponseComplianceStatus = string | null;
@@ -303,6 +379,12 @@ export type AssessmentDetailResponseGracePeriodExpiresAt = string | null;
 
 
 /**
+ * AssessmentDetailResponseMlgooApprovedAt
+ */
+export type AssessmentDetailResponseMlgooApprovedAt = string | null;
+
+
+/**
  * AssessmentDetailResponseMlgooRecalibrationComments
  */
 export type AssessmentDetailResponseMlgooRecalibrationComments = string | null;
@@ -315,9 +397,45 @@ export type AssessmentDetailResponseMlgooRecalibrationIndicatorIds = number[] | 
 
 
 /**
+ * AssessmentDetailResponseMlgooRecalibrationMovFileIds
+ */
+export type AssessmentDetailResponseMlgooRecalibrationMovFileIds = AssessmentDetailResponseMlgooRecalibrationMovFileIdsAnyOfItem[] | null;
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationMovFileIdsAnyOfItem
+ */
+export type AssessmentDetailResponseMlgooRecalibrationMovFileIdsAnyOfItem = { [key: string]: unknown };
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationRequestedAt
+ */
+export type AssessmentDetailResponseMlgooRecalibrationRequestedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseMlgooRecalibrationSubmittedAt
+ */
+export type AssessmentDetailResponseMlgooRecalibrationSubmittedAt = string | null;
+
+
+/**
  * AssessmentDetailResponseOverallScore
  */
 export type AssessmentDetailResponseOverallScore = number | null;
+
+
+/**
+ * AssessmentDetailResponseReworkRequestedAt
+ */
+export type AssessmentDetailResponseReworkRequestedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseReworkSubmittedAt
+ */
+export type AssessmentDetailResponseReworkSubmittedAt = string | null;
 
 
 /**
@@ -475,6 +593,7 @@ export interface AssessmentResponse {
   response_data?: AssessmentResponseResponseData;
   is_completed: boolean;
   requires_rework: boolean;
+  flagged_for_calibration?: boolean;
   validation_status?: AssessmentResponseValidationStatus;
   generated_remark?: AssessmentResponseGeneratedRemark;
   assessor_remarks?: AssessmentResponseAssessorRemarks;
@@ -538,6 +657,7 @@ export interface AssessmentResponseUpdate {
   response_data?: AssessmentResponseUpdateResponseData;
   is_completed?: AssessmentResponseUpdateIsCompleted;
   requires_rework?: AssessmentResponseUpdateRequiresRework;
+  flagged_for_calibration?: AssessmentResponseUpdateFlaggedForCalibration;
   validation_status?: AssessmentResponseUpdateValidationStatus;
   assessor_remarks?: AssessmentResponseUpdateAssessorRemarks;
 }
@@ -547,6 +667,12 @@ export interface AssessmentResponseUpdate {
  * AssessmentResponseUpdateAssessorRemarks
  */
 export type AssessmentResponseUpdateAssessorRemarks = string | null;
+
+
+/**
+ * AssessmentResponseUpdateFlaggedForCalibration
+ */
+export type AssessmentResponseUpdateFlaggedForCalibration = boolean | null;
 
 
 /**
@@ -599,13 +725,45 @@ export interface AssessmentRow {
   status: string;
   /** Compliance score */
   score?: AssessmentRowScore;
+  /** Number of governance areas passed */
+  governance_areas_passed?: AssessmentRowGovernanceAreasPassed;
+  /** Total number of governance areas */
+  total_governance_areas?: AssessmentRowTotalGovernanceAreas;
+  /** Number of indicators passed (Pass/Conditional) */
+  indicators_passed?: AssessmentRowIndicatorsPassed;
+  /** Total number of indicators */
+  total_indicators?: AssessmentRowTotalIndicators;
 }
+
+
+/**
+ * AssessmentRowGovernanceAreasPassed
+ */
+export type AssessmentRowGovernanceAreasPassed = number | null;
+
+
+/**
+ * AssessmentRowIndicatorsPassed
+ */
+export type AssessmentRowIndicatorsPassed = number | null;
 
 
 /**
  * AssessmentRowScore
  */
 export type AssessmentRowScore = number | null;
+
+
+/**
+ * AssessmentRowTotalGovernanceAreas
+ */
+export type AssessmentRowTotalGovernanceAreas = number | null;
+
+
+/**
+ * AssessmentRowTotalIndicators
+ */
+export type AssessmentRowTotalIndicators = number | null;
 
 
 /**
@@ -627,6 +785,17 @@ export const AssessmentStatus = {
   VALIDATED: 'VALIDATED',
   NEEDS_REWORK: 'NEEDS_REWORK',
 } as const;
+
+
+/**
+ * AssessmentStatusDetail
+ */
+export interface AssessmentStatusDetail {
+  /** Core governance areas (must all pass) */
+  core: GovernanceAreaBreakdown;
+  /** Essential governance areas (must all pass) */
+  essential: GovernanceAreaBreakdown;
+}
 
 
 /**
@@ -1034,6 +1203,16 @@ export interface BarangayAssessmentStatus {
   has_capdev_insights?: boolean;
   /** CapDev insights generation status */
   capdev_status?: BarangayAssessmentStatusCapdevStatus;
+  /** Number of governance areas passed */
+  governance_areas_passed?: BarangayAssessmentStatusGovernanceAreasPassed;
+  /** Total number of governance areas assessed */
+  total_governance_areas?: BarangayAssessmentStatusTotalGovernanceAreas;
+  /** Number of indicators passed */
+  pass_count?: BarangayAssessmentStatusPassCount;
+  /** Number of conditional indicators */
+  conditional_count?: BarangayAssessmentStatusConditionalCount;
+  /** Total number of indicator responses */
+  total_responses?: BarangayAssessmentStatusTotalResponses;
 }
 
 
@@ -1056,6 +1235,18 @@ export type BarangayAssessmentStatusComplianceStatus = string | null;
 
 
 /**
+ * BarangayAssessmentStatusConditionalCount
+ */
+export type BarangayAssessmentStatusConditionalCount = number | null;
+
+
+/**
+ * BarangayAssessmentStatusGovernanceAreasPassed
+ */
+export type BarangayAssessmentStatusGovernanceAreasPassed = number | null;
+
+
+/**
  * BarangayAssessmentStatusMlgooApprovedAt
  */
 export type BarangayAssessmentStatusMlgooApprovedAt = string | null;
@@ -1068,9 +1259,33 @@ export type BarangayAssessmentStatusOverallScore = number | null;
 
 
 /**
+ * BarangayAssessmentStatusPassCount
+ */
+export type BarangayAssessmentStatusPassCount = number | null;
+
+
+/**
  * BarangayAssessmentStatusSubmittedAt
  */
 export type BarangayAssessmentStatusSubmittedAt = string | null;
+
+
+/**
+ * BarangayAssessmentStatusTotalGovernanceAreas
+ */
+export type BarangayAssessmentStatusTotalGovernanceAreas = number | null;
+
+
+/**
+ * BarangayAssessmentStatusTotalResponses
+ */
+export type BarangayAssessmentStatusTotalResponses = number | null;
+
+
+/**
+ * BarangayMapPointAssessmentStatus
+ */
+export type BarangayMapPointAssessmentStatus = AssessmentStatusDetail | null;
 
 
 /**
@@ -1357,9 +1572,64 @@ indicator_id: number;
 
 
 /**
+ * PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202
+ */
+export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams
+ */
+export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams = {
+/**
+ * ID of the governance area to regenerate summary for
+ */
+governance_area_id: number;
+/**
+ * Force regeneration even if summary exists
+ */
+force?: boolean;
+};
+
+
+/**
+ * PostAssessmentsAssessmentIdReworkSummaryRegenerate202
+ */
+export type PostAssessmentsAssessmentIdReworkSummaryRegenerate202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsAssessmentIdReworkSummaryRegenerateParams
+ */
+export type PostAssessmentsAssessmentIdReworkSummaryRegenerateParams = {
+/**
+ * Force regeneration even if summary exists
+ */
+force?: boolean;
+};
+
+
+/**
  * PostAssessmentsIdGenerateInsights202
  */
 export type PostAssessmentsIdGenerateInsights202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsIdRegenerateInsights202
+ */
+export type PostAssessmentsIdRegenerateInsights202 = { [key: string]: unknown };
+
+
+/**
+ * PostAssessmentsIdRegenerateInsightsParams
+ */
+export type PostAssessmentsIdRegenerateInsightsParams = {
+/**
+ * Force regeneration even if insights exist
+ */
+force?: boolean;
+};
 
 
 /**
@@ -1424,6 +1694,12 @@ export interface SubmitAssessmentResponse {
   assessment_id: number;
   submitted_at: string;
 }
+
+
+/**
+ * TourCompletedUpdateAssessments
+ */
+export type TourCompletedUpdateAssessments = boolean | null;
 
 
 /**

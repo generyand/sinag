@@ -1,6 +1,7 @@
 # 📋 Assessments API Routes
 # Endpoints for assessment management and assessment data
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole
+
+logger = logging.getLogger(__name__)
 from app.db.models.assessment import MOV as MOVModel
 from app.db.models.assessment import Assessment, FeedbackComment
 from app.db.models.user import User
@@ -234,6 +237,7 @@ async def update_assessment_response(
     if assessment.status not in [
         assessment.status.DRAFT,
         assessment.status.NEEDS_REWORK,
+        assessment.status.REWORK,
     ]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -324,10 +328,12 @@ async def submit_current_user_assessment(
 
     try:
         validation_result = assessment_service.submit_assessment(db, assessment.id)
+        # NOTE: We now allow incomplete submissions (user confirmed via frontend warning dialog)
+        # This supports BLGUs who genuinely don't have MOVs for certain indicators
         if not getattr(validation_result, "is_valid", False):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=("Submission failed: YES answers without MOV detected."),
+            logger.warning(
+                f"[LEGACY SUBMIT] Assessment {assessment.id} submitted with incomplete data: "
+                f"YES answers without MOV detected"
             )
         return validation_result
 
@@ -572,6 +578,98 @@ async def generate_insights(
         "assessment_id": id,
         "task_id": task.id,
         "status": "processing",
+    }
+
+
+@router.post(
+    "/{id}/regenerate-insights",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["assessments"],
+)
+async def regenerate_insights(
+    id: int,
+    force: bool = Query(False, description="Force regeneration even if insights exist"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """
+    Regenerate AI-powered insights for an assessment.
+
+    This endpoint allows MLGOO admins to manually trigger regeneration of AI insights,
+    for example if the AI model has been updated or if there was an error with
+    the original generation.
+
+    **Access:** MLGOO_DILG only
+
+    **Business Rules:**
+    - Assessment must be validated (status >= VALIDATED)
+    - If force=false and insights already exist, returns cached status
+    - If force=true, clears existing insights and regenerates
+    - Task runs asynchronously via Celery
+
+    Args:
+        id: Assessment ID
+        force: If True, regenerate even if insights already exist
+        db: Database session
+        current_user: Current authenticated admin user
+
+    Returns:
+        dict: Task dispatch confirmation with task_id
+    """
+    from app.db.models import Assessment
+    from app.workers.intelligence_worker import generate_insights_task
+
+    # Verify assessment exists
+    assessment = db.query(Assessment).filter(Assessment.id == id).first()
+
+    if not assessment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
+
+    # Verify assessment is at least validated (required for insights)
+    valid_statuses = [
+        AssessmentStatus.VALIDATED,
+        AssessmentStatus.AWAITING_FINAL_VALIDATION,
+        AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+        AssessmentStatus.COMPLETED,
+    ]
+    if assessment.status not in valid_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Assessment must be validated to generate insights. Current status: {assessment.status.value}",
+        )
+
+    # Check if insights already exist and force is not set
+    if assessment.ai_recommendations and not force:
+        return {
+            "message": "AI insights already exist. Use force=true to regenerate.",
+            "assessment_id": id,
+            "insights_cached": True,
+            "status": "completed",
+        }
+
+    # Clear existing insights if forcing regeneration
+    if force and assessment.ai_recommendations:
+        logger.info(
+            f"MLGOO {current_user.email} forcing AI insights regeneration for assessment {id}"
+        )
+        assessment.ai_recommendations = None
+        db.commit()
+
+    # Dispatch Celery task for background processing
+    task = generate_insights_task.delay(id)
+
+    logger.info(
+        f"MLGOO {current_user.email} triggered AI insights regeneration for assessment {id} "
+        f"(task_id: {task.id}, force: {force})"
+    )
+
+    return {
+        "message": "AI insight regeneration started",
+        "assessment_id": id,
+        "task_id": task.id,
+        "status": "processing",
+        "force": force,
     }
 
 
@@ -1078,9 +1176,10 @@ def submit_assessment(
     """
     Submit an assessment for assessor review (Story 5.5).
 
-    This endpoint allows a BLGU user to submit their completed assessment.
-    The assessment must pass validation (all indicators complete, all MOVs uploaded)
-    before submission is allowed.
+    This endpoint allows a BLGU user to submit their assessment for review.
+    Incomplete assessments are allowed - the user confirms via a warning dialog
+    on the frontend. This supports BLGUs who genuinely don't have MOVs for
+    certain indicators.
 
     Authorization:
         - BLGU_USER role required
@@ -1088,8 +1187,8 @@ def submit_assessment(
 
     Workflow:
         1. Validate user authorization
-        2. Validate assessment completeness using SubmissionValidationService
-        3. If valid, update status to SUBMITTED and set submitted_at timestamp
+        2. Log validation status (incomplete submissions are allowed with warning)
+        3. Update status to SUBMITTED and set submitted_at timestamp
         4. Lock assessment for editing (is_locked property becomes True)
         5. Return success response
 
@@ -1103,7 +1202,6 @@ def submit_assessment(
 
     Raises:
         HTTPException 403: User not authorized to submit this assessment
-        HTTPException 400: Assessment validation failed (incomplete or missing MOVs)
         HTTPException 404: Assessment not found
     """
     # Authorization check: must be BLGU_USER
@@ -1129,18 +1227,19 @@ def submit_assessment(
         )
 
     # Validate assessment completeness using SubmissionValidationService
+    # NOTE: We now allow incomplete submissions (user confirmed via frontend warning dialog)
+    # This supports BLGUs who genuinely don't have MOVs for certain indicators
     validation_result = submission_validation_service.validate_submission(
         assessment_id=assessment_id, db=db
     )
 
+    # Log validation result but don't block submission
     if not validation_result.is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": validation_result.error_message,
-                "incomplete_indicators": validation_result.incomplete_indicators,
-                "missing_movs": validation_result.missing_movs,
-            },
+        logger.warning(
+            f"[SUBMIT] Assessment {assessment_id} submitted with incomplete data: "
+            f"{validation_result.error_message}. "
+            f"Incomplete indicators: {validation_result.incomplete_indicators}, "
+            f"Missing MOVs: {validation_result.missing_movs}"
         )
 
     # Update assessment status to SUBMITTED
@@ -1335,8 +1434,8 @@ def resubmit_assessment(
     Resubmit an assessment after completing rework (Story 5.7).
 
     This endpoint allows a BLGU user to resubmit their assessment after
-    addressing the assessor's rework comments. The assessment must be in
-    REWORK status and pass validation again.
+    addressing the assessor's rework comments. Incomplete resubmissions are
+    allowed - the user confirms via a warning dialog on the frontend.
 
     Authorization:
         - BLGU_USER role required
@@ -1344,13 +1443,13 @@ def resubmit_assessment(
 
     Business Rules:
         - Assessment must be in REWORK status
-        - Assessment must pass validation (completeness + MOVs)
+        - Incomplete resubmissions allowed with warning (supports BLGUs without MOVs)
         - No further rework is allowed after resubmission (rework_count = 1)
 
     Workflow:
         1. Validate user authorization
         2. Check assessment status is REWORK
-        3. Validate completeness using SubmissionValidationService
+        3. Log validation status (incomplete resubmissions allowed with warning)
         4. Update status back to SUBMITTED
         5. Update submitted_at timestamp
         6. Lock assessment again (is_locked becomes True)
@@ -1366,7 +1465,7 @@ def resubmit_assessment(
 
     Raises:
         HTTPException 403: User not authorized
-        HTTPException 400: Invalid status or validation failed
+        HTTPException 400: Invalid status
         HTTPException 404: Assessment not found
     """
     # Authorization check: must be BLGU_USER
@@ -1402,32 +1501,38 @@ def resubmit_assessment(
     is_mlgoo_recalibration = assessment.is_mlgoo_recalibration
 
     # Validate assessment completeness again
+    # NOTE: We now allow incomplete resubmissions (user confirmed via frontend warning dialog)
+    # This supports BLGUs who genuinely don't have MOVs for certain indicators
     validation_result = submission_validation_service.validate_submission(
         assessment_id=assessment_id, db=db
     )
 
+    # Log validation result but don't block resubmission
     if not validation_result.is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": validation_result.error_message,
-                "incomplete_indicators": validation_result.incomplete_indicators,
-                "missing_movs": validation_result.missing_movs,
-            },
+        logger.warning(
+            f"[RESUBMIT] Assessment {assessment_id} resubmitted with incomplete data: "
+            f"{validation_result.error_message}. "
+            f"Incomplete indicators: {validation_result.incomplete_indicators}, "
+            f"Missing MOVs: {validation_result.missing_movs}"
         )
 
     # MLGOO RE-calibration routes back to MLGOO approval
     # Regular assessor rework routes back to SUBMITTED (for assessor review)
     if is_mlgoo_recalibration:
         assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
-        # Clear MLGOO recalibration flags after resubmission
+        # Clear MLGOO recalibration active flag after resubmission
         assessment.is_mlgoo_recalibration = False
-        # Keep mlgoo_recalibration_indicator_ids and comments for audit trail
+        # Record when BLGU resubmitted after recalibration
+        assessment.mlgoo_recalibration_submitted_at = datetime.utcnow()
+        # Keep mlgoo_recalibration_indicator_ids, mov_file_ids, requested_at, and comments for audit trail
+        # These are needed by MLGOO to review which files were flagged vs which are new
         assessment.submitted_at = datetime.utcnow()
         import logging
 
         logging.getLogger(__name__).info(
-            f"[MLGOO RECALIBRATION] Assessment {assessment_id} resubmitted - routing to AWAITING_MLGOO_APPROVAL"
+            f"[MLGOO RECALIBRATION] Assessment {assessment_id} resubmitted - routing to AWAITING_MLGOO_APPROVAL. "
+            f"Flagged indicators: {assessment.mlgoo_recalibration_indicator_ids}, "
+            f"Flagged MOV files: {assessment.mlgoo_recalibration_mov_file_ids}"
         )
     else:
         assessment.status = AssessmentStatus.SUBMITTED
@@ -1497,7 +1602,7 @@ def submit_for_calibration_review(
     Business Rules:
         - Assessment must be in REWORK status
         - Assessment must have is_calibration_rework=True (set by Validator)
-        - Only indicators marked requires_rework need to be re-uploaded
+        - Incomplete submissions allowed with warning (supports BLGUs without MOVs)
         - After submission, is_calibration_rework is cleared
 
     Args:
@@ -1510,7 +1615,7 @@ def submit_for_calibration_review(
 
     Raises:
         HTTPException 403: User not authorized or not calibration mode
-        HTTPException 400: Invalid status or validation failed
+        HTTPException 400: Invalid status
         HTTPException 404: Assessment not found
     """
     # Authorization check: must be BLGU_USER
@@ -1549,18 +1654,51 @@ def submit_for_calibration_review(
             detail="This assessment was not sent for calibration. Use the regular 'resubmit' endpoint instead.",
         )
 
-    # Validate only the indicators that were marked for calibration
-    # Get all responses that have requires_rework=True
-    rework_responses = [r for r in assessment.responses if r.requires_rework]
+    # Validate only the indicators that were marked for calibration AND are in calibrated areas
+    # This is important because requires_rework might be True from previous assessor rework
+    # but we only want to validate indicators in the CALIBRATED governance areas
+    calibrated_area_ids = set(assessment.calibrated_area_ids or [])
+
+    # Get all responses that have requires_rework=True AND are in calibrated areas
+    rework_responses = [
+        r
+        for r in assessment.responses
+        if r.requires_rework
+        and r.indicator
+        and r.indicator.governance_area_id in calibrated_area_ids
+    ]
 
     if not rework_responses:
-        # No indicators need rework - this shouldn't happen normally
-        # but just in case, allow the submission
+        # No indicators need rework in calibrated areas - allow the submission
         pass
     else:
-        # Validate only the rework indicators using completeness check
+        # Validate only the rework indicators in calibrated areas using completeness check
+        from app.db.models.assessment import MOVAnnotation, MOVFile
         from app.services.completeness_validation_service import (
             completeness_validation_service,
+        )
+
+        # Build a map of governance_area_id -> calibration timestamp from pending_calibrations
+        # This allows per-area calibration timestamps for parallel calibration
+        pending_calibrations = assessment.pending_calibrations or []
+        calibration_timestamps_by_area: dict[int, datetime] = {}
+        for pc in pending_calibrations:
+            area_id = pc.get("governance_area_id")
+            requested_at_str = pc.get("requested_at")
+            if area_id and requested_at_str:
+                # Parse the ISO format timestamp
+                try:
+                    cal_time = datetime.fromisoformat(requested_at_str.replace("Z", "+00:00"))
+                    # Remove timezone info for comparison with naive datetimes
+                    if cal_time.tzinfo is not None:
+                        cal_time = cal_time.replace(tzinfo=None)
+                    calibration_timestamps_by_area[area_id] = cal_time
+                except (ValueError, AttributeError):
+                    pass
+
+        # Fallback to single calibration timestamp if no per-area timestamps
+        default_calibration_time = (
+            assessment.calibration_requested_at or assessment.rework_requested_at
         )
 
         incomplete_indicators = []
@@ -1571,11 +1709,62 @@ def submit_for_calibration_review(
                 continue
 
             form_schema = indicator.form_schema
+            area_id = indicator.governance_area_id
 
-            # Get MOVs for this indicator
-            indicator_movs = [
-                mf for mf in assessment.mov_files if mf.indicator_id == response.indicator_id
-            ]
+            # Get area-specific calibration timestamp, fallback to default
+            area_calibration_time = calibration_timestamps_by_area.get(
+                area_id, default_calibration_time
+            )
+
+            # Get MOVs for this indicator - MUST filter out soft-deleted files
+            indicator_movs = (
+                db.query(MOVFile)
+                .filter(
+                    MOVFile.assessment_id == assessment_id,
+                    MOVFile.indicator_id == response.indicator_id,
+                    MOVFile.deleted_at.is_(None),
+                )
+                .all()
+            )
+
+            # Check for feedback comments that were added DURING this calibration cycle
+            # Only comments added AFTER the area's calibration timestamp should require new MOVs
+            if area_calibration_time and indicator_movs:
+                # Check for feedback comments added AFTER calibration was requested
+                feedback_after_calibration = (
+                    db.query(FeedbackComment)
+                    .filter(
+                        FeedbackComment.response_id == response.id,
+                        FeedbackComment.is_internal_note == False,
+                        FeedbackComment.created_at >= area_calibration_time,
+                    )
+                    .count()
+                )
+
+                # Check for MOV annotations added AFTER calibration
+                annotation_after_calibration = (
+                    db.query(MOVAnnotation)
+                    .join(MOVFile)
+                    .filter(
+                        MOVFile.assessment_id == assessment_id,
+                        MOVFile.indicator_id == response.indicator_id,
+                        MOVAnnotation.created_at >= area_calibration_time,
+                    )
+                    .count()
+                )
+
+                has_calibration_feedback = (
+                    feedback_after_calibration > 0 or annotation_after_calibration > 0
+                )
+
+                # Only filter MOVs by timestamp if indicator has feedback FROM THIS CALIBRATION CYCLE
+                # Indicators with only old feedback (from assessor rework) keep their old files
+                if has_calibration_feedback:
+                    indicator_movs = [
+                        mf
+                        for mf in indicator_movs
+                        if mf.uploaded_at and mf.uploaded_at >= area_calibration_time
+                    ]
 
             # Validate using the completeness service
             validation = completeness_validation_service.validate_completeness(
@@ -1585,21 +1774,29 @@ def submit_for_calibration_review(
             )
 
             if not validation.get("is_complete", False):
+                # Resolve year placeholders in indicator name
+                from app.core.year_resolver import get_year_resolver
+
+                try:
+                    year_resolver = get_year_resolver(db, year=assessment.assessment_year)
+                    indicator_name = year_resolver.resolve_string(indicator.name) or indicator.name
+                except ValueError:
+                    indicator_name = indicator.name
+
                 incomplete_indicators.append(
                     {
                         "indicator_id": response.indicator_id,
-                        "indicator_name": indicator.name,
+                        "indicator_name": indicator_name,
                         "missing_fields": validation.get("missing_fields", []),
                     }
                 )
 
+        # NOTE: We now allow incomplete calibration submissions (user confirmed via frontend warning dialog)
+        # This supports BLGUs who genuinely don't have MOVs for certain indicators
         if incomplete_indicators:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "message": f"{len(incomplete_indicators)} indicator(s) still incomplete",
-                    "incomplete_indicators": incomplete_indicators,
-                },
+            logger.warning(
+                f"[CALIBRATION SUBMIT] Assessment {assessment_id} submitted for calibration with incomplete data: "
+                f"{len(incomplete_indicators)} indicator(s) still incomplete: {incomplete_indicators}"
             )
 
     # Update assessment status to AWAITING_FINAL_VALIDATION (goes to Validator, not Assessor)
@@ -1925,6 +2122,94 @@ async def get_rework_summary(
         )
 
 
+@router.post(
+    "/{assessment_id}/rework-summary/regenerate",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["assessments"],
+)
+async def regenerate_rework_summary(
+    assessment_id: int,
+    force: bool = Query(False, description="Force regeneration even if summary exists"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """
+    Regenerate AI rework summary for an assessment.
+
+    This endpoint allows MLGOO admins to manually trigger regeneration of the
+    AI-powered rework summary, for example if the AI model has been updated
+    or if there was an error with the original generation.
+
+    **Access:** MLGOO_DILG only
+
+    **Business Rules:**
+    - Assessment must be in REWORK status or have been through rework
+    - If force=false and summary already exists, returns cached status
+    - If force=true, clears existing summary and regenerates all default languages
+    - Task runs asynchronously via Celery
+
+    Args:
+        assessment_id: ID of the assessment
+        force: If True, regenerate even if summary already exists
+        db: Database session
+        current_user: Current authenticated admin user
+
+    Returns:
+        dict: Task dispatch confirmation with task_id
+    """
+    from app.workers.intelligence_worker import generate_rework_summary_task
+
+    # Verify assessment exists
+    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Assessment {assessment_id} not found",
+        )
+
+    # Verify assessment has been through rework (is in REWORK or was in REWORK)
+    if assessment.status != AssessmentStatus.REWORK and assessment.rework_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Assessment has not been through rework. Current status: {assessment.status.value}",
+        )
+
+    # Check if summary already exists and force is not set
+    if assessment.rework_summary and not force:
+        return {
+            "message": "Rework summary already exists. Use force=true to regenerate.",
+            "assessment_id": assessment_id,
+            "summary_cached": True,
+            "status": "completed",
+        }
+
+    # Clear existing summary if forcing regeneration
+    if force and assessment.rework_summary:
+        logger.info(
+            f"MLGOO {current_user.email} forcing rework summary regeneration for assessment {assessment_id}"
+        )
+        assessment.rework_summary = None
+        db.commit()
+
+    # Dispatch Celery task for background processing
+    task = generate_rework_summary_task.delay(assessment_id)
+
+    logger.info(
+        f"MLGOO {current_user.email} triggered rework summary regeneration for assessment {assessment_id} "
+        f"(task_id: {task.id}, force: {force})"
+    )
+
+    return {
+        "message": "Rework summary regeneration started",
+        "assessment_id": assessment_id,
+        "task_id": task.id,
+        "status": "processing",
+        "force": force,
+    }
+
+
 @router.get(
     "/{assessment_id}/calibration-summary",
     response_model=CalibrationSummaryResponse,
@@ -2087,3 +2372,110 @@ async def get_calibration_summary(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate calibration summary in {target_lang}: {str(e)}",
         )
+
+
+@router.post(
+    "/{assessment_id}/calibration-summary/regenerate",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["assessments"],
+)
+async def regenerate_calibration_summary(
+    assessment_id: int,
+    governance_area_id: int = Query(
+        ..., description="ID of the governance area to regenerate summary for"
+    ),
+    force: bool = Query(False, description="Force regeneration even if summary exists"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """
+    Regenerate AI calibration summary for an assessment.
+
+    This endpoint allows MLGOO admins to manually trigger regeneration of the
+    AI-powered calibration summary for a specific governance area, for example
+    if the AI model has been updated or if there was an error with the original
+    generation.
+
+    **Access:** MLGOO_DILG only
+
+    **Business Rules:**
+    - Assessment must have been through calibration
+    - A governance_area_id must be specified
+    - If force=false and summary already exists for that area, returns cached status
+    - If force=true, clears existing summary for that area and regenerates
+    - Task runs asynchronously via Celery
+
+    Args:
+        assessment_id: ID of the assessment
+        governance_area_id: ID of the governance area to regenerate summary for
+        force: If True, regenerate even if summary already exists
+        db: Database session
+        current_user: Current authenticated admin user
+
+    Returns:
+        dict: Task dispatch confirmation with task_id
+    """
+    from app.workers.intelligence_worker import generate_calibration_summary_task
+
+    # Verify assessment exists
+    assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Assessment {assessment_id} not found",
+        )
+
+    # Verify assessment has been through calibration
+    if not assessment.calibration_count or assessment.calibration_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assessment has not been through calibration.",
+        )
+
+    # Check if summary already exists for this area and force is not set
+    area_id_key = str(governance_area_id)
+    existing_summaries = assessment.calibration_summaries_by_area or {}
+    area_summary_exists = (
+        area_id_key in existing_summaries
+        and isinstance(existing_summaries.get(area_id_key), dict)
+        and len(existing_summaries.get(area_id_key, {})) > 0
+    )
+
+    if area_summary_exists and not force:
+        return {
+            "message": f"Calibration summary for governance area {governance_area_id} already exists. Use force=true to regenerate.",
+            "assessment_id": assessment_id,
+            "governance_area_id": governance_area_id,
+            "summary_cached": True,
+            "status": "completed",
+        }
+
+    # Clear existing summary for this area if forcing regeneration
+    if force and area_summary_exists:
+        logger.info(
+            f"MLGOO {current_user.email} forcing calibration summary regeneration "
+            f"for assessment {assessment_id}, area {governance_area_id}"
+        )
+        if assessment.calibration_summaries_by_area:
+            assessment.calibration_summaries_by_area[area_id_key] = None
+            db.commit()
+
+    # Dispatch Celery task for background processing
+    task = generate_calibration_summary_task.delay(assessment_id, governance_area_id)
+
+    logger.info(
+        f"MLGOO {current_user.email} triggered calibration summary regeneration "
+        f"for assessment {assessment_id}, area {governance_area_id} "
+        f"(task_id: {task.id}, force: {force})"
+    )
+
+    return {
+        "message": "Calibration summary regeneration started",
+        "assessment_id": assessment_id,
+        "governance_area_id": governance_area_id,
+        "task_id": task.id,
+        "status": "processing",
+        "force": force,
+    }

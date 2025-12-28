@@ -1,9 +1,7 @@
 # Hard-Coded Indicators Implementation Plan
 
-**Document Version:** 1.1
-**Date Created:** 2025-11-16
-**Last Updated:** 2025-11-16
-**Status:** Phase 7 Complete - All 29 Indicators Defined
+**Document Version:** 1.1 **Date Created:** 2025-11-16 **Last Updated:** 2025-11-16 **Status:**
+Phase 7 Complete - All 29 Indicators Defined
 
 ---
 
@@ -24,7 +22,9 @@
 
 ## Overview
 
-This document outlines the plan to **hard-code all 29 SGLGB indicators** as Python dataclass definitions that are seeded into the database, replacing the original dynamic Indicator Builder approach.
+This document outlines the plan to **hard-code all 29 SGLGB indicators** as Python dataclass
+definitions that are seeded into the database, replacing the original dynamic Indicator Builder
+approach.
 
 ### Key Decisions
 
@@ -48,7 +48,8 @@ This document outlines the plan to **hard-code all 29 SGLGB indicators** as Pyth
 
 ### Why Hard-Code?
 
-After analyzing real SGLGB paper forms (BLGU view, Validator view, and Governance Assessment Report), we discovered:
+After analyzing real SGLGB paper forms (BLGU view, Validator view, and Governance Assessment
+Report), we discovered:
 
 1. **Indicators are static**: SGLGB indicators rarely change (they're defined by DILG)
 2. **Validation is simple**: Validators check boxes, not enter complex data
@@ -64,13 +65,13 @@ After analyzing real SGLGB paper forms (BLGU view, Validator view, and Governanc
 
 ### What Changed?
 
-| Original Approach | Hard-Coded Approach |
-|-------------------|---------------------|
-| Dynamic Indicator Builder UI | Python dataclass definitions |
-| JSONB `mov_checklist_items` | Normalized `checklist_items` table |
-| 9 MOV item types | 2-3 simple item types |
-| Complex calculation engine | Simple validation rules |
-| User-created indicators | Fixed 29 SGLGB indicators |
+| Original Approach            | Hard-Coded Approach                |
+| ---------------------------- | ---------------------------------- |
+| Dynamic Indicator Builder UI | Python dataclass definitions       |
+| JSONB `mov_checklist_items`  | Normalized `checklist_items` table |
+| 9 MOV item types             | 2-3 simple item types              |
+| Complex calculation engine   | Simple validation rules            |
+| User-created indicators      | Fixed 29 SGLGB indicators          |
 
 ---
 
@@ -129,25 +130,28 @@ apps/api/
 
 ### What are BBIs?
 
-**BBIs (Barangay-Based Institutions)** are mandatory organizational structures that each barangay must establish and maintain for local governance. The SGLGB assessment includes 9 mandatory BBIs:
+**BBIs (Barangay-Based Institutions)** are mandatory organizational structures that each barangay
+must establish and maintain for local governance. The SGLGB assessment includes 9 mandatory BBIs:
 
 ### 9 Mandatory BBIs
 
-**IMPORTANT:** BBIs (Barangay-Based Institutions) are **local organizations that exist within each barangay**. Each of the 25 barangays has its own instances of these institutions.
+**IMPORTANT:** BBIs (Barangay-Based Institutions) are **local organizations that exist within each
+barangay**. Each of the 25 barangays has its own instances of these institutions.
 
-| # | BBI | Full Name | Governance Area |
-|---|-----|-----------|-----------------|
-| 1 | **BDRRMC** | Barangay Disaster Risk Reduction and Management Committee | Core 2: Disaster Preparedness |
-| 2 | **BADAC** | Barangay Anti-Drug Abuse Council | Core 3: Safety, Peace and Order |
-| 3 | **BPOC** | Barangay Peace and Order Committee | Core 3: Safety, Peace and Order |
-| 4 | **LT** | Lupong Tagapamayapa | Core 3: Safety, Peace and Order |
-| 5 | **VAW Desk** | Barangay Violence Against Women Desk | Essential 1: Social Protection |
-| 6 | **BDC** | Barangay Development Council | Essential 1: Social Protection |
-| 7 | **BCPC** | Barangay Council for the Protection of Children | Essential 1: Social Protection |
-| 8 | **BNC** | Barangay Nutrition Committee | Essential 1: Social Protection |
-| 9 | **BESWMC** | Barangay Ecological Solid Waste Management Committee | Essential 3: Environmental Management |
+| #   | BBI          | Full Name                                                 | Governance Area                       |
+| --- | ------------ | --------------------------------------------------------- | ------------------------------------- |
+| 1   | **BDRRMC**   | Barangay Disaster Risk Reduction and Management Committee | Core 2: Disaster Preparedness         |
+| 2   | **BADAC**    | Barangay Anti-Drug Abuse Council                          | Core 3: Safety, Peace and Order       |
+| 3   | **BPOC**     | Barangay Peace and Order Committee                        | Core 3: Safety, Peace and Order       |
+| 4   | **LT**       | Lupong Tagapamayapa                                       | Core 3: Safety, Peace and Order       |
+| 5   | **VAW Desk** | Barangay Violence Against Women Desk                      | Essential 1: Social Protection        |
+| 6   | **BDC**      | Barangay Development Council                              | Essential 1: Social Protection        |
+| 7   | **BCPC**     | Barangay Council for the Protection of Children           | Essential 1: Social Protection        |
+| 8   | **BNC**      | Barangay Nutrition Committee                              | Essential 1: Social Protection        |
+| 9   | **BESWMC**   | Barangay Ecological Solid Waste Management Committee      | Essential 3: Environmental Management |
 
 **Key Clarification:**
+
 - Each barangay has its **OWN** BDRRMC, BADAC, BPOC, LT, VAW Desk, BDC, BCPC, BNC, BESWMC
 - BBI functionality is assessed **per barangay**, not system-wide
 - Example: "Barangay A's BDRRMC is Functional" vs "Barangay B's BDRRMC is Non-Functional"
@@ -156,15 +160,18 @@ apps/api/
 
 ### BBI Functionality Determination
 
-**Key Principle:** Each BBI has **ONE dedicated functionality indicator** that determines whether the BBI is "Functional" or "Non-Functional".
+**Key Principle:** Each BBI has **ONE dedicated functionality indicator** that determines whether
+the BBI is "Functional" or "Non-Functional".
 
 **Relationship Direction:**
+
 ```
 Indicator Result → Determines BBI Status
 (ONE-WAY relationship, no cross-references)
 ```
 
 **Example:**
+
 ```
 Assessment for Barangay "San Antonio"
   ↓
@@ -180,6 +187,7 @@ Therefore:
 ```
 
 **Important Notes:**
+
 - ✅ Each BBI is assessed by **ONE indicator only**
 - ✅ Indicator pass/fail **directly determines** BBI status
 - ❌ **No cross-references**: Other indicators do NOT check BBI status
@@ -191,21 +199,22 @@ Therefore:
 
 According to official SGLGB documentation, here is the complete BBI-to-indicator mapping:
 
-| # | BBI Name | Abbreviation | Governance Area | Indicator Code | Indicator Name |
-|---|----------|--------------|-----------------|----------------|----------------|
-| 1 | Barangay Disaster Risk Reduction and Management Committee | **BDRRMC** | Core 2: Disaster Preparedness | **2.1** | Functionality of the Barangay Disaster Risk Reduction and Management Committee (BDRRMC) |
-| 2 | Barangay Anti-Drug Abuse Council | **BADAC** | Core 3: Safety, Peace and Order | **3.1** | Functionality of the Barangay Anti-Drug Abuse Council (BADAC) |
-| 3 | Barangay Peace and Order Committee | **BPOC** | Core 3: Safety, Peace and Order | **3.2** | Functionality of the Barangay Peace and Order Committee (BPOC) |
-| 4 | Lupong Tagapamayapa | **LT** | Core 3: Safety, Peace and Order | **3.3** | Functionality of the Lupong Tagapamayapa (LT) |
-| 5 | Barangay Violence Against Women (VAW) Desk | **VAW Desk** | Essential 1: Social Protection | **4.1** | Functionality of Barangay Violence Against Women (VAW) Desk |
-| 6 | Barangay Development Council | **BDC** | Essential 1: Social Protection | **4.3** | Functionality of the Barangay Development Council (BDC) |
-| 7 | Barangay Council for the Protection of Children | **BCPC** | Essential 1: Social Protection | **4.5** | Functionality of the Barangay Council for the Protection of Children (BCPC) |
-| 8 | Barangay Nutrition Committee | **BNC** | Essential 1: Social Protection | **4.8** | Functionality of the Barangay Nutrition Committee (BNC) |
-| 9 | Barangay Ecological Solid Waste Management Committee | **BESWMC** | Essential 3: Environmental Management | **6.1** | Functionality of the Barangay Ecological Solid Waste Management Committee (BESWMC) |
+| #   | BBI Name                                                  | Abbreviation | Governance Area                       | Indicator Code | Indicator Name                                                                          |
+| --- | --------------------------------------------------------- | ------------ | ------------------------------------- | -------------- | --------------------------------------------------------------------------------------- |
+| 1   | Barangay Disaster Risk Reduction and Management Committee | **BDRRMC**   | Core 2: Disaster Preparedness         | **2.1**        | Functionality of the Barangay Disaster Risk Reduction and Management Committee (BDRRMC) |
+| 2   | Barangay Anti-Drug Abuse Council                          | **BADAC**    | Core 3: Safety, Peace and Order       | **3.1**        | Functionality of the Barangay Anti-Drug Abuse Council (BADAC)                           |
+| 3   | Barangay Peace and Order Committee                        | **BPOC**     | Core 3: Safety, Peace and Order       | **3.2**        | Functionality of the Barangay Peace and Order Committee (BPOC)                          |
+| 4   | Lupong Tagapamayapa                                       | **LT**       | Core 3: Safety, Peace and Order       | **3.3**        | Functionality of the Lupong Tagapamayapa (LT)                                           |
+| 5   | Barangay Violence Against Women (VAW) Desk                | **VAW Desk** | Essential 1: Social Protection        | **4.1**        | Functionality of Barangay Violence Against Women (VAW) Desk                             |
+| 6   | Barangay Development Council                              | **BDC**      | Essential 1: Social Protection        | **4.3**        | Functionality of the Barangay Development Council (BDC)                                 |
+| 7   | Barangay Council for the Protection of Children           | **BCPC**     | Essential 1: Social Protection        | **4.5**        | Functionality of the Barangay Council for the Protection of Children (BCPC)             |
+| 8   | Barangay Nutrition Committee                              | **BNC**      | Essential 1: Social Protection        | **4.8**        | Functionality of the Barangay Nutrition Committee (BNC)                                 |
+| 9   | Barangay Ecological Solid Waste Management Committee      | **BESWMC**   | Essential 3: Environmental Management | **6.1**        | Functionality of the Barangay Ecological Solid Waste Management Committee (BESWMC)      |
 
 **Total:** 9 BBI indicators
 
 **⚠️ IMPORTANT CORRECTIONS BASED ON OFFICIAL DOCUMENTATION:**
+
 - **BADAC** → Indicator **3.1** (NOT 3.3)
 - **BPOC** (NOT BPSO) → Indicator **3.2** (NOT 3.1)
 - **Lupong Tagapamayapa** → Indicator **3.3**
@@ -217,8 +226,11 @@ According to official SGLGB documentation, here is the complete BBI-to-indicator
 - There is **NO** BPLS, BENRO, or indicator 5.1 as BBI in the official mapping
 
 **IMPORTANT CORRECTION:**
-- **BFDP (1.1) is NOT a BBI!** BFDP is a policy/compliance requirement, not a barangay-based institution.
-- The `is_bbi` flag for indicator 1.1 should be **false** (it was incorrectly marked as true earlier)
+
+- **BFDP (1.1) is NOT a BBI!** BFDP is a policy/compliance requirement, not a barangay-based
+  institution.
+- The `is_bbi` flag for indicator 1.1 should be **false** (it was incorrectly marked as true
+  earlier)
 
 ---
 
@@ -230,20 +242,21 @@ The system uses two tables to track BBI functionality:
 
 Stores the 9 mandatory BBI definitions.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER | Primary key |
-| `name` | VARCHAR | Full BBI name (e.g., "Barangay Disaster Risk Reduction and Management Committee") |
-| `abbreviation` | VARCHAR | Short name (e.g., "BDRRMC") |
-| `description` | TEXT | Optional description |
-| `governance_area_id` | INTEGER | FK to governance_areas |
-| `functionality_indicator_id` | INTEGER | **FK to indicators** - The ONE indicator that assesses this BBI |
-| `is_active` | BOOLEAN | Active status |
-| `mapping_rules` | JSON | **DEPRECATED** - Not needed for hard-coded approach |
-| `created_at` | TIMESTAMP | Creation timestamp |
-| `updated_at` | TIMESTAMP | Last update timestamp |
+| Column                       | Type      | Description                                                                       |
+| ---------------------------- | --------- | --------------------------------------------------------------------------------- |
+| `id`                         | INTEGER   | Primary key                                                                       |
+| `name`                       | VARCHAR   | Full BBI name (e.g., "Barangay Disaster Risk Reduction and Management Committee") |
+| `abbreviation`               | VARCHAR   | Short name (e.g., "BDRRMC")                                                       |
+| `description`                | TEXT      | Optional description                                                              |
+| `governance_area_id`         | INTEGER   | FK to governance_areas                                                            |
+| `functionality_indicator_id` | INTEGER   | **FK to indicators** - The ONE indicator that assesses this BBI                   |
+| `is_active`                  | BOOLEAN   | Active status                                                                     |
+| `mapping_rules`              | JSON      | **DEPRECATED** - Not needed for hard-coded approach                               |
+| `created_at`                 | TIMESTAMP | Creation timestamp                                                                |
+| `updated_at`                 | TIMESTAMP | Last update timestamp                                                             |
 
-**Key Field:** `functionality_indicator_id` - Links the BBI to its dedicated functionality assessment indicator.
+**Key Field:** `functionality_indicator_id` - Links the BBI to its dedicated functionality
+assessment indicator.
 
 ---
 
@@ -251,22 +264,25 @@ Stores the 9 mandatory BBI definitions.
 
 Stores BBI functionality status **per barangay assessment**.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER | Primary key |
-| `assessment_id` | INTEGER | FK to assessments (which belongs to a specific barangay) |
-| `bbi_id` | INTEGER | FK to bbis |
-| `status` | ENUM | "Functional" or "Non-Functional" |
-| `calculation_details` | JSON | Optional audit trail |
-| `calculation_date` | TIMESTAMP | When status was calculated |
+| Column                | Type      | Description                                              |
+| --------------------- | --------- | -------------------------------------------------------- |
+| `id`                  | INTEGER   | Primary key                                              |
+| `assessment_id`       | INTEGER   | FK to assessments (which belongs to a specific barangay) |
+| `bbi_id`              | INTEGER   | FK to bbis                                               |
+| `status`              | ENUM      | "Functional" or "Non-Functional"                         |
+| `calculation_details` | JSON      | Optional audit trail                                     |
+| `calculation_date`    | TIMESTAMP | When status was calculated                               |
 
 **Status Enum:** `BBIStatus`
+
 - `Functional` - BBI's functionality indicator **PASSED** for this specific barangay
 - `Non-Functional` - BBI's functionality indicator **FAILED** for this specific barangay
 
-**Important:** Each `bbi_results` record represents the functionality of a BBI **in a specific barangay**, not system-wide.
+**Important:** Each `bbi_results` record represents the functionality of a BBI **in a specific
+barangay**, not system-wide.
 
 **Example Data:**
+
 ```sql
 -- Barangay "San Antonio" (assessment_id=1)
 INSERT INTO bbi_results (assessment_id, bbi_id, status)
@@ -344,6 +360,7 @@ To properly support the BBI functionality system, we need to:
 #### 1. Add `functionality_indicator_id` Field to `bbis` Table
 
 **Migration needed:**
+
 ```python
 def upgrade():
     op.add_column('bbis',
@@ -356,6 +373,7 @@ def upgrade():
 #### 2. Seed the 9 Mandatory BBIs
 
 **Create migration to seed BBIs:**
+
 ```python
 def upgrade():
     from sqlalchemy.orm import Session
@@ -459,6 +477,7 @@ class BBIService:
 **Migration:** `00bed49217f7_add_checklist_items_table_for_hard_.py`
 
 **Changes:**
+
 1. Created `checklist_items` table:
    - `id`, `indicator_id` (FK), `item_id`, `label`, `group_name`
    - `mov_description`, `required`, `requires_document_count`
@@ -483,6 +502,7 @@ class BBIService:
 **Objective:** Define Python dataclasses and create first indicator
 
 **Files Created:**
+
 - `apps/api/app/indicators/base.py` - Base dataclasses
 - `apps/api/app/indicators/seeder.py` - Database seeding service
 - `apps/api/app/indicators/definitions/indicator_1_1.py` - First indicator
@@ -542,6 +562,7 @@ class Indicator:
 **Migration:** `cbeaa8a6cd8d_seed_indicator_1_1_bfdp_compliance.py`
 
 **Seeder Logic:**
+
 ```python
 def seed_indicators(indicators: List[Indicator], db: Session):
     for indicator_def in indicators:
@@ -565,6 +586,7 @@ def seed_indicators(indicators: List[Indicator], db: Session):
 ```
 
 **Verification:**
+
 - ✅ Parent indicator created: ID 671, Code "1.1"
 - ✅ Sub-indicators created: ID 672 (1.1.1), ID 673 (1.1.2)
 - ✅ Checklist items created: 8 total items
@@ -626,22 +648,26 @@ class IndicatorTreeResponse(BaseModel):
 **New Endpoints:**
 
 #### 1. Get Single Indicator by Code
+
 ```http
 GET /api/v1/indicators/code/{indicator_code}
 ```
 
 **Use Cases:**
+
 - Get sub-indicator for BLGU submission form (e.g., "1.1.1")
 - Get sub-indicator for Validator review interface
 
 **Returns:** `SimplifiedIndicatorResponse`
 
 **Example:**
+
 ```bash
 curl http://localhost:8000/api/v1/indicators/code/1.1.1
 ```
 
 **Response:**
+
 ```json
 {
   "id": 672,
@@ -666,7 +692,7 @@ curl http://localhost:8000/api/v1/indicators/code/1.1.1
       "required": true,
       "requires_document_count": false,
       "display_order": 1
-    },
+    }
     // ... 6 more items
   ],
   "children": []
@@ -674,22 +700,26 @@ curl http://localhost:8000/api/v1/indicators/code/1.1.1
 ```
 
 #### 2. Get Full Indicator Tree
+
 ```http
 GET /api/v1/indicators/code/{indicator_code}/tree
 ```
 
 **Use Cases:**
+
 - Get parent indicator with all sub-indicators (e.g., "1.1")
 - Display full indicator hierarchy in Governance Assessment Report
 
 **Returns:** `IndicatorTreeResponse`
 
 **Example:**
+
 ```bash
 curl http://localhost:8000/api/v1/indicators/code/1.1/tree
 ```
 
 **Response:**
+
 ```json
 {
   "id": 671,
@@ -701,13 +731,17 @@ curl http://localhost:8000/api/v1/indicators/code/1.1/tree
       "id": 672,
       "indicator_code": "1.1.1",
       "name": "Posted the following CY 2023 financial documents...",
-      "checklist_items": [ /* 7 items */ ]
+      "checklist_items": [
+        /* 7 items */
+      ]
     },
     {
       "id": 673,
       "indicator_code": "1.1.2",
       "name": "Accomplished and signed BFR...",
-      "checklist_items": [ /* 1 item */ ]
+      "checklist_items": [
+        /* 1 item */
+      ]
     }
   ]
 }
@@ -722,21 +756,24 @@ curl http://localhost:8000/api/v1/indicators/code/1.1/tree
 **Objective:** Generate frontend types from FastAPI OpenAPI spec
 
 **Command:**
+
 ```bash
 pnpm generate-types
 ```
 
 **Generated Files:**
+
 - `packages/shared/src/generated/schemas/indicators/ChecklistItemResponse.ts`
 - `packages/shared/src/generated/schemas/indicators/SimplifiedIndicatorResponse.ts`
 - `packages/shared/src/generated/schemas/indicators/IndicatorTreeResponse.ts`
 - `packages/shared/src/generated/endpoints/indicators/indicators.ts` (React Query hooks)
 
 **Usage in Frontend:**
-```typescript
-import { useGetIndicatorByCode } from '@sinag/shared';
 
-const { data: indicator } = useGetIndicatorByCode('1.1.1');
+```typescript
+import { useGetIndicatorByCode } from "@sinag/shared";
+
+const { data: indicator } = useGetIndicatorByCode("1.1.1");
 ```
 
 **Status:** ✅ Types generated successfully
@@ -749,43 +786,44 @@ const { data: indicator } = useGetIndicatorByCode('1.1.1');
 
 #### Indicator List
 
-| Code | Name | Governance Area | BBI | BBI Name | Status |
-|------|------|-----------------|-----|----------|--------|
-| **1.1** | BFDP Compliance | Financial Admin | ❌ | - | ✅ COMPLETED |
-| **1.2** | Tax Revenue Generation | Financial Admin | ❌ | - | ✅ COMPLETED |
-| **1.3** | Budget Approval Timeframe | Financial Admin | ❌ | - | ✅ COMPLETED |
-| **1.4** | Human Resource Adequacy | Financial Admin | ❌ | - | ✅ COMPLETED |
-| **1.5** | CitCha Posting | Financial Admin | ❌ | - | ✅ COMPLETED |
-| **1.6** | Allotment for Gender and Development | Financial Admin | ❌ | - | ✅ COMPLETED |
-| **1.7** | Barangay Assembly | Financial Admin | ❌ | - | ✅ COMPLETED |
-| **2.1** | BDRRMC Functionality | Disaster Preparedness | ✅ | BDRRMC | ✅ COMPLETED |
-| **2.2** | LDRMP and LCCAP Preparation | Disaster Preparedness | ❌ | - | ✅ COMPLETED |
-| **2.3** | DRRM Fund Allocation | Disaster Preparedness | ❌ | - | ✅ COMPLETED |
-| **3.1** | BADAC Functionality | Safety & Peace | ✅ | BADAC | ✅ COMPLETED |
-| **3.2** | BPOC Functionality | Safety & Peace | ✅ | BPOC | ✅ COMPLETED |
-| **3.3** | Lupong Tagapamayapa Functionality | Safety & Peace | ✅ | LT | ✅ COMPLETED |
-| **3.4** | Crime Prevention Measures | Safety & Peace | ❌ | - | ✅ COMPLETED |
-| **3.5** | Street Lighting | Safety & Peace | ❌ | - | ✅ COMPLETED |
-| **3.6** | CCTV Installation | Safety & Peace | ❌ | - | ✅ COMPLETED |
-| **4.1** | VAW Desk Functionality | Social Protection | ✅ | VAW Desk | ✅ COMPLETED |
-| **4.2** | OSY Youth Development Program | Social Protection | ❌ | - | ✅ COMPLETED |
-| **4.3** | BDC Functionality | Social Protection | ✅ | BDC | ✅ COMPLETED |
-| **4.4** | Senior Citizens Affairs | Social Protection | ❌ | - | ✅ COMPLETED |
-| **4.5** | BCPC Functionality | Social Protection | ✅ | BCPC | ✅ COMPLETED |
-| **4.6** | PWD Affairs | Social Protection | ❌ | - | ✅ COMPLETED |
-| **4.7** | Solo Parents Welfare | Social Protection | ❌ | - | ✅ COMPLETED |
-| **4.8** | BNC Functionality | Social Protection | ✅ | BNC | ✅ COMPLETED |
-| **4.9** | HAPAG sa Barangay Project | Social Protection | ❌ | - | ✅ COMPLETED |
-| **5.1** | Business One-Stop-Shop | Business-Friendliness | ❌ | - | ✅ COMPLETED |
-| **5.2** | EODB Law Compliance | Business-Friendliness | ❌ | - | ✅ COMPLETED |
-| **5.3** | Business Permit Fees Ordinance | Business-Friendliness | ❌ | - | ✅ COMPLETED |
-| **6.1** | BESWMC Functionality | Environmental Mgmt | ✅ | BESWMC | ✅ COMPLETED |
-| **6.2** | MRF Establishment | Environmental Mgmt | ❌ | - | ✅ COMPLETED |
-| **6.3** | Waste Segregation Support | Environmental Mgmt | ❌ | - | ✅ COMPLETED |
+| Code    | Name                                 | Governance Area       | BBI | BBI Name | Status       |
+| ------- | ------------------------------------ | --------------------- | --- | -------- | ------------ |
+| **1.1** | BFDP Compliance                      | Financial Admin       | ❌  | -        | ✅ COMPLETED |
+| **1.2** | Tax Revenue Generation               | Financial Admin       | ❌  | -        | ✅ COMPLETED |
+| **1.3** | Budget Approval Timeframe            | Financial Admin       | ❌  | -        | ✅ COMPLETED |
+| **1.4** | Human Resource Adequacy              | Financial Admin       | ❌  | -        | ✅ COMPLETED |
+| **1.5** | CitCha Posting                       | Financial Admin       | ❌  | -        | ✅ COMPLETED |
+| **1.6** | Allotment for Gender and Development | Financial Admin       | ❌  | -        | ✅ COMPLETED |
+| **1.7** | Barangay Assembly                    | Financial Admin       | ❌  | -        | ✅ COMPLETED |
+| **2.1** | BDRRMC Functionality                 | Disaster Preparedness | ✅  | BDRRMC   | ✅ COMPLETED |
+| **2.2** | LDRMP and LCCAP Preparation          | Disaster Preparedness | ❌  | -        | ✅ COMPLETED |
+| **2.3** | DRRM Fund Allocation                 | Disaster Preparedness | ❌  | -        | ✅ COMPLETED |
+| **3.1** | BADAC Functionality                  | Safety & Peace        | ✅  | BADAC    | ✅ COMPLETED |
+| **3.2** | BPOC Functionality                   | Safety & Peace        | ✅  | BPOC     | ✅ COMPLETED |
+| **3.3** | Lupong Tagapamayapa Functionality    | Safety & Peace        | ✅  | LT       | ✅ COMPLETED |
+| **3.4** | Crime Prevention Measures            | Safety & Peace        | ❌  | -        | ✅ COMPLETED |
+| **3.5** | Street Lighting                      | Safety & Peace        | ❌  | -        | ✅ COMPLETED |
+| **3.6** | CCTV Installation                    | Safety & Peace        | ❌  | -        | ✅ COMPLETED |
+| **4.1** | VAW Desk Functionality               | Social Protection     | ✅  | VAW Desk | ✅ COMPLETED |
+| **4.2** | OSY Youth Development Program        | Social Protection     | ❌  | -        | ✅ COMPLETED |
+| **4.3** | BDC Functionality                    | Social Protection     | ✅  | BDC      | ✅ COMPLETED |
+| **4.4** | Senior Citizens Affairs              | Social Protection     | ❌  | -        | ✅ COMPLETED |
+| **4.5** | BCPC Functionality                   | Social Protection     | ✅  | BCPC     | ✅ COMPLETED |
+| **4.6** | PWD Affairs                          | Social Protection     | ❌  | -        | ✅ COMPLETED |
+| **4.7** | Solo Parents Welfare                 | Social Protection     | ❌  | -        | ✅ COMPLETED |
+| **4.8** | BNC Functionality                    | Social Protection     | ✅  | BNC      | ✅ COMPLETED |
+| **4.9** | HAPAG sa Barangay Project            | Social Protection     | ❌  | -        | ✅ COMPLETED |
+| **5.1** | Business One-Stop-Shop               | Business-Friendliness | ❌  | -        | ✅ COMPLETED |
+| **5.2** | EODB Law Compliance                  | Business-Friendliness | ❌  | -        | ✅ COMPLETED |
+| **5.3** | Business Permit Fees Ordinance       | Business-Friendliness | ❌  | -        | ✅ COMPLETED |
+| **6.1** | BESWMC Functionality                 | Environmental Mgmt    | ✅  | BESWMC   | ✅ COMPLETED |
+| **6.2** | MRF Establishment                    | Environmental Mgmt    | ❌  | -        | ✅ COMPLETED |
+| **6.3** | Waste Segregation Support            | Environmental Mgmt    | ❌  | -        | ✅ COMPLETED |
 
 **Total:** 29 indicators (29 completed, 0 remaining)
 
 **9 BBI Indicators** (9 mandatory barangay-based institutions):
+
 1. **2.1** - BDRRMC Functionality → **BDRRMC**
 2. **3.1** - BADAC Functionality → **BADAC**
 3. **3.2** - BPOC Functionality → **BPOC**
@@ -797,7 +835,9 @@ const { data: indicator } = useGetIndicatorByCode('1.1.1');
 9. **6.1** - BESWMC Functionality → **BESWMC**
 
 **Notes:**
-- Indicator 1.1 (BFDP Compliance) is **NOT a BBI indicator** - BFDP is a policy compliance requirement
+
+- Indicator 1.1 (BFDP Compliance) is **NOT a BBI indicator** - BFDP is a policy compliance
+  requirement
 - The official mapping differs from earlier assumptions (verified against SGLGB documentation)
 
 #### Implementation Steps per Indicator
@@ -810,12 +850,14 @@ For each indicator (1.2 through 6.3):
    - Extract checklist items with groups
 
 2. **Create Definition File**
+
    ```bash
    # Create new file
    touch apps/api/app/indicators/definitions/indicator_X_Y.py
    ```
 
 3. **Define Structure**
+
    ```python
    # apps/api/app/indicators/definitions/indicator_X_Y.py
    from app.indicators.base import Indicator, SubIndicator, ChecklistItem
@@ -850,7 +892,8 @@ For each indicator (1.2 through 6.3):
    )
    ```
 
-4. **Export from __init__.py**
+4. **Export from **init**.py**
+
    ```python
    # apps/api/app/indicators/definitions/__init__.py
    from .indicator_1_1 import INDICATOR_1_1
@@ -865,12 +908,14 @@ For each indicator (1.2 through 6.3):
    ```
 
 5. **Create Seeding Migration**
+
    ```bash
    cd apps/api
    alembic revision -m "seed_indicator_X_Y_name"
    ```
 
 6. **Write Migration**
+
    ```python
    def upgrade() -> None:
        from sqlalchemy.orm import Session
@@ -892,11 +937,13 @@ For each indicator (1.2 through 6.3):
    ```
 
 7. **Run Migration**
+
    ```bash
    alembic upgrade head
    ```
 
 8. **Test API Endpoints**
+
    ```bash
    # Test sub-indicator
    curl http://localhost:8000/api/v1/indicators/code/X.Y.Z | jq
@@ -1278,6 +1325,7 @@ def get_bbi_results_for_assessment(
 **Objective:** Implement simple validation logic for sub-indicators and parent indicator aggregation
 
 This phase covers TWO types of validation:
+
 1. **Sub-indicator validation** (e.g., 1.1.1, 1.1.2) - Based on checklist items
 2. **Parent indicator aggregation** (e.g., 1.1) - Based on child indicator results
 
@@ -1458,6 +1506,7 @@ indicator_validation_service = IndicatorValidationService()
 **Objective:** Aggregate child indicator results to determine parent indicator status
 
 **Key Principle:**
+
 - Parent indicators (e.g., 1.1) **do NOT have checklist items**
 - Parent status is **aggregated from child statuses**
 - Default logic: **ALL children must PASS** for parent to PASS
@@ -1676,6 +1725,7 @@ We need to store validation results for both sub-indicators and parent indicator
 **Option 1: Use existing `assessment_responses` table**
 
 Add fields to track validation results:
+
 ```python
 # In assessment_responses table
 indicator_validation_status: str  # "Passed", "Failed", "Pending"
@@ -1759,13 +1809,16 @@ Step 8: System updates BBI status
 **Component:** `BLGUIndicatorSubmissionForm`
 
 **Features:**
+
 - Display sub-indicator name and description
-- Show upload instructions (e.g., "Upload: 1. BFDP Monitoring Form A, 2. Two (2) Photo Documentation")
+- Show upload instructions (e.g., "Upload: 1. BFDP Monitoring Form A, 2. Two (2) Photo
+  Documentation")
 - File upload area
 - Display checklist items (read-only for BLGU)
 - Submit button
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────────┐
 │ 1.1.1 - Posted CY 2023 financial docs   │
@@ -1787,8 +1840,9 @@ Step 8: System updates BBI status
 ```
 
 **API Usage:**
+
 ```typescript
-const { data: indicator } = useGetIndicatorByCode('1.1.1');
+const { data: indicator } = useGetIndicatorByCode("1.1.1");
 ```
 
 **Status:** 🔄 TODO
@@ -1800,6 +1854,7 @@ const { data: indicator } = useGetIndicatorByCode('1.1.1');
 **Component:** `ValidatorIndicatorReview`
 
 **Features:**
+
 - Display uploaded documents
 - Checklist items grouped by `group_name`
 - Checkboxes for validators to mark verified items
@@ -1808,6 +1863,7 @@ const { data: indicator } = useGetIndicatorByCode('1.1.1');
 - Submit validation button
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────────┐
 │ 1.1.1 - Posted CY 2023 financial docs   │
@@ -1838,6 +1894,7 @@ const { data: indicator } = useGetIndicatorByCode('1.1.1');
 ```
 
 **API Usage:**
+
 ```typescript
 const { data: indicator } = useGetIndicatorByCode('1.1.1');
 
@@ -1862,6 +1919,7 @@ const submitValidation = async () => {
 **Component:** `GARIndicatorDisplay`
 
 **Features:**
+
 - Display parent indicator with all sub-indicators
 - Show validation results for each sub-indicator
 - Display checked items and document counts
@@ -1869,6 +1927,7 @@ const submitValidation = async () => {
 - Print-friendly layout
 
 **Layout:**
+
 ```
 ┌────────────────────────────────────────────────┐
 │ 1.1 - BFDP Compliance (BBI) ✅ PASSED          │
@@ -1901,8 +1960,9 @@ const submitValidation = async () => {
 ```
 
 **API Usage:**
+
 ```typescript
-const { data: indicatorTree } = useGetIndicatorTree('1.1');
+const { data: indicatorTree } = useGetIndicatorTree("1.1");
 ```
 
 **Status:** 🔄 TODO
@@ -1946,27 +2006,28 @@ const { data: indicatorTree } = useGetIndicatorTree('1.1');
 
 ### Indicators Table
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER | Primary key |
-| `indicator_code` | VARCHAR | e.g., "1.1", "1.1.1" |
-| `name` | VARCHAR | Indicator name |
-| `description` | VARCHAR | Optional description |
-| `governance_area_id` | INTEGER | FK to governance_areas |
-| `parent_id` | INTEGER | FK to indicators (for sub-indicators) |
-| `is_bbi` | BOOLEAN | Is this a BBI indicator? |
-| `is_active` | BOOLEAN | Is this indicator active? |
-| `is_auto_calculable` | BOOLEAN | Use automatic validation? |
-| `is_profiling_only` | BOOLEAN | Profiling-only flag |
-| `validation_rule` | VARCHAR | e.g., "ALL_ITEMS_REQUIRED" |
-| `sort_order` | INTEGER | Display order |
-| `effective_date` | DATE | When this version became active |
-| `retired_date` | DATE | When this version was retired |
-| `version` | INTEGER | Version number |
-| `created_at` | TIMESTAMP | Creation timestamp |
-| `updated_at` | TIMESTAMP | Last update timestamp |
+| Column               | Type      | Description                           |
+| -------------------- | --------- | ------------------------------------- |
+| `id`                 | INTEGER   | Primary key                           |
+| `indicator_code`     | VARCHAR   | e.g., "1.1", "1.1.1"                  |
+| `name`               | VARCHAR   | Indicator name                        |
+| `description`        | VARCHAR   | Optional description                  |
+| `governance_area_id` | INTEGER   | FK to governance_areas                |
+| `parent_id`          | INTEGER   | FK to indicators (for sub-indicators) |
+| `is_bbi`             | BOOLEAN   | Is this a BBI indicator?              |
+| `is_active`          | BOOLEAN   | Is this indicator active?             |
+| `is_auto_calculable` | BOOLEAN   | Use automatic validation?             |
+| `is_profiling_only`  | BOOLEAN   | Profiling-only flag                   |
+| `validation_rule`    | VARCHAR   | e.g., "ALL_ITEMS_REQUIRED"            |
+| `sort_order`         | INTEGER   | Display order                         |
+| `effective_date`     | DATE      | When this version became active       |
+| `retired_date`       | DATE      | When this version was retired         |
+| `version`            | INTEGER   | Version number                        |
+| `created_at`         | TIMESTAMP | Creation timestamp                    |
+| `updated_at`         | TIMESTAMP | Last update timestamp                 |
 
 **Deprecated Fields** (kept for backward compatibility):
+
 - `form_schema` (JSONB) - Replaced by checklist_items table
 - `calculation_schema` (JSONB) - Replaced by validation_rule
 - `mov_checklist_items` (JSONB) - Replaced by checklist_items table
@@ -1975,21 +2036,22 @@ const { data: indicatorTree } = useGetIndicatorTree('1.1');
 
 ### Checklist Items Table
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER | Primary key |
-| `indicator_id` | INTEGER | FK to indicators (CASCADE DELETE) |
-| `item_id` | VARCHAR(20) | Unique item ID (e.g., "1_1_1_a") |
-| `label` | TEXT | Display text (e.g., "a. Barangay Financial Report") |
-| `group_name` | VARCHAR(100) | Group header (e.g., "ANNUAL REPORT") |
-| `mov_description` | TEXT | Means of Verification description |
-| `required` | BOOLEAN | Is this item required for pass? |
-| `requires_document_count` | BOOLEAN | Needs document count input? |
-| `display_order` | INTEGER | Sort order within indicator |
-| `created_at` | TIMESTAMP | Creation timestamp |
-| `updated_at` | TIMESTAMP | Last update timestamp |
+| Column                    | Type         | Description                                         |
+| ------------------------- | ------------ | --------------------------------------------------- |
+| `id`                      | INTEGER      | Primary key                                         |
+| `indicator_id`            | INTEGER      | FK to indicators (CASCADE DELETE)                   |
+| `item_id`                 | VARCHAR(20)  | Unique item ID (e.g., "1_1_1_a")                    |
+| `label`                   | TEXT         | Display text (e.g., "a. Barangay Financial Report") |
+| `group_name`              | VARCHAR(100) | Group header (e.g., "ANNUAL REPORT")                |
+| `mov_description`         | TEXT         | Means of Verification description                   |
+| `required`                | BOOLEAN      | Is this item required for pass?                     |
+| `requires_document_count` | BOOLEAN      | Needs document count input?                         |
+| `display_order`           | INTEGER      | Sort order within indicator                         |
+| `created_at`              | TIMESTAMP    | Creation timestamp                                  |
+| `updated_at`              | TIMESTAMP    | Last update timestamp                               |
 
 **Constraints:**
+
 - Unique: `(indicator_id, item_id)`
 - Foreign Key: `indicator_id` → `indicators.id` (ON DELETE CASCADE)
 
@@ -2030,41 +2092,50 @@ VALUES (672, '1_1_1_a', 'a. Barangay Financial Report', 'ANNUAL REPORT', 1);
 ### Current Endpoints
 
 #### 1. List All Indicators (Existing)
+
 ```http
 GET /api/v1/indicators
 ```
+
 Returns all indicators (flat list)
 
 ---
 
 #### 2. Get Indicator by ID (Existing)
+
 ```http
 GET /api/v1/indicators/{id}
 ```
+
 Returns indicator by database ID
 
 ---
 
 #### 3. Get Indicator by Code (NEW)
+
 ```http
 GET /api/v1/indicators/code/{indicator_code}
 ```
 
 **Parameters:**
+
 - `indicator_code` (path): e.g., "1.1.1", "2.1.2"
 
 **Returns:** `SimplifiedIndicatorResponse`
 
 **Use Cases:**
+
 - BLGU submission form
 - Validator review interface
 
 **Example Request:**
+
 ```bash
 curl http://localhost:8000/api/v1/indicators/code/1.1.1
 ```
 
 **Example Response:**
+
 ```json
 {
   "id": 672,
@@ -2099,25 +2170,30 @@ curl http://localhost:8000/api/v1/indicators/code/1.1.1
 ---
 
 #### 4. Get Indicator Tree (NEW)
+
 ```http
 GET /api/v1/indicators/code/{indicator_code}/tree
 ```
 
 **Parameters:**
+
 - `indicator_code` (path): Parent indicator code only (e.g., "1.1", "2.1")
 
 **Returns:** `IndicatorTreeResponse`
 
 **Use Cases:**
+
 - Governance Assessment Report (GAR)
 - Full indicator hierarchy display
 
 **Example Request:**
+
 ```bash
 curl http://localhost:8000/api/v1/indicators/code/1.1/tree
 ```
 
 **Example Response:**
+
 ```json
 {
   "id": 671,
@@ -2142,7 +2218,9 @@ curl http://localhost:8000/api/v1/indicators/code/1.1/tree
       "is_bbi": false,
       "is_active": true,
       "validation_rule": "ALL_ITEMS_REQUIRED",
-      "checklist_items": [ /* 7 items */ ],
+      "checklist_items": [
+        /* 7 items */
+      ],
       "children": []
     },
     {
@@ -2154,7 +2232,9 @@ curl http://localhost:8000/api/v1/indicators/code/1.1/tree
       "is_bbi": false,
       "is_active": true,
       "validation_rule": "ALL_ITEMS_REQUIRED",
-      "checklist_items": [ /* 1 item */ ],
+      "checklist_items": [
+        /* 1 item */
+      ],
       "children": []
     }
   ]
@@ -2166,11 +2246,13 @@ curl http://localhost:8000/api/v1/indicators/code/1.1/tree
 ### Planned Endpoints
 
 #### 5. Validate Indicator Submission (TODO)
+
 ```http
 POST /api/v1/indicators/{indicator_id}/validate
 ```
 
 **Request Body:**
+
 ```json
 {
   "checked_items": ["1_1_1_a", "1_1_1_b", "1_1_1_c"],
@@ -2182,6 +2264,7 @@ POST /api/v1/indicators/{indicator_id}/validate
 ```
 
 **Response:**
+
 ```json
 {
   "indicator_id": 672,
@@ -2253,16 +2336,16 @@ export interface IndicatorTreeResponse {
 // Get indicator by code
 export const useGetIndicatorByCode = (indicatorCode: string) => {
   return useQuery({
-    queryKey: ['indicators', 'code', indicatorCode],
-    queryFn: () => getIndicatorByCode(indicatorCode)
+    queryKey: ["indicators", "code", indicatorCode],
+    queryFn: () => getIndicatorByCode(indicatorCode),
   });
 };
 
 // Get indicator tree
 export const useGetIndicatorTree = (indicatorCode: string) => {
   return useQuery({
-    queryKey: ['indicators', 'code', indicatorCode, 'tree'],
-    queryFn: () => getIndicatorTree(indicatorCode)
+    queryKey: ["indicators", "code", indicatorCode, "tree"],
+    queryFn: () => getIndicatorTree(indicatorCode),
   });
 };
 ```
@@ -2274,7 +2357,7 @@ export const useGetIndicatorTree = (indicatorCode: string) => {
 #### BLGU Submission Form
 
 ```tsx
-import { useGetIndicatorByCode } from '@sinag/shared';
+import { useGetIndicatorByCode } from "@sinag/shared";
 
 export function BLGUSubmissionForm({ indicatorCode }: { indicatorCode: string }) {
   const { data: indicator, isLoading } = useGetIndicatorByCode(indicatorCode);
@@ -2296,10 +2379,10 @@ export function BLGUSubmissionForm({ indicatorCode }: { indicatorCode: string })
       {/* Checklist Items (Read-only for BLGU) */}
       <section>
         <h3>Checklist Items</h3>
-        {groupBy(indicator.checklist_items, 'group_name').map(group => (
+        {groupBy(indicator.checklist_items, "group_name").map((group) => (
           <div key={group.name}>
             <h4>{group.name}</h4>
-            {group.items.map(item => (
+            {group.items.map((item) => (
               <div key={item.item_id}>{item.label}</div>
             ))}
           </div>
@@ -2317,8 +2400,8 @@ export function BLGUSubmissionForm({ indicatorCode }: { indicatorCode: string })
 #### Validator Review Interface
 
 ```tsx
-import { useGetIndicatorByCode } from '@sinag/shared';
-import { useState } from 'react';
+import { useGetIndicatorByCode } from "@sinag/shared";
+import { useState } from "react";
 
 export function ValidatorReview({ indicatorCode }: { indicatorCode: string }) {
   const { data: indicator } = useGetIndicatorByCode(indicatorCode);
@@ -2339,26 +2422,27 @@ export function ValidatorReview({ indicatorCode }: { indicatorCode: string }) {
     await validateIndicator({
       indicatorId: indicator.id,
       checkedItems: Array.from(checkedItems),
-      documentCounts
+      documentCounts,
     });
   };
 
-  const requiredItems = indicator.checklist_items.filter(item => item.required);
-  const allRequiredChecked = requiredItems.every(item => checkedItems.has(item.item_id));
-  const passed = allRequiredChecked &&
+  const requiredItems = indicator.checklist_items.filter((item) => item.required);
+  const allRequiredChecked = requiredItems.every((item) => checkedItems.has(item.item_id));
+  const passed =
+    allRequiredChecked &&
     requiredItems
-      .filter(item => item.requires_document_count)
-      .every(item => (documentCounts[item.item_id] || 0) > 0);
+      .filter((item) => item.requires_document_count)
+      .every((item) => (documentCounts[item.item_id] || 0) > 0);
 
   return (
     <div>
       <h2>{indicator.name}</h2>
 
       {/* Checklist */}
-      {groupBy(indicator.checklist_items, 'group_name').map(group => (
+      {groupBy(indicator.checklist_items, "group_name").map((group) => (
         <div key={group.name}>
           <h3>{group.name}</h3>
-          {group.items.map(item => (
+          {group.items.map((item) => (
             <div key={item.item_id}>
               <Checkbox
                 checked={checkedItems.has(item.item_id)}
@@ -2370,11 +2454,13 @@ export function ValidatorReview({ indicatorCode }: { indicatorCode: string }) {
                 <input
                   type="number"
                   placeholder="Count"
-                  value={documentCounts[item.item_id] || ''}
-                  onChange={e => setDocumentCounts({
-                    ...documentCounts,
-                    [item.item_id]: parseInt(e.target.value)
-                  })}
+                  value={documentCounts[item.item_id] || ""}
+                  onChange={(e) =>
+                    setDocumentCounts({
+                      ...documentCounts,
+                      [item.item_id]: parseInt(e.target.value),
+                    })
+                  }
                 />
               )}
             </div>
@@ -2382,8 +2468,8 @@ export function ValidatorReview({ indicatorCode }: { indicatorCode: string }) {
         </div>
       ))}
 
-      <div className={passed ? 'text-green-600' : 'text-red-600'}>
-        Status: {passed ? '✅ Passed' : '❌ Failed'}
+      <div className={passed ? "text-green-600" : "text-red-600"}>
+        Status: {passed ? "✅ Passed" : "❌ Failed"}
       </div>
 
       <button onClick={handleSubmitValidation}>Submit Validation</button>
@@ -2397,7 +2483,7 @@ export function ValidatorReview({ indicatorCode }: { indicatorCode: string }) {
 #### GAR Display
 
 ```tsx
-import { useGetIndicatorTree } from '@sinag/shared';
+import { useGetIndicatorTree } from "@sinag/shared";
 
 export function GARIndicatorDisplay({ indicatorCode }: { indicatorCode: string }) {
   const { data: tree } = useGetIndicatorTree(indicatorCode);
@@ -2411,16 +2497,18 @@ export function GARIndicatorDisplay({ indicatorCode }: { indicatorCode: string }
         {tree.is_bbi && <span className="badge">BBI</span>}
       </h2>
 
-      {tree.children.map(subIndicator => (
+      {tree.children.map((subIndicator) => (
         <div key={subIndicator.id} className="sub-indicator">
-          <h3>{subIndicator.indicator_code} - {subIndicator.name}</h3>
+          <h3>
+            {subIndicator.indicator_code} - {subIndicator.name}
+          </h3>
 
-          {groupBy(subIndicator.checklist_items, 'group_name').map(group => (
+          {groupBy(subIndicator.checklist_items, "group_name").map((group) => (
             <div key={group.name}>
               <h4>{group.name}</h4>
-              {group.items.map(item => (
+              {group.items.map((item) => (
                 <div key={item.item_id} className="checklist-item">
-                  {item.checked ? '✅' : '❌'} {item.label}
+                  {item.checked ? "✅" : "❌"} {item.label}
                   {item.requires_document_count && ` (Count: ${item.count})`}
                 </div>
               ))}
@@ -2439,21 +2527,22 @@ export function GARIndicatorDisplay({ indicatorCode }: { indicatorCode: string }
 
 ### Overall Progress
 
-| Phase | Status | Completion |
-|-------|--------|------------|
-| 1. Database Schema | ✅ Complete | 100% |
-| 2. Python Definitions | ✅ Complete | 100% |
-| 3. Database Seeding | ✅ Complete | 100% |
-| 4. Pydantic Schemas | ✅ Complete | 100% |
-| 5. API Endpoints | ✅ Complete | 100% |
-| 6. Type Generation | ✅ Complete | 100% |
-| 7. All 29 Indicators | ✅ Complete | 100% (29/29) |
-| 8. BBI System Implementation | 🔄 Todo | 0% |
-| 9. Validation Service | 🔄 Todo | 0% |
-| 10. Frontend Components | 🔄 Todo | 0% |
-| 11. Testing & QA | 🔄 Todo | 0% |
+| Phase                        | Status      | Completion   |
+| ---------------------------- | ----------- | ------------ |
+| 1. Database Schema           | ✅ Complete | 100%         |
+| 2. Python Definitions        | ✅ Complete | 100%         |
+| 3. Database Seeding          | ✅ Complete | 100%         |
+| 4. Pydantic Schemas          | ✅ Complete | 100%         |
+| 5. API Endpoints             | ✅ Complete | 100%         |
+| 6. Type Generation           | ✅ Complete | 100%         |
+| 7. All 29 Indicators         | ✅ Complete | 100% (29/29) |
+| 8. BBI System Implementation | 🔄 Todo     | 0%           |
+| 9. Validation Service        | 🔄 Todo     | 0%           |
+| 10. Frontend Components      | 🔄 Todo     | 0%           |
+| 11. Testing & QA             | 🔄 Todo     | 0%           |
 
-**Overall Completion:** ~64% (All indicator definitions complete, ready for BBI system and validation implementation)
+**Overall Completion:** ~64% (All indicator definitions complete, ready for BBI system and
+validation implementation)
 
 ---
 
@@ -2461,26 +2550,28 @@ export function GARIndicatorDisplay({ indicatorCode }: { indicatorCode: string }
 
 **All 29 indicators completed on 2025-11-16**
 
-| Governance Area | Indicators | Status |
-|----------------|-----------|--------|
-| 1. Financial Administration | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7 (7 total) | ✅ Complete |
-| 2. Disaster Preparedness | 2.1, 2.2, 2.3 (3 total) | ✅ Complete |
-| 3. Safety, Peace and Order | 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 (6 total) | ✅ Complete |
-| 4. Social Protection | 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9 (9 total) | ✅ Complete |
-| 5. Business-Friendliness | 5.1, 5.2, 5.3 (3 total) | ✅ Complete |
-| 6. Environmental Management | 6.1, 6.2, 6.3 (3 total) | ✅ Complete |
+| Governance Area             | Indicators                                            | Status      |
+| --------------------------- | ----------------------------------------------------- | ----------- |
+| 1. Financial Administration | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7 (7 total)           | ✅ Complete |
+| 2. Disaster Preparedness    | 2.1, 2.2, 2.3 (3 total)                               | ✅ Complete |
+| 3. Safety, Peace and Order  | 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 (6 total)                | ✅ Complete |
+| 4. Social Protection        | 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9 (9 total) | ✅ Complete |
+| 5. Business-Friendliness    | 5.1, 5.2, 5.3 (3 total)                               | ✅ Complete |
+| 6. Environmental Management | 6.1, 6.2, 6.3 (3 total)                               | ✅ Complete |
 
 **BBI Indicators (9 total):** All completed
-- 2.1 (BDRRMC), 3.1 (BADAC), 3.2 (BPOC), 3.3 (LT), 4.1 (VAW Desk), 4.3 (BDC), 4.5 (BCPC), 4.8 (BNC), 6.1 (BESWMC)
+
+- 2.1 (BDRRMC), 3.1 (BADAC), 3.2 (BPOC), 3.3 (LT), 4.1 (VAW Desk), 4.3 (BDC), 4.5 (BCPC), 4.8 (BNC),
+  6.1 (BESWMC)
 
 ---
 
 ### Migration History
 
-| Migration | Description | Status | Date |
-|-----------|-------------|--------|------|
+| Migration      | Description               | Status     | Date       |
+| -------------- | ------------------------- | ---------- | ---------- |
 | `00bed49217f7` | Add checklist_items table | ✅ Applied | 2025-11-16 |
-| `cbeaa8a6cd8d` | Seed indicator 1.1 | ✅ Applied | 2025-11-16 |
+| `cbeaa8a6cd8d` | Seed indicator 1.1        | ✅ Applied | 2025-11-16 |
 
 ---
 
@@ -2520,13 +2611,13 @@ export function GARIndicatorDisplay({ indicatorCode }: { indicatorCode: string }
 
 ### Key Decisions Log
 
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2025-11-16 | Hard-code all 29 indicators | SGLGB indicators are static, rarely change |
-| 2025-11-16 | Normalize checklist_items table | Better query performance, cleaner schema |
-| 2025-11-16 | Simplify validation logic | Validators check boxes, not complex calculations |
-| 2025-11-16 | Document upload at sub-indicator level | Matches real-world BLGU submission workflow |
-| 2025-11-16 | Checklist items = sections within documents | Not separate file uploads |
+| Date       | Decision                                    | Rationale                                        |
+| ---------- | ------------------------------------------- | ------------------------------------------------ |
+| 2025-11-16 | Hard-code all 29 indicators                 | SGLGB indicators are static, rarely change       |
+| 2025-11-16 | Normalize checklist_items table             | Better query performance, cleaner schema         |
+| 2025-11-16 | Simplify validation logic                   | Validators check boxes, not complex calculations |
+| 2025-11-16 | Document upload at sub-indicator level      | Matches real-world BLGU submission workflow      |
+| 2025-11-16 | Checklist items = sections within documents | Not separate file uploads                        |
 
 ---
 
@@ -2586,39 +2677,42 @@ export function GARIndicatorDisplay({ indicatorCode }: { indicatorCode: string }
 
 ### Governance Area Mapping
 
-| ID | Name | Type | Indicators |
-|----|------|------|------------|
-| 1 | Financial Administration and Sustainability | Core | 1.1, 1.2, 1.3 |
-| 2 | Disaster Preparedness | Core | 2.1, 2.2, 2.3 |
-| 3 | Safety, Peace and Order | Core | 3.1, 3.2, 3.3, 3.4 |
-| 4 | Social Protection and Sensitivity | Essential | 4.1, 4.2, 4.3, 4.4, 4.5 |
-| 5 | Business-Friendliness and Competitiveness | Essential | 5.1, 5.2 |
-| 6 | Environmental Management | Essential | 6.1, 6.2, 6.3 |
+| ID  | Name                                        | Type      | Indicators              |
+| --- | ------------------------------------------- | --------- | ----------------------- |
+| 1   | Financial Administration and Sustainability | Core      | 1.1, 1.2, 1.3           |
+| 2   | Disaster Preparedness                       | Core      | 2.1, 2.2, 2.3           |
+| 3   | Safety, Peace and Order                     | Core      | 3.1, 3.2, 3.3, 3.4      |
+| 4   | Social Protection and Sensitivity           | Essential | 4.1, 4.2, 4.3, 4.4, 4.5 |
+| 5   | Business-Friendliness and Competitiveness   | Essential | 5.1, 5.2                |
+| 6   | Environmental Management                    | Essential | 6.1, 6.2, 6.3           |
 
 ---
 
 ### Validation Rules
 
-| Rule | Description | Logic |
-|------|-------------|-------|
+| Rule                 | Description                        | Logic                                  |
+| -------------------- | ---------------------------------- | -------------------------------------- |
 | `ALL_ITEMS_REQUIRED` | All required items must be checked | `passed = all(required_items_checked)` |
-| `ANY_ITEM_REQUIRED` | At least one item must be checked | `passed = any(items_checked)` |
-| `CUSTOM` | Custom validation logic | To be implemented per indicator |
+| `ANY_ITEM_REQUIRED`  | At least one item must be checked  | `passed = any(items_checked)`          |
+| `CUSTOM`             | Custom validation logic            | To be implemented per indicator        |
 
 ---
 
 ### Document Conventions
 
 **Indicator Code Format:**
+
 - Parent: `X.Y` (e.g., `1.1`)
 - Sub-indicator: `X.Y.Z` (e.g., `1.1.1`)
 
 **Checklist Item ID Format:**
+
 - Pattern: `X_Y_Z_a` (e.g., `1_1_1_a`)
 - Replace dots with underscores
 - Append letter suffix
 
 **Group Names:**
+
 - Use UPPERCASE (e.g., `ANNUAL REPORT`)
 - Group related items together
 - Order groups logically (Annual → Quarterly → Monthly)

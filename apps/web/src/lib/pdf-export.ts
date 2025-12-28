@@ -54,12 +54,7 @@ export async function exportReportToPDF(
       pdf.text("DILG - Seal of Good Local Governance", margin, 20);
 
       // Footer
-      pdf.text(
-        `Page ${pageNum}`,
-        pageWidth / 2,
-        pageHeight - 20,
-        { align: "center" }
-      );
+      pdf.text(`Page ${pageNum}`, pageWidth / 2, pageHeight - 20, { align: "center" });
       pdf.text(
         `Generated on ${new Date(metadata.generatedAt).toLocaleDateString()}`,
         pageWidth - margin,
@@ -72,38 +67,20 @@ export async function exportReportToPDF(
     // DILG Branding Header
     pdf.setFontSize(24);
     pdf.setTextColor(0, 51, 102); // DILG Blue
-    pdf.text(
-      "Department of the Interior",
-      pageWidth / 2,
-      100,
-      { align: "center" }
-    );
-    pdf.text(
-      "and Local Government",
-      pageWidth / 2,
-      130,
-      { align: "center" }
-    );
+    pdf.text("Department of the Interior", pageWidth / 2, 100, { align: "center" });
+    pdf.text("and Local Government", pageWidth / 2, 130, { align: "center" });
 
     // Title
     pdf.setFontSize(28);
     pdf.setTextColor(0, 0, 0);
-    pdf.text(
-      "Assessment Reports",
-      pageWidth / 2,
-      200,
-      { align: "center" }
-    );
+    pdf.text("Assessment Reports", pageWidth / 2, 200, { align: "center" });
 
     // Subtitle
     pdf.setFontSize(14);
     pdf.setTextColor(80, 80, 80);
-    pdf.text(
-      "Seal of Good Local Governance for Barangays (SGLGB)",
-      pageWidth / 2,
-      230,
-      { align: "center" }
-    );
+    pdf.text("Seal of Good Local Governance for Barangays (SGLGB)", pageWidth / 2, 230, {
+      align: "center",
+    });
 
     // Metadata Section
     let yPos = 300;
@@ -160,11 +137,7 @@ export async function exportReportToPDF(
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);
     yPos += 20;
-    pdf.text(
-      `${new Date(metadata.generatedAt).toLocaleString()}`,
-      margin + 10,
-      yPos
-    );
+    pdf.text(`${new Date(metadata.generatedAt).toLocaleString()}`, margin + 10, yPos);
 
     if (metadata.generatedBy) {
       yPos += 18;
@@ -184,13 +157,10 @@ export async function exportReportToPDF(
     pdf.text(`• Total Assessments: ${totalAssessments}`, margin + 10, yPos);
     yPos += 18;
 
-    const passCount =
-      data.chart_data.pie_chart?.find((item) => item.status === "Pass")?.count || 0;
-    const failCount =
-      data.chart_data.pie_chart?.find((item) => item.status === "Fail")?.count || 0;
+    const passCount = data.chart_data.pie_chart?.find((item) => item.status === "Pass")?.count || 0;
+    const failCount = data.chart_data.pie_chart?.find((item) => item.status === "Fail")?.count || 0;
     const inProgressCount =
-      data.chart_data.pie_chart?.find((item) => item.status === "In Progress")?.count ||
-      0;
+      data.chart_data.pie_chart?.find((item) => item.status === "In Progress")?.count || 0;
 
     pdf.text(`• Pass: ${passCount}`, margin + 10, yPos);
     yPos += 18;
@@ -260,12 +230,9 @@ export async function exportReportToPDF(
         console.error(`Failed to capture ${chart.id}:`, error);
         pdf.setFontSize(12);
         pdf.setTextColor(200, 0, 0);
-        pdf.text(
-          `Failed to capture chart image`,
-          pageWidth / 2,
-          pageHeight / 2,
-          { align: "center" }
-        );
+        pdf.text(`Failed to capture chart image`, pageWidth / 2, pageHeight / 2, {
+          align: "center",
+        });
       }
 
       // Add header/footer
@@ -301,7 +268,7 @@ export async function exportReportToPDF(
     pdf.text("Governance Area", margin + colWidths.barangay, headerY);
     pdf.text("Status", margin + colWidths.barangay + colWidths.area, headerY);
     pdf.text(
-      "Score",
+      "Comp. Rate",
       margin + colWidths.barangay + colWidths.area + colWidths.status,
       headerY
     );
@@ -332,13 +299,9 @@ export async function exportReportToPDF(
         pdf.setFont("helvetica", "bold");
         pdf.text("Barangay Name", margin, tableYPos);
         pdf.text("Governance Area", margin + colWidths.barangay, tableYPos);
+        pdf.text("Status", margin + colWidths.barangay + colWidths.area, tableYPos);
         pdf.text(
-          "Status",
-          margin + colWidths.barangay + colWidths.area,
-          tableYPos
-        );
-        pdf.text(
-          "Score",
+          "Comp. Rate",
           margin + colWidths.barangay + colWidths.area + colWidths.status,
           tableYPos
         );
@@ -376,10 +339,7 @@ export async function exportReportToPDF(
     addHeaderFooter(currentPage);
 
     // ===== Download PDF =====
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, "-")
-      .slice(0, -5);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
     const filename = `report_${timestamp}.pdf`;
 
     pdf.save(filename);

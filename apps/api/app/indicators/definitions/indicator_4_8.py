@@ -2,11 +2,13 @@
 Indicator 4.8: Functionality of the Barangay Nutrition Committee (BNC)
 
 Governance Area: 4 (Social Protection and Sensitivity)
-BBI Status: YES (This IS a BBI - one of the 9 mandatory BBIs)
+BBI Status: NO - BNC is NOT one of the official 7 BBIs per DILG MC 2024-417
 
 Note: This indicator assesses the functionality of the Barangay Nutrition Committee (BNC)
 through its organizational structure, approved plan, performance in reducing malnutrition,
 and accomplishment reporting.
+
+The official 7 BBIs are: BDRRMC, BADAC, BPOC, VAW Desk, BDC, BCPC, BESWMC
 """
 
 from app.indicators.base import (
@@ -22,7 +24,7 @@ INDICATOR_4_8 = Indicator(
     code="4.8",
     name="Functionality of the Barangay Nutrition Committee (BNC)",
     governance_area_id=4,  # Social Protection and Sensitivity
-    is_bbi=True,  # This is one of the 9 mandatory BBIs
+    is_bbi=False,  # NOT a BBI per DILG MC 2024-417 (official 7 BBIs only)
     sort_order=8,
     description="Assessment of BNC functionality through organizational structure, approved BNAP, malnutrition reduction, and accomplishment reporting",
     children=[

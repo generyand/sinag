@@ -3,10 +3,25 @@
 // 📁 Movs-related types
 // 🏷️  Based on FastAPI tag: "movs"
 
+import type { FlaggedMovFileItemIndicatorCode } from '../indicators';
+import type { NotificationResult } from '../notifications';
+
 /**
  * ApprovalQueueItemOverallScore
  */
 export type ApprovalQueueItemOverallScore = number | null;
+
+
+/**
+ * BLGUDashboardResponseMlgooRecalibrationMovFileIds
+ */
+export type BLGUDashboardResponseMlgooRecalibrationMovFileIds = BLGUDashboardResponseMlgooRecalibrationMovFileIdsAnyOfItem[] | null;
+
+
+/**
+ * BLGUDashboardResponseMlgooRecalibrationMovFileIdsAnyOfItem
+ */
+export type BLGUDashboardResponseMlgooRecalibrationMovFileIdsAnyOfItem = { [key: string]: unknown };
 
 
 /**
@@ -45,6 +60,25 @@ export const ConditionalMOVLogicOperator = {
  * FileUploadFieldConditionalMovRequirement
  */
 export type FileUploadFieldConditionalMovRequirement = ConditionalMOVLogic | null;
+
+
+/**
+ * FlaggedMovFileItem
+ */
+export interface FlaggedMovFileItem {
+  mov_file_id: number;
+  file_name: string;
+  indicator_id: number;
+  indicator_code: FlaggedMovFileItemIndicatorCode;
+  indicator_name: string;
+  comment: FlaggedMovFileItemComment;
+}
+
+
+/**
+ * FlaggedMovFileItemComment
+ */
+export type FlaggedMovFileItemComment = string | null;
 
 
 /**
@@ -99,6 +133,23 @@ export type MOVFileItemUploadedAt = string | null;
 export interface MOVFileListResponse {
   files: MOVFileResponse[];
 }
+
+
+/**
+ * MOVFileRecalibrationItem
+ */
+export interface MOVFileRecalibrationItem {
+  /** ID of the MOV file to recalibrate */
+  mov_file_id: number;
+  /** Optional comment explaining why this file needs recalibration */
+  comment?: MOVFileRecalibrationItemComment;
+}
+
+
+/**
+ * MOVFileRecalibrationItemComment
+ */
+export type MOVFileRecalibrationItemComment = string | null;
 
 
 /**
@@ -194,4 +245,41 @@ export interface Mov {
   status: MOVStatus;
   response_id: number;
   uploaded_at: string;
+}
+
+
+/**
+ * RecalibrationByMovRequest
+ */
+export interface RecalibrationByMovRequest {
+  /**
+   * List of MOV files to flag for recalibration
+   * @minItems 1
+   */
+  mov_files: MOVFileRecalibrationItem[];
+  /**
+   * Overall explanation for why RE-calibration is needed
+   * @minLength 10
+   * @maxLength 2000
+   */
+  overall_comments: string;
+}
+
+
+/**
+ * RecalibrationByMovResponse
+ */
+export interface RecalibrationByMovResponse {
+  success: boolean;
+  message: string;
+  assessment_id: number;
+  barangay_name: string;
+  status: string;
+  flagged_mov_files: FlaggedMovFileItem[];
+  overall_comments: string;
+  requested_by: string;
+  requested_at: string;
+  grace_period_expires_at: string;
+  recalibration_count: number;
+  notification_result: NotificationResult;
 }

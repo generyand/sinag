@@ -14,6 +14,10 @@ from app.schemas.mlgoo import (
     ApproveAssessmentRequest,
     ApproveAssessmentResponse,
     AssessmentDetailResponse,
+    OverrideValidationStatusRequest,
+    OverrideValidationStatusResponse,
+    RecalibrationByMovRequest,
+    RecalibrationByMovResponse,
     RecalibrationRequest,
     RecalibrationResponse,
     UnlockAssessmentRequest,
@@ -236,6 +240,72 @@ async def request_recalibration(
         )
 
 
+# ==================== Request RE-calibration by MOV Files ====================
+
+
+@router.post(
+    "/assessments/{assessment_id}/recalibrate-by-mov",
+    response_model=RecalibrationByMovResponse,
+    summary="Request RE-calibration by MOV Files",
+    description=(
+        "Request RE-calibration for specific MOV files.\n\n"
+        "**Access:** Requires MLGOO_DILG role.\n\n"
+        "MLGOO can flag specific MOV files that need to be re-uploaded by BLGU. "
+        "This is more granular than indicator-level recalibration - only the "
+        "flagged files need to be resubmitted.\n\n"
+        "**Important:**\n"
+        "- RE-calibration can only be requested ONCE per assessment\n"
+        "- Must specify which MOV files need recalibration\n"
+        "- Optional comment per file for specific feedback\n"
+        "- Overall comments explaining the reason are required\n"
+        "- A 3-day grace period is automatically set for BLGU to respond"
+    ),
+    tags=["mlgoo"],
+    responses={
+        200: {"description": "RE-calibration requested successfully"},
+        400: {"description": "Invalid request or RE-calibration not allowed"},
+        403: {"description": "Not enough permissions (MLGOO_DILG role required)"},
+        404: {"description": "Assessment not found"},
+    },
+)
+async def request_recalibration_by_mov(
+    assessment_id: int,
+    request: RecalibrationByMovRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+):
+    """
+    Request RE-calibration for specific MOV files.
+
+    This allows MLGOO to flag specific files that need to be resubmitted
+    instead of entire indicators. BLGU only needs to fix the flagged files.
+    """
+    try:
+        # Convert Pydantic models to dicts for the service
+        mov_files = [
+            {"mov_file_id": item.mov_file_id, "comment": item.comment} for item in request.mov_files
+        ]
+        result = mlgoo_service.request_recalibration_by_mov(
+            db=db,
+            assessment_id=assessment_id,
+            mlgoo_user=current_user,
+            mov_files=mov_files,
+            overall_comments=request.overall_comments,
+        )
+        return RecalibrationByMovResponse(**result)
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_msg,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
+
+
 # ==================== Unlock Assessment ====================
 
 
@@ -352,6 +422,65 @@ async def update_recalibration_validation(
             comments=request.comments,
         )
         return UpdateRecalibrationValidationResponse(**result)
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_msg,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
+
+
+# ==================== Override Validation Status ====================
+
+
+@router.patch(
+    "/assessment-responses/{response_id}/override-status",
+    response_model=OverrideValidationStatusResponse,
+    summary="Override Validation Status",
+    description=(
+        "Override the validation status of any assessment response.\n\n"
+        "**Access:** Requires MLGOO_DILG role.\n\n"
+        "MLGOO has the authority to override any indicator's validation status "
+        "when reviewing assessments awaiting their approval. This allows MLGOO to "
+        "correct validation decisions they believe were incorrect.\n\n"
+        "**Requirements:**\n"
+        "- Assessment must be in AWAITING_MLGOO_APPROVAL status\n"
+        "- Valid validation status: PASS, FAIL, or CONDITIONAL"
+    ),
+    tags=["mlgoo"],
+    responses={
+        200: {"description": "Validation status overridden successfully"},
+        400: {"description": "Invalid request or override not allowed"},
+        403: {"description": "Not enough permissions (MLGOO_DILG role required)"},
+        404: {"description": "Assessment response not found"},
+    },
+)
+async def override_validation_status(
+    response_id: int,
+    request: OverrideValidationStatusRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+):
+    """
+    Override the validation status of any assessment response.
+
+    This allows MLGOO to directly change the validation status (PASS/FAIL/CONDITIONAL)
+    of any indicator when reviewing an assessment awaiting their approval.
+    """
+    try:
+        result = mlgoo_service.override_validation_status(
+            db=db,
+            response_id=response_id,
+            mlgoo_user=current_user,
+            validation_status=request.validation_status,
+            remarks=request.remarks,
+        )
+        return OverrideValidationStatusResponse(**result)
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():

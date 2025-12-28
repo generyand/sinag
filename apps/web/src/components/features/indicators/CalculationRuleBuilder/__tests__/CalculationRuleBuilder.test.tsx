@@ -10,16 +10,16 @@
  * - Validation states
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CalculationRuleBuilder } from '../CalculationRuleBuilder';
-import type { CalculationSchema, FormSchema } from '@sinag/shared';
-import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { CalculationRuleBuilder } from "../CalculationRuleBuilder";
+import type { CalculationSchema, FormSchema } from "@sinag/shared";
+import { useCalculationRuleStore } from "@/store/useCalculationRuleStore";
 
 // Mock the Zustand store
-vi.mock('@/store/useCalculationRuleStore', () => ({
+vi.mock("@/store/useCalculationRuleStore", () => ({
   useCalculationRuleStore: vi.fn(),
 }));
 
@@ -37,24 +37,22 @@ const createTestQueryClient = () =>
 // Helper to wrap component with QueryClientProvider
 const renderWithQueryClient = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
 // Mock form schema
 const mockFormSchema: FormSchema = {
   input_fields: [
     {
-      id: 'status_field',
-      label: 'Status Field',
-      type: 'text',
+      id: "status_field",
+      label: "Status Field",
+      type: "text",
       required: true,
     },
     {
-      id: 'percentage_field',
-      label: 'Percentage Field',
-      type: 'number',
+      id: "percentage_field",
+      label: "Percentage Field",
+      type: "number",
       required: false,
     },
   ],
@@ -65,22 +63,22 @@ const mockFormSchema: FormSchema = {
 const mockCalculationSchema: CalculationSchema = {
   condition_groups: [
     {
-      operator: 'AND',
+      operator: "AND",
       rules: [
         {
-          rule_type: 'MATCH_VALUE',
-          field_id: 'status_field',
-          operator: '==',
-          expected_value: 'approved',
+          rule_type: "MATCH_VALUE",
+          field_id: "status_field",
+          operator: "==",
+          expected_value: "approved",
         },
       ],
     },
   ],
-  output_status_on_pass: 'Pass',
-  output_status_on_fail: 'Fail',
+  output_status_on_pass: "Pass",
+  output_status_on_fail: "Fail",
 };
 
-describe('CalculationRuleBuilder', () => {
+describe("CalculationRuleBuilder", () => {
   // Mock store functions
   const mockInitializeSchema = vi.fn();
   const mockLoadSchema = vi.fn();
@@ -117,21 +115,19 @@ describe('CalculationRuleBuilder', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders loading state when not initialized', () => {
-    renderWithQueryClient(
-      <CalculationRuleBuilder formSchema={mockFormSchema} />
-    );
+  it("renders loading state when not initialized", () => {
+    renderWithQueryClient(<CalculationRuleBuilder formSchema={mockFormSchema} />);
 
     expect(screen.getByText(/loading calculation rule builder/i)).toBeInTheDocument();
   });
 
-  it('initializes with empty schema when no initialSchema provided', async () => {
+  it("initializes with empty schema when no initialSchema provided", async () => {
     // Set schema to initialized state after initializeSchema is called
     mockUseCalculationRuleStore.mockReturnValue({
       schema: {
         condition_groups: [],
-        output_status_on_pass: 'Pass',
-        output_status_on_fail: 'Fail',
+        output_status_on_pass: "Pass",
+        output_status_on_fail: "Fail",
       },
       isDirty: false,
       initializeSchema: mockInitializeSchema,
@@ -152,16 +148,14 @@ describe('CalculationRuleBuilder', () => {
       selectedRuleId: null,
     });
 
-    renderWithQueryClient(
-      <CalculationRuleBuilder formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<CalculationRuleBuilder formSchema={mockFormSchema} />);
 
     await waitFor(() => {
       expect(mockInitializeSchema).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('loads existing schema when initialSchema provided', async () => {
+  it("loads existing schema when initialSchema provided", async () => {
     // Set schema to loaded state
     mockUseCalculationRuleStore.mockReturnValue({
       schema: mockCalculationSchema,
@@ -185,10 +179,7 @@ describe('CalculationRuleBuilder', () => {
     });
 
     renderWithQueryClient(
-      <CalculationRuleBuilder
-        initialSchema={mockCalculationSchema}
-        formSchema={mockFormSchema}
-      />
+      <CalculationRuleBuilder initialSchema={mockCalculationSchema} formSchema={mockFormSchema} />
     );
 
     await waitFor(() => {
@@ -196,7 +187,7 @@ describe('CalculationRuleBuilder', () => {
     });
   });
 
-  it('renders main sections when initialized', () => {
+  it("renders main sections when initialized", () => {
     mockUseCalculationRuleStore.mockReturnValue({
       schema: mockCalculationSchema,
       isDirty: false,
@@ -219,10 +210,7 @@ describe('CalculationRuleBuilder', () => {
     });
 
     renderWithQueryClient(
-      <CalculationRuleBuilder
-        initialSchema={mockCalculationSchema}
-        formSchema={mockFormSchema}
-      />
+      <CalculationRuleBuilder initialSchema={mockCalculationSchema} formSchema={mockFormSchema} />
     );
 
     // Check for main title
@@ -235,7 +223,7 @@ describe('CalculationRuleBuilder', () => {
     expect(screen.getByText(/rules are evaluated sequentially/i)).toBeInTheDocument();
   });
 
-  it('displays Add Group button', () => {
+  it("displays Add Group button", () => {
     mockUseCalculationRuleStore.mockReturnValue({
       schema: mockCalculationSchema,
       isDirty: false,
@@ -258,17 +246,14 @@ describe('CalculationRuleBuilder', () => {
     });
 
     renderWithQueryClient(
-      <CalculationRuleBuilder
-        initialSchema={mockCalculationSchema}
-        formSchema={mockFormSchema}
-      />
+      <CalculationRuleBuilder initialSchema={mockCalculationSchema} formSchema={mockFormSchema} />
     );
 
-    const addButton = screen.getByRole('button', { name: /add group/i });
+    const addButton = screen.getByRole("button", { name: /add group/i });
     expect(addButton).toBeInTheDocument();
   });
 
-  it('calls addConditionGroup when Add Group button clicked', async () => {
+  it("calls addConditionGroup when Add Group button clicked", async () => {
     const user = userEvent.setup();
 
     mockUseCalculationRuleStore.mockReturnValue({
@@ -293,30 +278,24 @@ describe('CalculationRuleBuilder', () => {
     });
 
     renderWithQueryClient(
-      <CalculationRuleBuilder
-        initialSchema={mockCalculationSchema}
-        formSchema={mockFormSchema}
-      />
+      <CalculationRuleBuilder initialSchema={mockCalculationSchema} formSchema={mockFormSchema} />
     );
 
-    const addButton = screen.getByRole('button', { name: /add group/i });
+    const addButton = screen.getByRole("button", { name: /add group/i });
     await user.click(addButton);
 
     expect(mockAddConditionGroup).toHaveBeenCalledWith({
-      operator: 'AND',
+      operator: "AND",
       rules: [],
     });
   });
 
-  it('calls onChange callback when schema changes', async () => {
+  it("calls onChange callback when schema changes", async () => {
     const mockOnChange = vi.fn();
 
     // Initial render with no schema
     const { rerender } = renderWithQueryClient(
-      <CalculationRuleBuilder
-        formSchema={mockFormSchema}
-        onChange={mockOnChange}
-      />
+      <CalculationRuleBuilder formSchema={mockFormSchema} onChange={mockOnChange} />
     );
 
     // Update mock to return initialized schema
@@ -344,10 +323,7 @@ describe('CalculationRuleBuilder', () => {
     // Rerender to trigger onChange
     rerender(
       <QueryClientProvider client={createTestQueryClient()}>
-        <CalculationRuleBuilder
-          formSchema={mockFormSchema}
-          onChange={mockOnChange}
-        />
+        <CalculationRuleBuilder formSchema={mockFormSchema} onChange={mockOnChange} />
       </QueryClientProvider>
     );
 
@@ -356,7 +332,7 @@ describe('CalculationRuleBuilder', () => {
     });
   });
 
-  it('renders OutputStatusConfig component', () => {
+  it("renders OutputStatusConfig component", () => {
     mockUseCalculationRuleStore.mockReturnValue({
       schema: mockCalculationSchema,
       isDirty: false,
@@ -379,17 +355,14 @@ describe('CalculationRuleBuilder', () => {
     });
 
     renderWithQueryClient(
-      <CalculationRuleBuilder
-        initialSchema={mockCalculationSchema}
-        formSchema={mockFormSchema}
-      />
+      <CalculationRuleBuilder initialSchema={mockCalculationSchema} formSchema={mockFormSchema} />
     );
 
     // Check for output status configuration text
     expect(screen.getByText(/output status/i)).toBeInTheDocument();
   });
 
-  it('renders TestCalculationPanel component', () => {
+  it("renders TestCalculationPanel component", () => {
     mockUseCalculationRuleStore.mockReturnValue({
       schema: mockCalculationSchema,
       isDirty: false,
@@ -412,22 +385,19 @@ describe('CalculationRuleBuilder', () => {
     });
 
     renderWithQueryClient(
-      <CalculationRuleBuilder
-        initialSchema={mockCalculationSchema}
-        formSchema={mockFormSchema}
-      />
+      <CalculationRuleBuilder initialSchema={mockCalculationSchema} formSchema={mockFormSchema} />
     );
 
     // Check for test calculation panel
     expect(screen.getByText(/test calculation/i)).toBeInTheDocument();
   });
 
-  it('displays empty state message when no condition groups', () => {
+  it("displays empty state message when no condition groups", () => {
     mockUseCalculationRuleStore.mockReturnValue({
       schema: {
         condition_groups: [],
-        output_status_on_pass: 'Pass',
-        output_status_on_fail: 'Fail',
+        output_status_on_pass: "Pass",
+        output_status_on_fail: "Fail",
       },
       isDirty: false,
       initializeSchema: mockInitializeSchema,
@@ -448,15 +418,13 @@ describe('CalculationRuleBuilder', () => {
       selectedRuleId: null,
     });
 
-    renderWithQueryClient(
-      <CalculationRuleBuilder formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<CalculationRuleBuilder formSchema={mockFormSchema} />);
 
     // Check for empty state message
     expect(screen.getByText(/no condition groups defined/i)).toBeInTheDocument();
   });
 
-  it('passes formSchema to child components', () => {
+  it("passes formSchema to child components", () => {
     mockUseCalculationRuleStore.mockReturnValue({
       schema: mockCalculationSchema,
       isDirty: false,
@@ -479,10 +447,7 @@ describe('CalculationRuleBuilder', () => {
     });
 
     renderWithQueryClient(
-      <CalculationRuleBuilder
-        initialSchema={mockCalculationSchema}
-        formSchema={mockFormSchema}
-      />
+      <CalculationRuleBuilder initialSchema={mockCalculationSchema} formSchema={mockFormSchema} />
     );
 
     // TestCalculationPanel should receive formSchema

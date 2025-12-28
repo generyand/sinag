@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_mlgoo_dilg
+from app.core.year_resolver import get_year_resolver
 from app.db.models.user import User
 from app.schemas.admin import (
     AdminSuccessResponse,
@@ -540,6 +541,15 @@ async def apply_deadline_override(
         )
 
         # Build response with related entity details
+        # Resolve year placeholders in indicator name
+        try:
+            year_resolver = get_year_resolver(db)
+            indicator_name = (
+                year_resolver.resolve_string(override.indicator.name) or override.indicator.name
+            )
+        except ValueError:
+            indicator_name = override.indicator.name
+
         return DeadlineOverrideResponse(
             id=override.id,  # type: ignore[arg-type]
             cycle_id=override.cycle_id,  # type: ignore[arg-type]
@@ -552,7 +562,7 @@ async def apply_deadline_override(
             created_at=override.created_at,  # type: ignore[arg-type]
             cycle_name=override.cycle.name,
             barangay_name=override.barangay.name,
-            indicator_name=override.indicator.name,
+            indicator_name=indicator_name,
             creator_email=override.creator.email,
         )
     except ValueError as e:
@@ -597,9 +607,20 @@ async def get_deadline_overrides(
         indicator_id=indicator_id,
     )
 
+    # Initialize year resolver for placeholder resolution
+    try:
+        year_resolver = get_year_resolver(db)
+    except ValueError:
+        year_resolver = None
+
     # Build response with related entity details
     items = []
     for override in overrides:
+        # Resolve year placeholders in indicator name
+        indicator_name = override.indicator.name
+        if year_resolver:
+            indicator_name = year_resolver.resolve_string(indicator_name) or indicator_name
+
         items.append(
             DeadlineOverrideResponse(
                 id=override.id,  # type: ignore[arg-type]
@@ -613,7 +634,7 @@ async def get_deadline_overrides(
                 created_at=override.created_at,  # type: ignore[arg-type]
                 cycle_name=override.cycle.name,
                 barangay_name=override.barangay.name,
-                indicator_name=override.indicator.name,
+                indicator_name=indicator_name,
                 creator_email=override.creator.email,
             )
         )

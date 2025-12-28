@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { Users, UserCheck, Building, Search } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Users, UserCheck, Building, Search } from "lucide-react";
 
 export function UserManagementSkeleton() {
   return (
@@ -85,7 +85,10 @@ export function UserManagementSkeleton() {
 
               {/* Table Rows */}
               {Array.from({ length: 5 }).map((_, rowIndex) => (
-                <div key={rowIndex} className="grid grid-cols-6 gap-4 py-3 border-b border-[var(--border)] last:border-b-0">
+                <div
+                  key={rowIndex}
+                  className="grid grid-cols-6 gap-4 py-3 border-b border-[var(--border)] last:border-b-0"
+                >
                   <div className="flex items-center gap-3">
                     <Skeleton className="w-8 h-8 rounded-full" />
                     <div>
@@ -123,4 +126,4 @@ export function UserManagementSkeleton() {
       </div>
     </div>
   );
-} 
+}

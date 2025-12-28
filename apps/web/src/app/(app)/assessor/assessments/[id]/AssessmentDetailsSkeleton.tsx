@@ -43,7 +43,10 @@ export function AssessmentDetailsSkeleton() {
 
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div
+              key={i}
+              className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+            >
               <div className="flex items-center justify-between">
                 <div className="h-6 w-64 animate-pulse rounded bg-[var(--border)]"></div>
                 <div className="h-6 w-20 animate-pulse rounded bg-[var(--border)]"></div>

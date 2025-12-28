@@ -1,16 +1,11 @@
-'use client';
+"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AssessmentProgress, AssessmentStatus } from "@/types/dashboard";
-import {
-    Activity,
-    AlertTriangle,
-    CheckCircle2,
-    TrendingUp,
-} from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface StatusCardProps {
@@ -75,13 +70,7 @@ const CircularProgress = ({
 };
 
 // Mini Trend Chart Component
-const MiniTrendChart = ({
-  data,
-  color = "#3b82f6",
-}: {
-  data: number[];
-  color?: string;
-}) => {
+const MiniTrendChart = ({ data, color = "#3b82f6" }: { data: number[]; color?: string }) => {
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
@@ -96,11 +85,7 @@ const MiniTrendChart = ({
 
   return (
     <div className="w-full h-16 relative">
-      <svg
-        className="w-full h-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-      >
+      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         <polyline
           fill="none"
           stroke={color}
@@ -133,12 +118,7 @@ export function StatusCard({ status, progress }: StatusCardProps) {
           buttonAction: () => router.push("/blgu/assessments"),
           primaryColor: "#3b82f6",
           accentColor: "text-blue-500",
-          icon: (
-            <TrendingUp
-              className="h-5 w-5"
-              style={{ color: "var(--kpi-blue-text)" }}
-            />
-          ),
+          icon: <TrendingUp className="h-5 w-5" style={{ color: "var(--kpi-blue-text)" }} />,
         };
       case "Needs Rework":
         return {
@@ -149,10 +129,7 @@ export function StatusCard({ status, progress }: StatusCardProps) {
           primaryColor: "#f59e0b",
           accentColor: "text-amber-500",
           icon: (
-            <AlertTriangle
-              className="h-5 w-5"
-              style={{ color: "var(--analytics-warning-text)" }}
-            />
+            <AlertTriangle className="h-5 w-5" style={{ color: "var(--analytics-warning-text)" }} />
           ),
         };
       case "Submitted for Review":
@@ -163,12 +140,7 @@ export function StatusCard({ status, progress }: StatusCardProps) {
           buttonAction: () => router.push("/blgu/assessments"),
           primaryColor: "#8b5cf6",
           accentColor: "text-purple-500",
-          icon: (
-            <CheckCircle2
-              className="h-5 w-5"
-              style={{ color: "var(--kpi-purple-text)" }}
-            />
-          ),
+          icon: <CheckCircle2 className="h-5 w-5" style={{ color: "var(--kpi-purple-text)" }} />,
         };
       case "Validated":
         return {
@@ -179,10 +151,7 @@ export function StatusCard({ status, progress }: StatusCardProps) {
           primaryColor: "#10b981",
           accentColor: "text-emerald-500",
           icon: (
-            <CheckCircle2
-              className="h-5 w-5"
-              style={{ color: "var(--analytics-success-text)" }}
-            />
+            <CheckCircle2 className="h-5 w-5" style={{ color: "var(--analytics-success-text)" }} />
           ),
         };
     }
@@ -233,25 +202,17 @@ export function StatusCard({ status, progress }: StatusCardProps) {
                   <div className="text-xl font-bold text-[var(--foreground)]">
                     {progress.current}
                   </div>
-                  <div className="text-xs text-[var(--text-secondary)]">
-                    Compliant
-                  </div>
+                  <div className="text-xs text-[var(--text-secondary)]">Compliant</div>
                 </div>
                 <div className="bg-[var(--hover)] backdrop-blur-sm rounded-sm p-3 border border-[var(--border)]">
                   <div className="text-xl font-bold text-[var(--foreground)]">
                     {progress.total - progress.current}
                   </div>
-                  <div className="text-xs text-[var(--text-secondary)]">
-                    Remaining
-                  </div>
+                  <div className="text-xs text-[var(--text-secondary)]">Remaining</div>
                 </div>
                 <div className="bg-[var(--hover)] backdrop-blur-sm rounded-sm p-3 border border-[var(--border)]">
-                  <div className="text-xl font-bold text-[var(--foreground)]">
-                    {progress.total}
-                  </div>
-                  <div className="text-xs text-[var(--text-secondary)]">
-                    Total
-                  </div>
+                  <div className="text-xl font-bold text-[var(--foreground)]">{progress.total}</div>
+                  <div className="text-xs text-[var(--text-secondary)]">Total</div>
                 </div>
               </div>
             </div>

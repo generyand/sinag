@@ -121,10 +121,7 @@ function createNumberInputValidator(field: FormSchemaFieldsItem): z.ZodTypeAny {
   }
 
   if ("max_value" in field && typeof field.max_value === "number") {
-    validator = validator.max(
-      field.max_value,
-      `${field.label} must be at most ${field.max_value}`
-    );
+    validator = validator.max(field.max_value, `${field.label} must be at most ${field.max_value}`);
   }
 
   // Apply required/optional AFTER constraints

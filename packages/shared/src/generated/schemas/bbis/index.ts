@@ -6,6 +6,8 @@
 import type { AppSchemasBbiBBIComplianceResultIndicatorCode } from '../indicators';
 import type { AppSchemasBbiSubIndicatorResult } from '../indicators';
 import type { AppSchemasBlguDashboardSubIndicatorResult } from '../indicators';
+import type { BarangayDistributionItem } from '../common';
+import type { BBIInfoIndicatorCode } from '../indicators';
 import type { BBIResultResponseIndicatorId } from '../indicators';
 import type { BBIResultResponseSubIndicatorResults } from '../indicators';
 import type { GovernanceAreaSummary } from '../governancearea';
@@ -195,6 +197,21 @@ export type BBICreateMappingRulesAnyOf = { [key: string]: unknown };
 
 
 /**
+ * BBIDistribution
+ */
+export interface BBIDistribution {
+  /** Barangays with HIGHLY_FUNCTIONAL rating */
+  highly_functional?: BarangayDistributionItem[];
+  /** Barangays with MODERATELY_FUNCTIONAL rating */
+  moderately_functional?: BarangayDistributionItem[];
+  /** Barangays with LOW_FUNCTIONAL rating */
+  low_functional?: BarangayDistributionItem[];
+  /** Barangays with NON_FUNCTIONAL rating */
+  non_functional?: BarangayDistributionItem[];
+}
+
+
+/**
  * BBIFunctionalityCheckRule
  */
 export interface BBIFunctionalityCheckRule {
@@ -228,6 +245,21 @@ export const BBIFunctionalityCheckRuleExpectedStatus = {
   Functional: 'Functional',
   'Non-Functional': 'Non-Functional',
 } as const;
+
+
+/**
+ * BBIInfo
+ */
+export interface BBIInfo {
+  /** BBI ID */
+  bbi_id: number;
+  /** BBI abbreviation (e.g., BDRRMC) */
+  abbreviation: string;
+  /** Full BBI name */
+  name: string;
+  /** Indicator code (e.g., 2.1) */
+  indicator_code?: BBIInfoIndicatorCode;
+}
 
 
 /**
@@ -323,6 +355,17 @@ export const BBIStatus = {
   LOW_FUNCTIONAL: 'LOW_FUNCTIONAL',
   NON_FUNCTIONAL: 'NON_FUNCTIONAL',
 } as const;
+
+
+/**
+ * BBIStatusInfo
+ */
+export interface BBIStatusInfo {
+  /** 4-tier rating */
+  rating: string;
+  /** Compliance percentage */
+  percentage: number;
+}
 
 
 /**
@@ -442,6 +485,25 @@ export type BarangayBBIComplianceResponseBarangayName = string | null;
  * BarangayBBIComplianceResponseBbiResultsItem
  */
 export type BarangayBBIComplianceResponseBbiResultsItem = { [key: string]: unknown };
+
+
+/**
+ * BarangayBBIStatus
+ */
+export interface BarangayBBIStatus {
+  /** Barangay ID */
+  barangay_id: number;
+  /** Barangay name */
+  barangay_name: string;
+  /** BBI abbreviation -> status mapping */
+  bbi_statuses: BarangayBBIStatusBbiStatuses;
+}
+
+
+/**
+ * BarangayBBIStatusBbiStatuses
+ */
+export type BarangayBBIStatusBbiStatuses = {[key: string]: BBIStatusInfo};
 
 
 /**

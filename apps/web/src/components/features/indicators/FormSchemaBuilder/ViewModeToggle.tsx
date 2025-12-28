@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings2, Eye, Code2 } from 'lucide-react';
+import { useEffect } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Settings2, Eye, Code2 } from "lucide-react";
 
-export type ViewMode = 'builder' | 'preview' | 'json';
+export type ViewMode = "builder" | "preview" | "json";
 
 interface ViewModeToggleProps {
   value: ViewMode;
@@ -29,24 +29,24 @@ export function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {
       // Check for Ctrl/Cmd key
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
-          case '1':
+          case "1":
             e.preventDefault();
-            onChange('builder');
+            onChange("builder");
             break;
-          case '2':
+          case "2":
             e.preventDefault();
-            onChange('preview');
+            onChange("preview");
             break;
-          case '3':
+          case "3":
             e.preventDefault();
-            onChange('json');
+            onChange("json");
             break;
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onChange]);
 
   return (
@@ -78,9 +78,9 @@ export function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {
       </Tabs>
 
       <div className="text-xs text-[var(--text-secondary)]">
-        {value === 'builder' && 'Build and configure your form'}
-        {value === 'preview' && 'See how it looks to users'}
-        {value === 'json' && 'View and copy JSON schema'}
+        {value === "builder" && "Build and configure your form"}
+        {value === "preview" && "See how it looks to users"}
+        {value === "json" && "View and copy JSON schema"}
       </div>
     </div>
   );

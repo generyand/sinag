@@ -8,8 +8,10 @@ from typing import Any
 from fastapi import UploadFile
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+logger = logging.getLogger(__name__)
+
 from app.core.year_resolver import get_year_resolver
-from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
+from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
 from app.db.models.assessment import (
     MOV as MOVModel,  # SQLAlchemy model - alias to avoid conflict
 )
@@ -17,6 +19,8 @@ from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
     FeedbackComment,
+    MOVAnnotation,
+    MOVFile,
 )
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
@@ -63,10 +67,12 @@ class AssessorService:
 
         # Base query with eager loading to prevent N+1 queries
         # PERFORMANCE FIX: Load governance_area to avoid lazy loading in loop
+        # FIX: Use LEFT OUTER JOIN so assessments with no responses still appear
+        # (prevents filtering out empty/incomplete submissions)
         query = (
             db.query(Assessment)
-            .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
-            .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
+            .outerjoin(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
+            .outerjoin(Indicator, Indicator.id == AssessmentResponse.indicator_id)
             .options(
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
                 selectinload(Assessment.responses)
@@ -83,7 +89,11 @@ class AssessorService:
         # - AWAITING_FINAL_VALIDATION: Ready for validation
         # - REWORK with is_calibration_rework=True: Parallel calibration in progress,
         #   validator can still validate their area if they haven't calibrated it yet
-        if assessor.validator_area_id is not None:
+        # IMPORTANT: Check role explicitly - assessors should NOT be filtered by governance area
+        is_validator = (
+            assessor.role == UserRole.VALIDATOR and assessor.validator_area_id is not None
+        )
+        if is_validator:
             query = query.filter(
                 Indicator.governance_area_id == assessor.validator_area_id,
                 Assessment.status.in_(
@@ -122,7 +132,7 @@ class AssessorService:
         for a in assessments:
             # For validators: Skip assessments where they've already completed their governance area
             # or where they have a pending calibration request (waiting for BLGU)
-            if assessor.validator_area_id is not None:
+            if is_validator:
                 # PARALLEL CALIBRATION: Check if validator has pending calibration for this assessment
                 # If they already requested calibration, don't show until BLGU resubmits
                 pending_calibrations = a.pending_calibrations or []
@@ -168,7 +178,7 @@ class AssessorService:
             pending_count = len(a.pending_calibrations or []) if a.is_calibration_rework else 0
 
             # Calculate area progress based on reviewed indicators
-            if assessor.validator_area_id is not None:
+            if is_validator:
                 # Validator: progress based on their governance area
                 area_responses = [
                     r
@@ -204,7 +214,7 @@ class AssessorService:
 
         # For validators, add completed count as metadata
         # This is used for the "Reviewed by You" KPI
-        if assessor.validator_area_id is not None and len(items) == 0:
+        if is_validator and len(items) == 0:
             # If queue is empty, check if there are completed assessments
             # This helps show progress even when queue is empty
             pass
@@ -294,6 +304,7 @@ class AssessorService:
         public_comment: str | None = None,
         assessor_remarks: str | None = None,
         response_data: dict | None = None,
+        flagged_for_calibration: bool | None = None,
     ) -> dict:
         """
         Validate an assessment response and save feedback comments.
@@ -306,15 +317,20 @@ class AssessorService:
             public_comment: Public comment visible to BLGU user
             assessor_remarks: Remarks from assessor for validators to review
             response_data: Optional checklist/form data to save
+            flagged_for_calibration: Toggle to flag indicator for calibration (validators only)
 
         Returns:
             dict: Success status and details
         """
-        print(f"=== BACKEND: validate_assessment_response for response_id={response_id} ===")
-        print(f"validation_status: {validation_status}")
-        print(f"public_comment: {public_comment}")
-        print(f"assessor_remarks: {assessor_remarks}")
-        print(f"response_data: {response_data}")
+        logger.debug(
+            "validate_assessment_response called: response_id=%s, validation_status=%s, "
+            "public_comment=%s, assessor_remarks=%s, response_data=%s",
+            response_id,
+            validation_status,
+            public_comment,
+            assessor_remarks,
+            response_data,
+        )
 
         # Get the assessment response
         response = db.query(AssessmentResponse).filter(AssessmentResponse.id == response_id).first()
@@ -327,7 +343,7 @@ class AssessorService:
                 "validation_status": validation_status,
             }
 
-        print(f"Current response.response_data BEFORE update: {response.response_data}")
+        logger.debug("response.response_data BEFORE update: %s", response.response_data)
 
         # Update the validation status only if provided (validators only)
         if validation_status is not None:
@@ -337,47 +353,54 @@ class AssessorService:
         if assessor_remarks is not None:
             response.assessor_remarks = assessor_remarks
 
+        # Update flagged_for_calibration if provided (validators only)
+        # This flag allows validators to explicitly mark indicators for calibration
+        # independent of the Met/Unmet compliance status
+        if flagged_for_calibration is not None:
+            response.flagged_for_calibration = flagged_for_calibration
+
         # Update response_data if provided (for checklist data)
         # IMPORTANT: Merge with existing BLGU data, don't overwrite!
         if response_data is not None:
-            print(f"Merging response_data. New validation data: {response_data}")
+            logger.debug("Merging response_data. New validation data: %s", response_data)
 
             # Get existing BLGU response data or empty dict
             existing_data = response.response_data or {}
-            print(f"Existing BLGU response_data: {existing_data}")
+            logger.debug("Existing BLGU response_data: %s", existing_data)
 
             # Merge: Assessor validation data takes precedence for matching keys
             # This preserves BLGU's assessment answers while adding assessor's validation checklist
             merged_data = {**existing_data, **response_data}
 
             response.response_data = merged_data
-            print(f"response.response_data AFTER merge: {response.response_data}")
+            logger.debug("response.response_data AFTER merge: %s", response.response_data)
 
         # Generate remark if indicator has calculation_schema and remark_schema
-        if response.indicator.calculation_schema and response.is_completed:
-            try:
-                from app.services.intelligence_service import intelligence_service
-
-                # Calculate indicator status based on response data
-                indicator_status = intelligence_service.calculate_indicator_status(
-                    db=db,
-                    indicator_id=response.indicator_id,
-                    assessment_data=response.response_data or {},
-                )
-
-                # Generate remark
-                generated_remark = intelligence_service.generate_indicator_remark(
-                    db=db,
-                    indicator_id=response.indicator_id,
-                    indicator_status=indicator_status,
-                    assessment_data=response.response_data or {},
-                )
-
-                if generated_remark:
-                    response.generated_remark = generated_remark
-            except Exception as e:
-                # Log error but don't fail the validation
-                print(f"Failed to generate remark for response {response_id}: {str(e)}")
+        # DISABLED TEMPORARILY: Causing "Unable to add filesystem" crash on some environments
+        # if response.indicator.calculation_schema and response.is_completed:
+        #     try:
+        #         from app.services.intelligence_service import intelligence_service
+        #
+        #         # Calculate indicator status based on response data
+        #         indicator_status = intelligence_service.calculate_indicator_status(
+        #             db=db,
+        #             indicator_id=response.indicator_id,
+        #             assessment_data=response.response_data or {},
+        #         )
+        #
+        #         # Generate remark
+        #         generated_remark = intelligence_service.generate_indicator_remark(
+        #             db=db,
+        #             indicator_id=response.indicator_id,
+        #             indicator_status=indicator_status,
+        #             assessment_data=response.response_data or {},
+        #         )
+        #
+        #         if generated_remark:
+        #             response.generated_remark = generated_remark
+        #     except Exception as e:
+        #         # Log error but don't fail the validation
+        #         print(f"Failed to generate remark for response {response_id}: {str(e)}")
 
         db.commit()
 
@@ -642,8 +665,8 @@ class AssessorService:
                         FeedbackComment.assessor
                     ),
                 ),
-                # Epic 4.0: Load MOV files from the new mov_files table
-                selectinload(Assessment.mov_files),
+                # Epic 4.0: Load MOV files from the new mov_files table with annotations
+                selectinload(Assessment.mov_files).selectinload(MOVFile.annotations),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -737,51 +760,176 @@ class AssessorService:
                 "[YEAR RESOLVER] No active assessment year found, using raw indicator values"
             )
 
-        # Process responses based on assessor's governance area assignment
-        for response in assessment.responses:
-            # Skip parent indicators that have children (only show leaf indicators)
-            if response.indicator.children and len(response.indicator.children) > 0:
-                continue
+        # IMPORTANT: Fetch ALL leaf indicators (not just those with responses)
+        # This ensures assessors see all 86 indicators, even if BLGU hasn't filled them all
+        all_indicators = (
+            db.query(Indicator)
+            .options(
+                selectinload(Indicator.governance_area),
+                selectinload(Indicator.checklist_items),
+                selectinload(Indicator.children),
+            )
+            .filter(
+                # Only get leaf indicators (no children) - these are the ones that need responses
+                ~Indicator.id.in_(
+                    db.query(Indicator.parent_id).filter(Indicator.parent_id.isnot(None))
+                )
+            )
+            .order_by(Indicator.governance_area_id, Indicator.indicator_code)
+            .all()
+        )
 
-            # If assessor has validator_area_id, only show responses in that area
-            # If assessor has no validator_area_id, show all responses (system-wide)
-            if assessor.validator_area_id is not None:
-                if response.indicator.governance_area_id != assessor.validator_area_id:
+        # Create a lookup map of existing responses by indicator_id
+        response_lookup = {r.indicator_id: r for r in assessment.responses}
+
+        # CRITICAL: Create empty AssessmentResponse records for indicators without responses
+        # This ensures assessors can select and review ALL indicators, even those where
+        # BLGU didn't upload any files. Without this, the frontend can't track selection
+        # because responses returned with id=None can't be properly selected.
+        existing_indicator_ids = set(response_lookup.keys())
+        created_responses = 0
+
+        for indicator in all_indicators:
+            if indicator.id not in existing_indicator_ids:
+                # Create empty response in database
+                empty_response = AssessmentResponse(
+                    assessment_id=assessment_id,
+                    indicator_id=indicator.id,
+                    response_data={},
+                    is_completed=False,  # No files = incomplete
+                    requires_rework=False,
+                )
+                db.add(empty_response)
+                db.flush()  # Flush to get the ID
+                response_lookup[indicator.id] = empty_response
+                created_responses += 1
+
+        if created_responses > 0:
+            db.commit()
+            self.logger.info(
+                f"[ASSESSOR VIEW] Created {created_responses} empty responses for indicators "
+                f"without responses (assessment {assessment_id})"
+            )
+
+        # Determine filtering based on user role
+        is_validator_role = assessor.role == UserRole.VALIDATOR
+        should_filter = is_validator_role and assessor.validator_area_id is not None
+
+        self.logger.info(
+            f"[ASSESSOR DEBUG] User {assessor.id} ({assessor.email}): "
+            f"role={assessor.role}, validator_area_id={assessor.validator_area_id}, "
+            f"total_responses_in_assessment={len(assessment.responses)}, "
+            f"total_indicators={len(all_indicators)}, should_filter={should_filter}"
+        )
+
+        # Process ALL indicators (not just responses)
+        for indicator in all_indicators:
+            # Only filter by governance area for VALIDATOR role users
+            if should_filter:
+                if indicator.governance_area_id != assessor.validator_area_id:
                     continue
+
+            # Get existing response for this indicator (may be None if BLGU hasn't filled it yet)
+            response = response_lookup.get(indicator.id)
+
             # Get all MOV files for this indicator (before filtering)
             all_movs_for_indicator = [
                 mov
                 for mov in assessment.mov_files
-                if mov.indicator_id == response.indicator_id and mov.deleted_at is None
+                if mov.indicator_id == indicator.id and mov.deleted_at is None
             ]
+
+            # Get requires_rework status (False if no response exists)
+            requires_rework = response.requires_rework if response else False
 
             # ALWAYS LOG: Debug filtering logic
             self.logger.info(
-                f"[MOV FILTER DEBUG] Indicator {response.indicator_id}: "
-                f"requires_rework={response.requires_rework}, "
+                f"[MOV FILTER DEBUG] Indicator {indicator.id}: "
+                f"has_response={response is not None}, requires_rework={requires_rework}, "
                 f"assessment_status={assessment.status}, "
                 f"rework_requested_at={assessment.rework_requested_at}, "
                 f"total_movs={len(all_movs_for_indicator)}"
             )
 
-            # Apply rework filtering based on assessment status:
+            # GHOST REWORK FILTER (Same as BLGU Dashboard):
+            # During calibration (Phase 2), ignore stale 'requires_rework' flags from Phase 1
+            # unless the indicator belongs to the currently calibrated governance area.
+            is_calibration_rework = assessment.is_calibration_rework or (
+                assessment.status == AssessmentStatus.REWORK and assessment.pending_calibrations
+            )
+            effective_requires_rework = requires_rework
+
+            if is_calibration_rework and effective_requires_rework:
+                # Find active calibration governance area
+                calibration_ga_id = None
+                if assessment.pending_calibrations:
+                    for pc in assessment.pending_calibrations:
+                        if not pc.get("approved", False):
+                            calibration_ga_id = pc.get("governance_area_id")
+                            break
+
+                # If we found an active calibration area, and this indicator is NOT in it,
+                # then this is a "Ghost Rework" flag - ignore it.
+                if (
+                    calibration_ga_id is not None
+                    and indicator.governance_area_id != calibration_ga_id
+                ):
+                    effective_requires_rework = False
+                    self.logger.info(
+                        f"[GHOST REWORK FIX] Ignoring stale rework flag for Indicator {indicator.id} "
+                        f"(Area {indicator.governance_area_id} != Calibration Area {calibration_ga_id})"
+                    )
+
+            # Apply rework filtering based on assessment status and EFFECTIVE rework flag:
             # - If status is AWAITING_FINAL_VALIDATION: Rework cycle is COMPLETE - show all files for validators
             # - If status is REWORK or SUBMITTED_FOR_REVIEW and requires_rework = True: Show only new files for assessor review
             # - Otherwise: Show all files
 
-            from app.db.enums import AssessmentStatus
-
             if assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
-                # Rework cycle is complete - validators see all files that exist
-                filtered_movs = all_movs_for_indicator
+                # Rework cycle is complete - validators see ALL files including rejected ones
+                # Rejected files are marked with is_rejected=True for frontend to display separately
 
-                if response.requires_rework:
-                    self.logger.info(
-                        f"[VALIDATOR FILTER] Indicator {response.indicator_id} (requires_rework=True, status=AWAITING_FINAL_VALIDATION): "
-                        f"Showing all {len(filtered_movs)} MOVs (rework cycle complete)"
+                rework_timestamp = assessment.rework_requested_at
+                calibration_timestamp = assessment.calibration_requested_at
+
+                # Use the most recent rework timestamp
+                effective_timestamp = calibration_timestamp or rework_timestamp
+
+                if effective_timestamp:
+                    # Get file IDs that have annotations (rejected files)
+                    rejected_file_ids = set()
+                    for mov in all_movs_for_indicator:
+                        if mov.annotations and len(mov.annotations) > 0:
+                            # This file has annotations - check if it was uploaded before rework
+                            if mov.uploaded_at < effective_timestamp:
+                                rejected_file_ids.add(mov.id)
+
+                    # Check if there are newer files (replacements) for this indicator
+                    has_new_uploads = any(
+                        mov.uploaded_at >= effective_timestamp for mov in all_movs_for_indicator
                     )
+
+                    if rejected_file_ids and has_new_uploads:
+                        # Mark rejected files but don't filter them out - validators need to see them
+                        # Store rejected_file_ids for use when building the movs array
+                        self.logger.info(
+                            f"[VALIDATOR VIEW] Indicator {indicator.id}: "
+                            f"Marking {len(rejected_file_ids)} rejected file(s) with annotations, "
+                            f"total {len(all_movs_for_indicator)} file(s)"
+                        )
+                    else:
+                        # No rejected files or no replacements - clear the set
+                        rejected_file_ids = set()
+
+                    # For validators, show ALL files (filtered_movs = all)
+                    # The rejected_file_ids set will be used to mark files as rejected
+                    filtered_movs = all_movs_for_indicator
+                else:
+                    # No rework happened - show all files
+                    filtered_movs = all_movs_for_indicator
+                    rejected_file_ids = set()
             elif (
-                response.requires_rework
+                effective_requires_rework
                 and assessment.rework_requested_at
                 and assessment.status
                 in [
@@ -790,82 +938,105 @@ class AssessorService:
                     AssessmentStatus.SUBMITTED,
                 ]
             ):
-                # Assessor reviewing reworked indicator - show only new files uploaded after rework
+                # Assessor reviewing reworked indicator - show ALL files
+                # Mark old files as rejected so frontend can display them separately
                 self.logger.info(
-                    f"[ASSESSOR REWORK FILTER] Assessment {assessment.id}, Indicator {response.indicator_id}: "
+                    f"[ASSESSOR REWORK VIEW] Assessment {assessment.id}, Indicator {indicator.id}: "
                     f"rework_requested_at={assessment.rework_requested_at}, status={assessment.status}"
                 )
 
-                # Log each file with its timestamp
+                rework_timestamp = assessment.rework_requested_at
+
+                # Identify old files (uploaded before rework) as "rejected"
+                rejected_file_ids = set()
+                new_files_count = 0
+
                 for mov in all_movs_for_indicator:
-                    self.logger.info(
-                        f"  - File: {mov.file_name}, "
-                        f"uploaded_at={mov.uploaded_at}, "
-                        f"passes_filter={mov.uploaded_at >= assessment.rework_requested_at}"
-                    )
+                    is_old = mov.uploaded_at < rework_timestamp
+                    is_new = mov.uploaded_at >= rework_timestamp
 
-                filtered_movs = [
-                    mov
-                    for mov in all_movs_for_indicator
-                    if mov.uploaded_at >= assessment.rework_requested_at
-                ]
+                    if is_new:
+                        new_files_count += 1
 
-                # Log filtering results for debugging
+                    # Old files are "rejected" if there are new replacements
+                    # or if they have annotations
+                    if is_old:
+                        has_annotations = mov.annotations and len(mov.annotations) > 0
+                        rejected_file_ids.add(mov.id)
+                        self.logger.info(
+                            f"  - OLD File: {mov.file_name}, "
+                            f"uploaded_at={mov.uploaded_at}, "
+                            f"has_annotations={has_annotations}, marked_as_rejected=True"
+                        )
+                    else:
+                        self.logger.info(
+                            f"  - NEW File: {mov.file_name}, uploaded_at={mov.uploaded_at}"
+                        )
+
+                # Show ALL files (new + old) - frontend will display old files in "Rejected" section
+                filtered_movs = all_movs_for_indicator
+
+                # Log results for debugging
                 self.logger.info(
-                    f"[ASSESSOR REWORK FILTER] Indicator {response.indicator_id}: "
-                    f"Filtered {len(all_movs_for_indicator)} total MOVs to {len(filtered_movs)} new MOVs"
+                    f"[ASSESSOR REWORK VIEW] Indicator {indicator.id}: "
+                    f"Total {len(all_movs_for_indicator)} MOVs, {new_files_count} new, "
+                    f"{len(rejected_file_ids)} old/rejected"
                 )
             else:
                 # Show all files for other cases
                 filtered_movs = all_movs_for_indicator
+                rejected_file_ids = set()  # No rejected files for non-validator views
 
-                if assessment.rework_requested_at and response.requires_rework is False:
+                if assessment.rework_requested_at and requires_rework is False:
                     self.logger.info(
-                        f"[FILTER] Indicator {response.indicator_id} (requires_rework=False): "
+                        f"[FILTER] Indicator {indicator.id} (requires_rework=False): "
                         f"Showing all {len(filtered_movs)} MOVs (indicator already passed)"
                     )
 
+            # Build response data - handle case where response is None (indicator not answered yet)
             response_data = {
-                "id": response.id,
-                "is_completed": response.is_completed,
-                "requires_rework": response.requires_rework,
+                "id": response.id if response else None,
+                "is_completed": response.is_completed if response else False,
+                "requires_rework": effective_requires_rework,
+                "flagged_for_calibration": response.flagged_for_calibration if response else False,
                 "validation_status": response.validation_status.value
-                if response.validation_status
+                if response and response.validation_status
                 else None,
-                "response_data": response.response_data,
-                "created_at": response.created_at.isoformat() + "Z",
-                "updated_at": response.updated_at.isoformat() + "Z",
+                "response_data": response.response_data if response else {},
+                "created_at": response.created_at.isoformat() + "Z" if response else None,
+                "updated_at": response.updated_at.isoformat() + "Z" if response else None,
                 "indicator": {
-                    "id": response.indicator.id,
+                    "id": indicator.id,
                     # Resolve year placeholders in indicator name
-                    "name": year_resolver.resolve_string(response.indicator.name)
+                    "name": year_resolver.resolve_string(indicator.name)
                     if year_resolver
-                    else response.indicator.name,
-                    "code": response.indicator.indicator_code,
-                    "indicator_code": response.indicator.indicator_code,
+                    else indicator.name,
+                    "code": indicator.indicator_code,
+                    "indicator_code": indicator.indicator_code,
                     # Resolve year placeholders in description
-                    "description": year_resolver.resolve_string(response.indicator.description)
+                    "description": year_resolver.resolve_string(indicator.description)
                     if year_resolver
-                    else response.indicator.description,
+                    else indicator.description,
                     # Resolve year placeholders in form_schema (deep resolution)
-                    "form_schema": year_resolver.resolve_schema(response.indicator.form_schema)
+                    "form_schema": year_resolver.resolve_schema(indicator.form_schema)
                     if year_resolver
-                    else response.indicator.form_schema,
-                    "validation_rule": response.indicator.validation_rule,
-                    "remark_schema": response.indicator.remark_schema,
+                    else indicator.form_schema,
+                    "validation_rule": indicator.validation_rule,
+                    "remark_schema": indicator.remark_schema,
                     "governance_area": {
-                        "id": response.indicator.governance_area.id,
-                        "name": response.indicator.governance_area.name,
-                        "code": response.indicator.governance_area.code,
-                        "area_type": response.indicator.governance_area.area_type.value,
+                        "id": indicator.governance_area.id,
+                        "name": indicator.governance_area.name,
+                        "code": indicator.governance_area.code,
+                        "area_type": indicator.governance_area.area_type.value,
                     },
                     # Technical notes - resolve year placeholders
+                    # Return None if no description to let frontend hide the section
                     "technical_notes": (
-                        year_resolver.resolve_string(response.indicator.description)
+                        year_resolver.resolve_string(indicator.description)
                         if year_resolver
-                        else response.indicator.description
+                        else indicator.description
                     )
-                    or "No technical notes available",
+                    or None,
                     # Checklist items for validation - resolve year placeholders in labels
                     "checklist_items": [
                         {
@@ -891,7 +1062,7 @@ class AssessorService:
                             else item.field_notes,
                         }
                         for item in sorted(
-                            response.indicator.checklist_items,
+                            indicator.checklist_items,
                             key=lambda x: x.display_order,
                         )
                     ],
@@ -909,6 +1080,10 @@ class AssessorService:
                         if mov_file.uploaded_at
                         else None,
                         "field_id": mov_file.field_id,
+                        # File-level annotation flag for granular rework tracking
+                        "has_annotations": len(mov_file.annotations) > 0,
+                        # Validator view: Mark rejected files (files with annotations that were replaced)
+                        "is_rejected": mov_file.id in rejected_file_ids,
                     }
                     # Use the filtered_movs list created above (already filtered by rework timestamp)
                     for mov_file in filtered_movs
@@ -924,17 +1099,26 @@ class AssessorService:
                             "id": comment.assessor.id,
                             "name": comment.assessor.name,
                             "email": comment.assessor.email,
+                            "role": comment.assessor.role.value if comment.assessor.role else None,
                         }
                         if comment.assessor
                         else None,
                     }
-                    for comment in response.feedback_comments
+                    for comment in (response.feedback_comments if response else [])
+                ],
+                "has_mov_annotations": any(
+                    len(mov.annotations) > 0 for mov in all_movs_for_indicator
+                ),
+                # List of MOV file IDs that have annotations (for file-level rework tracking)
+                "annotated_mov_file_ids": [
+                    mov.id for mov in all_movs_for_indicator if len(mov.annotations) > 0
                 ],
             }
             # DEBUG: Log requires_rework status
             self.logger.info(
-                f"[ASSESSOR VIEW] Response {response.id} (Indicator {response.indicator.name}): "
-                f"requires_rework={response.requires_rework}, is_completed={response.is_completed}"
+                f"[ASSESSOR VIEW] Indicator {indicator.id} ({indicator.name}): "
+                f"has_response={response is not None}, requires_rework={requires_rework}, "
+                f"is_completed={response.is_completed if response else False}"
             )
             assessment_data["assessment"]["responses"].append(response_data)
 
@@ -989,19 +1173,12 @@ class AssessorService:
         ]:
             raise ValueError("Rework is only allowed when assessment is Submitted for Review")
 
-        # Phase 1 Assessors: Must have at least one indicator with public comments OR MOV annotations to send for rework
-        # (Assessors don't set validation_status, only validators do)
-        has_comments = any(
-            any(
-                fc.comment_type == "validation" and not fc.is_internal_note and fc.comment
-                for fc in response.feedback_comments
-            )
-            for response in assessment.responses
-        )
+        # Phase 1 Assessors: Must have at least one indicator with:
+        # 1. MOV annotations (file-level feedback)
+        # 2. Manual "Flag for Rework" toggle enabled
+        # NOTE: Comments alone are notes and don't trigger rework
 
         # Check for MOV annotations
-        from app.db.models.assessment import MOVAnnotation
-
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         has_annotations = False
         if mov_file_ids:
@@ -1010,10 +1187,18 @@ class AssessorService:
             )
             has_annotations = annotation_count > 0
 
-        if not has_comments and not has_annotations:
+        # Check for manual rework flags in response_data
+        has_manual_rework_flag = any(
+            response.response_data
+            and response.response_data.get("assessor_manual_rework_flag") is True
+            for response in assessment.responses
+        )
+
+        if not has_annotations and not has_manual_rework_flag:
             raise ValueError(
-                "At least one indicator must have feedback (comments or MOV annotations) to send for rework. "
-                "Add comments or annotate MOV files explaining what needs improvement."
+                "At least one indicator must be flagged for rework. "
+                "Toggle 'Flag for Rework' on indicators that need BLGU to re-upload files, "
+                "or add annotations on specific MOV files."
             )
 
         # Update assessment status and rework count
@@ -1024,8 +1209,6 @@ class AssessorService:
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
         # Get all MOV annotations for this assessment to check for indicator-level feedback
-        from app.db.models.assessment import MOVAnnotation
-
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         annotations_by_indicator = {}
 
@@ -1047,22 +1230,26 @@ class AssessorService:
                         annotations_by_indicator[indicator_id] = []
                     annotations_by_indicator[indicator_id].append(annotation)
 
-        # Mark responses requiring rework if they have public comments OR MOV annotations
-        # (Assessors don't set validation_status, only validators do in Phase 2)
+        # Mark responses requiring rework based on:
+        # 1. MOV annotations (always triggers rework - file-level feedback)
+        # 2. Manual "Flag for Rework" toggle (assessor_manual_rework_flag in response_data)
+        # NOTE: Comments alone do NOT trigger rework - only annotations or explicit flag
         for response in assessment.responses:
-            has_public_comments = any(
-                fc.comment_type == "validation" and not fc.is_internal_note and fc.comment
-                for fc in response.feedback_comments
-            )
-
             has_mov_annotations = (
                 response.indicator_id in annotations_by_indicator
                 and len(annotations_by_indicator[response.indicator_id]) > 0
             )
 
-            # Mark for rework if assessor provided feedback (comments OR annotations)
+            # Check for manual rework flag in response_data
+            has_manual_rework_flag = (
+                response.response_data
+                and response.response_data.get("assessor_manual_rework_flag") is True
+            )
+
+            # Mark for rework if assessor flagged it (via annotations OR manual toggle)
+            # Comments alone are just notes - they don't require re-upload
             # CRITICAL: Also reset is_completed to False so BLGU must re-complete the indicator
-            if has_public_comments or has_mov_annotations:
+            if has_mov_annotations or has_manual_rework_flag:
                 response.requires_rework = True
                 response.is_completed = False
 
@@ -1085,6 +1272,17 @@ class AssessorService:
         db.commit()
         db.refresh(assessment)
 
+        # Invalidate dashboard cache immediately so status changes are visible
+        try:
+            from app.core.cache import cache
+
+            cache.delete_pattern("dashboard_kpis:*")
+            self.logger.info(
+                f"[SEND REWORK] Dashboard cache invalidated for assessment {assessment_id}"
+            )
+        except Exception as cache_error:
+            self.logger.warning(f"Failed to invalidate dashboard cache: {cache_error}")
+
         # Trigger AI rework summary generation asynchronously using Celery
         summary_result = {"success": False, "skipped": True}
         try:
@@ -1099,7 +1297,10 @@ class AssessorService:
             }
         except Exception as e:
             # Log the error but don't fail the rework operation
-            print(f"Failed to queue rework summary generation: {e}")
+            logger.error(
+                f"Failed to queue rework summary generation for assessment {assessment_id}: {e}",
+                exc_info=True,
+            )
             summary_result = {"success": False, "error": str(e)}
 
         # Trigger notification asynchronously using Celery
@@ -1115,7 +1316,7 @@ class AssessorService:
             }
         except Exception as e:
             # Log the error but don't fail the rework operation
-            print(f"Failed to queue notification: {e}")
+            logger.error("Failed to queue notification", exc_info=True)
             notification_result = {"success": False, "error": str(e)}
 
         return {
@@ -1220,16 +1421,14 @@ class AssessorService:
                 "Wait for BLGU to resubmit before requesting another calibration."
             )
 
-        # Validator must have at least one indicator marked as FAIL (Unmet) to submit for calibration
-        # Check for FAIL indicators in validator's area responses
-        failed_responses = [
-            r for r in validator_area_responses if r.validation_status == ValidationStatus.FAIL
-        ]
+        # Validator must have at least one indicator flagged for calibration
+        # Check for flagged indicators in validator's area responses
+        flagged_responses = [r for r in validator_area_responses if r.flagged_for_calibration]
 
-        if not failed_responses:
+        if not flagged_responses:
             raise ValueError(
-                "At least one indicator in your governance area must be marked as 'Unmet' "
-                "to submit for calibration. Mark indicators that need corrections as 'Unmet' before calibrating."
+                "At least one indicator in your governance area must be flagged for calibration. "
+                "Use the 'Flag for Calibration' toggle on indicators that need corrections."
             )
 
         # Get governance area name for the response
@@ -1285,38 +1484,49 @@ class AssessorService:
             validator.validator_area_id
         ]
 
-        # Mark ONLY indicators with "Unmet" (FAIL) validation status for rework
+        # Mark ONLY indicators flagged for calibration for rework
         # These are the indicators the BLGU needs to correct and re-upload
         calibrated_count = 0
         calibrated_indicator_ids = []
         for response in validator_area_responses:
-            # Only mark indicators that have FAIL (Unmet) status
-            # Indicators with PASS (Met), CONDITIONAL, or NOT_APPLICABLE status should NOT be calibrated
-            is_unmet = response.validation_status == ValidationStatus.FAIL
-
-            if is_unmet:
+            # Only mark indicators that are flagged for calibration
+            if response.flagged_for_calibration:
                 response.requires_rework = True
                 response.is_completed = False
 
                 # Clear validation_status for this indicator so validator can re-validate after BLGU fixes it
                 response.validation_status = None
 
-                # Clear validator checklist data (assessor_val_ prefix)
+                # Reset the flag after processing
+                response.flagged_for_calibration = False
+
+                # Clear validator checklist data (assessor_val_ and validator_val_ prefixes)
                 if response.response_data:
                     response.response_data = {
                         k: v
                         for k, v in response.response_data.items()
-                        if not k.startswith("assessor_val_")
+                        if not k.startswith("assessor_val_") and not k.startswith("validator_val_")
                     }
 
                 calibrated_count += 1
                 calibrated_indicator_ids.append(response.indicator_id)
                 self.logger.info(
-                    f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was Unmet (FAIL)"
+                    f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was flagged"
                 )
 
         db.commit()
         db.refresh(assessment)
+
+        # Invalidate dashboard cache immediately so calibration status is visible
+        try:
+            from app.core.cache import cache
+
+            cache.delete_pattern("dashboard_kpis:*")
+            self.logger.info(
+                f"[CALIBRATION] Dashboard cache invalidated for assessment {assessment_id}"
+            )
+        except Exception as cache_error:
+            self.logger.warning(f"Failed to invalidate dashboard cache: {cache_error}")
 
         # Trigger notification asynchronously using Celery
         notification_result = {"success": False, "skipped": True}
@@ -1331,7 +1541,7 @@ class AssessorService:
                 "task_id": task.id,
             }
         except Exception as e:
-            print(f"Failed to queue calibration notification: {e}")
+            logger.error("Failed to queue calibration notification", exc_info=True)
             notification_result = {"success": False, "error": str(e)}
 
         # Trigger AI calibration summary generation asynchronously using Celery
@@ -1351,7 +1561,10 @@ class AssessorService:
                 "task_id": summary_task.id,
             }
         except Exception as e:
-            print(f"Failed to queue calibration summary generation: {e}")
+            logger.error(
+                f"Failed to queue calibration summary generation for assessment {assessment_id}: {e}",
+                exc_info=True,
+            )
             summary_result = {"success": False, "error": str(e)}
 
         # Calculate total pending calibrations for response
@@ -1415,8 +1628,12 @@ class AssessorService:
         # Determine if this is Phase 1 (Assessor) or Phase 2 (Validator)
         is_validator = assessor.validator_area_id is not None
 
+        # [DEBUG] Start
+        self.logger.info(f"[FINALIZE DEBUG] Starting finalize for {assessment_id}")
+
         if is_validator:
             # ===== PHASE 2: VALIDATORS (Table Validation) =====
+            self.logger.info("[FINALIZE DEBUG] Phase 2: Validator check")
             # Handle cases where finalization is called on an already-processed assessment
             if assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
                 # Assessment already fully validated - return success (idempotent)
@@ -1467,9 +1684,18 @@ class AssessorService:
 
             # Check if ALL governance areas have been validated
             # (All responses across all areas should have validation_status)
-            all_responses_validated = all(
-                response.validation_status is not None for response in assessment.responses
+            # IMPORTANT: Query the database directly to avoid stale data from eager loading.
+            # This prevents a race condition where two validators finalize concurrently
+            # and the last one doesn't see the other's committed validation_status values.
+            unvalidated_count = (
+                db.query(AssessmentResponse)
+                .filter(
+                    AssessmentResponse.assessment_id == assessment_id,
+                    AssessmentResponse.validation_status.is_(None),
+                )
+                .count()
             )
+            all_responses_validated = unvalidated_count == 0
 
             if all_responses_validated:
                 # All governance areas validated - move to AWAITING_MLGOO_APPROVAL
@@ -1539,6 +1765,15 @@ class AssessorService:
             # They can override the assessor's decisions if needed
             # DO NOT clear validation_status or checklist data here
 
+            # HOWEVER, we MUST clear the 'requires_rework' flag.
+            # If the assessor is finalizing, it means they are satisfied with the current state (or waived issues).
+            # If we don't clear this, these flags will persist and cause "Zombie Rework" items
+            # to appear if the assessment is later returned for Calibration (Phase 2).
+            for response in assessment.responses:
+                response.requires_rework = False
+
+        self.logger.info("[FINALIZE DEBUG] Validation checks passed. Committing to DB...")
+
         # Set validated_at timestamp
         assessment.validated_at = (
             db.query(Assessment).filter(Assessment.id == assessment_id).first().updated_at
@@ -1547,6 +1782,7 @@ class AssessorService:
 
         db.commit()
         db.refresh(assessment)
+        self.logger.info("[FINALIZE DEBUG] DB Commit success")
 
         # Notification #4: If assessor finalized (moved to AWAITING_FINAL_VALIDATION),
         # notify validators for all governance areas in the assessment
@@ -1575,13 +1811,14 @@ class AssessorService:
 
         # Run classification algorithm synchronously
         # This must complete in <5 seconds to ensure real-time user experience
+        self.logger.info("[FINALIZE DEBUG] Importing/Running classification...")
         from app.services.intelligence_service import intelligence_service
 
         try:
             classification_result = intelligence_service.classify_assessment(db, assessment_id)
         except Exception as e:
             # Log the error but don't fail the finalization operation
-            print(f"Failed to run classification: {e}")
+            logger.error("Failed to run classification", exc_info=True)
             classification_result = {"success": False, "error": str(e)}
 
         # Calculate BBI statuses for all active BBIs
@@ -1596,7 +1833,7 @@ class AssessorService:
             }
         except Exception as e:
             # Log the error but don't fail the finalization operation
-            print(f"Failed to calculate BBI statuses: {e}")
+            logger.error("Failed to calculate BBI statuses", exc_info=True)
             bbi_calculation_result = {"success": False, "error": str(e)}
 
         # Notification #7: If validator completed ALL governance areas (status = AWAITING_MLGOO_APPROVAL),
@@ -1872,6 +2109,342 @@ class AssessorService:
             },
             "assessment_period": "SGLGB 2024",  # Can be made dynamic
             "governance_area_name": governance_area_name,
+        }
+
+    # =========================================================================
+    # Review History Methods
+    # =========================================================================
+
+    def get_review_history(
+        self,
+        db: Session,
+        user: User,
+        assessment_year: int | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        outcome: str | None = None,
+    ) -> dict:
+        """
+        Get paginated review history for assessors and validators.
+
+        Shows COMPLETED assessments that the user has reviewed:
+        - Assessors: Assessments where reviewed_by == user.id
+        - Validators: Assessments with responses in their governance area
+
+        Args:
+            db: Database session
+            user: Current user (assessor or validator)
+            assessment_year: Optional year filter (defaults to active year)
+            page: Page number (1-indexed)
+            page_size: Items per page (max 100)
+            date_from: Filter by completion date >= date_from
+            date_to: Filter by completion date <= date_to
+            outcome: Filter by final_compliance_status (PASSED/FAILED)
+
+        Returns:
+            Paginated list of review history items with summary counts
+        """
+        from sqlalchemy import func
+
+        # Get active year if not specified
+        if assessment_year is None:
+            from app.services.assessment_year_service import assessment_year_service
+
+            assessment_year = assessment_year_service.get_active_year_number(db)
+
+        # Determine if user is a validator
+        is_validator = user.role == UserRole.VALIDATOR and user.validator_area_id is not None
+
+        # Base query for COMPLETED assessments
+        if is_validator:
+            # Validators: Show assessments with responses in their governance area
+            # Use a subquery to get distinct assessment IDs first to avoid PostgreSQL DISTINCT ON issues
+            assessment_ids_subquery = (
+                db.query(Assessment.id)
+                .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
+                .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
+                .filter(
+                    Assessment.status == AssessmentStatus.COMPLETED,
+                    Indicator.governance_area_id == user.validator_area_id,
+                )
+                .distinct()
+                .subquery()
+            )
+            query = db.query(Assessment).filter(
+                Assessment.id.in_(db.query(assessment_ids_subquery.c.id))
+            )
+        else:
+            # Assessors: Show assessments they reviewed (reviewed_by == user.id)
+            query = db.query(Assessment).filter(
+                Assessment.status == AssessmentStatus.COMPLETED,
+                Assessment.reviewed_by == user.id,
+            )
+
+        # Apply year filter
+        if assessment_year:
+            query = query.filter(Assessment.assessment_year == assessment_year)
+
+        # Apply date filters (on completed_at which is mlgoo_approved_at or validated_at)
+        if date_from:
+            query = query.filter(
+                func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at) >= date_from
+            )
+        if date_to:
+            query = query.filter(
+                func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at) <= date_to
+            )
+
+        # Apply outcome filter
+        if outcome:
+            query = query.filter(Assessment.final_compliance_status == outcome)
+
+        # Get total count before pagination
+        total = query.count()
+
+        # Apply pagination and ordering (most recent first)
+        offset = (page - 1) * page_size
+        assessments = (
+            query.options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
+            )
+            .order_by(func.coalesce(Assessment.mlgoo_approved_at, Assessment.validated_at).desc())
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
+        # Get validator's governance area name if applicable
+        governance_area_name = None
+        if is_validator:
+            area = (
+                db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            )
+            if area:
+                governance_area_name = area.name
+
+        # Build response items
+        items = []
+        for assessment in assessments:
+            # Get barangay info
+            barangay_name = "Unknown"
+            municipality_name = None  # Barangay model doesn't have municipality field
+            if assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            # Count validation statuses for this assessment
+            # For validators, only count indicators in their governance area
+            pass_count = 0
+            fail_count = 0
+            conditional_count = 0
+            indicator_count = 0
+
+            for response in assessment.responses:
+                # For validators, filter by governance area
+                if is_validator and response.indicator:
+                    if response.indicator.governance_area_id != user.validator_area_id:
+                        continue
+
+                indicator_count += 1
+                if response.validation_status == ValidationStatus.PASS:
+                    pass_count += 1
+                elif response.validation_status == ValidationStatus.FAIL:
+                    fail_count += 1
+                elif response.validation_status == ValidationStatus.CONDITIONAL:
+                    conditional_count += 1
+
+            # Determine completion date
+            completed_at = assessment.mlgoo_approved_at or assessment.validated_at
+
+            items.append(
+                {
+                    "assessment_id": assessment.id,
+                    "barangay_name": barangay_name,
+                    "municipality_name": municipality_name,
+                    "governance_area_name": governance_area_name,
+                    "submitted_at": assessment.submitted_at,
+                    "completed_at": completed_at,
+                    "final_compliance_status": assessment.final_compliance_status,
+                    "rework_count": assessment.rework_count or 0,
+                    "calibration_count": len(assessment.calibrated_area_ids or []),
+                    "was_reworked": (assessment.rework_count or 0) > 0,
+                    "was_calibrated": len(assessment.calibrated_area_ids or []) > 0,
+                    "indicator_count": indicator_count,
+                    "pass_count": pass_count,
+                    "fail_count": fail_count,
+                    "conditional_count": conditional_count,
+                }
+            )
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "has_more": (page * page_size) < total,
+        }
+
+    def get_review_history_detail(
+        self,
+        db: Session,
+        user: User,
+        assessment_id: int,
+    ) -> dict:
+        """
+        Get detailed per-indicator decisions for a specific completed assessment.
+
+        Used when user expands a row to see inline indicator details.
+
+        Args:
+            db: Database session
+            user: Current user (assessor or validator)
+            assessment_id: The assessment to get details for
+
+        Returns:
+            Detailed indicator data including validation status, comments, etc.
+        """
+        # Load assessment with all related data
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+                selectinload(Assessment.responses)
+                .joinedload(AssessmentResponse.indicator)
+                .joinedload(Indicator.governance_area),
+                selectinload(Assessment.responses)
+                .selectinload(AssessmentResponse.feedback_comments)
+                .joinedload(FeedbackComment.assessor),
+                # Load MOV files at assessment level (they have indicator_id for filtering)
+                selectinload(Assessment.mov_files),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            return {"success": False, "message": "Assessment not found"}
+
+        # Verify access
+        is_validator = user.role == UserRole.VALIDATOR and user.validator_area_id is not None
+
+        if is_validator:
+            # Validators must have responses in their governance area
+            has_access = any(
+                r.indicator and r.indicator.governance_area_id == user.validator_area_id
+                for r in assessment.responses
+            )
+        else:
+            # Assessors must be the reviewer
+            has_access = assessment.reviewed_by == user.id
+
+        if not has_access:
+            return {"success": False, "message": "Access denied"}
+
+        # Get barangay info
+        barangay_name = "Unknown"
+        municipality_name = None  # Barangay model doesn't have municipality field
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Get validator's governance area name if applicable
+        governance_area_name = None
+        if is_validator:
+            area = (
+                db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+            )
+            if area:
+                governance_area_name = area.name
+
+        # Build indicator list
+        indicators = []
+        for response in assessment.responses:
+            # For validators, filter by governance area
+            if is_validator and response.indicator:
+                if response.indicator.governance_area_id != user.validator_area_id:
+                    continue
+
+            indicator = response.indicator
+            if not indicator:
+                continue
+
+            # Build feedback comments list
+            feedback_comments = []
+            for fc in response.feedback_comments or []:
+                assessor_name = "Unknown"
+                assessor_role = None
+                if fc.assessor:
+                    assessor_name = fc.assessor.email or fc.assessor.full_name or "Unknown"
+                    assessor_role = fc.assessor.role.value if fc.assessor.role else None
+
+                feedback_comments.append(
+                    {
+                        "id": fc.id,
+                        "comment": fc.comment,
+                        "assessor_name": assessor_name,
+                        "assessor_role": assessor_role,
+                        "created_at": fc.created_at,
+                        "is_internal_note": fc.is_internal_note or False,
+                    }
+                )
+
+            # Sort comments by date (newest first)
+            feedback_comments.sort(key=lambda x: x["created_at"], reverse=True)
+
+            # Check for MOV annotations - MOV files are at assessment level with indicator_id
+            has_mov_annotations = False
+            indicator_mov_files = [
+                mf
+                for mf in (assessment.mov_files or [])
+                if mf.indicator_id == indicator.id and mf.deleted_at is None
+            ]
+            mov_count = len(indicator_mov_files)
+            for mov_file in indicator_mov_files:
+                if hasattr(mov_file, "annotations") and mov_file.annotations:
+                    has_mov_annotations = True
+                    break
+
+            # Get indicator's governance area name
+            indicator_area_name = None
+            if indicator.governance_area:
+                indicator_area_name = indicator.governance_area.name
+
+            indicators.append(
+                {
+                    "indicator_id": indicator.id,
+                    "indicator_code": indicator.indicator_code or "",
+                    "indicator_name": indicator.name or "",
+                    "governance_area_name": indicator_area_name,
+                    "validation_status": response.validation_status,
+                    "assessor_remarks": response.assessor_remarks,
+                    "flagged_for_calibration": response.flagged_for_calibration or False,
+                    "requires_rework": response.requires_rework or False,
+                    "feedback_comments": feedback_comments,
+                    "has_mov_annotations": has_mov_annotations,
+                    "mov_count": mov_count,
+                }
+            )
+
+        # Sort indicators by code
+        indicators.sort(key=lambda x: x["indicator_code"])
+
+        # Completion date
+        completed_at = assessment.mlgoo_approved_at or assessment.validated_at
+
+        return {
+            "success": True,
+            "assessment_id": assessment.id,
+            "assessment_year": assessment.assessment_year,
+            "barangay_name": barangay_name,
+            "municipality_name": municipality_name,
+            "governance_area_name": governance_area_name,
+            "submitted_at": assessment.submitted_at,
+            "completed_at": completed_at,
+            "final_compliance_status": assessment.final_compliance_status,
+            "rework_comments": assessment.rework_comments,
+            "calibration_comments": None,  # Could add if needed
+            "indicators": indicators,
         }
 
 

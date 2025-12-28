@@ -28,10 +28,28 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2, AlertCircle } from "lucide-react";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import { useEffectiveYear, useIsActiveYear, useAccessibleYears } from "@/hooks/useAssessmentYear";
+import { TourHelpButton } from "@/components/tour";
+import { useTour } from "@/providers/TourProvider";
+import { getDashboardTourSteps } from "@/components/tour";
+import { useTourAutoStart } from "@/hooks/useTourAutoStart";
 
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
   const router = useRouter();
+  const { registerTourSteps, tourLanguage, shouldShowTour, startTour } = useTour();
+
+  // Register dashboard tour steps
+  useEffect(() => {
+    registerTourSteps("dashboard", getDashboardTourSteps(tourLanguage));
+  }, [registerTourSteps, tourLanguage]);
+
+  // Auto-start tour for first-time BLGU users
+  useTourAutoStart({
+    tourName: "dashboard",
+    firstTimeOnly: true,
+    delay: 2000, // Wait for page to fully load
+    blguOnly: true,
+  });
 
   // Year state from global store - useAccessibleYears fetches and initializes the store
   const { isLoading: isLoadingYears } = useAccessibleYears();
@@ -75,11 +93,11 @@ export default function BLGUDashboardPage() {
     {
       query: {
         enabled: isBLGU && effectiveYear !== null, // Only fetch for BLGU users when year is available
-        refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
-        refetchOnMount: false, // Trust cache on remount
-        staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
+        refetchOnWindowFocus: true, // Refetch when user returns to tab for fresh status
+        refetchOnMount: true, // Fresh data on mount for accurate status
+        staleTime: 30 * 1000, // 30 seconds - shorter for faster invalidation after uploads
         gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-      },
+      } as any,
     }
   );
 
@@ -102,11 +120,11 @@ export default function BLGUDashboardPage() {
     {
       query: {
         enabled: !!assessmentId,
-        refetchOnWindowFocus: false, // Only refetch when explicitly invalidated
-        refetchOnMount: false, // Trust cache on remount
-        staleTime: 2 * 60 * 1000, // 2 minutes - data is fresh for this duration
+        refetchOnWindowFocus: true, // Refetch when user returns for fresh status updates
+        refetchOnMount: true, // Fresh data on mount for accurate progress
+        staleTime: 30 * 1000, // 30 seconds - shorter for faster invalidation after uploads
         gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-      },
+      } as any,
     }
   );
 
@@ -190,13 +208,15 @@ export default function BLGUDashboardPage() {
                     Viewing {effectiveYear}
                   </span>
                 )}
+                {/* Tour Help Button - Prominent variant for high visibility */}
+                <TourHelpButton tourName="dashboard" variant="prominent" />
               </div>
               <p className="mt-2 text-[var(--text-secondary)]">
                 Track your SGLGB assessment progress through each phase
               </p>
             </div>
             {/* Year Selector */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0" data-tour="year-selector">
               <YearSelector size="md" />
             </div>
           </div>
@@ -207,7 +227,10 @@ export default function BLGUDashboardPage() {
           {/* Timeline Sidebar - Desktop */}
           <div className="hidden lg:block">
             <div className="sticky top-6">
-              <div className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-4">
+              <div
+                className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-4"
+                data-tour="phase-timeline"
+              >
                 <PhaseTimeline
                   submittedAt={dashboardData.submitted_at}
                   reworkRequestedAt={dashboardData.rework_requested_at}
@@ -227,7 +250,7 @@ export default function BLGUDashboardPage() {
           {/* Phase Sections */}
           <div className="lg:col-span-3 space-y-6">
             {/* Mobile Timeline - Collapsible */}
-            <div className="lg:hidden">
+            <div className="lg:hidden" data-tour="phase-timeline">
               <details className="bg-[var(--card)] rounded-lg border border-[var(--border)]">
                 <summary className="p-4 cursor-pointer font-medium text-[var(--foreground)]">
                   View Assessment Journey

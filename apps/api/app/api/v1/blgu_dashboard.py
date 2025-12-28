@@ -675,22 +675,39 @@ def get_blgu_dashboard(
     ai_recommendations = None
 
     if assessment.status == AssessmentStatus.COMPLETED:
-        # Now we can expose compliance data
-        final_compliance_status = (
-            assessment.final_compliance_status.value if assessment.final_compliance_status else None
-        )
-
-        # Parse area_results if available
+        # Parse area_results - CALCULATE from checklist items (same as GAR)
+        # This ensures BLGU dashboard shows same results as GAR
         if assessment.area_results:
-            # First, calculate indicator counts per governance area from responses
-            # This gives us actual Pass/Fail/Conditional counts for the verdict display
-            area_indicator_counts: dict[str, dict[str, int]] = {}
+            from app.db.models.governance_area import ChecklistItem
+            from app.services.checklist_utils import (
+                calculate_governance_area_result,
+                calculate_indicator_status_from_checklist,
+                clean_checklist_label,
+                get_checklist_validation_result,
+                is_minimum_requirement,
+            )
 
-            # Get all governance areas for ID lookup
+            # Get all governance areas for lookup
             all_governance_areas = db.query(GovernanceArea).all()
             governance_area_by_name = {ga.name: ga for ga in all_governance_areas}
 
-            # Initialize counts for each area
+            # Build response lookup
+            response_by_indicator_id = {r.indicator_id: r for r in assessment.responses}
+
+            # Calculate indicator statuses from checklist items (same logic as GAR)
+            area_indicator_counts: dict[str, dict[str, int]] = {}
+            area_indicator_statuses: dict[str, list[str | None]] = {}
+
+            # Get BBI results for this assessment to check BBI 4-tier status (same as GAR)
+            # BBI 4-tier rule per DILG MC 2024-417:
+            # For BBI indicators, FAIL only means NON_FUNCTIONAL (0%).
+            # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL all count as PASS.
+            from app.db.enums import BBIStatus
+            from app.db.models.bbi import BBIResult
+
+            bbi_results = db.query(BBIResult).filter(BBIResult.assessment_id == assessment.id).all()
+            bbi_results_map = {r.indicator_id: r for r in bbi_results if r.indicator_id}
+
             for area_name in assessment.area_results.keys():
                 area_indicator_counts[area_name] = {
                     "total": 0,
@@ -698,76 +715,173 @@ def get_blgu_dashboard(
                     "failed": 0,
                     "conditional": 0,
                 }
+                area_indicator_statuses[area_name] = []
 
-            # Count validation statuses from responses
-            # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
-            for response in assessment.responses:
-                if response.indicator and response.indicator.governance_area:
-                    ga_name = response.indicator.governance_area.name
-                    if ga_name in area_indicator_counts:
-                        area_indicator_counts[ga_name]["total"] += 1
-                        if response.validation_status:
-                            status_val = (
-                                response.validation_status.value
-                                if hasattr(response.validation_status, "value")
-                                else response.validation_status
-                            )
-                            if status_val == "PASS":
-                                area_indicator_counts[ga_name]["passed"] += 1
-                            elif status_val == "FAIL":
-                                area_indicator_counts[ga_name]["failed"] += 1
-                            elif status_val == "CONDITIONAL":
-                                area_indicator_counts[ga_name]["conditional"] += 1
+                # Get governance area
+                ga = governance_area_by_name.get(area_name)
+                if not ga:
+                    continue
 
-            # area_results is stored as {"Area Name": "Passed"/"Failed"} from intelligence_service
+                # Get all indicators for this area
+                area_indicators = (
+                    db.query(Indicator).filter(Indicator.governance_area_id == ga.id).all()
+                )
+
+                # Build parent IDs to identify leaf indicators
+                parent_ids = {ind.parent_id for ind in area_indicators if ind.parent_id}
+                leaf_indicators = [ind for ind in area_indicators if ind.id not in parent_ids]
+
+                for indicator in leaf_indicators:
+                    response = response_by_indicator_id.get(indicator.id)
+
+                    # Get checklist items for this indicator
+                    checklist_items = (
+                        db.query(ChecklistItem)
+                        .filter(ChecklistItem.indicator_id == indicator.id)
+                        .order_by(ChecklistItem.display_order)
+                        .all()
+                    )
+
+                    # Filter to minimum requirements only (same as GAR)
+                    gar_checklist = []
+                    for item in checklist_items:
+                        if not is_minimum_requirement(
+                            item.label,
+                            item.item_type,
+                            indicator.indicator_code,
+                            item.is_profiling_only,
+                        ):
+                            continue
+                        validation_result = get_checklist_validation_result(item, response)
+                        display_label = clean_checklist_label(item.label, indicator.indicator_code)
+                        gar_checklist.append(
+                            {
+                                "item_id": item.item_id,
+                                "label": display_label,
+                                "validation_result": validation_result,
+                            }
+                        )
+
+                    # FIRST: Check if there's a stored validation_status (set by Validator or MLGOO)
+                    # This is the authoritative decision and should be used (same as GAR)
+                    validation_status = None
+                    if response and response.validation_status:
+                        validation_status = (
+                            response.validation_status.value
+                            if hasattr(response.validation_status, "value")
+                            else response.validation_status
+                        )
+
+                    # FALLBACK: Only calculate from checklist if no validation_status is set
+                    if validation_status is None and gar_checklist:
+                        validation_status = calculate_indicator_status_from_checklist(
+                            gar_checklist,
+                            indicator.indicator_code,
+                            indicator.validation_rule,
+                        )
+
+                    # Skip profiling-only indicators - they don't affect pass/fail (same as GAR)
+                    if indicator.is_profiling_only:
+                        continue
+
+                    # Apply BBI 4-tier rule (same as GAR)
+                    # For BBI indicators, FAIL only counts if NON_FUNCTIONAL (0%)
+                    # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL count as PASS
+                    effective_status = validation_status
+                    if validation_status == "FAIL" and indicator.is_bbi:
+                        bbi_result = bbi_results_map.get(indicator.id)
+                        if bbi_result:
+                            # Only NON_FUNCTIONAL is truly a fail for BBI
+                            if bbi_result.compliance_rating != BBIStatus.NON_FUNCTIONAL.value:
+                                effective_status = "PASS"  # BBI 4-tier: treat as pass
+
+                    # Count the effective status (after BBI 4-tier adjustment)
+                    area_indicator_counts[area_name]["total"] += 1
+                    if effective_status == "PASS":
+                        area_indicator_counts[area_name]["passed"] += 1
+                    elif effective_status == "FAIL":
+                        area_indicator_counts[area_name]["failed"] += 1
+                    elif effective_status == "CONDITIONAL":
+                        area_indicator_counts[area_name]["conditional"] += 1
+
+                    # Use effective status for area result calculation
+                    area_indicator_statuses[area_name].append(effective_status)
+
+            # Build area_results_list with CALCULATED governance area results
             area_results_list = []
-            for area_name, status in assessment.area_results.items():
-                # Handle both old format (dict with area_data) and new format (string status)
-                if isinstance(status, dict):
-                    # Old format: area_data is a dictionary
-                    area_results_list.append(
-                        {
-                            "area_id": status.get("area_id"),
-                            "area_name": status.get("area_name", area_name),
-                            "area_type": status.get("area_type", "Core"),
-                            "passed": status.get("passed", False),
-                            "total_indicators": status.get("total_indicators", 0),
-                            "passed_indicators": status.get("passed_indicators", 0),
-                            "failed_indicators": status.get("failed_indicators", 0),
-                        }
-                    )
+            for area_name in assessment.area_results.keys():
+                counts = area_indicator_counts.get(
+                    area_name,
+                    {"total": 0, "passed": 0, "failed": 0, "conditional": 0},
+                )
+                ga = governance_area_by_name.get(area_name)
+
+                # Calculate governance area result from indicator statuses (same as GAR)
+                indicator_statuses = area_indicator_statuses.get(area_name, [])
+                calculated_area_result = calculate_governance_area_result(indicator_statuses)
+
+                # Determine area type - normalize to title case for frontend consistency
+                if ga and ga.area_type:
+                    area_type_value = ga.area_type.value.title()  # "CORE" -> "Core"
+                elif area_name in [
+                    "Financial Administration and Sustainability",
+                    "Disaster Preparedness",
+                    "Safety, Peace and Order",
+                ]:
+                    area_type_value = "Core"
                 else:
-                    # New format: status is "Passed" or "Failed" string
-                    # Use the calculated counts from responses
-                    counts = area_indicator_counts.get(
-                        area_name,
-                        {"total": 0, "passed": 0, "failed": 0, "conditional": 0},
-                    )
-                    ga = governance_area_by_name.get(area_name)
-                    area_results_list.append(
-                        {
-                            "area_id": ga.id if ga else None,
-                            "area_name": area_name,
-                            "area_type": ga.area_type.value
-                            if ga and ga.area_type
-                            else (
-                                "Core"
-                                if area_name
-                                in [
-                                    "Financial Administration and Sustainability",
-                                    "Disaster Preparedness",
-                                    "Safety, Peace and Order",
-                                ]
-                                else "Essential"
-                            ),
-                            "passed": status == "Passed",
-                            "total_indicators": counts["total"],
-                            # SGLGB Rule: Conditional = Considered = PASS (counts toward passing)
-                            "passed_indicators": counts["passed"] + counts["conditional"],
-                            "failed_indicators": counts["failed"],
-                        }
-                    )
+                    area_type_value = "Essential"
+
+                area_results_list.append(
+                    {
+                        "area_id": ga.id if ga else None,
+                        "area_name": area_name,
+                        "area_type": area_type_value,
+                        "passed": calculated_area_result == "Passed",
+                        "total_indicators": counts["total"],
+                        # SGLGB Rule: Conditional = Considered = PASS (counts toward passing)
+                        "passed_indicators": counts["passed"] + counts["conditional"],
+                        "failed_indicators": counts["failed"],
+                    }
+                )
             area_results = area_results_list
+
+            # Recalculate final_compliance_status using 3+1 rule based on calculated area results
+            # 3+1 Rule: ALL 3 CORE areas must pass + at least 1 ESSENTIAL area must pass
+            core_areas = [
+                "Financial Administration and Sustainability",
+                "Disaster Preparedness",
+                "Safety, Peace and Order",
+            ]
+            essential_areas = [
+                "Social Protection and Sensitivity",
+                "Business-Friendliness and Competitiveness",
+                "Environmental Management",
+            ]
+
+            # Check core areas (all 3 must pass)
+            core_results = {
+                r["area_name"]: r["passed"]
+                for r in area_results_list
+                if r["area_name"] in core_areas
+            }
+            all_core_passed = all(core_results.get(area, False) for area in core_areas)
+
+            # Check essential areas (at least 1 must pass)
+            essential_results = {
+                r["area_name"]: r["passed"]
+                for r in area_results_list
+                if r["area_name"] in essential_areas
+            }
+            at_least_one_essential_passed = any(
+                essential_results.get(area, False) for area in essential_areas
+            )
+
+            # Apply 3+1 rule
+            if all_core_passed and at_least_one_essential_passed:
+                final_compliance_status = "PASSED"
+            else:
+                final_compliance_status = "FAILED"
 
         # AI recommendations (CapDev)
         ai_recommendations = assessment.ai_recommendations
@@ -776,6 +890,20 @@ def get_blgu_dashboard(
     bbi_compliance = None
     if assessment.status == AssessmentStatus.COMPLETED:
         from app.services.bbi_service import bbi_service
+
+        # Recalculate BBI results to ensure consistency with GAR checklist-based validation
+        # This updates stored BBI results using the same calculation logic as GAR
+        try:
+            bbi_service.calculate_all_bbi_compliance(db, assessment)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            # Log but don't fail - continue with potentially stale results
+            import logging
+
+            logging.getLogger(__name__).warning(
+                f"Failed to recalculate BBI results for assessment {assessment_id}: {e}"
+            )
 
         bbi_results = bbi_service.get_bbi_results(db, assessment_id)
         if bbi_results:
@@ -809,8 +937,8 @@ def get_blgu_dashboard(
                         # sub_indicator_results is stored as dict in DB, transform to list format
                         # or return empty list since BLGU view doesn't need detailed breakdown
                         "sub_indicator_results": [],
-                        "calculation_date": r.calculation_date.isoformat() + "Z"
-                        if r.calculation_date
+                        "calculation_date": r.calculated_at.isoformat() + "Z"
+                        if r.calculated_at
                         else None,
                     }
                     for r in bbi_results
@@ -822,8 +950,8 @@ def get_blgu_dashboard(
                     "low_functional_count": low_functional,
                     "average_compliance_percentage": round(avg_compliance, 2),
                 },
-                "calculated_at": bbi_results[0].calculation_date.isoformat() + "Z"
-                if bbi_results and bbi_results[0].calculation_date
+                "calculated_at": bbi_results[0].calculated_at.isoformat() + "Z"
+                if bbi_results and bbi_results[0].calculated_at
                 else None,
             }
 
@@ -852,6 +980,7 @@ def get_blgu_dashboard(
         # MLGOO RE-calibration tracking (distinct from Validator calibration)
         "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,  # True if MLGOO requested RE-calibration
         "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,  # Specific indicators to address
+        "mlgoo_recalibration_mov_file_ids": assessment.mlgoo_recalibration_mov_file_ids,  # Specific MOV files flagged
         "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,  # MLGOO's explanation
         "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,  # Count of RE-calibrations (max 1)
         "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat()
@@ -864,6 +993,12 @@ def get_blgu_dashboard(
         "completion_percentage": round(completion_percentage, 2),
         "governance_areas": governance_areas_list,
         "rework_comments": rework_comments,
+        "rework_submitted_at": assessment.rework_submitted_at.isoformat() + "Z"
+        if assessment.rework_submitted_at
+        else None,  # When BLGU resubmitted after rework (locks resubmit button)
+        "calibration_submitted_at": assessment.calibration_submitted_at.isoformat() + "Z"
+        if assessment.calibration_submitted_at
+        else None,  # When BLGU resubmitted after calibration (locks resubmit button)
         "mov_annotations_by_indicator": mov_annotations_by_indicator,  # MOV annotations grouped by indicator
         "addressed_indicator_ids": addressed_indicator_ids,  # Indicators with feedback that have new uploads after rework
         # AI Summary for rework/calibration guidance

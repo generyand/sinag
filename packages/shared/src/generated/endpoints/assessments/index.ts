@@ -41,7 +41,13 @@ import type {
   MOVCreate,
   Mov,
   PostAssessmentsAssessmentIdAnswersParams,
+  PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202,
+  PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams,
+  PostAssessmentsAssessmentIdReworkSummaryRegenerate202,
+  PostAssessmentsAssessmentIdReworkSummaryRegenerateParams,
   PostAssessmentsIdGenerateInsights202,
+  PostAssessmentsIdRegenerateInsights202,
+  PostAssessmentsIdRegenerateInsightsParams,
   RequestReworkRequest,
   RequestReworkResponse,
   ResubmitAssessmentResponse,
@@ -118,7 +124,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsDashboard>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsDashboard>>>
@@ -202,7 +208,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsMyAssessmentQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsMyAssessment>>>
@@ -277,7 +283,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(responseId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsResponses$ResponseId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(responseId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsResponses$ResponseId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsResponsesResponseIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsResponses$ResponseId>>>
@@ -706,7 +712,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessmentsList>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsListQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessmentsList>>>
@@ -816,6 +822,92 @@ export const usePostAssessmentsIdGenerateInsights = <TError = HTTPValidationErro
       > => {
 
       const mutationOptions = getPostAssessmentsIdGenerateInsightsMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Regenerate AI-powered insights for an assessment.
+
+This endpoint allows MLGOO admins to manually trigger regeneration of AI insights,
+for example if the AI model has been updated or if there was an error with
+the original generation.
+
+**Access:** MLGOO_DILG only
+
+**Business Rules:**
+- Assessment must be validated (status >= VALIDATED)
+- If force=false and insights already exist, returns cached status
+- If force=true, clears existing insights and regenerates
+- Task runs asynchronously via Celery
+
+Args:
+    id: Assessment ID
+    force: If True, regenerate even if insights already exist
+    db: Database session
+    current_user: Current authenticated admin user
+
+Returns:
+    dict: Task dispatch confirmation with task_id
+ * @summary Regenerate Insights
+ */
+export const postAssessments$IdRegenerateInsights = (
+    id: number,
+    params?: PostAssessmentsIdRegenerateInsightsParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<PostAssessmentsIdRegenerateInsights202>(
+      {url: `/api/v1/assessments/${id}/regenerate-insights`, method: 'POST',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsIdRegenerateInsightsMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, TError,{id: number;params?: PostAssessmentsIdRegenerateInsightsParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, TError,{id: number;params?: PostAssessmentsIdRegenerateInsightsParams}, TContext> => {
+
+const mutationKey = ['postAssessmentsIdRegenerateInsights'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, {id: number;params?: PostAssessmentsIdRegenerateInsightsParams}> = (props) => {
+          const {id,params} = props ?? {};
+
+          return  postAssessments$IdRegenerateInsights(id,params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsIdRegenerateInsightsMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>>
+    
+    export type PostAssessmentsIdRegenerateInsightsMutationError = HTTPValidationError
+
+    /**
+ * @summary Regenerate Insights
+ */
+export const usePostAssessmentsIdRegenerateInsights = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>, TError,{id: number;params?: PostAssessmentsIdRegenerateInsightsParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$IdRegenerateInsights>>,
+        TError,
+        {id: number;params?: PostAssessmentsIdRegenerateInsightsParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsIdRegenerateInsightsMutationOptions(options);
 
       return useMutation(mutationOptions);
     }
@@ -998,7 +1090,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdAnswers>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdAnswers>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdAnswersQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdAnswers>>>
@@ -1121,9 +1213,10 @@ export const usePostAssessmentsAssessmentIdValidateCompleteness = <TError = HTTP
     /**
  * Submit an assessment for assessor review (Story 5.5).
 
-This endpoint allows a BLGU user to submit their completed assessment.
-The assessment must pass validation (all indicators complete, all MOVs uploaded)
-before submission is allowed.
+This endpoint allows a BLGU user to submit their assessment for review.
+Incomplete assessments are allowed - the user confirms via a warning dialog
+on the frontend. This supports BLGUs who genuinely don't have MOVs for
+certain indicators.
 
 Authorization:
     - BLGU_USER role required
@@ -1131,8 +1224,8 @@ Authorization:
 
 Workflow:
     1. Validate user authorization
-    2. Validate assessment completeness using SubmissionValidationService
-    3. If valid, update status to SUBMITTED and set submitted_at timestamp
+    2. Log validation status (incomplete submissions are allowed with warning)
+    3. Update status to SUBMITTED and set submitted_at timestamp
     4. Lock assessment for editing (is_locked property becomes True)
     5. Return success response
 
@@ -1146,7 +1239,6 @@ Returns:
 
 Raises:
     HTTPException 403: User not authorized to submit this assessment
-    HTTPException 400: Assessment validation failed (incomplete or missing MOVs)
     HTTPException 404: Assessment not found
  * @summary Submit Assessment
  */
@@ -1315,8 +1407,8 @@ export const usePostAssessmentsAssessmentIdRequestRework = <TError = HTTPValidat
  * Resubmit an assessment after completing rework (Story 5.7).
 
 This endpoint allows a BLGU user to resubmit their assessment after
-addressing the assessor's rework comments. The assessment must be in
-REWORK status and pass validation again.
+addressing the assessor's rework comments. Incomplete resubmissions are
+allowed - the user confirms via a warning dialog on the frontend.
 
 Authorization:
     - BLGU_USER role required
@@ -1324,13 +1416,13 @@ Authorization:
 
 Business Rules:
     - Assessment must be in REWORK status
-    - Assessment must pass validation (completeness + MOVs)
+    - Incomplete resubmissions allowed with warning (supports BLGUs without MOVs)
     - No further rework is allowed after resubmission (rework_count = 1)
 
 Workflow:
     1. Validate user authorization
     2. Check assessment status is REWORK
-    3. Validate completeness using SubmissionValidationService
+    3. Log validation status (incomplete resubmissions allowed with warning)
     4. Update status back to SUBMITTED
     5. Update submitted_at timestamp
     6. Lock assessment again (is_locked becomes True)
@@ -1346,7 +1438,7 @@ Returns:
 
 Raises:
     HTTPException 403: User not authorized
-    HTTPException 400: Invalid status or validation failed
+    HTTPException 400: Invalid status
     HTTPException 404: Assessment not found
  * @summary Resubmit Assessment
  */
@@ -1429,7 +1521,7 @@ Authorization:
 Business Rules:
     - Assessment must be in REWORK status
     - Assessment must have is_calibration_rework=True (set by Validator)
-    - Only indicators marked requires_rework need to be re-uploaded
+    - Incomplete submissions allowed with warning (supports BLGUs without MOVs)
     - After submission, is_calibration_rework is cleared
 
 Args:
@@ -1442,7 +1534,7 @@ Returns:
 
 Raises:
     HTTPException 403: User not authorized or not calibration mode
-    HTTPException 400: Invalid status or validation failed
+    HTTPException 400: Invalid status
     HTTPException 404: Assessment not found
  * @summary Submit For Calibration Review
  */
@@ -1578,7 +1670,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdSubmissionStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdSubmissionStatus>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdSubmissionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdSubmissionStatus>>>
@@ -1683,7 +1775,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdReworkSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdReworkSummary>>>
@@ -1713,6 +1805,92 @@ export function useGetAssessmentsAssessmentIdReworkSummary<TData = Awaited<Retur
 
 
 /**
+ * Regenerate AI rework summary for an assessment.
+
+This endpoint allows MLGOO admins to manually trigger regeneration of the
+AI-powered rework summary, for example if the AI model has been updated
+or if there was an error with the original generation.
+
+**Access:** MLGOO_DILG only
+
+**Business Rules:**
+- Assessment must be in REWORK status or have been through rework
+- If force=false and summary already exists, returns cached status
+- If force=true, clears existing summary and regenerates all default languages
+- Task runs asynchronously via Celery
+
+Args:
+    assessment_id: ID of the assessment
+    force: If True, regenerate even if summary already exists
+    db: Database session
+    current_user: Current authenticated admin user
+
+Returns:
+    dict: Task dispatch confirmation with task_id
+ * @summary Regenerate Rework Summary
+ */
+export const postAssessments$AssessmentIdReworkSummaryRegenerate = (
+    assessmentId: number,
+    params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<PostAssessmentsAssessmentIdReworkSummaryRegenerate202>(
+      {url: `/api/v1/assessments/${assessmentId}/rework-summary/regenerate`, method: 'POST',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsAssessmentIdReworkSummaryRegenerateMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, TError,{assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, TError,{assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}, TContext> => {
+
+const mutationKey = ['postAssessmentsAssessmentIdReworkSummaryRegenerate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, {assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}> = (props) => {
+          const {assessmentId,params} = props ?? {};
+
+          return  postAssessments$AssessmentIdReworkSummaryRegenerate(assessmentId,params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsAssessmentIdReworkSummaryRegenerateMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>>
+    
+    export type PostAssessmentsAssessmentIdReworkSummaryRegenerateMutationError = HTTPValidationError
+
+    /**
+ * @summary Regenerate Rework Summary
+ */
+export const usePostAssessmentsAssessmentIdReworkSummaryRegenerate = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>, TError,{assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$AssessmentIdReworkSummaryRegenerate>>,
+        TError,
+        {assessmentId: number;params?: PostAssessmentsAssessmentIdReworkSummaryRegenerateParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsAssessmentIdReworkSummaryRegenerateMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
  * Get AI-generated calibration summary for an assessment in the specified language.
 
 This endpoint retrieves the comprehensive AI-generated summary of calibration
@@ -1793,7 +1971,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetAssessmentsAssessmentIdCalibrationSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdCalibrationSummary>>>
@@ -1822,3 +2000,93 @@ export function useGetAssessmentsAssessmentIdCalibrationSummary<TData = Awaited<
 
 
 
+/**
+ * Regenerate AI calibration summary for an assessment.
+
+This endpoint allows MLGOO admins to manually trigger regeneration of the
+AI-powered calibration summary for a specific governance area, for example
+if the AI model has been updated or if there was an error with the original
+generation.
+
+**Access:** MLGOO_DILG only
+
+**Business Rules:**
+- Assessment must have been through calibration
+- A governance_area_id must be specified
+- If force=false and summary already exists for that area, returns cached status
+- If force=true, clears existing summary for that area and regenerates
+- Task runs asynchronously via Celery
+
+Args:
+    assessment_id: ID of the assessment
+    governance_area_id: ID of the governance area to regenerate summary for
+    force: If True, regenerate even if summary already exists
+    db: Database session
+    current_user: Current authenticated admin user
+
+Returns:
+    dict: Task dispatch confirmation with task_id
+ * @summary Regenerate Calibration Summary
+ */
+export const postAssessments$AssessmentIdCalibrationSummaryRegenerate = (
+    assessmentId: number,
+    params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<PostAssessmentsAssessmentIdCalibrationSummaryRegenerate202>(
+      {url: `/api/v1/assessments/${assessmentId}/calibration-summary/regenerate`, method: 'POST',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, TError,{assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, TError,{assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}, TContext> => {
+
+const mutationKey = ['postAssessmentsAssessmentIdCalibrationSummaryRegenerate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, {assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}> = (props) => {
+          const {assessmentId,params} = props ?? {};
+
+          return  postAssessments$AssessmentIdCalibrationSummaryRegenerate(assessmentId,params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>>
+    
+    export type PostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationError = HTTPValidationError
+
+    /**
+ * @summary Regenerate Calibration Summary
+ */
+export const usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>, TError,{assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$AssessmentIdCalibrationSummaryRegenerate>>,
+        TError,
+        {assessmentId: number;params: PostAssessmentsAssessmentIdCalibrationSummaryRegenerateParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsAssessmentIdCalibrationSummaryRegenerateMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    

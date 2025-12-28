@@ -12,14 +12,16 @@ import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
+import type { BLGUDashboardResponseMlgooRecalibrationMovFileIds } from '../movs';
 import type { BLGUDashboardResponseMlgooRecalibrationComments } from '../mlgoo';
+import type { BLGUDashboardResponseFinalComplianceStatus } from '../compliance';
 import type { BLGUDashboardResponseBbiCompliance } from '../bbis';
 import type { AISummary } from '../common';
 import type { ReworkComment } from '../common';
 import type { IndicatorSummary } from '../indicators';
 import type { ChecklistItemResponseMovDescription } from '../movs';
 import type { IncompleteIndicatorDetail } from '../indicators';
-import type { ComplianceRate } from '../common';
+import type { ComplianceRate } from '../compliance';
 import type { AreaBreakdown } from '../common';
 import type { FailedIndicator } from '../indicators';
 import type { TrendData } from '../common';
@@ -27,12 +29,13 @@ import type { BarangayRanking } from '../common';
 import type { StatusDistributionItem } from '../common';
 import type { ReworkStats } from '../common';
 import type { DashboardKPIResponseBbiAnalytics } from '../analytics';
+import type { TopReworkReasons } from '../common';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
-import type { OverallComplianceResponseAssessmentCycle } from '../assessments';
 import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
+import type { ReviewHistoryItem } from '../common';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
 import type { ValidationStatus } from '../error';
@@ -251,6 +254,8 @@ export interface BLGUDashboardResponse {
   is_mlgoo_recalibration?: boolean;
   /** List of indicator IDs that MLGOO has unlocked for RE-calibration. Only these indicators need to be addressed by BLGU. */
   mlgoo_recalibration_indicator_ids?: BLGUDashboardResponseMlgooRecalibrationIndicatorIds;
+  /** List of MOV file IDs flagged by MLGOO for re-upload. Each item contains mov_file_id and optional comment. */
+  mlgoo_recalibration_mov_file_ids?: BLGUDashboardResponseMlgooRecalibrationMovFileIds;
   /** MLGOO's comments explaining why RE-calibration is needed. */
   mlgoo_recalibration_comments?: BLGUDashboardResponseMlgooRecalibrationComments;
   /** Number of times MLGOO has requested RE-calibration (max 1). */
@@ -259,6 +264,10 @@ export interface BLGUDashboardResponse {
   submitted_at?: BLGUDashboardResponseSubmittedAt;
   /** Timestamp when final validation was completed (ISO format) */
   validated_at?: BLGUDashboardResponseValidatedAt;
+  /** Timestamp when BLGU resubmitted after rework (ISO format). If set, the Resubmit button should be disabled. */
+  rework_submitted_at?: BLGUDashboardResponseReworkSubmittedAt;
+  /** Timestamp when BLGU resubmitted after calibration (ISO format). If set, the Submit Calibration button should be disabled. */
+  calibration_submitted_at?: BLGUDashboardResponseCalibrationSubmittedAt;
   /** Final SGLGB compliance status: 'Passed' or 'Failed'. Only populated when status is COMPLETED. */
   final_compliance_status?: BLGUDashboardResponseFinalComplianceStatus;
   /** Results breakdown by governance area. Each item contains: area_id, area_name, area_type (Core/Essential), passed (bool), total_indicators, passed_indicators, failed_indicators. Only populated when status is COMPLETED. */
@@ -343,15 +352,15 @@ export type BLGUDashboardResponseCalibrationGovernanceAreasAnyOfItem = { [key: s
 
 
 /**
- * BLGUDashboardResponseCalibrationValidatorId
+ * BLGUDashboardResponseCalibrationSubmittedAt
  */
-export type BLGUDashboardResponseCalibrationValidatorId = number | null;
+export type BLGUDashboardResponseCalibrationSubmittedAt = string | null;
 
 
 /**
- * BLGUDashboardResponseFinalComplianceStatus
+ * BLGUDashboardResponseCalibrationValidatorId
  */
-export type BLGUDashboardResponseFinalComplianceStatus = string | null;
+export type BLGUDashboardResponseCalibrationValidatorId = number | null;
 
 
 /**
@@ -370,6 +379,12 @@ export type BLGUDashboardResponseReworkRequestedAt = string | null;
  * BLGUDashboardResponseReworkRequestedBy
  */
 export type BLGUDashboardResponseReworkRequestedBy = number | null;
+
+
+/**
+ * BLGUDashboardResponseReworkSubmittedAt
+ */
+export type BLGUDashboardResponseReworkSubmittedAt = string | null;
 
 
 /**
@@ -539,11 +554,19 @@ export interface DashboardKPIResponse {
   status_distribution?: StatusDistributionItem[];
   /** Rework and calibration usage statistics */
   rework_stats: ReworkStats;
+  /** Top AI-generated reasons for rework/calibration */
+  top_rework_reasons?: DashboardKPIResponseTopReworkReasons;
   /** BBI compliance analytics per DILG MC 2024-417 */
   bbi_analytics?: DashboardKPIResponseBbiAnalytics;
   /** Total number of barangays in the municipality */
   total_barangays: number;
 }
+
+
+/**
+ * DashboardKPIResponseTopReworkReasons
+ */
+export type DashboardKPIResponseTopReworkReasons = TopReworkReasons | null;
 
 
 /**
@@ -666,22 +689,15 @@ export type HealthCheckConnections = { [key: string]: unknown };
 
 
 /**
- * OverallComplianceResponse
+ * OverrideValidationStatusResponsePreviousStatus
  */
-export interface OverallComplianceResponse {
-  /** Total number of barangays assessed */
-  total_barangays: number;
-  /** Number of barangays that passed SGLGB */
-  passed_count: number;
-  /** Number of barangays that failed SGLGB */
-  failed_count: number;
-  /** Percentage of barangays that passed (0-100) */
-  pass_percentage: number;
-  /** Percentage of barangays that failed (0-100) */
-  fail_percentage: number;
-  /** Assessment cycle identifier */
-  assessment_cycle?: OverallComplianceResponseAssessmentCycle;
-}
+export type OverrideValidationStatusResponsePreviousStatus = string | null;
+
+
+/**
+ * OverrideValidationStatusResponseRemarks
+ */
+export type OverrideValidationStatusResponseRemarks = string | null;
 
 
 /**
@@ -712,6 +728,25 @@ export interface PublishYearResponse {
   year: number;
   is_published: boolean;
 }
+
+
+/**
+ * RefreshAnalysisResponse
+ */
+export interface RefreshAnalysisResponse {
+  /** Status message */
+  message: string;
+  /** Whether the cache was successfully invalidated */
+  cache_invalidated: boolean;
+  /** Refreshed top rework/calibration reasons */
+  top_rework_reasons?: RefreshAnalysisResponseTopReworkReasons;
+}
+
+
+/**
+ * RefreshAnalysisResponseTopReworkReasons
+ */
+export type RefreshAnalysisResponseTopReworkReasons = TopReworkReasons | null;
 
 
 /**
@@ -793,6 +828,18 @@ export type ResolveSchemaResponseResolvedSchema = { [key: string]: unknown };
 
 
 /**
+ * ReviewHistoryResponse
+ */
+export interface ReviewHistoryResponse {
+  items: ReviewHistoryItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+
+/**
  * ReworkSummaryResponse
  */
 export interface ReworkSummaryResponse {
@@ -824,6 +871,14 @@ export type ReworkSummaryResponseEstimatedTime = string | null;
  * ReworkSummaryResponseLanguage
  */
 export type ReworkSummaryResponseLanguage = string | null;
+
+
+/**
+ * SignedUrlResponse
+ */
+export interface SignedUrlResponse {
+  signed_url: string;
+}
 
 
 /**

@@ -172,25 +172,181 @@ ESSENTIAL_AREAS = [
 # Language instructions for AI-generated summaries
 LANGUAGE_INSTRUCTIONS = {
     "ceb": """
-IMPORTANTE: Isulat ang TANAN nga output sa Binisaya (Cebuano). Gamita ang casual ug moderno
-nga Binisaya nga ginagamit sa adlaw-adlaw nga pakigpulong - ang klase nga Binisaya nga
-dali masabtan sa ordinaryo nga tawo ug mga opisyal sa barangay. Ayaw gamita ang deep o
-formal nga Binisaya. Gamita lang ang simple, casual nga Binisaya nga parehas sa
-ginagamit sa mga tawo karon. Ayaw gamita ang English gawas lang sa mga technical nga
-pulong nga walay direktang Binisaya nga katumbas (sama sa "MOV" o "SGLGB"). Ang JSON
-keys kinahanglan magpabilin sa English, pero ang mga values kinahanglan sa casual nga
-Binisaya.
+IMPORTANTE: Isulat ang TANAN nga output sa Binisaya (Cebuano).
+
+LANGUAGE REQUIREMENTS:
+1. Gamita ang CONVERSATIONAL Bisaya - ang klase nga ginasulti sa adlaw-adlaw
+2. Isulat nga daw nagpasabot sa barangay kagawad sa regular meeting
+3. Ayaw gamita ang deep/literary Bisaya - simple lang nga mga pulong
+
+CRITICAL - DUAL AUDIENCE CONSIDERATION:
+4. Para sa "key_issues": Gamita ang 3rd person POV (ikatolong tawo)
+   - TAMA: "Kulang ang Annual Budget sa barangay"
+   - SAYOP: "Kulang ang imong Annual Budget"
+   - NGANO: Ang "key_issues" makita sa dashboard sa MLGOO officials nga nagtan-aw sa DAGHANG barangay
+
+5. Para sa "suggested_actions": Gamita ang 2nd person active voice (ikaduhang tawo)
+   - TAMA: "Kinahanglan nimo i-upload ang updated Annual Budget"
+   - NGANO: Ang "suggested_actions" direkta nga gipakita sa BLGU users
+
+TECHNICAL TERMS - Gamita kini nga mga translation:
+- governance area = "lugar sa pagdumala"
+- compliance = "pagsunod sa mga lagda"
+- assessment = "pagsusi"
+- indicator = "timaan"
+- validation = "pagpamatud"
+- capacity development = "pagpalambo sa abilidad"
+- intervention = "aksyon o programa"
+- priority = "prayoridad"
+- weakness = "kahuyang"
+- recommendation = "rekomendasyon"
+- training = "training"
+
+PABILIN SA ENGLISH (ayaw i-translate):
+- Agency acronyms: DILG, SGLGB, LGA, MDRRMO, DBM
+- "MOV" (Means of Verification)
+- Proper nouns: pangalan sa barangay, pangalan sa tawo
+- JSON keys (e.g., "area_name", "description", "severity")
+
+SPECIFICITY REQUIREMENTS (IMPORTANTE KAAYO):
+- SEMPRE isulat ang ngalan sa specific indicator/document/plan sa key_issues
+- AYAW paggamit sa vague terms nga walay context
+- TAMA: "Kulang ang Disaster Preparedness Plan sa barangay"
+- SAYOP: "walay husto nga plano" (UNSA NGA plano?)
+- TAMA: "Wala gi-upload ang Annual Investment Plan 2024"
+- SAYOP: "Missing documents" (UNSA NGA dokumento?)
+
+EXAMPLES SA MAAYO NGA KEY_ISSUES (3rd person, specific):
+- "Kulang ang Disaster Preparedness Plan sa barangay"
+- "Wala gi-upload ang Annual Budget Ordinance para sa 2024"
+- "Ang Barangay Development Plan wala'y klaro nga timeline"
+- "Incomplete ang dokumentasyon sa BDRRMC training records"
+
+EXAMPLES SA MAAYO NGA SUGGESTED_ACTIONS (2nd person, actionable):
+- "Kinahanglan nimo i-upload ang updated Disaster Preparedness Plan"
+- "Importante nga ang barangay treasurer mag-attend sa training mahitungod sa financial management"
+- "I-update ang Barangay Development Plan ug ibutang ang timeline para sa matag proyekto"
+
+EXAMPLES SA DILI MAAYO (ayaw sunda):
+- "walay husto nga plano" (vague - unsa nga plano?)
+- "Kinahanglan ang barangay mag-update sa ilang records" (2nd person sa key_issues - SAYOP)
+- "Missing documents" (vague - unsa nga dokumento?)
+- "Kulang ang imong budget" (2nd person sa key_issues - SAYOP)
+
+JSON VALUES: Kinahanglan sa Bisaya. JSON KEYS: Pabilin sa English.
 """,
     "fil": """
-IMPORTANTE: Isulat ang LAHAT ng output sa Tagalog (Filipino). Gumamit ng natural na
-Filipino na madaling maintindihan ng mga opisyal ng barangay. Huwag gumamit ng English
-maliban sa mga technical na salita na walang direktang Filipino na katumbas
-(tulad ng "MOV" o "SGLGB"). Ang JSON keys ay dapat manatili sa English, pero ang mga
-values ay dapat nasa Tagalog.
+IMPORTANTE: Isulat ang LAHAT ng output sa Filipino (Tagalog).
+
+LANGUAGE REQUIREMENTS:
+1. Gumamit ng NATURAL na Filipino - ang Filipino na ginagamit sa pang-araw-araw na usapan
+2. Isulat na parang nagpapaliwanag sa isang barangay kagawad sa regular na pulong
+3. Iwasan ang malalim o pormal na Tagalog - simple lang
+
+CRITICAL - DUAL AUDIENCE CONSIDERATION:
+4. Para sa "key_issues": Gumamit ng 3rd person POV (ikatlong panauhan)
+   - TAMA: "Kulang ang Annual Budget ng barangay"
+   - MALI: "Kulang ang iyong Annual Budget"
+   - BAKIT: Ang "key_issues" ay makikita sa dashboard ng MLGOO officials na tumitingin sa MARAMING barangay
+
+5. Para sa "suggested_actions": Gumamit ng 2nd person active voice (ikalawang panauhan)
+   - TAMA: "Kailangan mong i-upload ang updated Annual Budget"
+   - BAKIT: Ang "suggested_actions" ay direktang ipinapakita sa BLGU users
+
+TECHNICAL TERMS - Gamitin ang mga sumusunod:
+- governance area = "larangan ng pamamahala"
+- compliance = "pagsunod sa mga pamantayan"
+- assessment = "pagsusuri"
+- indicator = "tagapagpahiwatig"
+- validation = "pagpapatunay"
+- capacity development = "pagpapaunlad ng kakayahan"
+- intervention = "interbensyon"
+- priority = "prayoridad"
+- weakness = "kahinaan"
+- recommendation = "rekomendasyon"
+- training = "pagsasanay"
+
+PANATILIHING ENGLISH (walang salin):
+- Agency acronyms: DILG, SGLGB, LGA, MDRRMO, DBM
+- "MOV" (Means of Verification)
+- Proper nouns: pangalan ng barangay, pangalan ng tao
+- JSON keys (e.g., "area_name", "description", "severity")
+
+SPECIFICITY REQUIREMENTS (NAPAKA-IMPORTANTE):
+- PALAGING isulat ang pangalan ng specific indicator/document/plan sa key_issues
+- HUWAG gumamit ng vague terms na walang context
+- TAMA: "Kulang ang Disaster Preparedness Plan ng barangay"
+- MALI: "walang wastong plano" (ALING plano?)
+- TAMA: "Hindi pa na-upload ang Annual Investment Plan 2024"
+- MALI: "Missing documents" (ALING dokumento?)
+
+HALIMBAWA NG MAGANDANG KEY_ISSUES (3rd person, specific):
+- "Kulang ang Disaster Preparedness Plan ng barangay"
+- "Hindi pa na-upload ang Annual Budget Ordinance para sa 2024"
+- "Ang Barangay Development Plan ay walang malinaw na timeline"
+- "Incomplete ang dokumentasyon ng BDRRMC training records"
+
+HALIMBAWA NG MAGANDANG SUGGESTED_ACTIONS (2nd person, actionable):
+- "Kailangan mong i-upload ang updated Disaster Preparedness Plan"
+- "Mahalagang mag-attend ang barangay treasurer sa training tungkol sa financial management"
+- "I-update ang Barangay Development Plan at lagyan ng timeline ang bawat proyekto"
+
+HALIMBAWA NG DI-MAGANDA (iwasan):
+- "walang wastong plano" (vague - aling plano?)
+- "Kailangan ng barangay na mag-update ng kanilang records" (2nd person sa key_issues - MALI)
+- "Missing documents" (vague - aling dokumento?)
+- "Kulang ang iyong budget" (2nd person sa key_issues - MALI)
+
+JSON VALUES: Dapat Filipino. JSON KEYS: Panatilihing English.
 """,
     "en": """
-IMPORTANT: Generate ALL text output in English. Use clear, simple English that
-barangay officials can easily understand. JSON keys should remain in English.
+IMPORTANT: Generate ALL text output in clear, simple English.
+
+LANGUAGE REQUIREMENTS:
+1. Use PLAIN English - avoid jargon and bureaucratic language
+2. Write at a 10th-grade reading level
+3. Write as if explaining to a barangay official during a meeting
+
+CRITICAL - DUAL AUDIENCE CONSIDERATION:
+4. For "key_issues": Use 3rd person POV (third person)
+   - CORRECT: "Barangay lacks Annual Budget documentation"
+   - WRONG: "You need to provide Annual Budget documentation"
+   - WHY: "key_issues" are aggregated and shown on the MLGOO dashboard where DILG officials view data ABOUT multiple barangays
+
+5. For "suggested_actions": Use 2nd person active voice (second person)
+   - CORRECT: "You should upload the updated Annual Budget"
+   - WHY: "suggested_actions" are shown directly TO the BLGU users
+
+TARGET AUDIENCE: Barangay officials with varying education levels
+
+SPECIFICITY REQUIREMENTS (CRITICAL):
+- ALWAYS include the specific indicator/document/plan name in key_issues
+- NEVER use vague terms without context
+- CORRECT: "Barangay lacks Disaster Preparedness Plan"
+- WRONG: "no proper plan" (WHICH plan?)
+- CORRECT: "Annual Investment Plan 2024 not uploaded"
+- WRONG: "Missing documents" (WHICH documents?)
+
+EXAMPLES OF GOOD KEY_ISSUES (3rd person, specific):
+- "Barangay lacks Disaster Preparedness Plan"
+- "Annual Budget Ordinance for 2024 not uploaded"
+- "Barangay Development Plan missing clear timeline"
+- "BDRRMC training records documentation incomplete"
+
+EXAMPLES OF GOOD SUGGESTED_ACTIONS (2nd person, actionable):
+- "Upload the updated Disaster Preparedness Plan with evacuation routes"
+- "The barangay treasurer should attend training on financial management"
+- "Update the Barangay Development Plan and add timeline for each project"
+
+EXAMPLES OF BAD OUTPUT (avoid these):
+- "no proper plan" (vague - which plan?)
+- "The barangay needs to update its records" (2nd person in key_issues - WRONG)
+- "Missing documents" (vague - which documents?)
+- "Your budget is incomplete" (2nd person in key_issues - WRONG)
+- "The barangay must facilitate the updating of budgetary allocations..." (too formal)
+- "Compliance with financial management protocols requires..." (bureaucratic)
+
+JSON KEYS: Keep in English. JSON VALUES: Must be in clear, simple English.
 """,
 }
 
@@ -302,6 +458,140 @@ class IntelligenceService:
             # Assume entire response is JSON
             return response_text.strip()
 
+    def _validate_capdev_response(
+        self, parsed_response: dict[str, Any], assessment_id: int
+    ) -> dict[str, Any]:
+        """
+        Validate CapDev insights response structure and content.
+
+        Ensures all required keys are present and validates:
+        - Array lengths are within acceptable ranges
+        - Enum values match expected values
+        - Required object fields are present
+
+        Args:
+            parsed_response: Parsed JSON response from Gemini
+            assessment_id: Assessment ID for logging
+
+        Returns:
+            Validated and potentially cleaned response
+
+        Raises:
+            ValueError: If response fails validation
+        """
+        # Required keys check
+        required_keys = [
+            "summary",
+            "governance_weaknesses",
+            "recommendations",
+            "capacity_development_needs",
+            "suggested_interventions",
+            "priority_actions",
+        ]
+        missing_keys = [key for key in required_keys if key not in parsed_response]
+        if missing_keys:
+            raise ValueError(
+                f"Gemini API response missing required keys: {missing_keys}. "
+                f"Got: {list(parsed_response.keys())}"
+            )
+
+        # Validate summary is a non-empty string
+        if (
+            not isinstance(parsed_response.get("summary"), str)
+            or not parsed_response["summary"].strip()
+        ):
+            logger.warning(
+                f"Assessment {assessment_id}: summary is empty or invalid, using default"
+            )
+            parsed_response["summary"] = (
+                "Assessment analysis completed. Please review the detailed recommendations below."
+            )
+
+        # Validate arrays have reasonable lengths (warn but don't fail)
+        array_fields = [
+            ("governance_weaknesses", 1, 10),
+            ("recommendations", 1, 10),
+            ("capacity_development_needs", 1, 8),
+            ("suggested_interventions", 1, 8),
+            ("priority_actions", 1, 7),
+        ]
+
+        for field_name, min_len, max_len in array_fields:
+            field_value = parsed_response.get(field_name, [])
+            if not isinstance(field_value, list):
+                logger.warning(
+                    f"Assessment {assessment_id}: {field_name} is not a list, converting"
+                )
+                parsed_response[field_name] = [field_value] if field_value else []
+                field_value = parsed_response[field_name]
+
+            if len(field_value) < min_len:
+                logger.warning(
+                    f"Assessment {assessment_id}: {field_name} has only {len(field_value)} items (expected >= {min_len})"
+                )
+            elif len(field_value) > max_len:
+                logger.warning(
+                    f"Assessment {assessment_id}: {field_name} has {len(field_value)} items, truncating to {max_len}"
+                )
+                parsed_response[field_name] = field_value[:max_len]
+
+        # Validate capacity_development_needs structure
+        valid_categories = {"Training", "Resources", "Technical Assistance", "Policy"}
+        for i, need in enumerate(parsed_response.get("capacity_development_needs", [])):
+            if isinstance(need, dict):
+                # Validate category
+                category = need.get("category", "")
+                if category not in valid_categories:
+                    logger.warning(
+                        f"Assessment {assessment_id}: capacity_development_needs[{i}].category "
+                        f"'{category}' not in valid categories, defaulting to 'Training'"
+                    )
+                    need["category"] = "Training"
+
+                # Ensure required fields exist
+                if "description" not in need:
+                    need["description"] = "Capacity development need identified"
+                if "affected_indicators" not in need:
+                    need["affected_indicators"] = []
+                if "suggested_providers" not in need:
+                    need["suggested_providers"] = ["DILG"]
+
+        # Validate suggested_interventions structure
+        valid_priorities = {"Immediate", "Short-term", "Long-term"}
+        for i, intervention in enumerate(parsed_response.get("suggested_interventions", [])):
+            if isinstance(intervention, dict):
+                # Validate priority
+                priority = intervention.get("priority", "")
+                if priority not in valid_priorities:
+                    logger.warning(
+                        f"Assessment {assessment_id}: suggested_interventions[{i}].priority "
+                        f"'{priority}' not in valid priorities, defaulting to 'Short-term'"
+                    )
+                    intervention["priority"] = "Short-term"
+
+                # Ensure required fields exist
+                if "title" not in intervention:
+                    intervention["title"] = f"Intervention {i + 1}"
+                if "description" not in intervention:
+                    intervention["description"] = "Recommended intervention"
+                if "governance_area" not in intervention:
+                    intervention["governance_area"] = "General"
+                if "estimated_duration" not in intervention:
+                    intervention["estimated_duration"] = "To be determined"
+                if "resource_requirements" not in intervention:
+                    intervention["resource_requirements"] = "To be assessed"
+
+        logger.info(
+            f"Assessment {assessment_id}: CapDev response validated successfully - "
+            f"weaknesses: {len(parsed_response.get('governance_weaknesses', []))}, "
+            f"recommendations: {len(parsed_response.get('recommendations', []))}, "
+            f"needs: {len(parsed_response.get('capacity_development_needs', []))}, "
+            f"interventions: {len(parsed_response.get('suggested_interventions', []))}, "
+            f"priority_actions: {len(parsed_response.get('priority_actions', []))}"
+        )
+
+        return parsed_response
+
     def _handle_gemini_error(self, e: Exception, context: str, assessment_id: int) -> Exception:
         """
         Convert Gemini API errors to user-friendly exceptions.
@@ -410,9 +700,14 @@ class IntelligenceService:
         genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore
         model = genai.GenerativeModel("gemini-2.5-flash")  # type: ignore
 
+        # Temperature settings:
+        # - 0.3-0.4: More consistent, factual outputs (ideal for CapDev insights)
+        # - 0.7+: More creative but less consistent (avoid for compliance data)
         generation_config = {
-            "temperature": 0.7,
+            "temperature": 0.4,
             "max_output_tokens": max_output_tokens,
+            "top_p": 0.9,  # Nucleus sampling for better quality
+            "top_k": 40,  # Limit token selection for coherence
         }
 
         start_time = time.time()
@@ -944,8 +1239,9 @@ class IntelligenceService:
         self, db: Session, assessment_id: int
     ) -> dict[str, list[AssessmentResponse]]:
         """
-        Fetch all assessment responses for an assessment, filtered by validation_status='Pass'.
+        Fetch all assessment responses for an assessment that count as passed.
 
+        PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass).
         Groups responses by governance area name.
 
         Args:
@@ -961,7 +1257,9 @@ class IntelligenceService:
             .join(GovernanceArea, Indicator.governance_area_id == GovernanceArea.id)
             .filter(
                 AssessmentResponse.assessment_id == assessment_id,
-                AssessmentResponse.validation_status == ValidationStatus.PASS,
+                AssessmentResponse.validation_status.in_(
+                    [ValidationStatus.PASS, ValidationStatus.CONDITIONAL]
+                ),
             )
             .all()
         )
@@ -980,11 +1278,17 @@ class IntelligenceService:
         """
         Determine if a governance area has passed (all LEAF indicators within that area must pass).
 
-        An area passes if ALL of its LEAF indicators have validation_status = 'Pass'.
-        An area fails if ANY leaf indicator has validation_status != 'Pass' or is None.
+        An area passes if ALL of its LEAF indicators have validation_status = PASS or CONDITIONAL.
+        An area fails if ANY leaf indicator has validation_status = FAIL or is None.
+        SGLGB rule: CONDITIONAL (Considered) counts as passing.
 
         IMPORTANT: Only leaf indicators (indicators with no children) are checked.
         Parent/section indicators don't have responses and should be excluded.
+
+        BBI SPECIAL RULE (4-tier system):
+        For BBI indicators, FAIL only means NON_FUNCTIONAL (0%).
+        LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, and HIGHLY_FUNCTIONAL all count as PASS.
+        This is based on DILG MC 2024-417 4-tier BBI compliance system.
 
         Args:
             db: Database session
@@ -994,6 +1298,9 @@ class IntelligenceService:
         Returns:
             True if all leaf indicators in the area passed, False otherwise
         """
+        from app.db.enums import BBIStatus
+        from app.db.models.bbi import BBIResult
+
         # Get all indicators for this governance area
         area = db.query(GovernanceArea).filter(GovernanceArea.name == area_name).first()
         if not area:
@@ -1008,7 +1315,10 @@ class IntelligenceService:
         parent_ids = {ind.parent_id for ind in all_indicators if ind.parent_id is not None}
 
         # Filter to only leaf indicators (indicators that are NOT parents of other indicators)
-        leaf_indicators = [ind for ind in all_indicators if ind.id not in parent_ids]
+        # ALSO exclude profiling-only indicators - they don't affect pass/fail status
+        leaf_indicators = [
+            ind for ind in all_indicators if ind.id not in parent_ids and not ind.is_profiling_only
+        ]
 
         if not leaf_indicators:
             return False  # No leaf indicators = failed area
@@ -1028,15 +1338,41 @@ class IntelligenceService:
         # Build a map of indicator_id -> response for O(1) lookup
         response_map = {r.indicator_id: r for r in responses}
 
+        # Get BBI results for this assessment to check BBI 4-tier status
+        # Only query if there are BBI indicators in this area
+        bbi_indicator_ids = [ind.id for ind in leaf_indicators if ind.is_bbi]
+        bbi_results_map = {}
+        if bbi_indicator_ids:
+            bbi_results = db.query(BBIResult).filter(BBIResult.assessment_id == assessment_id).all()
+            # Map by indicator_id for O(1) lookup
+            bbi_results_map = {r.indicator_id: r for r in bbi_results if r.indicator_id}
+
         # Check all leaf indicators against the response map
         for indicator in leaf_indicators:
             response = response_map.get(indicator.id)
 
             # If no response exists, the area fails
-            # PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass)
-            # Only FAIL status causes the area to fail
             if not response:
                 return False
+
+            # BBI SPECIAL RULE: For BBI indicators, use 4-tier rule
+            # Only NON_FUNCTIONAL (0%) counts as FAIL
+            # LOW_FUNCTIONAL, MODERATELY_FUNCTIONAL, HIGHLY_FUNCTIONAL all count as PASS
+            if indicator.is_bbi:
+                bbi_result = bbi_results_map.get(indicator.id)
+                if bbi_result:
+                    # BBI exists - check if NON_FUNCTIONAL
+                    if bbi_result.compliance_rating == BBIStatus.NON_FUNCTIONAL.value:
+                        return False  # Only NON_FUNCTIONAL fails
+                    # Any other BBI status (LOW, MODERATE, HIGHLY) counts as pass
+                    continue
+                else:
+                    # No BBI result yet - fall back to validation_status check
+                    pass
+
+            # Standard check for non-BBI indicators (or BBI without result)
+            # PASS and CONDITIONAL both count as passing (SGLGB rule: Conditional = Considered = Pass)
+            # Only FAIL status causes the area to fail
             if response.validation_status not in (
                 ValidationStatus.PASS,
                 ValidationStatus.CONDITIONAL,
@@ -1241,7 +1577,10 @@ class IntelligenceService:
         # Get failed indicators with feedback
         failed_indicators = []
         for response in assessment.responses:
-            if response.validation_status != ValidationStatus.PASS:
+            if response.validation_status not in (
+                ValidationStatus.PASS,
+                ValidationStatus.CONDITIONAL,
+            ):
                 indicator = response.indicator
                 governance_area = indicator.governance_area
 
@@ -1626,23 +1965,27 @@ Based on the assessor feedback above, generate a comprehensive rework summary in
       "indicator_id": 1,
       "indicator_name": "Full indicator name",
       "key_issues": [
-        "Specific issue 1 identified by assessor",
-        "Specific issue 2 identified by assessor"
+        "Barangay lacks Disaster Preparedness Plan with evacuation routes",
+        "Annual Budget Ordinance for 2024 not uploaded"
       ],
       "suggested_actions": [
-        "Actionable step 1 the BLGU should take",
-        "Actionable step 2 the BLGU should take"
+        "Upload the updated Disaster Preparedness Plan including evacuation routes and emergency contact list",
+        "Submit the Annual Budget Ordinance 2024 with revenue and expenditure breakdown"
       ],
-      "affected_movs": ["filename1.pdf", "filename2.jpg"]
+      "affected_movs": ["disaster_plan.pdf", "budget_ordinance_2024.pdf"]
     }
   ],
   "priority_actions": [
-    "Most critical action 1",
-    "Most critical action 2",
-    "Most critical action 3"
+    "Upload missing Annual Budget Ordinance for 2024",
+    "Complete Disaster Preparedness Plan with all required sections",
+    "Submit BDRRMC training attendance records"
   ],
   "estimated_time": "Estimated time to complete all rework (e.g., '30-45 minutes', '1-2 hours')"
 }
+
+REMEMBER:
+- key_issues: 3rd person, specific document/indicator names (e.g., "Barangay lacks X", "X not uploaded")
+- suggested_actions: 2nd person, actionable steps (e.g., "Upload X", "You should Y")
 
 GUIDELINES:
 1. Be clear and specific - avoid vague language
@@ -1653,6 +1996,26 @@ GUIDELINES:
 6. Suggest concrete actions (e.g., "Reupload budget ordinance with clearer dates" not "Fix budget document")
 7. List only the top 3-5 priority actions that address the most critical issues
 8. Estimate time realistically based on the complexity and number of issues
+
+CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
+9. For "key_issues": Use 3rd person POV because these are aggregated on the MLGOO dashboard
+   - CORRECT: "Barangay lacks Disaster Preparedness Plan"
+   - WRONG: "You need to provide Disaster Preparedness Plan"
+   - WHY: MLGOO officials view aggregated issues ABOUT multiple barangays
+
+10. For "suggested_actions": Use 2nd person active voice because these are shown TO the BLGU
+   - CORRECT: "Upload the updated Disaster Preparedness Plan"
+   - WHY: BLGU users see these as direct instructions for their barangay
+
+11. ALWAYS include specific indicator/document/plan names in "key_issues"
+   - CORRECT: "Annual Budget Ordinance for 2024 not uploaded"
+   - WRONG: "Missing budget document" (WHICH document?)
+   - CORRECT: "BDRRMC training records incomplete"
+   - WRONG: "Incomplete documentation" (WHICH documentation?)
+
+12. Include governance area context when relevant to help MLGOO officials understand the domain
+   - GOOD: "Disaster Preparedness Plan lacks evacuation routes (Safety, Peace and Order)"
+   - BETTER: "Barangay Disaster Preparedness Plan lacks evacuation routes"
 """
 
         return prompt, indicator_data
@@ -1977,23 +2340,27 @@ Based on the validator feedback above, generate a comprehensive calibration summ
       "indicator_id": 1,
       "indicator_name": "Full indicator name",
       "key_issues": [
-        "Specific issue 1 identified by validator",
-        "Specific issue 2 identified by validator"
+        "Barangay Annual Budget Ordinance missing revenue breakdown",
+        "Investment Plan 2024 lacks project implementation timeline"
       ],
       "suggested_actions": [
-        "Actionable step 1 the BLGU should take",
-        "Actionable step 2 the BLGU should take"
+        "Upload revised Annual Budget Ordinance with detailed revenue sources and amounts",
+        "Update Investment Plan to include quarter-by-quarter timeline for each project"
       ],
-      "affected_movs": ["filename1.pdf", "filename2.jpg"]
+      "affected_movs": ["budget_ordinance.pdf", "investment_plan_2024.pdf"]
     }}
   ],
   "priority_actions": [
-    "Most critical action 1",
-    "Most critical action 2",
-    "Most critical action 3"
+    "Add revenue breakdown to Annual Budget Ordinance",
+    "Include project timelines in Investment Plan 2024",
+    "Submit signed certification from Municipal Accountant"
   ],
   "estimated_time": "Estimated time to complete calibration corrections (e.g., '15-30 minutes', '30-45 minutes')"
 }}
+
+REMEMBER:
+- key_issues: 3rd person, specific document/indicator names (e.g., "Barangay X missing Y", "X lacks Y")
+- suggested_actions: 2nd person, actionable steps (e.g., "Upload X with Y", "Update X to include Y")
 
 GUIDELINES:
 1. Be clear and specific - avoid vague language
@@ -2005,6 +2372,26 @@ GUIDELINES:
 7. List only the top 3 priority actions that address the most critical issues
 8. Estimate time realistically - calibrations are typically faster than full reworks
 9. Remember this is only for the {governance_area_name} governance area, not all indicators
+
+CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
+10. For "key_issues": Use 3rd person POV because these are aggregated on the MLGOO dashboard
+   - CORRECT: "Barangay lacks Annual Budget Ordinance"
+   - WRONG: "You need to provide Annual Budget Ordinance"
+   - WHY: MLGOO officials view aggregated issues ABOUT multiple barangays
+
+11. For "suggested_actions": Use 2nd person active voice because these are shown TO the BLGU
+   - CORRECT: "Upload the Annual Budget Ordinance with revenue breakdown"
+   - WHY: BLGU users see these as direct instructions for their barangay
+
+12. ALWAYS include specific indicator/document/plan names in "key_issues"
+   - CORRECT: "Barangay Investment Plan 2024 missing project timelines"
+   - WRONG: "Missing timelines" (FOR WHICH document?)
+   - CORRECT: "BDRRMC training attendance records not documented"
+   - WRONG: "No documentation" (WHAT documentation?)
+
+13. Since calibration is area-specific, include the governance area context naturally
+   - GOOD: "Annual Budget Ordinance (Financial Administration) missing revenue details"
+   - BETTER: "Barangay Annual Budget Ordinance missing revenue details"
 """
 
         return prompt, indicator_data
@@ -2318,84 +2705,121 @@ DETAILED AREA ANALYSIS:
 
         prompt += """
 
-TASK:
-Based on the assessment results above, generate a comprehensive CapDev (Capacity Development) analysis in the following JSON structure:
+GUIDELINES (Read first before generating):
+1. Focus on ROOT CAUSES of non-compliance, not just symptoms
+2. Provide SPECIFIC, ACTIONABLE interventions tailored to Philippine barangay context
+3. Categorize capacity development needs into: Training, Resources, Technical Assistance, Policy
+4. For priority values use EXACTLY: "Immediate" (within 1 month), "Short-term" (1-3 months), "Long-term" (3-6 months)
+5. Include realistic resource requirements and suggested providers (DILG, LGA, municipal government, etc.)
+6. Consider the "3+1" SGLGB rule: All 3 Core areas must pass + at least 1 Essential area
+7. Recommendations should be practical for a barangay-level government
+8. Use simple language that barangay officials can understand
+9. Generate 3-7 items per array (not too few, not too many)
 
+TASK:
+Based on the assessment results above, generate a comprehensive CapDev (Capacity Development) analysis.
+
+REQUIRED JSON STRUCTURE:
 {
-  "summary": "A comprehensive 3-4 sentence summary of the barangay's key governance strengths and weaknesses. Highlight the most critical areas needing improvement.",
+  "summary": "A comprehensive 3-4 sentence summary of the barangay's key governance strengths and weaknesses. Highlight the most critical areas needing improvement and overall assessment.",
   "governance_weaknesses": [
-    "Specific weakness 1 identified from failed indicators",
-    "Specific weakness 2 identified from failed indicators",
+    "Specific weakness 1 - describe the actual problem found in failed indicators",
+    "Specific weakness 2 - describe another governance gap",
     "..."
   ],
   "recommendations": [
-    "Actionable recommendation 1 - specific and implementable",
-    "Actionable recommendation 2 - specific and implementable",
+    "Actionable recommendation 1 - specific and implementable step the barangay can take",
+    "Actionable recommendation 2 - another concrete action",
     "..."
   ],
   "capacity_development_needs": [
     {
       "category": "Training",
-      "description": "Specific training need",
-      "affected_indicators": ["Indicator 1", "Indicator 2"],
-      "suggested_providers": ["DILG", "LGA", "Partner NGO"]
-    },
-    {
-      "category": "Resources",
-      "description": "Resource or equipment need",
-      "affected_indicators": ["Indicator 1"],
-      "suggested_providers": ["Municipal Government", "National Agency"]
-    },
-    {
-      "category": "Technical Assistance",
-      "description": "Technical support need",
-      "affected_indicators": ["Indicator 1", "Indicator 2"],
-      "suggested_providers": ["DILG Regional Office"]
-    },
-    {
-      "category": "Policy",
-      "description": "Policy or ordinance development need",
-      "affected_indicators": ["Indicator 1"],
-      "suggested_providers": ["Sangguniang Barangay"]
+      "description": "Specific training need description",
+      "affected_indicators": ["Indicator Name 1", "Indicator Name 2"],
+      "suggested_providers": ["DILG", "LGA", "Municipal Government"]
     }
   ],
   "suggested_interventions": [
     {
-      "title": "Intervention title",
-      "description": "Detailed description of the intervention",
-      "governance_area": "Affected governance area",
+      "title": "Clear intervention title",
+      "description": "Detailed description of what this intervention involves",
+      "governance_area": "Name of the affected governance area",
       "priority": "Immediate",
       "estimated_duration": "1-2 weeks",
       "resource_requirements": "Brief description of resources needed"
-    },
-    {
-      "title": "Another intervention",
-      "description": "Description",
-      "governance_area": "Governance area",
-      "priority": "Short-term",
-      "estimated_duration": "1-2 months",
-      "resource_requirements": "Resources needed"
     }
   ],
   "priority_actions": [
-    "Highest priority action 1 - the most critical immediate step",
-    "Highest priority action 2",
-    "Highest priority action 3",
-    "Highest priority action 4",
-    "Highest priority action 5"
+    "Most critical immediate action the barangay must take first",
+    "Second priority action",
+    "Third priority action"
   ]
 }
 
-GUIDELINES:
-1. Focus on ROOT CAUSES of non-compliance, not just symptoms
-2. Provide SPECIFIC, ACTIONABLE interventions tailored to Philippine barangay context
-3. Categorize capacity development needs into: Training, Resources, Technical Assistance, Policy
-4. For suggested_interventions priority, use: "Immediate" (within 1 month), "Short-term" (1-3 months), "Long-term" (3-6 months)
-5. Include realistic resource requirements and suggested providers (DILG, LGA, municipal government, etc.)
-6. Priority actions should be the 5 most critical steps the barangay should take immediately
-7. Consider the "3+1" SGLGB rule: All 3 Core areas must pass + at least 1 Essential area
-8. Recommendations should be practical for a barangay-level government
-9. Use simple language that barangay officials can understand
+STRICT REQUIREMENTS:
+- governance_weaknesses: Array of 3-7 strings describing specific weaknesses
+- recommendations: Array of 3-7 strings with actionable steps
+- capacity_development_needs: Array of 2-5 objects with category, description, affected_indicators, suggested_providers
+- capacity_development_needs.category MUST be one of: "Training", "Resources", "Technical Assistance", "Policy"
+- suggested_interventions: Array of 2-5 objects with title, description, governance_area, priority, estimated_duration, resource_requirements
+- suggested_interventions.priority MUST be one of: "Immediate", "Short-term", "Long-term"
+- priority_actions: Array of exactly 3-5 strings listing the most critical actions
+- suggested_providers MUST be real Philippine agencies: DILG, LGA, MDRRMO, Municipal Government, DBM, Sangguniang Barangay, Provincial Government
+
+EXAMPLE OUTPUT (for reference - generate based on actual data above):
+{
+  "summary": "Ang barangay nakapakita og maayo nga performance sa Social Protection pero adunay kritikal nga mga gaps sa Financial Administration ug Disaster Preparedness. Ang pinaka-urgent nga kinahanglan ayohon mao ang budget documentation ug pag-establish og functional disaster response team.",
+  "governance_weaknesses": [
+    "Kulang ang quarterly budget reports - wala kompleto ang dokumentasyon sa Q1-Q4",
+    "Ang disaster response plan outdated na ug wala na-update sukad 2020",
+    "Walay digital record-keeping system para sa financial transactions"
+  ],
+  "recommendations": [
+    "Maghimo og digital budget tracking gamit ang Google Sheets o Excel nga may monthly reconciliation",
+    "I-update ang disaster response plan ug i-include ang current evacuation centers",
+    "Mag-schedule og training para sa barangay treasurer sa financial management"
+  ],
+  "capacity_development_needs": [
+    {
+      "category": "Training",
+      "description": "Financial management ug reporting skills para sa barangay treasurer ug secretary",
+      "affected_indicators": ["Quarterly Budget Reports", "Fund Utilization Documentation"],
+      "suggested_providers": ["DILG Regional Office", "DBM"]
+    },
+    {
+      "category": "Technical Assistance",
+      "description": "Setup og digital record-keeping system para sa barangay",
+      "affected_indicators": ["Financial Records", "Budget Documentation"],
+      "suggested_providers": ["Municipal Government", "DILG"]
+    }
+  ],
+  "suggested_interventions": [
+    {
+      "title": "Financial Management Training Workshop",
+      "description": "3-day hands-on training sa budget preparation, fund tracking, ug audit compliance. May provision og budget templates ug 3-month mentoring.",
+      "governance_area": "Financial Administration and Sustainability",
+      "priority": "Immediate",
+      "estimated_duration": "3 days + 3 months mentoring",
+      "resource_requirements": "Training venue, DILG trainers, laptops, budget software"
+    },
+    {
+      "title": "Disaster Response Plan Update Workshop",
+      "description": "Workshop para i-review ug i-update ang existing disaster response plan. I-include ang bag-ong protocols ug evacuation procedures.",
+      "governance_area": "Disaster Preparedness",
+      "priority": "Short-term",
+      "estimated_duration": "2 days",
+      "resource_requirements": "MDRRMO facilitator, reference materials, printing costs"
+    }
+  ],
+  "priority_actions": [
+    "I-submit ang complete quarterly budget reports sa municipal accountant within 2 weeks",
+    "Mag-schedule og training para sa treasurer ug secretary sa financial record-keeping",
+    "I-update ang disaster response plan ug i-submit sa MDRRMO for review"
+  ]
+}
+
+NOW GENERATE the CapDev analysis based on the ACTUAL assessment data provided above. Output ONLY the JSON, no additional text.
 """
 
         return prompt
@@ -2453,18 +2877,7 @@ GUIDELINES:
             parsed_response = json.loads(json_str)
 
             # Validate the response structure
-            required_keys = [
-                "summary",
-                "governance_weaknesses",
-                "recommendations",
-                "capacity_development_needs",
-                "suggested_interventions",
-                "priority_actions",
-            ]
-            if not all(key in parsed_response for key in required_keys):
-                raise ValueError(
-                    f"Gemini API response missing required keys. Got: {list(parsed_response.keys())}"
-                )
+            parsed_response = self._validate_capdev_response(parsed_response, assessment_id)
 
             # Add metadata
             parsed_response["generated_at"] = datetime.now(UTC).isoformat()

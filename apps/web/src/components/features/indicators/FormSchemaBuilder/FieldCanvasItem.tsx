@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import type { FormField } from '@/store/useFormBuilderStore';
-import { useFormBuilderStore } from '@/store/useFormBuilderStore';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import type { FormField } from "@/store/useFormBuilderStore";
+import { useFormBuilderStore } from "@/store/useFormBuilderStore";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   AlignLeft,
   Calendar,
@@ -14,7 +14,7 @@ import {
   Trash2,
   Type,
   Upload,
-} from 'lucide-react';
+} from "lucide-react";
 
 /**
  * Map field types to their icons and colors
@@ -22,45 +22,45 @@ import {
 const FIELD_TYPE_CONFIG = {
   checkbox_group: {
     icon: CheckSquare,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
   },
   radio_button: {
     icon: Circle,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
+    color: "text-purple-600",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-200",
   },
   number_input: {
     icon: Hash,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
+    color: "text-green-600",
+    bgColor: "bg-green-50",
+    borderColor: "border-green-200",
   },
   text_input: {
     icon: Type,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    color: "text-orange-600",
+    bgColor: "bg-orange-50",
+    borderColor: "border-orange-200",
   },
   text_area: {
     icon: AlignLeft,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200',
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-50",
+    borderColor: "border-yellow-200",
   },
   date_picker: {
     icon: Calendar,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50',
-    borderColor: 'border-indigo-200',
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-50",
+    borderColor: "border-indigo-200",
   },
   file_upload: {
     icon: Upload,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
   },
 } as const;
 
@@ -84,14 +84,9 @@ export function FieldCanvasItem({ field }: FieldCanvasItemProps) {
   const { selectedFieldId, selectField, deleteField } = useFormBuilderStore();
 
   // Sortable hook for drag-and-drop
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: field.field_id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: field.field_id,
+  });
 
   // Apply transform styles
   const style = {
@@ -125,9 +120,9 @@ export function FieldCanvasItem({ field }: FieldCanvasItemProps) {
       style={style}
       className={`
         group relative rounded-lg border-2 bg-white transition-all
-        ${isDragging ? 'opacity-50 shadow-2xl' : 'shadow-sm hover:shadow-md'}
-        ${isSelected ? `${config.borderColor} ring-2 ring-offset-2` : 'border-gray-200'}
-        ${isSelected ? config.bgColor : 'hover:bg-gray-50'}
+        ${isDragging ? "opacity-50 shadow-2xl" : "shadow-sm hover:shadow-md"}
+        ${isSelected ? `${config.borderColor} ring-2 ring-offset-2` : "border-gray-200"}
+        ${isSelected ? config.bgColor : "hover:bg-gray-50"}
       `}
     >
       <div className="flex items-start gap-3 p-4">
@@ -146,23 +141,16 @@ export function FieldCanvasItem({ field }: FieldCanvasItemProps) {
         </button>
 
         {/* Field Icon and Content */}
-        <div
-          onClick={handleSelect}
-          className="flex-1 cursor-pointer min-w-0"
-        >
+        <div onClick={handleSelect} className="flex-1 cursor-pointer min-w-0">
           <div className="flex items-center gap-2">
             <div className={`flex-shrink-0 ${config.color}`}>
               <Icon className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {field.label}
-              </p>
+              <p className="text-sm font-medium text-gray-900 truncate">{field.label}</p>
               <p className="text-xs text-gray-500">
-                {field.field_type?.replace('_', ' ') || 'Unknown'} • {field.field_id}
-                {field.required && (
-                  <span className="ml-2 text-red-600">Required</span>
-                )}
+                {field.field_type?.replace("_", " ") || "Unknown"} • {field.field_id}
+                {field.required && <span className="ml-2 text-red-600">Required</span>}
               </p>
             </div>
           </div>
@@ -170,24 +158,22 @@ export function FieldCanvasItem({ field }: FieldCanvasItemProps) {
           {/* Field-specific metadata */}
           <div className="mt-2 text-xs text-gray-500">
             {/* Show options count for checkbox/radio */}
-            {'options' in field && field.options && (
-              <span>{field.options.length} options</span>
-            )}
+            {"options" in field && field.options && <span>{field.options.length} options</span>}
             {/* Show max length for text fields */}
-            {'max_length' in field && field.max_length && (
+            {"max_length" in field && field.max_length && (
               <span>Max length: {field.max_length}</span>
             )}
             {/* Show min/max for number fields */}
-            {'min_value' in field && field.min_value !== undefined && (
+            {"min_value" in field && field.min_value !== undefined && (
               <span>Min: {field.min_value}</span>
             )}
-            {'max_value' in field && field.max_value !== undefined && (
+            {"max_value" in field && field.max_value !== undefined && (
               <span> Max: {field.max_value}</span>
             )}
             {/* Show file constraints */}
-            {'allowed_file_types' in field && field.allowed_file_types && (
+            {"allowed_file_types" in field && field.allowed_file_types && (
               <span>
-                Files: {field.allowed_file_types.join(', ')}
+                Files: {field.allowed_file_types.join(", ")}
                 {field.max_file_size_mb && ` (max ${field.max_file_size_mb}MB)`}
               </span>
             )}
@@ -209,7 +195,9 @@ export function FieldCanvasItem({ field }: FieldCanvasItemProps) {
 
       {/* Selected indicator */}
       {isSelected && (
-        <div className={`absolute -left-1 top-0 bottom-0 w-1 rounded-l-lg ${config.color.replace('text', 'bg')}`} />
+        <div
+          className={`absolute -left-1 top-0 bottom-0 w-1 rounded-l-lg ${config.color.replace("text", "bg")}`}
+        />
       )}
     </div>
   );

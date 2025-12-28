@@ -8,7 +8,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.core.cache import CACHE_TTL_EXTERNAL_ANALYTICS, cache
-from app.db.enums import ComplianceStatus, ValidationStatus
+from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.schemas.external_analytics import (
@@ -142,8 +142,10 @@ class ExternalAnalyticsService:
         Raises:
             ValueError: If fewer than minimum threshold barangays assessed
         """
-        # Query for completed assessments
-        query = db.query(Assessment).filter(Assessment.final_compliance_status.isnot(None))
+        # Query for completed assessments (COMPLETED is new workflow, VALIDATED is legacy)
+        query = db.query(Assessment).filter(
+            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
+        )
 
         # Apply cycle filter if specified
         if assessment_cycle:
@@ -221,11 +223,11 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.final_compliance_status.isnot(None),
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
                 )
             else:
                 query = query.join(Assessment).filter(
-                    Assessment.final_compliance_status.isnot(None)
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
                 )
 
             responses = query.all()
@@ -328,11 +330,11 @@ class ExternalAnalyticsService:
             if assessment_cycle:
                 query = query.join(Assessment).filter(
                     Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.final_compliance_status.isnot(None),
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
                 )
             else:
                 query = query.join(Assessment).filter(
-                    Assessment.final_compliance_status.isnot(None)
+                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
                 )
 
             responses = query.all()
@@ -397,7 +399,7 @@ class ExternalAnalyticsService:
             .join(AssessmentResponse, AssessmentResponse.indicator_id == Indicator.id)
             .join(Assessment, Assessment.id == AssessmentResponse.assessment_id)
             .join(GovernanceArea, GovernanceArea.id == Indicator.governance_area_id)
-            .filter(Assessment.final_compliance_status.isnot(None))
+            .filter(Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]))
         )
 
         if assessment_cycle:
@@ -464,9 +466,9 @@ class ExternalAnalyticsService:
         Returns:
             AnonymizedAIInsightsResponse with aggregated insights
         """
-        # Query for assessments with AI recommendations
+        # Query for assessments with AI recommendations (COMPLETED and VALIDATED statuses)
         query = db.query(Assessment).filter(
-            Assessment.final_compliance_status.isnot(None),
+            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
             Assessment.ai_recommendations.isnot(None),
         )
 
@@ -965,9 +967,9 @@ class ExternalAnalyticsService:
                     area.area_code,
                     area.area_name[:30] + "..." if len(area.area_name) > 30 else area.area_name,
                     f"{area.pass_percentage:.1f}%",
-                    str(area.total_indicators),
-                    str(area.passed_indicators),
-                    str(area.failed_indicators),
+                    str(area.indicator_count),
+                    str(area.passed_count),
+                    str(area.failed_count),
                 ]
             )
 
@@ -1010,8 +1012,8 @@ class ExternalAnalyticsService:
                     indicator.indicator_name[:40] + "..."
                     if len(indicator.indicator_name) > 40
                     else indicator.indicator_name,
-                    f"{indicator.failure_rate:.1f}%",
-                    str(indicator.failed_count),
+                    f"{indicator.failure_percentage:.1f}%",
+                    str(indicator.failure_count),
                 ]
             )
 

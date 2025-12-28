@@ -30,29 +30,16 @@ INDICATOR_2_1 = Indicator(
             code="2.1.1",
             name="Structure: Organized BDRRMC with its composition compliant to the provisions of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01, covering {JAN_TO_OCT_CURRENT_YEAR}",
             upload_instructions=(
-                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01\n\n"
-                "Minimum Composition of the BDRRMC:\n"
-                "- Punong Barangay\n"
-                "- A Representative from the Sangguniang Barangay; and\n"
-                "- Two (2) CSO representatives from the existing and active community-based people's organizations representing the most vulnerable and marginalized groups in the barangay (Item 5.7. of NDRRMC, DILG, DBM, and CSC JMC No. 2014-01)\n\n"
-                "Please supply the required information:\n"
-                "Date of approval"
+                "Upload: EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering {JAN_TO_OCT_CURRENT_YEAR}"
             ),
             validation_rule="ALL_ITEMS_REQUIRED",
             checklist_items=[
                 ChecklistItem(
                     id="2_1_1_eo",
-                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01",
+                    label="EO (signed by the PB) or similar issuance (resolution/ordinance signed by the PB, Barangay Secretary and SBMs) organizing the BDRRMC with its composition compliant to the provisions of JMC No. 2014-01, covering {JAN_TO_OCT_CURRENT_YEAR}",
                     required=True,
                     requires_document_count=False,
                     display_order=1,
-                ),
-                ChecklistItem(
-                    id="2_1_1_date",
-                    label="Date of approval",
-                    item_type="date_input",
-                    required=False,  # Date fields are for assessor review, not BLGU submission
-                    display_order=2,
                 ),
             ],
             notes=FormNotes(
@@ -146,14 +133,14 @@ INDICATOR_2_1 = Indicator(
         # Sub-Indicator 2.1.4: Accomplishment Reports
         SubIndicator(
             code="2.1.4",
-            name="Accomplishment Reports: Physical accomplishment OR fund utilization (only 1 of the below reports is required)",
+            name="Accomplishment Reports: At least 50% accomplishment (Physical) OR 50% fund utilization (Financial) - CY {CURRENT_YEAR}",
             upload_instructions=(
                 "Upload the following:\n\n"
-                "OPTION A - PHYSICAL:\n"
+                "OPTION A - PHYSICAL: At least 50% accomplishment of the physical targets in the BDRRM Plan\n"
                 "- Accomplishment Report\n"
                 "- Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO\n\n"
                 "OR\n\n"
-                "OPTION B - FINANCIAL:\n"
+                "OPTION B - FINANCIAL: At least 50% fund utilization of the 70% component of CY {PREVIOUS_YEAR} BDRRMF - Preparedness component as of December 31, {PREVIOUS_YEAR}\n"
                 "- Annual LDRRMF Utilization Report\n"
                 "- Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
                 "Note: Choose either Option A (Physical) OR Option B (Financial). Only ONE option is required."

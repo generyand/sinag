@@ -1,9 +1,8 @@
 # Epic 4.0: Form & Calculation Schema Builders
 
-> **PRD Reference:** FR-6.1.2 (Form Schema - BLGU Input Fields), FR-6.1.3, FR-6.1.4
-> **User Stories:** US-6.1.1, US-6.1.2, US-6.1.9
-> **Duration:** 2-3 weeks
-> **Status:** 🔄 In Progress - FormSchemaBuilder exists, needs integration & calculation/remark builders
+> **PRD Reference:** FR-6.1.2 (Form Schema - BLGU Input Fields), FR-6.1.3, FR-6.1.4 **User
+> Stories:** US-6.1.1, US-6.1.2, US-6.1.9 **Duration:** 2-3 weeks **Status:** 🔄 In Progress -
+> FormSchemaBuilder exists, needs integration & calculation/remark builders
 
 **[← Back to Overview](./README.md)**
 
@@ -12,15 +11,22 @@
 ## Epic Overview
 
 **Description:** Build visual schema builders for three types of indicator configurations:
-1. **Form Schema Builder** - Define BLGU submission input fields (checkboxes, dropdowns, file uploads, etc.)
-2. **Calculation Schema Builder** - Define automatic validation rules (thresholds, conditional logic, pass/fail criteria)
-3. **Remark Schema Builder** - Define human-readable summary templates (e.g., "All requirements met," "BDRRMC Functional")
 
-This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and aligns with Indicator Builder Specification v1.4.
+1. **Form Schema Builder** - Define BLGU submission input fields (checkboxes, dropdowns, file
+   uploads, etc.)
+2. **Calculation Schema Builder** - Define automatic validation rules (thresholds, conditional
+   logic, pass/fail criteria)
+3. **Remark Schema Builder** - Define human-readable summary templates (e.g., "All requirements
+   met," "BDRRMC Functional")
+
+This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and aligns with Indicator
+Builder Specification v1.4.
 
 **Success Criteria:**
+
 - All three builders integrated into Indicator Form View (Tabs 3, 4, 5)
-- Form schema builder supports file uploads, dropdowns, checkboxes, number inputs, text inputs, date pickers
+- Form schema builder supports file uploads, dropdowns, checkboxes, number inputs, text inputs, date
+  pickers
 - Calculation schema builder supports thresholds, conditional logic, AND/OR operators
 - Remark schema uses template syntax with variable substitution (e.g., `{{ barangay_name }}`)
 - All schemas stored as JSONB in database and validated before publishing
@@ -28,38 +34,37 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
 ---
 
 - [x] **4.0 Epic: Form & Calculation Schema Builders** ✅ _(FR-6.1.2 Form, FR-6.1.3, FR-6.1.4)_
-
   - [x] **4.1 Story: Backend Form Schema Validation** ✅
-
     - **Scope:** Create Pydantic schemas for form field types with validation rules
     - **Duration:** 1-2 days
     - **Dependencies:** None
     - **Files:** `apps/api/app/schemas/form_schema.py`
     - **Tech:** Pydantic, Python typing
     - **Success Criteria:**
-
-      - Base schema `FormFieldBase` with common fields: `id`, `type`, `label`, `required`, `placeholder`
+      - Base schema `FormFieldBase` with common fields: `id`, `type`, `label`, `required`,
+        `placeholder`
       - **Form Field Type Schemas:**
         - `CheckboxField` - Fields: `default_value` (bool)
         - `TextInputField` - Fields: `multiline` (bool), `max_length`
         - `NumberInputField` - Fields: `min_value`, `max_value`, `step`, `unit`
         - `DateInputField` - Fields: `min_date`, `max_date`, `default_to_today`
         - `DropdownField` - Fields: `options` (list of {label, value}), `allow_multiple`
-        - `FileUploadField` - Fields: `allowed_types` (list of MIME types), `max_size_mb`, `max_files`
+        - `FileUploadField` - Fields: `allowed_types` (list of MIME types), `max_size_mb`,
+          `max_files`
         - `RadioGroupField` - Fields: `options`, `layout` ('horizontal' | 'vertical')
         - `SectionHeaderField` - Fields: `description`, `collapsible`
-      - Discriminated union: `FormField = Union[CheckboxField, TextInputField, ...]` with `type` discriminator
-      - Schema `FormSchemaConfig` with fields: `fields` (list of FormField), `layout` ('single_column' | 'two_column')
+      - Discriminated union: `FormField = Union[CheckboxField, TextInputField, ...]` with `type`
+        discriminator
+      - Schema `FormSchemaConfig` with fields: `fields` (list of FormField), `layout`
+        ('single_column' | 'two_column')
 
   - [x] **4.2 Story: Backend Calculation Schema Validation** ✅
-
     - **Scope:** Create Pydantic schemas for calculation rules and validation logic
     - **Duration:** 2-3 days
     - **Dependencies:** 4.1 (form schema defined)
     - **Files:** `apps/api/app/schemas/calculation_schema.py`
     - **Tech:** Pydantic, Python typing
     - **Success Criteria:**
-
       - Schema `CalculationRule` with fields:
         - `rule_id` (string)
         - `rule_type` ('threshold' | 'conditional' | 'formula')
@@ -74,11 +79,11 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - Validation:
         - Field references in conditions must exist in form_schema
         - Threshold values must be numeric
-        - Conditional expressions use safe subset of Python operators (==, !=, <, >, <=, >=, AND, OR)
+        - Conditional expressions use safe subset of Python operators (==, !=, <, >, <=, >=, AND,
+          OR)
       - Schema exports: `CalculationResult` with fields: `status`, `score`, `remarks`
 
   - [x] **4.3 Story: Backend Remark Schema & Template Engine** ✅
-
     - **Scope:** Create Pydantic schemas for remark templates with variable substitution
     - **Duration:** 1-2 days
     - **Dependencies:** 4.2 (calculation schema defined)
@@ -87,7 +92,6 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - `apps/api/app/services/remark_template_service.py`
     - **Tech:** Pydantic, Jinja2 (template engine), Python
     - **Success Criteria:**
-
       - Schema `RemarkTemplate` with fields:
         - `template_id` (string)
         - `template_text` (string, Jinja2 syntax)
@@ -98,7 +102,8 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - Service `RemarkTemplateService` with methods:
         - `render_template(template_text, context)` - Render Jinja2 template with context data
         - `select_template(templates, context)` - Select appropriate template based on conditions
-        - `generate_remark(remark_schema, submission_data, calculation_result)` - Generate final remark
+        - `generate_remark(remark_schema, submission_data, calculation_result)` - Generate final
+          remark
       - Template variables supported:
         - `{{ barangay_name }}`
         - `{{ indicator_code }}`
@@ -110,7 +115,6 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - Service exports singleton: `remark_template_service = RemarkTemplateService()`
 
   - [x] **4.4 Story: Update Indicator Model with Schema Fields** ✅
-
     - **Scope:** Add `calculation_schema` and `remark_schema` JSONB fields if not already present
     - **Duration:** 1 day
     - **Dependencies:** 4.3 (schemas defined)
@@ -119,7 +123,6 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - `apps/api/alembic/versions/xxxx_add_schema_fields.py` (not needed - already in DB)
     - **Tech:** SQLAlchemy, Alembic
     - **Success Criteria:**
-
       - Verify Indicator model has fields:
         - `form_schema` (JSONB, nullable)
         - `calculation_schema` (JSONB, nullable)
@@ -128,14 +131,12 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - Verify JSONB columns can store complex nested structures
 
   - [x] **4.5 Story: Type Generation for Schema Types** ✅
-
     - **Scope:** Generate TypeScript types for form, calculation, and remark schemas
     - **Duration:** 1 hour
     - **Dependencies:** 4.4 (backend schemas exposed in API)
     - **Files:** `packages/shared/src/generated/schemas/`
     - **Tech:** Orval, OpenAPI, TypeScript
     - **Success Criteria:**
-
       - Run `pnpm generate-types` successfully
       - TypeScript types generated:
         - `FormField`, `FormSchemaConfig`
@@ -145,16 +146,16 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - No TypeScript errors
 
   - [x] **4.6 Story: Integrate Existing FormSchemaBuilder Component** ✅
-
     - **Scope:** Integrate existing `FormSchemaBuilder.tsx` into Indicator Form View as Tab 3
     - **Duration:** 1-2 days
     - **Dependencies:** 4.5 (types generated)
     - **Files:**
-      - `apps/web/src/components/features/indicators/builder/FormSchemaBuilder.tsx` (already integrated!)
-      - `apps/web/src/components/features/indicators/builder/schema-editor/SchemaEditorPanel.tsx` (already has tabs)
+      - `apps/web/src/components/features/indicators/builder/FormSchemaBuilder.tsx` (already
+        integrated!)
+      - `apps/web/src/components/features/indicators/builder/schema-editor/SchemaEditorPanel.tsx`
+        (already has tabs)
     - **Tech:** React, @hello-pangea/dnd, shadcn/ui
     - **Success Criteria:**
-
       - Review existing `FormSchemaBuilder.tsx` implementation:
         - Confirm drag-and-drop palette for field types
         - Confirm field configuration panel
@@ -165,17 +166,17 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - Validation badge on tab header (✓/⚠/❌)
       - "Preview Form" button: shows how BLGU users will see the submission form
       - Ensure all field types from 4.1 are supported:
-        - Checkbox, TextInput, NumberInput, DateInput, Dropdown, FileUpload, RadioGroup, SectionHeader
+        - Checkbox, TextInput, NumberInput, DateInput, Dropdown, FileUpload, RadioGroup,
+          SectionHeader
 
   - [x] **4.7 Story: Frontend Calculation Schema Builder Component** ✅
-
     - **Scope:** Create visual builder for calculation rules with threshold and conditional logic
     - **Duration:** 2-3 days
     - **Dependencies:** 4.6 (form schema builder integrated)
-    - **Files:** `apps/web/src/components/features/indicators/builder/CalculationSchemaBuilder.tsx` (already exists!)
+    - **Files:** `apps/web/src/components/features/indicators/builder/CalculationSchemaBuilder.tsx`
+      (already exists!)
     - **Tech:** React, shadcn/ui (Form, Input, Select, Switch), React Hook Form
     - **Success Criteria:**
-
       - Component `CalculationSchemaBuilder`:
         - "Add Rule" button: creates new calculation rule
         - Rule list: displays all rules with edit/delete actions
@@ -197,14 +198,14 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - Connected to Zustand store, auto-saves changes
 
   - [x] **4.8 Story: Frontend Remark Schema Builder Component** ✅
-
     - **Scope:** Create visual builder for remark templates with variable substitution
     - **Duration:** 1-2 days
     - **Dependencies:** 4.7 (calculation builder ready)
-    - **Files:** `apps/web/src/components/features/indicators/RemarkSchemaBuilder/RemarkSchemaBuilder.tsx` (already exists and integrated!)
+    - **Files:**
+      `apps/web/src/components/features/indicators/RemarkSchemaBuilder/RemarkSchemaBuilder.tsx`
+      (already exists and integrated!)
     - **Tech:** React, shadcn/ui, TipTap (rich text editor) or Monaco Editor (code editor)
     - **Success Criteria:**
-
       - Component `RemarkSchemaBuilder`:
         - "Add Template" button: creates new remark template
         - Template list: displays all templates with conditions
@@ -218,22 +219,22 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
         - Click variable button inserts `{{ variable_name }}` at cursor
         - Hover over variable shows description (e.g., "Barangay Name - The name of the barangay")
       - Available variables listed:
-        - `{{ barangay_name }}`, `{{ indicator_code }}`, `{{ indicator_title }}`, `{{ score }}`, `{{ status }}`
+        - `{{ barangay_name }}`, `{{ indicator_code }}`, `{{ indicator_title }}`, `{{ score }}`,
+          `{{ status }}`
         - Form fields: `{{ form.field_name }}` (auto-generated from form_schema)
       - Integrated as Tab 5 in `IndicatorFormView`
       - Connected to Zustand store, auto-saves changes
 
   - [x] **4.9 Story: Schema Validation Before Publish** ✅
-
     - **Scope:** Implement pre-publish validation for all three schema types
     - **Duration:** 1-2 days
     - **Dependencies:** 4.8 (all builders complete)
     - **Files:**
       - `apps/web/src/hooks/useSchemaValidation.ts` (already implemented!)
-      - `apps/web/src/components/features/indicators/builder/schema-editor/SchemaEditorPanel.tsx` (uses validation)
+      - `apps/web/src/components/features/indicators/builder/schema-editor/SchemaEditorPanel.tsx`
+        (uses validation)
     - **Tech:** TypeScript, Zod validation
     - **Success Criteria:**
-
       - Validation utility functions in `schema-validation.ts`:
         - `validateFormSchema(schema)` - Check form fields are valid
         - `validateCalculationSchema(schema, formSchema)` - Check field references exist
@@ -251,17 +252,16 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
       - Publish button disabled if any validation errors present
 
   - [x] **4.10 Story: Testing & Validation for Schema Builders** ✅
-
     - **Scope:** Comprehensive testing for form, calculation, and remark schema builders
     - **Duration:** 2-3 days
     - **Dependencies:** 4.9 (validation complete)
     - **Files:**
       - `apps/api/tests/services/test_form_schema_validator.py` (20/20 tests passing!)
-      - `apps/api/tests/services/test_calculation_and_remark.py` (16/16 rule evaluation tests passing!)
+      - `apps/api/tests/services/test_calculation_and_remark.py` (16/16 rule evaluation tests
+        passing!)
       - Frontend component tests exist in builder directories
     - **Tech:** Pytest, Vitest, React Testing Library
     - **Success Criteria:**
-
       - **Backend Tests:**
         - Test Pydantic schema validation for form, calculation, remark types
         - Test remark template rendering with Jinja2:
@@ -289,11 +289,14 @@ This epic reuses the drag-and-drop patterns from `FormSchemaBuilder.tsx` and ali
 **Epic Status:** ✅ Complete - All schema builders implemented, integrated, and tested!
 
 **Implementation Summary:**
+
 - ✅ Backend: Pydantic schemas for form, calculation, and remark with full validation
 - ✅ Remark Template Service: Jinja2 integration for dynamic template rendering
-- ✅ Database: Schema fields already present in Indicator model (form_schema, calculation_schema, remark_schema)
+- ✅ Database: Schema fields already present in Indicator model (form_schema, calculation_schema,
+  remark_schema)
 - ✅ TypeScript Types: Generated successfully via Orval from OpenAPI spec
-- ✅ Frontend Components: FormSchemaBuilder, CalculationSchemaBuilder, RemarkSchemaBuilder all exist and integrated in SchemaEditorPanel
+- ✅ Frontend Components: FormSchemaBuilder, CalculationSchemaBuilder, RemarkSchemaBuilder all exist
+  and integrated in SchemaEditorPanel
 - ✅ Validation: Real-time schema validation with useSchemaValidation hook
 - ✅ Tests: 20/20 form schema tests + 16/16 calculation rule tests passing
 

@@ -222,9 +222,9 @@ INDICATOR_3_1 = Indicator(
             name="Budget: Allocation of substantial amount for anti-illegal drugs initiative",
             upload_instructions=(
                 "Upload ONE of the following (only 1 required):\n\n"
-                "1. Approved Barangay Appropriation Ordinance signed by the PB, Barangay Secretary and SBMs\n"
-                "2. Copy of Barangay Annual Investment Plan (AIP)\n\n"
-                "Note: You only need to upload ONE option (either option 1 OR option 2)."
+                "1. Approved Barangay Appropriation Ordinance signed by the PB, Barangay Secretary and SBMs\n\n"
+                "OR\n\n"
+                "2. Copy of Barangay Annual Investment Plan (AIP)"
             ),
             validation_rule="OR_LOGIC_AT_LEAST_1_REQUIRED",  # OR logic: either BAO OR AIP
             checklist_items=[

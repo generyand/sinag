@@ -4,6 +4,16 @@ import { TreeNavigator } from "@/components/features/assessments/tree-navigation
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
 import { BBIPreviewPanel, BBIPreviewData } from "./BBIPreviewPanel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
@@ -14,7 +24,7 @@ import {
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { classifyError } from "@/lib/error-utils";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -73,6 +83,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [expandedId, setExpandedId] = useState<number | null>(null);
   // Store checklist state externally to persist across indicator navigation
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
+  // Store calibration flag state (which indicators are flagged for calibration)
+  const [calibrationFlags, setCalibrationFlags] = useState<Record<number, boolean>>({});
+
+  // Confirmation dialog states
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [showCalibrationConfirm, setShowCalibrationConfirm] = useState(false);
+
+  // Mobile tab state: 'indicators' | 'files' | 'validation'
+  const [mobileTab, setMobileTab] = useState<"indicators" | "files" | "validation">("indicators");
 
   // Get current user for per-area calibration check (must be called before conditional returns)
   const { user: currentUser } = useAuthStore();
@@ -118,11 +137,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   ? "Conditional"
                   : undefined;
 
-          // Load public comment from feedback_comments (latest validation comment)
+          // Load public comment from feedback_comments (latest validation comment from validators only)
           const feedbackComments = resp.feedback_comments || [];
-          const validationComments = feedbackComments.filter(
-            (fc: any) => fc.comment_type === "validation" && !fc.is_internal_note
-          );
+          const validationComments = feedbackComments.filter((fc: any) => {
+            if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
+            // Only load comments from validators, not assessors
+            const commenterRole = fc.assessor?.role?.toLowerCase() || "";
+            return commenterRole === "validator";
+          });
           validationComments.sort((a: any, b: any) => {
             const dateA = new Date(a.created_at || 0).getTime();
             const dateB = new Date(b.created_at || 0).getTime();
@@ -130,7 +152,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           });
           const publicComment = validationComments[0]?.comment || "";
 
-          if (status) {
+          // Load entry if we have status OR comment (comment can be saved without status)
+          if (status || publicComment) {
             initialForm[resp.id] = { status, publicComment };
           }
         }
@@ -172,6 +195,34 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
     }
   }, [data, checklistState]);
+
+  // Initialize calibration flags from database when data loads
+  useEffect(() => {
+    if (data && Object.keys(calibrationFlags).length === 0) {
+      const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
+      const core = (assessment.assessment as AnyRecord) ?? assessment;
+      const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+
+      const initialFlags: Record<number, boolean> = {};
+
+      for (const resp of responses) {
+        // Debug: log the flagged_for_calibration value from each response
+        console.log(
+          `[Init] Response ${resp.id}: flagged_for_calibration =`,
+          resp.flagged_for_calibration
+        );
+        // Load flagged_for_calibration from database
+        if (resp.flagged_for_calibration === true) {
+          initialFlags[resp.id] = true;
+        }
+      }
+
+      if (Object.keys(initialFlags).length > 0) {
+        console.log("[Validator] Loading saved calibration flags:", initialFlags);
+        setCalibrationFlags(initialFlags);
+      }
+    }
+  }, [data, calibrationFlags]);
 
   if (isLoading) {
     return (
@@ -233,10 +284,49 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   // Default label (MiddleMovFilesPanel will override based on indicator context)
   const separationLabel = calibrationRequestedAt ? "After Calibration" : "After Rework";
 
+  // Helper: Check if a response has any checklist items checked by the validator
+  const hasChecklistItemsChecked = (responseId: number): boolean => {
+    return Object.keys(checklistState).some(
+      (key) => key.startsWith(`checklist_${responseId}_`) && checklistState[key] === true
+    );
+  };
+
+  // Helper: Check if a response already has a validation status from database
+  const hasExistingValidationStatus = (responseId: number): boolean => {
+    const response = responses.find((r: any) => r.id === responseId);
+    if (!response) return false;
+    const status = (response as any).validation_status;
+    // Check if status is PASS, FAIL, or CONDITIONAL (case-insensitive)
+    if (!status) return false;
+    const statusUpper = String(status).toUpperCase();
+    return statusUpper === "PASS" || statusUpper === "FAIL" || statusUpper === "CONDITIONAL";
+  };
+
+  // Helper: Check if validator has entered a comment/finding for this response
+  const hasValidatorComment = (responseId: number): boolean => {
+    const formData = form[responseId];
+    return !!(formData?.publicComment && formData.publicComment.trim().length > 0);
+  };
+
+  // Helper: Check if an indicator is "reviewed"
+  // An indicator is reviewed if:
+  // 1. Has checklist items checked in current session, OR
+  // 2. Flagged for calibration, OR
+  // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration), OR
+  // 4. Validator has entered a comment/finding
+  const isIndicatorReviewed = (responseId: number): boolean => {
+    return (
+      hasChecklistItemsChecked(responseId) ||
+      calibrationFlags[responseId] === true ||
+      hasExistingValidationStatus(responseId) ||
+      hasValidatorComment(responseId)
+    );
+  };
+
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
-    completedIndicators: responses.filter((r: any) => !!form[r.id]?.status).length,
+    completedIndicators: responses.filter((r: any) => isIndicatorReviewed(r.id)).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
@@ -261,9 +351,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || "Unnamed Indicator",
-        // For validators: ONLY show completed if validator has made a decision in form state
-        // Don't use database validation_status because that's the assessor's decision, not the validator's
-        status: form[resp.id]?.status ? "completed" : "not_started",
+        // For validators: Show completed if checklist items checked OR flagged for calibration
+        status: isIndicatorReviewed(resp.id) ? "completed" : "not_started",
       });
 
       // Sort indicators by code after adding
@@ -274,25 +363,25 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const total = responses.length;
-  const reviewed = responses.filter((r) => !!form[r.id]?.status).length;
+  // For validators: "reviewed" means checklist items checked OR flagged for calibration
+  const reviewed = responses.filter((r) => isIndicatorReviewed(r.id as number)).length;
   const allReviewed = total > 0 && reviewed === total;
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
-  const missingRequiredComments = responses.filter((r) => {
-    const v = form[r.id];
-    if (!v?.status) return false;
-    if (v.status === "Fail" || v.status === "Conditional") {
-      return !(v.publicComment && v.publicComment.trim().length > 0);
-    }
-    return false;
-  }).length;
+  // Check if ALL responses have validation_status confirmed (via Compliance Overview)
+  // This is required before finalization - validators must confirm each indicator status
+  const confirmedCount = responses.filter((r) =>
+    hasExistingValidationStatus(r.id as number)
+  ).length;
+  const allConfirmed = total > 0 && confirmedCount === total;
 
   const onSaveDraft = async () => {
-    // Build payloads that include both validation status AND checklist data
+    // Build payloads that include validation status, checklist data, AND calibration flag
     const payloads = responses
       .map((r) => {
         const responseId = r.id as number;
         const formData = form[responseId];
+        const flaggedForCalibration = calibrationFlags[responseId] ?? false;
 
         // Extract checklist data for this response
         const responseChecklistData: Record<string, any> = {};
@@ -307,13 +396,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
         const hasStatus = formData && formData.status;
         const hasChecklistData = Object.keys(responseChecklistData).length > 0;
+        const hasComment =
+          formData && formData.publicComment && formData.publicComment.trim().length > 0;
+        const hasCalibrationFlag = flaggedForCalibration === true;
 
-        // Include in payload if has status OR has checklist data
-        if (hasStatus || hasChecklistData) {
+        // Include in payload if has status OR has checklist data OR has comment OR has calibration flag
+        if (hasStatus || hasChecklistData || hasComment || hasCalibrationFlag) {
           return {
             id: responseId,
             v: formData,
             checklistData: responseChecklistData,
+            flaggedForCalibration,
           };
         }
         return null;
@@ -323,9 +416,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           x
         ): x is {
           id: number;
-          v: { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string } | undefined;
+          v: { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string };
           checklistData: Record<string, any>;
-        } => x !== null
+          flaggedForCalibration: boolean;
+        } => x !== null && x.v !== undefined
       );
 
     if (payloads.length === 0) {
@@ -342,20 +436,25 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       );
 
       await Promise.all(
-        payloads.map((p) =>
-          validateMut.mutateAsync({
+        payloads.map((p) => {
+          console.log(
+            `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
+          );
+          return validateMut.mutateAsync({
             responseId: p.id,
             data: {
               // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
-              validation_status: p.v?.status
+              validation_status: p.v.status
                 ? (p.v.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
                 : undefined,
-              public_comment: p.v?.publicComment ?? null,
+              public_comment: p.v.publicComment ?? null,
               // Include checklist data in response_data
               response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
+              // Include calibration flag
+              flagged_for_calibration: p.flaggedForCalibration,
             },
-          })
-        )
+          });
+        })
       );
       // Invalidate all queries to force refetch with updated response_data
       await qc.invalidateQueries();
@@ -466,10 +565,23 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           duration: 6000,
         });
       } else if (errorInfo.type === "validation") {
-        toast.error("Cannot finalize validation", {
-          description: errorInfo.message,
-          duration: 6000,
-        });
+        // Check if the error is about unreviewed indicators
+        const isUnreviewedError =
+          errorInfo.message?.toLowerCase().includes("unreviewed") ||
+          errorInfo.message?.toLowerCase().includes("validation_status");
+
+        if (isUnreviewedError) {
+          toast.error("Please complete the Compliance Overview first", {
+            description:
+              "You must review and confirm all indicator statuses in the Compliance Overview before finalizing.",
+            duration: 6000,
+          });
+        } else {
+          toast.error("Cannot finalize validation", {
+            description: errorInfo.message,
+            duration: 6000,
+          });
+        }
       } else {
         toast.error("Finalization failed", {
           description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
@@ -541,62 +653,326 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     const responseId = parseInt(indicatorId, 10);
     setExpandedId(responseId);
     setSelectedIndicatorId(indicatorId);
+    // On mobile, auto-switch to files tab when indicator is selected
+    if (window.innerWidth < 768) {
+      setMobileTab("files");
+    }
+  };
+
+  const handleFileClick = () => {
+    // On mobile, auto-switch to validation tab when file is clicked
+    if (window.innerWidth < 768) {
+      setMobileTab("validation");
+    }
   };
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+        <div className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <Button
               asChild
               variant="ghost"
               size="sm"
-              className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-2"
+              className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-1.5 sm:px-2"
             >
               <Link href="/validator/submissions">
                 <ChevronLeft className="h-4 w-4" />
-                <span className="font-medium">Queue</span>
+                <span className="font-medium hidden sm:inline">Queue</span>
               </Link>
             </Button>
-            <div className="h-8 w-px bg-border shrink-0" />
-            <div className="min-w-0 flex flex-col justify-center">
-              <div className="text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName} <span className="text-muted-foreground font-medium mx-1">/</span>{" "}
-                {governanceArea}
+            <div className="h-6 sm:h-8 w-px bg-border shrink-0" />
+            <div className="min-w-0 flex flex-col justify-center flex-1">
+              <div className="text-xs sm:text-sm font-bold text-foreground truncate leading-tight">
+                {barangayName}{" "}
+                <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">/</span>{" "}
+                <span className="hidden md:inline">{governanceArea}</span>
               </div>
-              <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-                Validator Assessment Review {cycleYear ? `• CY ${cycleYear}` : ""}
+              <div className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight mt-0.5 hidden sm:block">
+                Validator Assessment Review {cycleYear ? `· CY ${cycleYear}` : ""}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {statusText ? (
-              <div className="scale-90 origin-right">
+              <div className="scale-75 sm:scale-90 origin-right">
                 <StatusBadge status={statusText} />
               </div>
             ) : null}
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1 sm:gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-4"
+              disabled={validateMut.isPending}
+              onClick={async () => {
+                // Save draft first, then navigate to compliance overview
+                await onSaveDraft();
+                router.push(`/validator/submissions/${assessmentId}/compliance`);
+              }}
+            >
+              <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Compliance Overview</span>
+              <span className="sm:hidden">Compliance</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
               type="button"
               onClick={onSaveDraft}
               disabled={validateMut.isPending}
-              className="ml-2"
+              className="text-xs sm:text-sm px-2 sm:px-4"
             >
-              Save as Draft
+              <span className="hidden sm:inline">
+                {validateMut.isPending ? "Saving..." : "Save as Draft"}
+              </span>
+              <span className="sm:hidden">Save</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Three-Column Layout */}
+      {/* Mobile Tab Navigation (< 768px) */}
+      <div className="md:hidden sticky top-[56px] z-10 bg-background border-b border-border">
+        <div className="flex">
+          <button
+            onClick={() => setMobileTab("indicators")}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              mobileTab === "indicators" ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            Indicators
+            {mobileTab === "indicators" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMobileTab("files")}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              mobileTab === "files" ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            Files
+            {mobileTab === "files" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMobileTab("validation")}
+            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
+              mobileTab === "validation" ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            Validation
+            {mobileTab === "validation" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Responsive Layout */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full max-w-[1920px] mx-auto">
-          <div className="flex flex-row h-[calc(100vh-125px)] bg-white border-b border-[var(--border)]">
+          {/* Mobile: Single Panel with Tabs (< 768px) */}
+          <div className="md:hidden h-[calc(100vh-168px)] bg-white">
+            {mobileTab === "indicators" && (
+              <div className="h-full overflow-y-auto bg-muted/5">
+                <TreeNavigator
+                  assessment={transformedAssessment as any}
+                  selectedIndicatorId={selectedIndicatorId}
+                  onIndicatorSelect={handleIndicatorSelect}
+                />
+              </div>
+            )}
+            {mobileTab === "files" && (
+              <div className="h-full overflow-hidden flex flex-col">
+                <MiddleMovFilesPanel
+                  assessment={data as any}
+                  expandedId={expandedId ?? undefined}
+                  calibrationRequestedAt={calibrationRequestedAt}
+                  reworkRequestedAt={reworkRequestedAt}
+                  separationLabel={separationLabel}
+                  onAnnotationCreated={(responseId) => {
+                    // Auto-enable calibration flag when annotation is added
+                    setCalibrationFlags((prev) => ({
+                      ...prev,
+                      [responseId]: true,
+                    }));
+                  }}
+                  onAnnotationDeleted={(responseId, remainingCount) => {
+                    // Auto-disable calibration flag when ALL annotations are removed
+                    if (remainingCount === 0) {
+                      setCalibrationFlags((prev) => ({
+                        ...prev,
+                        [responseId]: false,
+                      }));
+                    }
+                  }}
+                  onFileClick={handleFileClick}
+                />
+              </div>
+            )}
+            {mobileTab === "validation" && (
+              <div className="h-full overflow-y-auto">
+                <RightAssessorPanel
+                  assessment={data as any}
+                  form={form}
+                  expandedId={expandedId ?? undefined}
+                  onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
+                  setField={(id, field, value) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      [id]: {
+                        ...prev[id],
+                        [field]: value,
+                      },
+                    }));
+                  }}
+                  onIndicatorSelect={(indicatorId) => {
+                    // Sync the tree navigator selection when navigating via Previous/Next buttons
+                    setSelectedIndicatorId(indicatorId);
+                  }}
+                  checklistState={checklistState}
+                  onChecklistChange={(key, value) => {
+                    setChecklistState((prev) => ({
+                      ...prev,
+                      [key]: value,
+                    }));
+                  }}
+                  calibrationFlags={calibrationFlags}
+                  onCalibrationFlagChange={(responseId, flagged) => {
+                    setCalibrationFlags((prev) => ({
+                      ...prev,
+                      [responseId]: flagged,
+                    }));
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Tablet: 2-Column Layout (768px - 1024px) */}
+          <div className="hidden md:flex lg:hidden h-[calc(100vh-125px)] bg-white border-b border-[var(--border)]">
+            {/* Left Sidebar - Indicators */}
+            <div className="w-[240px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-muted/5">
+              <div className="flex-1 overflow-y-auto">
+                <TreeNavigator
+                  assessment={transformedAssessment as any}
+                  selectedIndicatorId={selectedIndicatorId}
+                  onIndicatorSelect={handleIndicatorSelect}
+                />
+              </div>
+            </div>
+
+            {/* Right Content - Files + Validation Tabs */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Tab Bar */}
+              <div className="flex border-b border-border bg-muted/30">
+                <button
+                  onClick={() => setMobileTab("files")}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                    mobileTab === "files"
+                      ? "text-foreground bg-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Files
+                  {mobileTab === "files" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setMobileTab("validation")}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                    mobileTab === "validation"
+                      ? "text-foreground bg-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Validation
+                  {mobileTab === "validation" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  )}
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-hidden bg-white">
+                {mobileTab === "files" && (
+                  <div className="h-full overflow-hidden flex flex-col">
+                    <MiddleMovFilesPanel
+                      assessment={data as any}
+                      expandedId={expandedId ?? undefined}
+                      calibrationRequestedAt={calibrationRequestedAt}
+                      reworkRequestedAt={reworkRequestedAt}
+                      separationLabel={separationLabel}
+                      onAnnotationCreated={(responseId) => {
+                        // Auto-enable calibration flag when annotation is added
+                        setCalibrationFlags((prev) => ({
+                          ...prev,
+                          [responseId]: true,
+                        }));
+                      }}
+                      onAnnotationDeleted={(responseId, remainingCount) => {
+                        // Auto-disable calibration flag when ALL annotations are removed
+                        if (remainingCount === 0) {
+                          setCalibrationFlags((prev) => ({
+                            ...prev,
+                            [responseId]: false,
+                          }));
+                        }
+                      }}
+                      onFileClick={handleFileClick}
+                    />
+                  </div>
+                )}
+                {mobileTab === "validation" && (
+                  <div className="h-full overflow-y-auto">
+                    <RightAssessorPanel
+                      assessment={data as any}
+                      form={form}
+                      expandedId={expandedId ?? undefined}
+                      onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
+                      setField={(id, field, value) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          [id]: {
+                            ...prev[id],
+                            [field]: value,
+                          },
+                        }));
+                      }}
+                      onIndicatorSelect={(indicatorId) => {
+                        // Sync the tree navigator selection when navigating via Previous/Next buttons
+                        setSelectedIndicatorId(indicatorId);
+                      }}
+                      checklistState={checklistState}
+                      onChecklistChange={(key, value) => {
+                        setChecklistState((prev) => ({
+                          ...prev,
+                          [key]: value,
+                        }));
+                      }}
+                      calibrationFlags={calibrationFlags}
+                      onCalibrationFlagChange={(responseId, flagged) => {
+                        setCalibrationFlags((prev) => ({
+                          ...prev,
+                          [responseId]: flagged,
+                        }));
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop: 3-Column Layout (≥ 1024px) */}
+          <div className="hidden lg:flex flex-row h-[calc(100vh-125px)] bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
             {/* Left Panel - Indicator Tree Navigation */}
-            <div className="w-[280px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-muted/5">
+            <div className="w-[280px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950">
               <div className="flex-1 overflow-y-auto">
                 <TreeNavigator
                   assessment={transformedAssessment as any}
@@ -607,18 +983,35 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             </div>
 
             {/* Middle Panel - MOV Files */}
-            <div className="w-[320px] flex-shrink-0 border-r border-[var(--border)] overflow-hidden flex flex-col bg-white">
+            <div className="w-[320px] flex-shrink-0 border-r border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950">
               <MiddleMovFilesPanel
                 assessment={data as any}
                 expandedId={expandedId ?? undefined}
                 calibrationRequestedAt={calibrationRequestedAt}
                 reworkRequestedAt={reworkRequestedAt}
                 separationLabel={separationLabel}
+                onAnnotationCreated={(responseId) => {
+                  // Auto-enable calibration flag when annotation is added
+                  setCalibrationFlags((prev) => ({
+                    ...prev,
+                    [responseId]: true,
+                  }));
+                }}
+                onAnnotationDeleted={(responseId, remainingCount) => {
+                  // Auto-disable calibration flag when ALL annotations are removed
+                  if (remainingCount === 0) {
+                    setCalibrationFlags((prev) => ({
+                      ...prev,
+                      [responseId]: false,
+                    }));
+                  }
+                }}
+                onFileClick={handleFileClick}
               />
             </div>
 
             {/* Right Panel - MOV Checklist/Validation */}
-            <div className="flex-1 overflow-hidden flex flex-col bg-white">
+            <div className="flex-1 overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950">
               <div className="flex-1 overflow-y-auto">
                 <RightAssessorPanel
                   assessment={data as any}
@@ -645,6 +1038,13 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       [key]: value,
                     }));
                   }}
+                  calibrationFlags={calibrationFlags}
+                  onCalibrationFlagChange={(responseId, flagged) => {
+                    setCalibrationFlags((prev) => ({
+                      ...prev,
+                      [responseId]: flagged,
+                    }));
+                  }}
                 />
               </div>
             </div>
@@ -660,75 +1060,55 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         </div>
 
         {/* Progress Bar */}
-        <div className="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:justify-between">
           <div className="absolute inset-x-0 -top-[3px] h-[3px] bg-black/5">
             <div
               className="h-full bg-[var(--cityscape-yellow)] transition-all"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[11px] sm:text-xs text-muted-foreground">
             Indicators Reviewed: {reviewed}/{total}
-            {missingRequiredComments > 0
-              ? ` • Missing required comments: ${missingRequiredComments}`
-              : ""}
           </div>
-          <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2">
             <Button
               variant="outline"
-              size="default"
+              size="sm"
               type="button"
               onClick={onSaveDraft}
               disabled={validateMut.isPending}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
             >
-              {validateMut.isPending ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 inline-block"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                "Save as Draft"
-              )}
+              {validateMut.isPending ? "Saving..." : "Save as Draft"}
             </Button>
             <Button
-              size="default"
+              size="sm"
               type="button"
-              onClick={onCalibrate}
-              disabled={calibrateMut.isPending || calibrationAlreadyUsed}
-              className="w-full sm:w-auto text-white hover:opacity-90"
+              onClick={() => setShowCalibrationConfirm(true)}
+              disabled={
+                calibrateMut.isPending ||
+                calibrationAlreadyUsed ||
+                !Object.values(calibrationFlags).some((v) => v === true)
+              }
+              className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
               style={{
-                background: calibrationAlreadyUsed ? "var(--muted)" : "var(--cityscape-yellow)",
+                background:
+                  calibrationAlreadyUsed || !Object.values(calibrationFlags).some((v) => v === true)
+                    ? "var(--muted)"
+                    : "var(--cityscape-yellow)",
               }}
               title={
                 calibrationAlreadyUsed
                   ? "Calibration has already been used for your governance area (max 1 per area)"
-                  : undefined
+                  : !Object.values(calibrationFlags).some((v) => v === true)
+                    ? "Flag at least one indicator for calibration using the toggle"
+                    : undefined
               }
             >
               {calibrateMut.isPending ? (
                 <>
                   <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block"
+                    className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -747,26 +1127,55 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Submitting...
+                  <span className="hidden sm:inline">Submitting...</span>
+                  <span className="sm:hidden">Processing...</span>
                 </>
               ) : calibrationAlreadyUsed ? (
-                "Calibration Used"
+                <>
+                  <span className="hidden sm:inline">Calibration Used</span>
+                  <span className="sm:hidden">Used</span>
+                </>
               ) : (
-                "Submit for Calibration"
+                <>
+                  <span className="hidden sm:inline">Submit for Calibration</span>
+                  <span className="sm:hidden">Calibration</span>
+                </>
               )}
             </Button>
             <Button
-              size="default"
+              size="sm"
               type="button"
-              onClick={onFinalize}
-              disabled={!allReviewed || missingRequiredComments > 0 || finalizeMut.isPending}
-              className="w-full sm:w-auto text-white hover:opacity-90"
-              style={{ background: "var(--success)" }}
+              onClick={() => {
+                // Check if compliance overview is completed (all validation_status confirmed)
+                if (!allConfirmed) {
+                  toast.warning("Complete Compliance Overview", {
+                    description: `${confirmedCount}/${total} indicators confirmed`,
+                    duration: 5000,
+                    action: {
+                      label: "Open",
+                      onClick: async () => {
+                        await onSaveDraft();
+                        router.push(`/validator/submissions/${assessmentId}/compliance`);
+                      },
+                    },
+                  });
+                  return;
+                }
+                setShowFinalizeConfirm(true);
+              }}
+              disabled={finalizeMut.isPending}
+              className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
+              style={{ background: allConfirmed ? "var(--success)" : "var(--muted)" }}
+              title={
+                !allConfirmed
+                  ? `Complete Compliance Overview first (${confirmedCount}/${total} confirmed)`
+                  : undefined
+              }
             >
               {finalizeMut.isPending ? (
                 <>
                   <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block"
+                    className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -785,15 +1194,70 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Finalizing...
+                  <span className="hidden sm:inline">Finalizing...</span>
+                  <span className="sm:hidden">Processing...</span>
                 </>
               ) : (
-                "Finalize Validation"
+                <>
+                  <span className="hidden sm:inline">Finalize Validation</span>
+                  <span className="sm:hidden">Finalize</span>
+                </>
               )}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog - Submit for Calibration */}
+      <AlertDialog open={showCalibrationConfirm} onOpenChange={setShowCalibrationConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit for Calibration?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send the flagged indicators back to BLGU for calibration. The BLGU will need
+              to address the issues and resubmit. Note: Calibration can only be used once per
+              governance area.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowCalibrationConfirm(false);
+                onCalibrate();
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Yes, Submit for Calibration
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation Dialog - Finalize Validation */}
+      <AlertDialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalize Validation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will complete the validation for your assigned governance area and send the
+              assessment for MLGOO approval. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowFinalizeConfirm(false);
+                onFinalize();
+              }}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Yes, Finalize
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

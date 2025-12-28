@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * AppHeader Component
@@ -6,11 +6,11 @@
  * Main application header with page title, subtitles, and user actions.
  */
 
-import { NotificationBell } from '@/components/features/notifications';
-import UserNav from '@/components/shared/UserNav';
-import { usePathname } from 'next/navigation';
-import { useState, useMemo } from 'react';
-import type { NavItem } from '@/lib/navigation';
+import { NotificationBell } from "@/components/features/notifications";
+import UserNav from "@/components/shared/UserNav";
+import { usePathname } from "next/navigation";
+import { useState, useMemo } from "react";
+import type { NavItem } from "@/lib/navigation";
 
 interface AppHeaderProps {
   navigation: NavItem[];
@@ -35,57 +35,56 @@ function getPageInfo(
   navigation: NavItem[],
   governanceAreaName?: string
 ): PageInfo {
-  const isAdmin = role === 'MLGOO_DILG';
-  const isAssessor = role === 'ASSESSOR';
-  const isExternalUser = role === 'KATUPARAN_CENTER_USER';
+  const isAdmin = role === "MLGOO_DILG";
+  const isAssessor = role === "ASSESSOR";
+  const isExternalUser = role === "KATUPARAN_CENTER_USER";
 
   // Admin-specific pages
   if (isAdmin) {
     const adminPages: Record<string, PageInfo> = {
-      '/mlgoo/reports': { title: 'Analytics & Reports' },
-      '/mlgoo/submissions': {
-        title: 'Submission Queue',
-        subtitle: 'Review and manage submitted assessments from barangays',
+      "/mlgoo/submissions": {
+        title: "Submission Queue",
+        subtitle: "Review and manage submitted assessments from barangays",
       },
-      '/mlgoo/cycles': {
-        title: 'Assessment Cycles',
-        subtitle: 'Create and manage assessment cycles with submission deadlines',
+      "/mlgoo/cycles": {
+        title: "Assessment Cycles",
+        subtitle: "Create and manage assessment cycles with submission deadlines",
       },
-      '/mlgoo/settings': {
-        title: 'System Settings',
-        subtitle: 'Configure system settings and preferences',
+      "/mlgoo/settings": {
+        title: "System Settings",
+        subtitle: "Configure system settings and preferences",
       },
-      '/mlgoo/profile': {
-        title: 'Profile',
-        subtitle: 'Manage your account settings and profile information',
+      "/mlgoo/profile": {
+        title: "Profile",
+        subtitle: "Manage your account settings and profile information",
       },
-      '/mlgoo/dashboard': {
-        title: 'Dashboard',
-        subtitle: 'Welcome to your SINAG dashboard',
+      "/mlgoo/dashboard": {
+        title: "Dashboard",
+        subtitle: "Welcome to your SINAG dashboard",
       },
-      '/analytics': {
-        title: 'Analytics & Reports',
-        subtitle: 'Comprehensive analytics, municipal overview, and performance reports',
+      "/analytics": {
+        title: "Analytics & Reports",
+        subtitle: "Comprehensive analytics, municipal overview, and performance reports",
       },
-      '/user-management': {
-        title: 'User Management',
-        subtitle: 'Manage user accounts and permissions',
+      "/user-management": {
+        title: "User Management",
+        subtitle: "Manage user accounts and permissions",
       },
     };
 
     const info = adminPages[pathname];
     if (info) return info;
 
-    if (pathname.startsWith('/mlgoo/indicators')) {
+    if (pathname.startsWith("/mlgoo/indicators")) {
       return {
-        title: 'Indicators',
-        subtitle: 'Create and manage assessment indicators with custom form schemas',
+        title: "Indicators",
+        subtitle: "Create and manage assessment indicators with custom form schemas",
       };
     }
-    if (pathname.startsWith('/mlgoo/deadlines')) {
+    if (pathname.startsWith("/mlgoo/deadlines")) {
       return {
-        title: 'Deadlines',
-        subtitle: 'Monitor deadline compliance and grant submission extensions',
+        title: "Deadlines",
+        subtitle: "Monitor deadline compliance and grant submission extensions",
       };
     }
   }
@@ -93,17 +92,17 @@ function getPageInfo(
   // Assessor-specific pages
   if (isAssessor) {
     const assessorPages: Record<string, PageInfo> = {
-      '/assessor/submissions': {
-        title: 'Submissions Dashboard',
-        subtitle: `Governance Area: ${governanceAreaName || 'Loading...'}`,
+      "/assessor/submissions": {
+        title: "Submissions Dashboard",
+        subtitle: `Governance Area: ${governanceAreaName || "Loading..."}`,
       },
-      '/assessor/analytics': {
-        title: `Analytics: ${governanceAreaName || 'Loading...'}`,
-        subtitle: 'Performance trends for all 25 barangays in your assigned area',
+      "/assessor/analytics": {
+        title: `Analytics: ${governanceAreaName || "Loading..."}`,
+        subtitle: "Performance trends for all 25 barangays in your assigned area",
       },
-      '/assessor/profile': {
-        title: 'Profile',
-        subtitle: 'Manage your account settings and profile information',
+      "/assessor/profile": {
+        title: "Profile",
+        subtitle: "Manage your account settings and profile information",
       },
     };
 
@@ -114,17 +113,17 @@ function getPageInfo(
   // Katuparan Center pages
   if (isExternalUser) {
     const katuparanPages: Record<string, PageInfo> = {
-      '/katuparan/dashboard': {
-        title: 'Municipal SGLGB Overview',
-        subtitle: 'High-level, anonymized insights into SGLGB performance across all barangays',
+      "/katuparan/dashboard": {
+        title: "Municipal SGLGB Overview",
+        subtitle: "High-level, anonymized insights into SGLGB performance across all barangays",
       },
-      '/katuparan/reports': {
-        title: 'Data Export & Trends',
-        subtitle: 'Download aggregated data for research and CapDev planning',
+      "/katuparan/reports": {
+        title: "Data Export & Trends",
+        subtitle: "Download aggregated data for research and CapDev planning",
       },
-      '/katuparan/profile': {
-        title: 'User Settings',
-        subtitle: 'Manage your account settings and password',
+      "/katuparan/profile": {
+        title: "User Settings",
+        subtitle: "Manage your account settings and password",
       },
     };
 
@@ -134,17 +133,18 @@ function getPageInfo(
 
   // BLGU pages
   const blguPages: Record<string, PageInfo> = {
-    '/blgu/dashboard': {
-      title: 'SGLGB Dashboard',
-      subtitle: 'Monitor your SGLGB performance and track assessment progress',
+    "/blgu/dashboard": {
+      title: "SGLGB Dashboard",
+      subtitle: "Monitor your SGLGB performance and track assessment progress",
     },
-    '/blgu/assessments': {
-      title: 'My Assessments',
-      subtitle: 'Manage and complete your SGLGB assessments',
+    "/blgu/assessments": {
+      title: "My Assessments",
+      subtitle: "Manage and complete your SGLGB assessments",
     },
-    '/blgu/profile': {
-      title: 'Profile',
-      subtitle: 'Manage your account settings, update your password, and view your profile information.',
+    "/blgu/profile": {
+      title: "Profile",
+      subtitle:
+        "Manage your account settings, update your password, and view your profile information.",
     },
   };
 
@@ -153,14 +153,10 @@ function getPageInfo(
 
   // Fallback to navigation item name
   const navItem = navigation.find((item) => pathname === item.href);
-  return { title: navItem?.name || 'Dashboard' };
+  return { title: navItem?.name || "Dashboard" };
 }
 
-export function AppHeader({
-  navigation,
-  user,
-  governanceAreaName,
-}: AppHeaderProps) {
+export function AppHeader({ navigation, user, governanceAreaName }: AppHeaderProps) {
   const pathname = usePathname();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -180,9 +176,7 @@ export function AppHeader({
                 {pageInfo.title}
               </h2>
               {pageInfo.subtitle && (
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  {pageInfo.subtitle}
-                </p>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">{pageInfo.subtitle}</p>
               )}
             </div>
           </div>
@@ -201,10 +195,10 @@ export function AppHeader({
                 aria-haspopup="true"
               >
                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </div>
                 <span className="hidden sm:block text-sm font-medium text-[var(--foreground)]">
-                  {user?.name || 'User'}
+                  {user?.name || "User"}
                 </span>
               </button>
 

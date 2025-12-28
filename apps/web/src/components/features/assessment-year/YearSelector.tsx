@@ -43,8 +43,7 @@ export function YearSelector({
   size = "md",
   showLoading = true,
 }: YearSelectorProps) {
-  const { options, value, onChange, isLoading, hasMultipleYears } =
-    useYearSelector();
+  const { options, value, onChange, isLoading, hasMultipleYears } = useYearSelector();
 
   // Don't render if there's only one year (or none)
   if (!hasMultipleYears && !isLoading) {
@@ -71,9 +70,7 @@ export function YearSelector({
           className
         )}
       >
-        <Loader2
-          className={cn(iconSizes[size], "animate-spin text-[var(--muted-foreground)]")}
-        />
+        <Loader2 className={cn(iconSizes[size], "animate-spin text-[var(--muted-foreground)]")} />
         <span className="text-sm text-[var(--muted-foreground)]">Loading years...</span>
       </div>
     );
@@ -87,10 +84,7 @@ export function YearSelector({
       )}
     >
       {showIcon && (
-        <Calendar
-          className={cn(iconSizes[size])}
-          style={{ color: "var(--cityscape-yellow)" }}
-        />
+        <Calendar className={cn(iconSizes[size])} style={{ color: "var(--cityscape-yellow)" }} />
       )}
       <div className="flex flex-col">
         {showLabel && (
@@ -132,31 +126,21 @@ export function YearSelector({
  *
  * A minimal version without the container styling.
  */
-export function YearSelectorCompact({
-  className,
-}: {
-  className?: string;
-}) {
-  const { options, value, onChange, isLoading, hasMultipleYears } =
-    useYearSelector();
+export function YearSelectorCompact({ className }: { className?: string }) {
+  const { options, value, onChange, isLoading, hasMultipleYears } = useYearSelector();
 
   if (!hasMultipleYears && !isLoading) {
     return null;
   }
 
   if (isLoading) {
-    return (
-      <Loader2 className="h-4 w-4 animate-spin text-[var(--muted-foreground)]" />
-    );
+    return <Loader2 className="h-4 w-4 animate-spin text-[var(--muted-foreground)]" />;
   }
 
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
-        className={cn(
-          "w-24 h-8 text-sm font-medium border-[var(--border)]",
-          className
-        )}
+        className={cn("w-24 h-8 text-sm font-medium border-[var(--border)]", className)}
       >
         <Calendar className="h-3.5 w-3.5 mr-1.5" style={{ color: "var(--cityscape-yellow)" }} />
         <SelectValue placeholder="Year" />

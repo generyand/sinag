@@ -8,27 +8,27 @@
  * - File list updates after successful upload
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from "vitest";
 
-describe('MOV Upload with File List Update Integration', () => {
-  it('should upload file and update file list', async () => {
-    const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
+describe("MOV Upload with File List Update Integration", () => {
+  it("should upload file and update file list", async () => {
+    const mockFile = new File(["test content"], "test.pdf", { type: "application/pdf" });
 
     // Test would verify:
     // 1. File selected
     // 2. Upload API called
     // 3. File appears in list
-    expect(mockFile.name).toBe('test.pdf');
+    expect(mockFile.name).toBe("test.pdf");
   });
 
-  it('should invalidate React Query cache after upload', async () => {
+  it("should invalidate React Query cache after upload", async () => {
     // Verify cache invalidation triggers re-fetch
     const mockInvalidate = vi.fn();
 
     expect(mockInvalidate).toBeDefined();
   });
 
-  it('should show upload progress', async () => {
+  it("should show upload progress", async () => {
     // Test upload progress indicator
     const mockProgress = 50;
 

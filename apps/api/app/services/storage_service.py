@@ -5,6 +5,7 @@ import logging
 import re
 import time
 from datetime import datetime
+from urllib.parse import unquote
 from uuid import uuid4
 
 from fastapi import HTTPException, UploadFile
@@ -468,29 +469,30 @@ class StorageService:
         self, db: Session, assessment_id: int, indicator_id: int
     ) -> None:
         """
-        Recalculate and update the is_completed status for an assessment response.
+        Update the completion status of an assessment response after file changes.
 
-        This method is called after uploading or deleting a MOV file to ensure
-        that the progress tracking reflects the current state of the response.
+        IMPORTANT: Creates an AssessmentResponse if one doesn't exist yet.
+        This ensures that progress is tracked immediately when MOV files are uploaded,
+        even before the user opens/interacts with the indicator form.
 
-        Args:
-            db: Database session
-            assessment_id: ID of the assessment
-            indicator_id: ID of the indicator
-
-        The is_completed status is calculated based on:
-        1. All required fields in form_schema have values in response_data
-        2. All required MOV files have been uploaded (conditional based on answers)
+        Delegates to AssessmentService to ensure consistent validation logic (Single Source of Truth).
         """
-        try:
-            from app.db.models.governance_area import Indicator
-            from app.services.completeness_validation_service import (
-                completeness_validation_service,
-            )
+        from sqlalchemy.orm import joinedload
 
-            # Get the assessment response for this indicator
+        from app.db.models.assessment import AssessmentResponse
+        from app.db.models.governance_area import Indicator
+
+        # Import internally to avoid circular dependency
+        from app.services.assessment_service import AssessmentService
+
+        try:
             response = (
                 db.query(AssessmentResponse)
+                .options(
+                    joinedload(AssessmentResponse.indicator),
+                    joinedload(AssessmentResponse.assessment),
+                    joinedload(AssessmentResponse.movs),
+                )
                 .filter(
                     AssessmentResponse.assessment_id == assessment_id,
                     AssessmentResponse.indicator_id == indicator_id,
@@ -498,136 +500,51 @@ class StorageService:
                 .first()
             )
 
+            # CRITICAL FIX: Create AssessmentResponse if it doesn't exist
+            # This ensures progress tracking works immediately after MOV upload
             if not response:
-                # Auto-create response if it doesn't exist yet
-                # This handles the case where files are uploaded before answering the form
                 logger.info(
-                    f"Creating AssessmentResponse for assessment {assessment_id}, "
-                    f"indicator {indicator_id} (triggered by MOV upload)"
+                    f"Creating AssessmentResponse for assessment {assessment_id}, indicator {indicator_id}"
                 )
+                # Verify the indicator exists
+                indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
+                if not indicator:
+                    logger.error(f"Indicator {indicator_id} not found")
+                    return
+
+                # Create a new response with empty response_data
                 response = AssessmentResponse(
                     assessment_id=assessment_id,
                     indicator_id=indicator_id,
-                    response_data={},
+                    response_data={},  # Empty - will be filled when user interacts
                     is_completed=False,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    requires_rework=False,
                 )
                 db.add(response)
-                db.commit()
-                db.refresh(response)
+                db.flush()  # Get the ID
 
-            # Get the indicator to access form_schema
-            indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
-            if not indicator:
-                logger.warning(f"Indicator {indicator_id} not found")
-                return
-
-            # Get assessment to check status and rework timestamp
-            from app.db.models.assessment import Assessment
-
-            assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
-
-            # Get all uploaded MOVs for this response (exclude soft-deleted files)
-            uploaded_movs = (
-                db.query(MOVFile)
-                .filter(
-                    MOVFile.assessment_id == assessment_id,
-                    MOVFile.indicator_id == indicator_id,
-                    MOVFile.deleted_at.is_(None),
-                )
-                .all()
-            )
-
-            # Filter MOVs during rework status - BUT only for indicators with assessor feedback
-            # Indicators without feedback keep their old files (no rework needed)
-            if assessment:
-                assessment_status = (
-                    assessment.status.value
-                    if hasattr(assessment.status, "value")
-                    else str(assessment.status)
-                )
-                rework_requested_at = assessment.rework_requested_at
-
-                logger.info(
-                    f"[REWORK CHECK] Assessment {assessment_id} status: '{assessment_status}', "
-                    f"rework_requested_at: {rework_requested_at}"
+                # Reload with relationships for recompute
+                response = (
+                    db.query(AssessmentResponse)
+                    .options(
+                        joinedload(AssessmentResponse.indicator),
+                        joinedload(AssessmentResponse.assessment),
+                        joinedload(AssessmentResponse.movs),
+                    )
+                    .filter(AssessmentResponse.id == response.id)
+                    .first()
                 )
 
-                if (
-                    assessment_status
-                    and assessment_status.upper() in ("REWORK", "NEEDS_REWORK")
-                    and rework_requested_at
-                ):
-                    # Check if this indicator has assessor feedback
-                    from app.db.models.assessment import FeedbackComment, MOVAnnotation
+            # Delegate to AssessmentService logic
+            service = AssessmentService()
+            is_completed = service.recompute_response_completion(response)
 
-                    # Check for feedback comments (non-internal)
-                    feedback_count = (
-                        db.query(FeedbackComment)
-                        .filter(
-                            FeedbackComment.response_id == response.id,
-                            FeedbackComment.is_internal_note == False,
-                        )
-                        .count()
-                    )
-
-                    # Check for MOV annotations
-                    annotation_count = (
-                        db.query(MOVAnnotation)
-                        .join(MOVFile)
-                        .filter(
-                            MOVFile.assessment_id == assessment_id,
-                            MOVFile.indicator_id == indicator_id,
-                        )
-                        .count()
-                    )
-
-                    has_feedback = feedback_count > 0 or annotation_count > 0
-
-                    logger.info(
-                        f"[REWORK CHECK] Indicator {indicator_id}: has_feedback={has_feedback} "
-                        f"(comments={feedback_count}, annotations={annotation_count})"
-                    )
-
-                    # Only filter MOVs if indicator has assessor feedback
-                    if has_feedback:
-                        original_count = len(uploaded_movs)
-                        uploaded_movs = [
-                            mov
-                            for mov in uploaded_movs
-                            if mov.uploaded_at and mov.uploaded_at >= rework_requested_at
-                        ]
-                        logger.info(
-                            f"[REWORK FILTER] Indicator {indicator_id} has feedback - "
-                            f"Filtered {original_count} MOVs to {len(uploaded_movs)} "
-                            f"(uploaded after {rework_requested_at})"
-                        )
-                    else:
-                        logger.info(
-                            f"[REWORK FILTER] Indicator {indicator_id} has NO feedback - "
-                            f"Keeping all {len(uploaded_movs)} MOVs (old files still valid)"
-                        )
-
-            # Validate completeness using the completeness validation service
-            validation_result = completeness_validation_service.validate_completeness(
-                form_schema=indicator.form_schema,
-                response_data=response.response_data,
-                uploaded_movs=uploaded_movs,
-            )
-
-            # Update is_completed based on validation result
-            old_status = response.is_completed
-            response.is_completed = validation_result["is_complete"]
-            response.updated_at = datetime.utcnow()
-
+            # Save the updated status
+            db.add(response)
             db.commit()
 
             logger.info(
-                f"Updated is_completed for response (assessment={assessment_id}, "
-                f"indicator={indicator_id}): {old_status} -> {response.is_completed}. "
-                f"Validation: {validation_result['filled_field_count']}/{validation_result['required_field_count']} fields, "
-                f"{len(uploaded_movs)} MOVs uploaded, missing: {validation_result.get('missing_fields', [])}"
+                f"Updated completion status for assessment {assessment_id}, indicator {indicator_id}: {is_completed}"
             )
 
         except Exception as e:
@@ -635,8 +552,10 @@ class StorageService:
                 f"Failed to update completion status for assessment {assessment_id}, "
                 f"indicator {indicator_id}: {str(e)}"
             )
-            # Don't raise - this is a non-critical operation
-            # The file was already uploaded successfully
+            import traceback
+
+            logger.error(traceback.format_exc())
+            # Don't raise, as file operation was successful
 
     # ============================================================================
     # Story 4.6: Backend File Deletion Service (Epic 4.0)
@@ -822,6 +741,199 @@ class StorageService:
             db.rollback()
             logger.error(f"Failed to soft delete MOVFile {file_id}: {str(e)}")
             raise Exception(f"Database operation failed: {str(e)}")
+
+    # ============================================================================
+    # Signed URL Generation for Secure File Access
+    # ============================================================================
+
+    def get_signed_url(self, file_url: str, expires_in: int = 3600) -> str:
+        """
+        Generate a signed URL for secure, time-limited access to a file.
+
+        This method extracts the storage path from a file URL and generates
+        a signed URL that expires after the specified duration.
+
+        Args:
+            file_url: The public file URL stored in the database
+            expires_in: URL expiration time in seconds (default: 3600 = 1 hour)
+
+        Returns:
+            str: A signed URL that provides temporary access to the file
+
+        Raises:
+            ValueError: If the storage path cannot be extracted from the URL
+            Exception: If signed URL generation fails
+        """
+        # Extract storage path from file_url
+        # URL format: https://[project].supabase.co/storage/v1/object/public/mov-files/{path}
+        storage_path = None
+        try:
+            # Try to extract path after bucket name
+            if f"/{self.MOV_FILES_BUCKET}/" in file_url:
+                encoded_path = file_url.split(f"/{self.MOV_FILES_BUCKET}/")[1]
+                # Decode path, remove query params, and strip leading slashes
+                storage_path = unquote(encoded_path).split("?")[0].lstrip("/")
+            else:
+                raise ValueError(f"Could not extract storage path from URL: {file_url}")
+        except Exception as e:
+            logger.error(f"Error extracting storage path from URL {file_url}: {str(e)}")
+            raise ValueError(f"Invalid file URL format: {file_url}")
+
+        # Get Supabase client and generate signed URL
+        try:
+            supabase = _get_supabase_client()
+
+            # DEBUG LOGGING for file viewing issue
+            logger.info(f"[SIGNED_URL_DEBUG] URL: {file_url}")
+            logger.info(f"[SIGNED_URL_DEBUG] Extracted Storage Path: {storage_path}")
+
+            result = supabase.storage.from_(self.MOV_FILES_BUCKET).create_signed_url(
+                path=storage_path,
+                expires_in=expires_in,
+            )
+
+            # Check for error response from Supabase
+            if isinstance(result, dict):
+                # Handle error responses
+                if "error" in result:
+                    error_msg = result.get("error", "Unknown error")
+                    error_str = str(error_msg).lower()
+                    if "not found" in error_str or "object not found" in error_str:
+                        logger.warning(
+                            f"File not found in storage: {storage_path}. "
+                            f"The physical file may have been deleted."
+                        )
+                        raise FileNotFoundError(f"File not found in storage: {storage_path}")
+                    raise Exception(f"Supabase error: {error_msg}")
+
+                # Extract signed URL from successful response
+                if "signedURL" in result:
+                    signed_url = result["signedURL"]
+                elif "signedUrl" in result:
+                    signed_url = result["signedUrl"]
+                else:
+                    # Unexpected response format
+                    logger.warning(f"Unexpected response format from create_signed_url: {result}")
+                    raise Exception("Failed to extract signed URL from response")
+            elif hasattr(result, "signed_url"):
+                signed_url = result.signed_url
+            else:
+                # Handle different response formats from supabase-py
+                signed_url = str(result)
+
+            # Validate the signed URL is not empty or an error message
+            if not signed_url or signed_url.startswith("Error"):
+                raise Exception(f"Invalid signed URL received: {signed_url}")
+
+            logger.debug(f"Generated signed URL for {storage_path}, expires in {expires_in}s")
+            return signed_url
+
+        except FileNotFoundError:
+            # Re-raise FileNotFoundError to be handled by caller
+            raise
+        except Exception as e:
+            error_str = str(e).lower()
+            # Check if error indicates file not found
+            if "not found" in error_str or "object not found" in error_str or "404" in error_str:
+                logger.warning(f"File not found in storage: {storage_path}. Error: {str(e)}")
+                raise FileNotFoundError(f"File not found in storage: {storage_path}")
+            logger.error(f"Failed to generate signed URL for {storage_path}: {str(e)}")
+            # Log the exception type and args to understand "illegal path" source
+            logger.error(f"[SIGNED_URL_DEBUG] Exception Type: {type(e).__name__}, Args: {e.args}")
+            raise Exception(f"Failed to generate signed URL: {str(e)}")
+
+    def get_signed_url_for_file(
+        self, db: Session, file_id: int, user_id: int, expires_in: int = 3600
+    ) -> str:
+        """
+        Generate a signed URL for a MOV file with permission checking.
+
+        This method verifies that the user has permission to access the file
+        before generating a signed URL.
+
+        Args:
+            db: Database session
+            file_id: ID of the MOV file
+            user_id: ID of the requesting user
+            expires_in: URL expiration time in seconds (default: 3600 = 1 hour)
+
+        Returns:
+            str: A signed URL that provides temporary access to the file
+
+        Raises:
+            HTTPException 404: If file not found
+            HTTPException 403: If user doesn't have permission
+            Exception: If signed URL generation fails
+        """
+        from app.db.models.assessment import Assessment
+        from app.db.models.user import User
+
+        # Load the MOV file
+        mov_file = db.query(MOVFile).filter(MOVFile.id == file_id).first()
+
+        if not mov_file:
+            raise HTTPException(status_code=404, detail=f"File with ID {file_id} not found")
+
+        if mov_file.deleted_at is not None:
+            raise HTTPException(status_code=404, detail="File has been deleted")
+
+        # Load the user to check role
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            raise HTTPException(status_code=403, detail="User not found")
+
+        # Permission check based on user role
+        from app.db.enums import UserRole
+        from app.db.models.governance_area import Indicator
+
+        # KATUPARAN_CENTER_USER should not access individual MOV files
+        # They only have read-only access to aggregated analytics data
+        if user.role == UserRole.KATUPARAN_CENTER_USER:
+            raise HTTPException(
+                status_code=403,
+                detail="Katuparan Center users do not have access to individual MOV files",
+            )
+
+        # BLGU users can only access files from their own barangay's assessments
+        if user.role == UserRole.BLGU_USER:
+            assessment = (
+                db.query(Assessment).filter(Assessment.id == mov_file.assessment_id).first()
+            )
+            if assessment:
+                # Get the barangay_id through the assessment's blgu_user
+                # Assessment doesn't have barangay_id directly - it's linked via blgu_user_id
+                blgu_user = db.query(User).filter(User.id == assessment.blgu_user_id).first()
+                if blgu_user and blgu_user.barangay_id != user.barangay_id:
+                    raise HTTPException(
+                        status_code=403, detail="You don't have permission to access this file"
+                    )
+
+        # VALIDATORs can only access files within their assigned governance area
+        if user.role == UserRole.VALIDATOR and user.validator_area_id:
+            indicator = db.query(Indicator).filter(Indicator.id == mov_file.indicator_id).first()
+            if indicator and indicator.governance_area_id != user.validator_area_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You can only access files within your assigned governance area",
+                )
+
+        # ASSESSOR and MLGOO_DILG have access to all files (no additional restrictions)
+
+        # Generate and return signed URL
+        try:
+            return self.get_signed_url(mov_file.file_url, expires_in)
+        except FileNotFoundError:
+            # File record exists in database but physical file is missing from storage
+            logger.error(
+                f"Physical file missing from storage for MOV file {file_id}. "
+                f"URL: {mov_file.file_url}. The file may have been deleted from storage."
+            )
+            raise HTTPException(
+                status_code=404,
+                detail="File not found in storage. The physical file may have been deleted. "
+                "Please re-upload the file.",
+            )
 
 
 # Create a singleton instance

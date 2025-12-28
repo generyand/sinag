@@ -1,47 +1,47 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useRef } from 'react';
-import { BARANGAY_PATHS } from '@/components/features/analytics/sulop-barangay-paths';
+import React, { useEffect, useState, useRef } from "react";
+import { BARANGAY_PATHS } from "@/components/features/analytics/sulop-barangay-paths";
 
 /**
  * Design system colors for the animated map
- * Using SINAG brand colors - red, yellow, and DILG blue
+ * Using SINAG brand colors - red, yellow, and green
  */
 const ANIMATION_COLORS = [
-  '#dc2626', // Red (primary)
-  '#fbbf24', // Yellow/Amber
-  '#1A3A6D', // DILG Blue (dark)
+  "#dc2626", // Red (primary)
+  "#fbbf24", // Yellow/Amber
+  "#16a34a", // Green
 ] as const;
 
 /**
  * Mapping from SVG IDs to display names
  */
 const BARANGAY_NAMES: Record<string, string> = {
-  '1katipunan': 'Katipunan',
-  '2tanwalang': 'Tanwalang',
-  '3solongvale': 'Solong Vale',
-  '4tala-o': 'Tala-o',
-  '5balasinon': 'Balasinon',
-  '6haradabutai': 'Harada-Butai',
-  '7roxas': 'Roxas',
-  '8newcebu': 'New Cebu',
-  '9palili': 'Palili',
-  '10talas': 'Talas',
-  '11carre': 'Carre',
-  '12buguis': 'Buguis',
-  '13mckinley': 'McKinley',
-  '14kiblagon': 'Kiblagon',
-  '15laperas': 'Laperas',
-  '16clib': 'Clib',
-  '17osmena': 'Osmeña',
-  '18luparan': 'Luparan',
-  '19poblacion': 'Poblacion',
-  '20tagolilong': 'Tagolilong',
-  '21lapla': 'Lapla',
-  '22litos': 'Litos',
-  '23parame': 'Parame',
-  '24labon': 'Labon',
-  '25waterfall': 'Waterfall',
+  "1katipunan": "Katipunan",
+  "2tanwalang": "Tanwalang",
+  "3solongvale": "Solong Vale",
+  "4tala-o": "Tala-o",
+  "5balasinon": "Balasinon",
+  "6haradabutai": "Harada-Butai",
+  "7roxas": "Roxas",
+  "8newcebu": "New Cebu",
+  "9palili": "Palili",
+  "10talas": "Talas",
+  "11carre": "Carre",
+  "12buguis": "Buguis",
+  "13mckinley": "McKinley",
+  "14kiblagon": "Kiblagon",
+  "15laperas": "Laperas",
+  "16clib": "Clib",
+  "17osmena": "Osmeña",
+  "18luparan": "Luparan",
+  "19poblacion": "Poblacion",
+  "20tagolilong": "Tagolilong",
+  "21lapla": "Lapla",
+  "22litos": "Litos",
+  "23parame": "Parame",
+  "24labon": "Labon",
+  "25waterfall": "Waterfall",
 };
 
 // Get all barangay IDs in order
@@ -57,7 +57,7 @@ interface AnimatedSulopMapProps {
  * Features a wave animation effect with design system colors
  * purely decorative - not showing actual assessment data
  */
-export function AnimatedSulopMap({ className = '' }: AnimatedSulopMapProps) {
+export function AnimatedSulopMap({ className = "" }: AnimatedSulopMapProps) {
   const [colorIndices, setColorIndices] = useState<number[]>(
     BARANGAY_IDS.map((_, i) => i % ANIMATION_COLORS.length)
   );
@@ -94,9 +94,7 @@ export function AnimatedSulopMap({ className = '' }: AnimatedSulopMapProps) {
     if (!isVisible) return;
 
     const interval = setInterval(() => {
-      setColorIndices((prev) =>
-        prev.map((idx) => (idx + 1) % ANIMATION_COLORS.length)
-      );
+      setColorIndices((prev) => prev.map((idx) => (idx + 1) % ANIMATION_COLORS.length));
     }, 2000);
 
     return () => clearInterval(interval);
@@ -126,14 +124,11 @@ export function AnimatedSulopMap({ className = '' }: AnimatedSulopMapProps) {
   };
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative w-full ${className}`}
-    >
+    <div ref={containerRef} className={`relative w-full ${className}`}>
       <svg
         viewBox="0 0 1920 892"
         className={`w-full h-full transition-all duration-1000 ${
-          isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
         xmlns="http://www.w3.org/2000/svg"
         aria-label="Animated map of Sulop barangays"
@@ -148,17 +143,17 @@ export function AnimatedSulopMap({ className = '' }: AnimatedSulopMapProps) {
             id={svgId}
             d={pathData}
             fill={getBarangayColor(index, svgId)}
-            stroke={hoveredBarangay === svgId ? '#ffffff' : 'white'}
+            stroke={hoveredBarangay === svgId ? "#ffffff" : "white"}
             strokeWidth={hoveredBarangay === svgId ? 3 : 2}
             className={`cursor-pointer ${
               hoveredBarangay === svgId
-                ? 'transition-none'
-                : 'transition-all duration-1000 ease-in-out'
+                ? "transition-none"
+                : "transition-all duration-1000 ease-in-out"
             }`}
             style={{
-              transitionDelay: hoveredBarangay === svgId ? '0ms' : `${index * 50}ms`,
+              transitionDelay: hoveredBarangay === svgId ? "0ms" : `${index * 50}ms`,
               opacity: hoveredBarangay === svgId ? 1 : 0.85,
-              filter: hoveredBarangay === svgId ? 'brightness(1.1)' : 'none',
+              filter: hoveredBarangay === svgId ? "brightness(1.1)" : "none",
             }}
             onMouseEnter={() => handleMouseEnter(svgId, index)}
             onMouseLeave={handleMouseLeave}
@@ -168,13 +163,11 @@ export function AnimatedSulopMap({ className = '' }: AnimatedSulopMapProps) {
 
       {/* Tooltip for hovered barangay */}
       {hoveredBarangay && (
-        <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-lg rounded-lg px-4 py-2 pointer-events-none z-10 border border-gray-200"
-        >
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-lg rounded-lg px-4 py-2 pointer-events-none z-10 border border-gray-200">
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: hoveredColor || '#1A3A6D' }}
+              style={{ backgroundColor: hoveredColor || "#16a34a" }}
             />
             <span className="text-sm font-semibold text-gray-900">
               {BARANGAY_NAMES[hoveredBarangay] || hoveredBarangay}

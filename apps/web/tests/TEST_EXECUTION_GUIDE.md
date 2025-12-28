@@ -2,16 +2,19 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for running all tests created to validate the Next.js 16 migration in the SINAG application.
+This guide provides step-by-step instructions for running all tests created to validate the Next.js
+16 migration in the SINAG application.
 
 ## Test Suite Summary
 
 ### Unit Tests (Vitest)
+
 - **proxy.test.ts** - Tests proxy authentication and routing logic (90+ test cases)
 - **validation-page.test.tsx** - Tests async params handling for Validator page
 - **assessment-detail-page.test.tsx** - Tests async params handling for MLGOO page
 
 ### E2E Tests (Playwright)
+
 - **authentication.spec.ts** - Tests login/logout flows for all 5 roles (30+ test cases)
 - **route-protection.spec.ts** - Tests role-based access control (80+ test cases)
 
@@ -20,6 +23,7 @@ This guide provides step-by-step instructions for running all tests created to v
 ## Prerequisites
 
 ### 1. Environment Setup
+
 ```bash
 # Ensure you're in the web app directory
 cd apps/web
@@ -32,7 +36,9 @@ npx playwright install --with-deps
 ```
 
 ### 2. Test Database Setup (for E2E tests)
-The E2E tests require test users to exist in your database. Create these users with the following credentials:
+
+The E2E tests require test users to exist in your database. Create these users with the following
+credentials:
 
 ```sql
 -- MLGOO_DILG (Admin)
@@ -59,6 +65,7 @@ VALUES ('katuparan@sinag-test.local', '[hash]', 'KATUPARAN_CENTER_USER', 'Test',
 Password for all test users: `TestPassword123!`
 
 ### 3. Backend API Setup (for E2E tests)
+
 ```bash
 # In a separate terminal, start the backend API
 cd apps/api
@@ -71,6 +78,7 @@ pnpm dev:api
 ## Running Tests
 
 ### Option 1: Run All Tests
+
 ```bash
 # Run all unit and integration tests
 pnpm test
@@ -82,6 +90,7 @@ pnpm test:e2e
 ### Option 2: Run Tests by Category
 
 #### Unit Tests Only
+
 ```bash
 # Run all unit tests
 pnpm test
@@ -98,6 +107,7 @@ pnpm test:coverage
 ```
 
 #### E2E Tests Only
+
 ```bash
 # Run all E2E tests
 pnpm test:e2e
@@ -116,6 +126,7 @@ pnpm test:e2e:headed
 ```
 
 ### Option 3: Run Tests in Watch Mode
+
 ```bash
 # Unit tests watch mode (useful during development)
 pnpm test:watch
@@ -124,6 +135,7 @@ pnpm test:watch
 ```
 
 ### Option 4: Run Specific Test Suites
+
 ```bash
 # Run only authentication tests in a specific suite
 pnpm test -- --grep "Authentication checking"
@@ -140,6 +152,7 @@ pnpm test:e2e -- --grep "MLGOO_DILG"
 For a comprehensive validation of the migration, run tests in this order:
 
 ### Phase 1: Unit Tests (Fast, No External Dependencies)
+
 ```bash
 # 1. Test proxy authentication logic
 pnpm test src/tests/proxy.test.ts
@@ -150,28 +163,33 @@ pnpm test src/app/(app)/mlgoo/assessments/__tests__/
 ```
 
 Expected output:
+
 - ✓ ~90 passing tests for proxy.test.ts
 - ✓ ~30 passing tests for async params
 
 ### Phase 2: E2E Authentication Tests (Requires Backend)
+
 ```bash
 # Ensure backend is running first!
 pnpm test:e2e tests/e2e/authentication.spec.ts
 ```
 
 Expected output:
+
 - ✓ Login flows for all 5 roles
 - ✓ Session persistence tests
 - ✓ Logout functionality
 - ✓ Redirect after login tests
 
 ### Phase 3: E2E Route Protection Tests (Comprehensive)
+
 ```bash
 # This is the most comprehensive test suite
 pnpm test:e2e tests/e2e/route-protection.spec.ts
 ```
 
 Expected output:
+
 - ✓ Admin access tests (can access most routes except Katuparan)
 - ✓ Assessor access tests (only assessor routes)
 - ✓ Validator access tests (only validator routes)
@@ -183,6 +201,7 @@ Expected output:
 ## Interpreting Test Results
 
 ### Successful Test Run
+
 ```
 ✓ All tests passing
 ✓ No console errors
@@ -194,18 +213,22 @@ Expected output:
 ### Common Issues and Fixes
 
 #### Issue 1: Proxy Unit Tests Failing
+
 **Symptom**: Tests in `proxy.test.ts` fail with import errors
 
 **Fix**:
+
 ```bash
 # The proxy imports Next.js server modules which need proper mocking
 # Check vitest.config.ts has correct Next.js mocks
 ```
 
 #### Issue 2: E2E Tests Timeout
+
 **Symptom**: Tests timeout waiting for navigation
 
 **Fix**:
+
 ```bash
 # 1. Ensure backend API is running
 pnpm dev:api
@@ -215,18 +238,22 @@ pnpm dev:api
 ```
 
 #### Issue 3: Authentication Tests Fail
+
 **Symptom**: Login tests fail with "Invalid credentials"
 
 **Fix**:
+
 ```bash
 # Test users don't exist in database
 # Create test users with correct passwords (see Prerequisites)
 ```
 
 #### Issue 4: Route Protection Tests Fail
+
 **Symptom**: Users can access routes they shouldn't
 
 **Fix**:
+
 ```bash
 # 1. Verify proxy.ts is correctly renamed from middleware.ts
 # 2. Check proxy export name is "proxy" not "middleware"
@@ -236,6 +263,7 @@ pnpm dev:api
 ## Coverage Reports
 
 ### Generate Coverage Report
+
 ```bash
 # Generate HTML coverage report
 pnpm test:coverage
@@ -245,6 +273,7 @@ open coverage/index.html
 ```
 
 ### Expected Coverage Targets
+
 - **proxy.ts**: >95% coverage
 - **Dynamic route pages**: >90% coverage
 - **Overall application**: >80% coverage
@@ -252,6 +281,7 @@ open coverage/index.html
 ## CI/CD Integration
 
 ### GitHub Actions Example
+
 ```yaml
 name: Next.js 16 Migration Tests
 
@@ -294,6 +324,7 @@ jobs:
 ## Debugging Failed Tests
 
 ### Unit Test Debugging
+
 ```bash
 # Run with verbose output
 pnpm test -- --reporter=verbose
@@ -306,6 +337,7 @@ pnpm test:ui
 ```
 
 ### E2E Test Debugging
+
 ```bash
 # Run in headed mode to see browser
 pnpm test:e2e:headed
@@ -318,6 +350,7 @@ pnpm test:e2e tests/e2e/authentication.spec.ts --trace on
 ```
 
 ### Common Debugging Steps
+
 1. Check console logs during test execution
 2. Verify test environment variables are set correctly
 3. Ensure test data exists in database
@@ -328,13 +361,13 @@ pnpm test:e2e tests/e2e/authentication.spec.ts --trace on
 
 Expected test execution times:
 
-| Test Suite | Expected Time | Test Count |
-|------------|---------------|------------|
-| proxy.test.ts | <10s | 90+ |
-| async params tests | <5s | 30+ |
-| authentication.spec.ts | 30-60s | 30+ |
-| route-protection.spec.ts | 60-120s | 80+ |
-| **Total** | **~3-5 minutes** | **200+** |
+| Test Suite               | Expected Time    | Test Count |
+| ------------------------ | ---------------- | ---------- |
+| proxy.test.ts            | <10s             | 90+        |
+| async params tests       | <5s              | 30+        |
+| authentication.spec.ts   | 30-60s           | 30+        |
+| route-protection.spec.ts | 60-120s          | 80+        |
+| **Total**                | **~3-5 minutes** | **200+**   |
 
 ## Post-Test Validation Checklist
 
@@ -352,6 +385,7 @@ After all tests pass, verify:
 ## Next Steps After Successful Tests
 
 1. **Run production build test**:
+
    ```bash
    pnpm build
    pnpm start
@@ -381,10 +415,12 @@ If tests continue to fail after following this guide:
 ## Conclusion
 
 This comprehensive test suite validates that the Next.js 16 migration:
+
 - ✓ Maintains authentication security
 - ✓ Preserves role-based access control
 - ✓ Handles dynamic route params correctly
 - ✓ Provides proper user experience across all roles
 - ✓ Prevents unauthorized access to protected routes
 
-All tests passing indicates the migration was successful and the application is ready for deployment.
+All tests passing indicates the migration was successful and the application is ready for
+deployment.

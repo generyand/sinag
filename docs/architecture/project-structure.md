@@ -106,22 +106,22 @@ sinag/
 
 ## Key Services
 
-| Service | Purpose | Location |
-|---------|---------|----------|
-| `assessment_service` | Core assessment CRUD | `app/services/assessment_service.py` |
-| `assessor_service` | Assessor validation workflow | `app/services/assessor_service.py` |
-| `intelligence_service` | AI/Gemini integration | `app/services/intelligence_service.py` |
-| `mlgoo_service` | MLGOO approval workflow | `app/services/mlgoo_service.py` |
-| `bbi_service` | BBI functionality | `app/services/bbi_service.py` |
-| `notification_service` | In-app notifications | `app/services/notification_service.py` |
-| `storage_service` | Supabase file storage | `app/services/storage_service.py` |
+| Service                | Purpose                      | Location                               |
+| ---------------------- | ---------------------------- | -------------------------------------- |
+| `assessment_service`   | Core assessment CRUD         | `app/services/assessment_service.py`   |
+| `assessor_service`     | Assessor validation workflow | `app/services/assessor_service.py`     |
+| `intelligence_service` | AI/Gemini integration        | `app/services/intelligence_service.py` |
+| `mlgoo_service`        | MLGOO approval workflow      | `app/services/mlgoo_service.py`        |
+| `bbi_service`          | BBI functionality            | `app/services/bbi_service.py`          |
+| `notification_service` | In-app notifications         | `app/services/notification_service.py` |
+| `storage_service`      | Supabase file storage        | `app/services/storage_service.py`      |
 
 ## Key Routers
 
-| Router | Purpose | Location |
-|--------|---------|----------|
-| `assessments` | Assessment CRUD | `app/api/v1/assessments.py` |
-| `assessor` | Assessor operations | `app/api/v1/assessor.py` |
-| `mlgoo` | MLGOO approval | `app/api/v1/mlgoo.py` |
-| `blgu_dashboard` | BLGU dashboard | `app/api/v1/blgu_dashboard.py` |
-| `analytics` | Internal analytics | `app/api/v1/analytics.py` |
+| Router           | Purpose             | Location                       |
+| ---------------- | ------------------- | ------------------------------ |
+| `assessments`    | Assessment CRUD     | `app/api/v1/assessments.py`    |
+| `assessor`       | Assessor operations | `app/api/v1/assessor.py`       |
+| `mlgoo`          | MLGOO approval      | `app/api/v1/mlgoo.py`          |
+| `blgu_dashboard` | BLGU dashboard      | `app/api/v1/blgu_dashboard.py` |
+| `analytics`      | Internal analytics  | `app/api/v1/analytics.py`      |

@@ -29,31 +29,31 @@ export function FilePreviewerModal({
     if (fileType) {
       setDetectedFileType(fileType);
     } else {
-      const clean = fileUrl.split('#')[0].split('?')[0];
-      const extension = clean.split('.').pop()?.toLowerCase();
+      const clean = fileUrl.split("#")[0].split("?")[0];
+      const extension = clean.split(".").pop()?.toLowerCase();
       setDetectedFileType(extension || "");
     }
     setIsLoading(false);
     setHasError(false);
-  }, [fileUrl, fileType]);
+  }, [fileUrl, fileType, setDetectedFileType, setIsLoading, setHasError]);
 
   const getFileIcon = (type: string) => {
-    if (type.includes('pdf')) return <FileText className="h-8 w-8 text-red-500" />;
-    if (type.includes('image')) return <Image className="h-8 w-8 text-blue-500" />;
-    if (type.includes('video')) return <Video className="h-8 w-8 text-purple-500" />;
+    if (type.includes("pdf")) return <FileText className="h-8 w-8 text-red-500" />;
+    if (type.includes("image")) return <Image className="h-8 w-8 text-blue-500" />;
+    if (type.includes("video")) return <Video className="h-8 w-8 text-purple-500" />;
     return <FileText className="h-8 w-8 text-gray-500" />;
   };
 
   const isImage = (type: string) => {
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(type.toLowerCase());
+    return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(type.toLowerCase());
   };
 
   const isVideo = (type: string) => {
-    return ['mp4', 'webm', 'ogg', 'avi', 'mov'].includes(type.toLowerCase());
+    return ["mp4", "webm", "ogg", "avi", "mov"].includes(type.toLowerCase());
   };
 
   const isPDF = (type: string) => {
-    return type.toLowerCase() === 'pdf';
+    return type.toLowerCase() === "pdf";
   };
 
   const renderFileContent = () => {
@@ -61,11 +61,16 @@ export function FilePreviewerModal({
       return (
         <div className="flex flex-col items-center justify-center h-96 text-center">
           <FileText className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Unable to Preview</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            Unable to Preview
+          </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
             This file type cannot be previewed in the browser.
           </p>
-          <Button onClick={() => window.open(fileUrl, '_blank')} className="flex items-center gap-2">
+          <Button
+            onClick={() => window.open(fileUrl, "_blank")}
+            className="flex items-center gap-2"
+          >
             <Download className="h-4 w-4" />
             Download File
           </Button>
@@ -129,11 +134,13 @@ export function FilePreviewerModal({
     return (
       <div className="flex flex-col items-center justify-center h-96 text-center">
         {getFileIcon(detectedFileType)}
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 mt-4">{fileName}</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 mt-4">
+          {fileName}
+        </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-4">
           This file type cannot be previewed in the browser.
         </p>
-        <Button onClick={() => window.open(fileUrl, '_blank')} className="flex items-center gap-2">
+        <Button onClick={() => window.open(fileUrl, "_blank")} className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           Download File
         </Button>
@@ -149,35 +156,25 @@ export function FilePreviewerModal({
             {getFileIcon(detectedFileType)}
             <span className="truncate">{fileName}</span>
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
         </DialogHeader>
-        
-        <div className="overflow-auto">
-          {renderFileContent()}
-        </div>
-        
+
+        <div className="overflow-auto">{renderFileContent()}</div>
+
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button
             variant="outline"
-            onClick={() => window.open(fileUrl, '_blank')}
+            onClick={() => window.open(fileUrl, "_blank")}
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
             Download
           </Button>
-          <Button onClick={onClose}>
-            Close
-          </Button>
+          <Button onClick={onClose}>Close</Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-

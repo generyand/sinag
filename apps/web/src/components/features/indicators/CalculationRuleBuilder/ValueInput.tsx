@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface ValueInputProps {
   value: any;
@@ -20,9 +20,9 @@ interface ValueInputProps {
 export function ValueInput({
   value,
   onChange,
-  label = 'Expected Value',
-  placeholder = 'Enter expected value',
-  helpText = 'Value to compare against the field',
+  label = "Expected Value",
+  placeholder = "Enter expected value",
+  helpText = "Value to compare against the field",
 }: ValueInputProps) {
   return (
     <div className="space-y-2">

@@ -2,7 +2,9 @@
 
 ## Overview
 
-The SINAG API now implements a **fail-fast startup system** that validates critical configuration and connections before the application starts accepting requests. This prevents the server from running in a misconfigured state and provides clear error messages when something is wrong.
+The SINAG API now implements a **fail-fast startup system** that validates critical configuration
+and connections before the application starts accepting requests. This prevents the server from
+running in a misconfigured state and provides clear error messages when something is wrong.
 
 ## What Gets Validated
 
@@ -17,6 +19,7 @@ The following environment variables are **required** and validated at startup:
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
 
 **Optional but recommended:**
+
 - `GEMINI_API_KEY` - For AI-powered features (warnings if missing)
 - `CELERY_BROKER_URL` - For background tasks
 
@@ -26,6 +29,7 @@ The following environment variables are **required** and validated at startup:
 - **Supabase** - Real-time features, auth, and storage client
 
 Connection requirements can be configured:
+
 - `REQUIRE_ALL_CONNECTIONS=true` (default) - Both must be connected
 - `REQUIRE_ALL_CONNECTIONS=false` - At least one must work
 
@@ -50,12 +54,14 @@ FAIL_FAST=false
 ```
 
 **When `FAIL_FAST=true` (RECOMMENDED):**
+
 - Application **crashes immediately** if any check fails
 - Provides detailed error messages indicating what's wrong
 - Prevents misconfigured deployments from accepting traffic
 - **This is the default and should be used in production!**
 
 **When `FAIL_FAST=false` (NOT RECOMMENDED):**
+
 - Application logs warnings but continues to start
 - Some features may be unavailable
 - Only use temporarily during local development troubleshooting
@@ -109,7 +115,8 @@ The startup process follows this order:
 7. **Log connection details** - Summary of all connection statuses
 8. **Start accepting requests** - Server is ready
 
-If any step fails (and `FAIL_FAST=true`), the application crashes immediately with a detailed error message.
+If any step fails (and `FAIL_FAST=true`), the application crashes immediately with a detailed error
+message.
 
 ## Testing
 
@@ -182,6 +189,7 @@ curl http://localhost:8000/health
 ```
 
 Response:
+
 ```json
 {
   "overall_status": "healthy",
@@ -303,6 +311,7 @@ FAIL_FAST=false
 ## Changelog
 
 **2025-11-24**: Initial implementation of fail-fast startup checks
+
 - Environment variable validation
 - Database connection validation
 - Redis/Celery connectivity checks

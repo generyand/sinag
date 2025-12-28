@@ -1,28 +1,15 @@
 // 📋 Form Schema Parser Utility
 // Utilities for parsing and evaluating form schemas with conditional logic
 
-import type {
-  FormSchema,
-  FormSchemaResponse,
-  FormSchemaFieldsItem,
-} from "@sinag/shared";
+import type { FormSchema, FormSchemaResponse, FormSchemaFieldsItem } from "@sinag/shared";
 
 // Re-export types for convenience
-export type {
-  FormSchema,
-  FormSchemaResponse,
-  FormSchemaFieldsItem,
-};
+export type { FormSchema, FormSchemaResponse, FormSchemaFieldsItem };
 
 /**
  * Conditional operators supported in form schema conditional logic
  */
-export type ConditionalOperator =
-  | "equals"
-  | "notEquals"
-  | "greaterThan"
-  | "lessThan"
-  | "contains";
+export type ConditionalOperator = "equals" | "notEquals" | "greaterThan" | "lessThan" | "contains";
 
 /**
  * Conditional rule structure for field visibility logic
@@ -97,12 +84,10 @@ export function getSections(
           id: String(sectionObj.section_id ?? sectionObj.id ?? `section_${index}`),
           title: String(sectionObj.title ?? `Section ${index + 1}`),
           description:
-            sectionObj.description !== undefined &&
-            sectionObj.description !== null
+            sectionObj.description !== undefined && sectionObj.description !== null
               ? String(sectionObj.description)
               : undefined,
-          order:
-            typeof sectionObj.order === "number" ? sectionObj.order : index,
+          order: typeof sectionObj.order === "number" ? sectionObj.order : index,
         };
       }
       // Fallback for malformed section
@@ -156,16 +141,14 @@ export function getFieldsForSection(
     Array.isArray(formSchema.sections) &&
     formSchema.sections.length > 0
   ) {
-    const targetSection = formSchema.sections.find(
-      (section: unknown) => {
-        if (typeof section === "object" && section !== null) {
-          const sectionObj = section as Record<string, unknown>;
-          const id = sectionObj.section_id ?? sectionObj.id;
-          return id === sectionId;
-        }
-        return false;
+    const targetSection = formSchema.sections.find((section: unknown) => {
+      if (typeof section === "object" && section !== null) {
+        const sectionObj = section as Record<string, unknown>;
+        const id = sectionObj.section_id ?? sectionObj.id;
+        return id === sectionId;
       }
-    );
+      return false;
+    });
 
     if (
       targetSection &&
@@ -173,8 +156,7 @@ export function getFieldsForSection(
       "fields" in targetSection &&
       Array.isArray((targetSection as Record<string, unknown>).fields)
     ) {
-      const fields = (targetSection as Record<string, unknown>)
-        .fields as ParsedField[];
+      const fields = (targetSection as Record<string, unknown>).fields as ParsedField[];
       // Sort by order if available
       return fields.sort((a, b) => {
         const orderA =
@@ -192,11 +174,7 @@ export function getFieldsForSection(
   }
 
   // Current implementation: Return all fields for "default" section
-  if (
-    sectionId === "default" &&
-    "fields" in formSchema &&
-    Array.isArray(formSchema.fields)
-  ) {
+  if (sectionId === "default" && "fields" in formSchema && Array.isArray(formSchema.fields)) {
     // Type assertion: fields should be FormSchemaFieldsItem[]
     const fields = formSchema.fields as ParsedField[];
 

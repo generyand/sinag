@@ -56,8 +56,15 @@ def _generate_insights_logic(
             logger.error(error_msg)
             return {"success": False, "error": error_msg}
 
-        # Check if assessment is validated (required for insights)
-        if assessment.status != AssessmentStatus.VALIDATED:
+        # Check if assessment is at least validated (required for insights)
+        # Allow: VALIDATED, AWAITING_FINAL_VALIDATION, AWAITING_MLGOO_APPROVAL, COMPLETED
+        valid_statuses = [
+            AssessmentStatus.VALIDATED,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+            AssessmentStatus.COMPLETED,
+        ]
+        if assessment.status not in valid_statuses:
             error_msg = f"Assessment {assessment_id} is not validated. Status: {assessment.status}"
             logger.error(error_msg)
             return {"success": False, "error": error_msg}
@@ -205,13 +212,23 @@ def _generate_rework_summary_logic(
             logger.error(error_msg)
             return {"success": False, "error": error_msg}
 
-        # Check if assessment is in rework status
-        if assessment.status != AssessmentStatus.REWORK:
+        # Check if assessment needs rework summary generation
+        # Generate if: rework_count > 0 AND no summary exists yet
+        # NOTE: We don't check status anymore to avoid race conditions where
+        # the status changes (e.g., REWORK → SUBMITTED) before this async task runs
+        needs_generation = (
+            assessment.rework_count
+            and assessment.rework_count > 0
+            and not assessment.rework_summary
+        )
+
+        if not needs_generation:
             error_msg = (
-                f"Assessment {assessment_id} is not in rework status. Status: {assessment.status}"
+                f"Assessment {assessment_id} does not need rework summary. "
+                f"Status: {assessment.status}, rework_count: {assessment.rework_count}, "
+                f"has_summary: {assessment.rework_summary is not None}"
             )
-            logger.warning(error_msg)
-            # Not an error - just log and skip
+            logger.info(error_msg)
             return {
                 "success": True,
                 "assessment_id": assessment_id,
@@ -250,6 +267,23 @@ def _generate_rework_summary_logic(
         assessment.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(assessment)
+
+        # Invalidate dashboard cache so new AI insights appear immediately
+        try:
+            from app.core.cache import cache
+
+            deleted = cache.delete_pattern("dashboard_kpis:*")
+            if deleted > 0:
+                logger.info(
+                    "♻️ Dashboard cache invalidated (%d keys) after rework summary for assessment %s",
+                    deleted,
+                    assessment_id,
+                )
+        except Exception as cache_error:
+            logger.warning(
+                "⚠️ Failed to invalidate dashboard cache after rework summary: %s",
+                cache_error,
+            )
 
         logger.info(
             "Successfully generated rework summaries for assessment %s in languages: %s",
@@ -401,52 +435,38 @@ def _generate_calibration_summary_logic(
             logger.error(error_msg)
             return {"success": False, "error": error_msg}
 
-        # Check if assessment is in rework status with calibration flag
-        if assessment.status != AssessmentStatus.REWORK:
-            error_msg = (
-                f"Assessment {assessment_id} is not in rework status. Status: {assessment.status}"
-            )
-            logger.warning(error_msg)
-            # Not an error - just log and skip
-            return {
-                "success": True,
-                "assessment_id": assessment_id,
-                "skipped": True,
-                "message": error_msg,
-            }
-
-        if not assessment.is_calibration_rework:
-            error_msg = f"Assessment {assessment_id} is not a calibration rework"
-            logger.warning(error_msg)
-            return {
-                "success": True,
-                "assessment_id": assessment_id,
-                "skipped": True,
-                "message": error_msg,
-            }
-
         # PARALLEL CALIBRATION: Check if summary already exists for THIS governance area
-        # Summaries are stored in calibration_summaries_by_area keyed by governance_area_id
         area_id_key = str(governance_area_id)
         existing_summaries_by_area = assessment.calibration_summaries_by_area or {}
+        area_summary_exists = (
+            area_id_key in existing_summaries_by_area
+            and isinstance(existing_summaries_by_area.get(area_id_key), dict)
+            and "ceb" in existing_summaries_by_area.get(area_id_key, {})
+        )
 
-        if area_id_key in existing_summaries_by_area:
-            existing_area_summary = existing_summaries_by_area[area_id_key]
-            # Check if it's the new multi-language format with both ceb and en
-            if isinstance(existing_area_summary, dict) and "ceb" in existing_area_summary:
-                logger.info(
-                    "Calibration summaries already exist for assessment %s governance area %s, skipping generation",
-                    assessment_id,
-                    governance_area_id,
-                )
-                return {
-                    "success": True,
-                    "assessment_id": assessment_id,
-                    "governance_area_id": governance_area_id,
-                    "skipped": True,
-                    "message": f"Calibration summaries already exist for governance area {governance_area_id}",
-                    "calibration_summary": existing_area_summary,
-                }
+        # Check if assessment needs calibration summary generation for this area
+        # Generate if: calibration_count > 0 AND no summary exists for this area
+        # NOTE: We don't check status anymore to avoid race conditions where
+        # the status changes before this async task runs
+        needs_generation = (
+            assessment.calibration_count
+            and assessment.calibration_count > 0
+            and not area_summary_exists
+        )
+
+        if not needs_generation:
+            error_msg = (
+                f"Assessment {assessment_id} does not need calibration summary for area {governance_area_id}. "
+                f"Status: {assessment.status}, calibration_count: {assessment.calibration_count}, "
+                f"area_summary_exists: {area_summary_exists}"
+            )
+            logger.info(error_msg)
+            return {
+                "success": True,
+                "assessment_id": assessment_id,
+                "skipped": True,
+                "message": error_msg,
+            }
 
         # Generate calibration summaries in default languages (Bisaya + English)
         summaries = intelligence_service.generate_default_language_calibration_summaries(
@@ -476,6 +496,24 @@ def _generate_calibration_summary_logic(
         assessment.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(assessment)
+
+        # Invalidate dashboard cache so new AI insights appear immediately
+        try:
+            from app.core.cache import cache
+
+            deleted = cache.delete_pattern("dashboard_kpis:*")
+            if deleted > 0:
+                logger.info(
+                    "♻️ Dashboard cache invalidated (%d keys) after calibration summary for assessment %s area %s",
+                    deleted,
+                    assessment_id,
+                    governance_area_id,
+                )
+        except Exception as cache_error:
+            logger.warning(
+                "⚠️ Failed to invalidate dashboard cache after calibration summary: %s",
+                cache_error,
+            )
 
         logger.info(
             "Successfully generated calibration summaries for assessment %s governance area %s in languages: %s",

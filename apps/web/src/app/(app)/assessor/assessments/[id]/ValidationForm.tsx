@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
-import { ValidationStatus, usePostAssessorAssessmentResponsesResponseIdValidate } from "@sinag/shared";
+import {
+  ValidationStatus,
+  usePostAssessorAssessmentResponsesResponseIdValidate,
+} from "@sinag/shared";
 import { AlertTriangle, CheckCircle, MessageSquare, XCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -29,11 +32,11 @@ interface ValidationFormProps {
   }>;
 }
 
-export function ValidationForm({ 
-  responseId, 
-  assessmentId, 
+export function ValidationForm({
+  responseId,
+  assessmentId,
   currentValidationStatus,
-  existingComments 
+  existingComments,
 }: ValidationFormProps) {
   const [validationStatus, setValidationStatus] = useState<string>(currentValidationStatus || "");
   const [comment, setComment] = useState("");
@@ -47,10 +50,10 @@ export function ValidationForm({
     mutation: {
       onSuccess: () => {
         // Invalidate the assessment details query to refresh the data
-        queryClient.invalidateQueries({ 
-          queryKey: ["assessor", "assessment", assessmentId] 
+        queryClient.invalidateQueries({
+          queryKey: ["assessor", "assessment", assessmentId],
         });
-        
+
         // Reset form
         setComment("");
         setIsInternalNote(false);
@@ -60,14 +63,14 @@ export function ValidationForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validationStatus) {
       alert("Please select a validation status");
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       await validationMutation.mutateAsync({
         responseId,
@@ -77,7 +80,7 @@ export function ValidationForm({
           assessor_remarks: isInternalNote ? comment.trim() || null : null,
         },
       });
-      
+
       alert("Validation submitted successfully!");
     } catch (error) {
       console.error("Validation submission failed:", error);
@@ -108,7 +111,7 @@ export function ValidationForm({
           Validation Form
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Validation Status */}
@@ -146,11 +149,7 @@ export function ValidationForm({
           {/* Comment Type */}
           <div>
             <Label className="text-sm font-medium">Comment Type</Label>
-            <RadioGroup
-              value={commentType}
-              onValueChange={setCommentType}
-              className="mt-2"
-            >
+            <RadioGroup value={commentType} onValueChange={setCommentType} className="mt-2">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="validation" id="validation" />
                 <Label htmlFor="validation">Validation Comment</Label>
@@ -213,11 +212,12 @@ export function ValidationForm({
             </h4>
             <div className="space-y-2">
               {existingComments.slice(-3).map((comment) => (
-                <div key={comment.id} className="text-xs text-green-700 bg-white rounded p-2 border border-green-200">
+                <div
+                  key={comment.id}
+                  className="text-xs text-green-700 bg-white rounded p-2 border border-green-200"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">
-                      {comment.assessor?.name || 'Unknown'}
-                    </span>
+                    <span className="font-medium">{comment.assessor?.name || "Unknown"}</span>
                     <span>{new Date(comment.created_at).toLocaleDateString()}</span>
                   </div>
                   <p className="mt-1">{comment.comment}</p>

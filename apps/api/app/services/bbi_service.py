@@ -25,42 +25,135 @@ from loguru import logger
 from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.enums import BBIStatus, ValidationStatus
+from app.core.cache import CACHE_TTL_INTERNAL_ANALYTICS, cache
+from app.db.enums import AssessmentStatus, BBIStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
+from app.services.checklist_utils import (
+    calculate_indicator_status_from_checklist,
+    clean_checklist_label,
+    get_checklist_validation_result,
+    is_minimum_requirement,
+)
 
 # BBI metadata configuration - maps indicator codes to BBI details
+# Includes count-based thresholds for functionality levels per DILG specifications
 BBI_CONFIG = {
     "2.1": {
         "abbreviation": "BDRRMC",
         "name": "Barangay Disaster Risk Reduction and Management Committee",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 4},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "3.1": {
         "abbreviation": "BADAC",
         "name": "Barangay Anti-Drug Abuse Council",
+        "thresholds": {
+            "highly_functional": {"min": 7, "max": 10},
+            "moderately_functional": {"min": 5, "max": 6},
+            "low_functional": {"min": 1, "max": 4},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "3.2": {
         "abbreviation": "BPOC",
         "name": "Barangay Peace and Order Committee",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 3},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "4.1": {
         "abbreviation": "VAW Desk",
         "name": "Barangay Violence Against Women Desk",
+        "thresholds": {
+            "highly_functional": {"min": 5, "max": 7},
+            "moderately_functional": {"min": 3, "max": 4},
+            "low_functional": {"min": 1, "max": 2},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "4.3": {
         "abbreviation": "BDC",
         "name": "Barangay Development Council",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 4},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "4.5": {
         "abbreviation": "BCPC",
         "name": "Barangay Council for the Protection of Children",
+        "thresholds": {
+            "highly_functional": {"min": 4, "max": 6},
+            "moderately_functional": {"min": 3, "max": 3},
+            "low_functional": {"min": 1, "max": 2},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
     "6.1": {
         "abbreviation": "BESWMC",
         "name": "Barangay Ecological Solid Waste Management Committee",
+        "thresholds": {
+            "highly_functional": {"min": 3, "max": 4},
+            "moderately_functional": {"min": 2, "max": 2},
+            "low_functional": {"min": 1, "max": 1},
+            "non_functional": {"min": 0, "max": 0},
+        },
     },
 }
+
+
+def get_bbi_rating_by_count(indicator_code: str, passed_count: int) -> BBIStatus:
+    """
+    Get BBI rating based on count thresholds (not percentage).
+
+    Uses the count-based thresholds from BBI_CONFIG.
+
+    Args:
+        indicator_code: The indicator code (e.g., "2.1", "3.1")
+        passed_count: Number of sub-indicators that passed
+
+    Returns:
+        BBIStatus enum value
+    """
+    config = BBI_CONFIG.get(indicator_code)
+    if not config or "thresholds" not in config:
+        # Fallback for unmapped BBIs
+        if passed_count >= 3:
+            return BBIStatus.HIGHLY_FUNCTIONAL
+        elif passed_count >= 2:
+            return BBIStatus.MODERATELY_FUNCTIONAL
+        elif passed_count >= 1:
+            return BBIStatus.LOW_FUNCTIONAL
+        return BBIStatus.NON_FUNCTIONAL
+
+    thresholds = config["thresholds"]
+
+    if (
+        thresholds["highly_functional"]["min"]
+        <= passed_count
+        <= thresholds["highly_functional"]["max"]
+    ):
+        return BBIStatus.HIGHLY_FUNCTIONAL
+    elif (
+        thresholds["moderately_functional"]["min"]
+        <= passed_count
+        <= thresholds["moderately_functional"]["max"]
+    ):
+        return BBIStatus.MODERATELY_FUNCTIONAL
+    elif thresholds["low_functional"]["min"] <= passed_count <= thresholds["low_functional"]["max"]:
+        return BBIStatus.LOW_FUNCTIONAL
+    return BBIStatus.NON_FUNCTIONAL
 
 
 class BBIService:
@@ -357,19 +450,10 @@ class BBIService:
 
         if not sub_indicators:
             # No sub-indicators - treat as single indicator
-            # Check if the BBI indicator itself passes based on its response
-            response = (
-                db.query(AssessmentResponse)
-                .filter(
-                    and_(
-                        AssessmentResponse.assessment_id == assessment_id,
-                        AssessmentResponse.indicator_id == bbi_indicator.id,
-                    )
-                )
-                .first()
-            )
+            # Use same checklist-based calculation as _evaluate_sub_indicator_compliance
+            result = self._evaluate_sub_indicator_compliance(db, assessment_id, bbi_indicator)
+            passed = result["passed"]
 
-            passed = response and response.validation_status == ValidationStatus.PASS
             return {
                 "compliance_percentage": 100.0 if passed else 0.0,
                 # 0% is NON_FUNCTIONAL per DILG MC 2024-417 (not LOW_FUNCTIONAL)
@@ -417,11 +501,13 @@ class BBIService:
         sub_indicator: Indicator,
     ) -> dict[str, Any]:
         """
-        Evaluate if a sub-indicator passes based on its checklist items.
+        Evaluate if a sub-indicator passes based on validator decision.
 
-        A sub-indicator PASSES if:
-        1. When checklist items exist: All required checklist items are satisfied
-        2. When no checklist items: Falls back to validation_status == PASS
+        Priority:
+        1. Use stored validation_status (set by Validator/MLGOO) - authoritative source
+        2. Fall back to calculating from checklist items if no validation_status
+
+        This ensures BBI status respects validator decisions and MLGOO overrides.
 
         Args:
             db: Database session
@@ -434,10 +520,7 @@ class BBIService:
                 "code": "2.1.1",
                 "name": "Structure",
                 "passed": True/False,
-                "checklist_summary": {
-                    "item_id": {"label": "...", "required": True, "satisfied": True},
-                    ...
-                }
+                "validation_status": "PASS" or "FAIL" or None
             }
         """
         # Get the assessment response for this sub-indicator
@@ -452,114 +535,56 @@ class BBIService:
             .first()
         )
 
-        response_data = response.response_data if response else {}
+        # PRIORITY 1: Use stored validation_status (validator/MLGOO decision)
+        # This is the authoritative source of truth
+        calculated_status = None
+        if response and response.validation_status:
+            calculated_status = response.validation_status.value
 
-        # Get checklist items for this sub-indicator
-        checklist_items = (
-            db.query(ChecklistItem)
-            .filter(ChecklistItem.indicator_id == sub_indicator.id)
-            .order_by(ChecklistItem.display_order)
-            .all()
-        )
+        # FALLBACK: Calculate from checklist items only if no validation_status
+        if calculated_status is None:
+            # Get checklist items for this sub-indicator
+            checklist_items = (
+                db.query(ChecklistItem)
+                .filter(ChecklistItem.indicator_id == sub_indicator.id)
+                .order_by(ChecklistItem.display_order)
+                .all()
+            )
 
-        # If no checklist items exist, fall back to validation_status
-        # This follows the same pattern used for parent indicators (line ~336)
-        if not checklist_items:
-            passed = response and response.validation_status == ValidationStatus.PASS
-            return {
-                "code": sub_indicator.indicator_code,
-                "name": sub_indicator.name,
-                "passed": passed,
-                "validation_rule": "VALIDATION_STATUS",
-                "checklist_summary": {},
-            }
+            # Filter to minimum requirements and get validation results
+            gar_checklist = []
+            for item in checklist_items:
+                if not is_minimum_requirement(
+                    item.label, item.item_type, sub_indicator.indicator_code, item.is_profiling_only
+                ):
+                    continue
+                validation_result = get_checklist_validation_result(item, response)
+                display_label = clean_checklist_label(item.label, sub_indicator.indicator_code)
+                gar_checklist.append(
+                    {
+                        "item_id": item.item_id,
+                        "label": display_label,
+                        "validation_result": validation_result,
+                    }
+                )
 
-        checklist_summary = {}
-        all_required_satisfied = True
+            # Calculate status from checklist items if available
+            if gar_checklist:
+                calculated_status = calculate_indicator_status_from_checklist(
+                    gar_checklist,
+                    sub_indicator.indicator_code,
+                    sub_indicator.validation_rule,
+                )
 
-        for item in checklist_items:
-            satisfied = self._is_checklist_item_satisfied(item, response_data)
-            checklist_summary[item.item_id] = {
-                "label": item.label,
-                "required": item.required,
-                "satisfied": satisfied,
-                "item_type": item.item_type,
-            }
-
-            # Check if required item is not satisfied
-            if item.required and not satisfied:
-                all_required_satisfied = False
-
-        # Handle validation_rule for the sub-indicator
-        # ALL_ITEMS_REQUIRED: all required items must be satisfied
-        # ANY_ITEM_REQUIRED: at least one required item must be satisfied (OR logic)
-        validation_rule = sub_indicator.validation_rule or "ALL_ITEMS_REQUIRED"
-
-        if validation_rule == "ANY_ITEM_REQUIRED":
-            # For OR logic, check if at least one required item is satisfied
-            required_items = [item for item in checklist_items if item.required]
-            satisfied_required = [
-                item
-                for item in required_items
-                if self._is_checklist_item_satisfied(item, response_data)
-            ]
-            passed = len(satisfied_required) > 0 if required_items else True
-        else:
-            # Default: ALL_ITEMS_REQUIRED
-            passed = all_required_satisfied
+        # Sub-indicator passes if calculated status is PASS or CONDITIONAL
+        passed = calculated_status in ("PASS", "CONDITIONAL")
 
         return {
             "code": sub_indicator.indicator_code,
             "name": sub_indicator.name,
             "passed": passed,
-            "validation_rule": validation_rule,
-            "checklist_summary": checklist_summary,
+            "validation_status": calculated_status,
         }
-
-    def _is_checklist_item_satisfied(
-        self,
-        item: ChecklistItem,
-        response_data: dict[str, Any],
-    ) -> bool:
-        """
-        Check if a single checklist item is satisfied based on response data.
-
-        Args:
-            item: The checklist item to check
-            response_data: The response data from AssessmentResponse
-
-        Returns:
-            True if the item is satisfied, False otherwise
-        """
-        item_id = item.item_id
-
-        # Skip info_text items - they don't need validation
-        if item.item_type == "info_text":
-            return True
-
-        # Check standard checkbox validation
-        if item_id in response_data:
-            value = response_data[item_id]
-            if isinstance(value, bool):
-                return value
-            if isinstance(value, str):
-                return value.lower() in ["true", "yes", "1"]
-
-        # Check for YES/NO pattern (assessment_field)
-        yes_key = f"{item_id}_yes"
-        no_key = f"{item_id}_no"
-        if yes_key in response_data or no_key in response_data:
-            if response_data.get(yes_key):
-                return True
-            elif response_data.get(no_key):
-                return False
-
-        # Check for document_count or calculation_field - has value means satisfied
-        if item.item_type in ["document_count", "calculation_field"]:
-            if item_id in response_data and response_data[item_id]:
-                return True
-
-        return False
 
     def _get_compliance_rating(self, percentage: float) -> BBIStatus:
         """
@@ -615,6 +640,8 @@ class BBIService:
         assessment_year = assessment.assessment_year
 
         # Find all BBI indicators (is_bbi=True)
+        # Note: Only the official 7 BBIs per DILG MC 2024-417 should have is_bbi=True:
+        # BDRRMC (2.1), BADAC (3.1), BPOC (3.2), VAW Desk (4.1), BDC (4.3), BCPC (4.5), BESWMC (6.1)
         bbi_indicators = (
             db.query(Indicator)
             .filter(
@@ -1022,6 +1049,210 @@ class BBIService:
             )
 
         return summary
+
+    def get_municipality_bbi_analytics(
+        self,
+        db: Session,
+        year: int,
+    ) -> dict[str, Any]:
+        """
+        Get BBI analytics across all barangays for a municipality in a given year.
+
+        This provides the data needed for the MLGOO BBI Status tab:
+        - Matrix of barangays × BBIs with compliance ratings
+        - Per-BBI breakdown with distribution counts
+        - Overall summary statistics
+
+        IMPORTANT: Only includes data from COMPLETED assessments to ensure
+        accuracy and consistency. Assessments in other states (DRAFT, SUBMITTED,
+        IN_REVIEW, etc.) are excluded from the analytics.
+
+        PERFORMANCE: Results are cached in Redis for 15 minutes to reduce
+        database load. Cache is invalidated when new BBI results are calculated.
+
+        Args:
+            db: Database session
+            year: Assessment year
+
+        Returns:
+            Dictionary with municipality-wide BBI analytics:
+            {
+                "assessment_year": 2025,
+                "bbis": [
+                    {"bbi_id": 1, "abbreviation": "BDRRMC", "name": "...", "indicator_code": "2.1"},
+                    ...
+                ],
+                "barangays": [
+                    {
+                        "barangay_id": 1,
+                        "barangay_name": "Poblacion",
+                        "bbi_statuses": {
+                            "BDRRMC": {"rating": "HIGHLY_FUNCTIONAL", "percentage": 100.0},
+                            "BADAC": {"rating": "LOW_FUNCTIONAL", "percentage": 30.0},
+                            ...
+                        }
+                    },
+                    ...
+                ],
+                "bbi_distributions": {
+                    "BDRRMC": {
+                        "highly_functional": [{"barangay_id": 1, "barangay_name": "..."}],
+                        "moderately_functional": [...],
+                        "low_functional": [...],
+                        "non_functional": [...]
+                    },
+                    ...
+                },
+                "summary": {
+                    "total_barangays": 25,
+                    "total_bbis": 7,
+                    "overall_highly_functional": 50,
+                    "overall_moderately_functional": 30,
+                    "overall_low_functional": 15,
+                    "overall_non_functional": 5
+                }
+            }
+        """
+        # Check cache first
+        cache_key = f"bbi_municipality_analytics:year_{year}"
+        if cache.is_available:
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                logger.info(f"🎯 BBI municipality analytics cache HIT for {cache_key}")
+                return cached_data
+
+        logger.info(f"📊 Computing BBI municipality analytics (cache miss for {cache_key})")
+
+        # Get all BBIResults for the year with eager loading
+        # IMPORTANT: Only include results from COMPLETED assessments
+        results = (
+            db.query(BBIResult)
+            .join(Assessment, BBIResult.assessment_id == Assessment.id)
+            .options(
+                joinedload(BBIResult.bbi),
+                joinedload(BBIResult.barangay),
+                joinedload(BBIResult.indicator),
+            )
+            .filter(
+                and_(
+                    BBIResult.assessment_year == year,
+                    Assessment.status == AssessmentStatus.COMPLETED,
+                )
+            )
+            .all()
+        )
+
+        # Initialize data structures
+        bbis_map: dict[int, dict[str, Any]] = {}
+        barangays_map: dict[int, dict[str, Any]] = {}
+        bbi_distributions: dict[str, dict[str, list[dict[str, Any]]]] = {}
+
+        # Single pass through results to build all data structures
+        for result in results:
+            # Build BBIs map and initialize distribution
+            if result.bbi and result.bbi_id not in bbis_map:
+                abbr = result.bbi.abbreviation
+                bbis_map[result.bbi_id] = {
+                    "bbi_id": result.bbi_id,
+                    "abbreviation": abbr,
+                    "name": result.bbi.name,
+                    "indicator_code": result.indicator.indicator_code if result.indicator else None,
+                }
+                # Initialize distribution for this BBI
+                bbi_distributions[abbr] = {
+                    "highly_functional": [],
+                    "moderately_functional": [],
+                    "low_functional": [],
+                    "non_functional": [],
+                }
+
+            if not result.barangay or not result.bbi:
+                continue
+
+            barangay_id = result.barangay_id
+            abbr = result.bbi.abbreviation
+
+            # Build barangays map
+            if barangay_id not in barangays_map:
+                barangays_map[barangay_id] = {
+                    "barangay_id": barangay_id,
+                    "barangay_name": result.barangay.name,
+                    "bbi_statuses": {},
+                }
+
+            barangays_map[barangay_id]["bbi_statuses"][abbr] = {
+                "rating": result.compliance_rating,
+                "percentage": result.compliance_percentage,
+            }
+
+            # Build distribution
+            barangay_info = {
+                "barangay_id": barangay_id,
+                "barangay_name": result.barangay.name,
+                "percentage": result.compliance_percentage,
+            }
+
+            rating = result.compliance_rating
+            if rating == BBIStatus.HIGHLY_FUNCTIONAL.value:
+                bbi_distributions[abbr]["highly_functional"].append(barangay_info)
+            elif rating == BBIStatus.MODERATELY_FUNCTIONAL.value:
+                bbi_distributions[abbr]["moderately_functional"].append(barangay_info)
+            elif rating == BBIStatus.LOW_FUNCTIONAL.value:
+                bbi_distributions[abbr]["low_functional"].append(barangay_info)
+            elif rating == BBIStatus.NON_FUNCTIONAL.value:
+                bbi_distributions[abbr]["non_functional"].append(barangay_info)
+
+        # Sort BBIs by indicator_code for consistent ordering
+        bbis = sorted(bbis_map.values(), key=lambda x: x.get("indicator_code") or "")
+
+        # Sort barangays by name
+        barangays = sorted(barangays_map.values(), key=lambda x: x["barangay_name"])
+
+        # Sort barangays within each distribution by name
+        for abbr in bbi_distributions:
+            for rating_key in bbi_distributions[abbr]:
+                bbi_distributions[abbr][rating_key].sort(key=lambda x: x["barangay_name"])
+
+        # Calculate summary statistics
+        total_highly = sum(
+            len(bbi_distributions[abbr]["highly_functional"]) for abbr in bbi_distributions
+        )
+        total_moderately = sum(
+            len(bbi_distributions[abbr]["moderately_functional"]) for abbr in bbi_distributions
+        )
+        total_low = sum(
+            len(bbi_distributions[abbr]["low_functional"]) for abbr in bbi_distributions
+        )
+        total_non = sum(
+            len(bbi_distributions[abbr]["non_functional"]) for abbr in bbi_distributions
+        )
+
+        summary = {
+            "total_barangays": len(barangays),
+            "total_bbis": len(bbis),
+            "overall_highly_functional": total_highly,
+            "overall_moderately_functional": total_moderately,
+            "overall_low_functional": total_low,
+            "overall_non_functional": total_non,
+        }
+
+        result = {
+            "assessment_year": year,
+            "bbis": bbis,
+            "barangays": barangays,
+            "bbi_distributions": bbi_distributions,
+            "summary": summary,
+        }
+
+        # Cache the result for 15 minutes
+        if cache.is_available:
+            try:
+                cache.set(cache_key, result, ttl=CACHE_TTL_INTERNAL_ANALYTICS)
+                logger.info(f"💾 Cached BBI municipality analytics for {cache_key}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to cache BBI municipality analytics: {e}")
+
+        return result
 
 
 # Singleton instance

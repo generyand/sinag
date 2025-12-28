@@ -4,12 +4,12 @@
  */
 
 export const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
-  FI: "/Assessment_Areas/financialAdmin.png",
-  DI: "/Assessment_Areas/disasterPreparedness.png",
-  SA: "/Assessment_Areas/safetyPeaceAndOrder.png",
-  SO: "/Assessment_Areas/socialProtectAndSensitivity.png",
-  BU: "/Assessment_Areas/businessFriendliness.png",
-  EN: "/Assessment_Areas/environmentalManagement.png",
+  FI: "/Assessment_Areas/financialAdmin.webp",
+  DI: "/Assessment_Areas/disasterPreparedness.webp",
+  SA: "/Assessment_Areas/safetyPeaceAndOrder.webp",
+  SO: "/Assessment_Areas/socialProtectAndSensitivity.webp",
+  BU: "/Assessment_Areas/businessFriendliness.webp",
+  EN: "/Assessment_Areas/environmentalManagement.webp",
 } as const;
 
 /**

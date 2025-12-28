@@ -1,7 +1,12 @@
 "use client";
 
 import { FilePreviewerModal } from "@/components/shared";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +17,17 @@ import { useAssessorMOVUploadMutation, useAssessorValidationMutation } from "@/h
 import { showError, showSuccess, showWarning } from "@/lib/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MOVCreate, ValidationStatus } from "@sinag/shared";
-import { AlertTriangle, CheckCircle, Eye, FileText, MessageSquare, Save, Upload, X, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Eye,
+  FileText,
+  MessageSquare,
+  Save,
+  Upload,
+  X,
+  XCircle,
+} from "lucide-react";
 import { useRef, useState } from "react";
 
 interface ValidationControlsProps {
@@ -73,7 +88,7 @@ export function ValidationControls({
 
       // Invalidate the assessment details query to refresh the data
       queryClient.invalidateQueries({
-        queryKey: ["assessor", "assessment", assessmentId]
+        queryKey: ["assessor", "assessment", assessmentId],
       });
 
       showSuccess("Validation saved successfully!");
@@ -103,7 +118,7 @@ export function ValidationControls({
 
       // Invalidate the assessment details query to refresh the data
       queryClient.invalidateQueries({
-        queryKey: ["assessor", "assessment", assessmentId]
+        queryKey: ["assessor", "assessment", assessmentId],
       });
 
       showSuccess("Draft saved successfully!");
@@ -170,7 +185,7 @@ export function ValidationControls({
 
       // Invalidate the assessment details query to refresh the data
       queryClient.invalidateQueries({
-        queryKey: ["assessor", "assessment", assessmentId]
+        queryKey: ["assessor", "assessment", assessmentId],
       });
 
       // Clear the selected file
@@ -201,18 +216,18 @@ export function ValidationControls({
   };
 
   const getFileType = (file: File) => {
-    if (file.type.startsWith('image/')) {
-      return file.type.split('/')[1]; // e.g., 'jpeg', 'png'
-    } else if (file.type === 'application/pdf') {
-      return 'pdf';
-    } else if (file.type.startsWith('video/')) {
-      return file.type.split('/')[1]; // e.g., 'mp4', 'webm'
-    } else if (file.type.startsWith('text/')) {
-      return 'txt';
+    if (file.type.startsWith("image/")) {
+      return file.type.split("/")[1]; // e.g., 'jpeg', 'png'
+    } else if (file.type === "application/pdf") {
+      return "pdf";
+    } else if (file.type.startsWith("video/")) {
+      return file.type.split("/")[1]; // e.g., 'mp4', 'webm'
+    } else if (file.type.startsWith("text/")) {
+      return "txt";
     } else {
       // Extract extension from filename as fallback
-      const extension = file.name.split('.').pop()?.toLowerCase();
-      return extension || 'unknown';
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      return extension || "unknown";
     }
   };
 
@@ -305,11 +320,7 @@ export function ValidationControls({
         {/* Validation Status Selection */}
         <div>
           <Label className="text-sm font-medium">Validation Status *</Label>
-          <RadioGroup
-            value={validationStatus}
-            onValueChange={setValidationStatus}
-            className="mt-2"
-          >
+          <RadioGroup value={validationStatus} onValueChange={setValidationStatus} className="mt-2">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="Pass" id="pass" />
               <Label htmlFor="pass" className="flex items-center gap-2">
@@ -337,7 +348,8 @@ export function ValidationControls({
         {/* Public Comment */}
         <div>
           <Label htmlFor="public-comment" className="text-sm font-medium">
-            Public Comment {validationStatus === "Conditional" && <span className="text-red-500">*</span>}
+            Public Comment{" "}
+            {validationStatus === "Conditional" && <span className="text-red-500">*</span>}
           </Label>
           <Textarea
             id="public-comment"
@@ -486,7 +498,11 @@ export function ValidationControls({
           <Button
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={!validationStatus || (validationStatus === "Conditional" && !publicComment.trim()) || validationMutation.isPending}
+            disabled={
+              !validationStatus ||
+              (validationStatus === "Conditional" && !publicComment.trim()) ||
+              validationMutation.isPending
+            }
           >
             Save Validation
           </Button>

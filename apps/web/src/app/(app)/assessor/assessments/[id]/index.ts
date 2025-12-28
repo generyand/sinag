@@ -4,4 +4,3 @@ export { AssessmentWorkflowButtons } from "./AssessmentWorkflowButtons";
 export { MOVPreviewer } from "./MOVPreviewer";
 export { TechnicalNotesPanel } from "./TechnicalNotesPanel";
 export { ValidationControls } from "./ValidationControls";
-

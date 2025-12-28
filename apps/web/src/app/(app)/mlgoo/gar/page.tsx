@@ -1,51 +1,51 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useEffectiveYear } from '@/store/useAssessmentYearStore';
-import { YearSelector } from '@/components/features/assessment-year/YearSelector';
-import { useGetGarAssessments, useGetGarAssessmentId } from '@sinag/shared';
-import { FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
+import { YearSelector } from "@/components/features/assessment-year/YearSelector";
+import { useGetGarAssessments, useGetGarAssessmentId } from "@sinag/shared";
+import { FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { GARReportDisplay } from '@/components/features/gar/GARReportDisplay';
-import { GARSkeleton } from '@/components/features/gar/GARSkeleton';
-import { getApiV1URL } from '@/lib/api';
-import { showError, showWarning } from '@/lib/toast';
+} from "@/components/ui/select";
+import { GARReportDisplay } from "@/components/features/gar/GARReportDisplay";
+import { GARSkeleton } from "@/components/features/gar/GARSkeleton";
+import { getApiV1URL } from "@/lib/api";
+import { showError, showWarning } from "@/lib/toast";
 
 export default function GARPage() {
   const router = useRouter();
   const { user, isAuthenticated, token } = useAuthStore();
   const effectiveYear = useEffectiveYear();
-  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('');
-  const [selectedAreaId, setSelectedAreaId] = useState<string>('all'); // Default to All Areas
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>("");
+  const [selectedAreaId, setSelectedAreaId] = useState<string>("all"); // Default to All Areas
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
   // Auth check
   useEffect(() => {
     if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace("/login");
     }
   }, [isAuthenticated, router]);
 
   // Role check - MLGOO only
   useEffect(() => {
-    if (isAuthenticated && user?.role !== 'MLGOO_DILG') {
-      router.replace('/assessor/submissions');
+    if (isAuthenticated && user?.role !== "MLGOO_DILG") {
+      router.replace("/assessor/submissions");
     }
   }, [isAuthenticated, user, router]);
 
   // Reset selected assessment when year changes
   useEffect(() => {
-    setSelectedAssessmentId('');
+    setSelectedAssessmentId("");
   }, [effectiveYear]);
 
   // Fetch completed assessments list for the selected year
@@ -54,9 +54,13 @@ export default function GARPage() {
   });
 
   // Fetch GAR data for selected assessment
-  const { data: garData, isLoading: loadingGar, error: garError } = useGetGarAssessmentId(
+  const {
+    data: garData,
+    isLoading: loadingGar,
+    error: garError,
+  } = useGetGarAssessmentId(
     parseInt(selectedAssessmentId) || 0,
-    { governance_area_id: selectedAreaId === 'all' ? undefined : parseInt(selectedAreaId) },
+    { governance_area_id: selectedAreaId === "all" ? undefined : parseInt(selectedAreaId) },
     {
       query: {
         enabled: !!selectedAssessmentId && parseInt(selectedAssessmentId) > 0,
@@ -65,27 +69,27 @@ export default function GARPage() {
   );
 
   // Handle export with idempotence (prevent double-clicks)
-  const handleExport = async (format: 'excel' | 'pdf') => {
+  const handleExport = async (format: "excel" | "pdf") => {
     if (!selectedAssessmentId) return;
 
     // Check if already exporting this format
-    if (format === 'excel' && exportingExcel) return;
-    if (format === 'pdf' && exportingPdf) return;
+    if (format === "excel" && exportingExcel) return;
+    if (format === "pdf" && exportingPdf) return;
 
     // Set loading state
-    if (format === 'excel') setExportingExcel(true);
-    if (format === 'pdf') setExportingPdf(true);
+    if (format === "excel") setExportingExcel(true);
+    if (format === "pdf") setExportingPdf(true);
 
     const baseUrl = getApiV1URL();
-    const areaParam = selectedAreaId === 'all' ? '' : `?governance_area_id=${selectedAreaId}`;
+    const areaParam = selectedAreaId === "all" ? "" : `?governance_area_id=${selectedAreaId}`;
     const url = `${baseUrl}/gar/${selectedAssessmentId}/export/${format}${areaParam}`;
 
     if (!token) {
-      showWarning('Authentication required', {
-        description: 'Please log in again.',
+      showWarning("Authentication required", {
+        description: "Please log in again.",
       });
-      if (format === 'excel') setExportingExcel(false);
-      if (format === 'pdf') setExportingPdf(false);
+      if (format === "excel") setExportingExcel(false);
+      if (format === "pdf") setExportingPdf(false);
       return;
     }
 
@@ -97,28 +101,28 @@ export default function GARPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Export failed');
+        throw new Error("Export failed");
       }
 
       // Download the file
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `GAR_${selectedAssessmentId}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+      a.download = `GAR_${selectedAssessmentId}.${format === "excel" ? "xlsx" : "pdf"}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Export failed:', error);
-      showError('Export failed', {
-        description: 'Please try again.',
+      console.error("Export failed:", error);
+      showError("Export failed", {
+        description: "Please try again.",
       });
     } finally {
       // Reset loading state
-      if (format === 'excel') setExportingExcel(false);
-      if (format === 'pdf') setExportingPdf(false);
+      if (format === "excel") setExportingExcel(false);
+      if (format === "pdf") setExportingPdf(false);
     }
   };
 
@@ -130,7 +134,7 @@ export default function GARPage() {
     );
   }
 
-  if (user?.role !== 'MLGOO_DILG') {
+  if (user?.role !== "MLGOO_DILG") {
     return null;
   }
 
@@ -147,7 +151,7 @@ export default function GARPage() {
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
                   <h1 className="text-3xl font-bold text-[var(--foreground)]">
-                    Governance{' '}
+                    Governance{" "}
                     <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
                       Assessment Report
                     </span>
@@ -178,14 +182,14 @@ export default function GARPage() {
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
               {/* Assessment Selector */}
               <div className="flex-1 w-full md:w-auto">
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                <label
+                  id="assessment-selector-label"
+                  className="block text-sm font-medium text-[var(--foreground)] mb-2"
+                >
                   Select Assessment
                 </label>
-                <Select
-                  value={selectedAssessmentId}
-                  onValueChange={setSelectedAssessmentId}
-                >
-                  <SelectTrigger className="w-full">
+                <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
+                  <SelectTrigger className="w-full" aria-labelledby="assessment-selector-label">
                     <SelectValue placeholder="Select a completed assessment..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -210,11 +214,14 @@ export default function GARPage() {
 
               {/* Governance Area Selector */}
               <div className="w-full md:w-64">
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                <label
+                  id="governance-area-selector-label"
+                  className="block text-sm font-medium text-[var(--foreground)] mb-2"
+                >
                   Governance Area
                 </label>
                 <Select value={selectedAreaId} onValueChange={setSelectedAreaId}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-labelledby="governance-area-selector-label">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -233,7 +240,7 @@ export default function GARPage() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => handleExport('excel')}
+                  onClick={() => handleExport("excel")}
                   disabled={!selectedAssessmentId || exportingExcel || exportingPdf}
                   className="flex items-center gap-2"
                 >
@@ -242,11 +249,11 @@ export default function GARPage() {
                   ) : (
                     <FileSpreadsheet className="h-4 w-4" />
                   )}
-                  {exportingExcel ? 'Exporting...' : 'Excel'}
+                  {exportingExcel ? "Exporting..." : "Excel"}
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => handleExport('pdf')}
+                  onClick={() => handleExport("pdf")}
                   disabled={!selectedAssessmentId || exportingExcel || exportingPdf}
                   className="flex items-center gap-2"
                 >
@@ -255,7 +262,7 @@ export default function GARPage() {
                   ) : (
                     <FileText className="h-4 w-4" />
                   )}
-                  {exportingPdf ? 'Exporting...' : 'PDF'}
+                  {exportingPdf ? "Exporting..." : "PDF"}
                 </Button>
               </div>
             </div>
@@ -269,14 +276,14 @@ export default function GARPage() {
                 Select an Assessment
               </h3>
               <p className="text-[var(--muted-foreground)]">
-                Choose a completed assessment from the dropdown above to view its GAR report.
+                Choose a completed assessment from the dropdown above to view its BGAR report.
               </p>
             </div>
           ) : loadingGar ? (
             <GARSkeleton />
           ) : garError ? (
             <div className="bg-[var(--card)] border border-red-200 rounded-sm shadow-lg p-6 text-center">
-              <p className="text-red-600">Failed to load GAR data. Please try again.</p>
+              <p className="text-red-600">Failed to load BGAR data. Please try again.</p>
             </div>
           ) : garData ? (
             <GARReportDisplay data={garData} />

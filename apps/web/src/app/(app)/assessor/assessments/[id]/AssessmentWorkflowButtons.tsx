@@ -22,18 +22,15 @@ export function AssessmentWorkflowButtons({
   const finalizeMutation = useAssessorFinalizeMutation(assessmentId);
 
   // Check if all responses have been reviewed
-  const allResponsesReviewed = responses.every(
-    (response) => response.validation_status !== null
-  );
+  const allResponsesReviewed = responses.every((response) => response.validation_status !== null);
 
   // Check if assessment can be sent for rework
-  const canSendForRework = assessmentStatus === "submitted_for_review" || assessmentStatus === "needs_rework";
+  const canSendForRework =
+    assessmentStatus === "submitted_for_review" || assessmentStatus === "needs_rework";
 
   // Check if assessment can be finalized
-  const canFinalize = 
-    assessmentStatus === "submitted_for_review" && 
-    allResponsesReviewed && 
-    responses.length > 0;
+  const canFinalize =
+    assessmentStatus === "submitted_for_review" && allResponsesReviewed && responses.length > 0;
 
   const handleSendForRework = async () => {
     if (!canSendForRework) return;
@@ -76,7 +73,7 @@ export function AssessmentWorkflowButtons({
   return (
     <div className="flex flex-col gap-4 rounded-lg border bg-white p-6 shadow-sm">
       <h3 className="text-lg font-semibold">Assessment Workflow</h3>
-      
+
       <div className="flex flex-wrap gap-3">
         {/* Send for Rework Button */}
         {canSendForRework && (
@@ -112,21 +109,23 @@ export function AssessmentWorkflowButtons({
             <span>This assessment has been sent for rework. BLGU user will be notified.</span>
           </div>
         )}
-        
+
         {assessmentStatus === "submitted_for_review" && !allResponsesReviewed && (
           <div className="flex items-center gap-2 text-yellow-600">
             <AlertCircle className="h-4 w-4" />
             <span>Please review all responses before finalizing the assessment.</span>
           </div>
         )}
-        
-        {assessmentStatus === "submitted_for_review" && allResponsesReviewed && responses.length > 0 && (
-          <div className="flex items-center gap-2 text-green-600">
-            <CheckCircle className="h-4 w-4" />
-            <span>All responses have been reviewed. You can now finalize the assessment.</span>
-          </div>
-        )}
-        
+
+        {assessmentStatus === "submitted_for_review" &&
+          allResponsesReviewed &&
+          responses.length > 0 && (
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="h-4 w-4" />
+              <span>All responses have been reviewed. You can now finalize the assessment.</span>
+            </div>
+          )}
+
         {responses.length === 0 && (
           <div className="flex items-center gap-2 text-gray-500">
             <AlertCircle className="h-4 w-4" />

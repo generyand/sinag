@@ -5,6 +5,7 @@ This directory contains historical documentation that chronicles the development
 ## What's Archived Here
 
 Documentation in this directory represents:
+
 - **Resolved issues** - Problems that have been fixed in the codebase
 - **Development history** - The learning journey of building SINAG
 - **Context for decisions** - Why certain architectural choices were made
@@ -12,15 +13,28 @@ Documentation in this directory represents:
 
 ## Current Archive Contents
 
-- **[docker-development-journey.md](./docker-development-journey.md)** - Chronicles Docker issues encountered during development and their solutions
-- **[hard-coded-indicators-implementation-plan.md](./hard-coded-indicators-implementation-plan.md)** - Implementation plan for hard-coding all 29 SGLGB indicators (Phase 7 completed)
+- **[docker-development-journey.md](./docker-development-journey.md)** - Chronicles Docker issues
+  encountered during development and their solutions
+- **[hard-coded-indicators-implementation-plan.md](./hard-coded-indicators-implementation-plan.md)** -
+  Implementation plan for hard-coding all 29 SGLGB indicators (Phase 7 completed)
 - **[epic-6-completion-summary.md](./epic-6-completion-summary.md)** - Summary of Epic 6 completion
-- **[phase6-performance-testing-guide.md](./phase6-performance-testing-guide.md)** - Performance testing guide for Phase 6
+- **[phase6-performance-testing-guide.md](./phase6-performance-testing-guide.md)** - Performance
+  testing guide for Phase 6
 - **[test-organization-plan.md](./test-organization-plan.md)** - Test organization plan
-- **[prd-administrative-features-superseded-by-phase6.md](./prd-administrative-features-superseded-by-phase6.md)** - Original administrative features PRD superseded by Phase 6
-- **[service-documentation-audit-2025-11-19.md](./service-documentation-audit-2025-11-19.md)** - Point-in-time service layer documentation audit (November 2025)
-- **[bbi-compliance-rate-implementation.md](./bbi-compliance-rate-implementation.md)** - Implementation plan for BBI 3-tier rating system (now implemented)
-- **[user-management-validation-error-handling-assessment.md](./user-management-validation-error-handling-assessment.md)** - Point-in-time assessment of user management validation (November 2025)
+- **[prd-administrative-features-superseded-by-phase6.md](./prd-administrative-features-superseded-by-phase6.md)** -
+  Original administrative features PRD superseded by Phase 6
+- **[service-documentation-audit-2025-11-19.md](./service-documentation-audit-2025-11-19.md)** -
+  Point-in-time service layer documentation audit (November 2025)
+- **[bbi-compliance-rate-implementation.md](./bbi-compliance-rate-implementation.md)** -
+  Implementation plan for BBI 3-tier rating system (now implemented)
+- **[bbi-feature-fix-plan-dec-2025.md](./bbi-feature-fix-plan-dec-2025.md)** - BBI feature fixes
+  implemented in December 2025
+- **[user-management-validation-error-handling-assessment.md](./user-management-validation-error-handling-assessment.md)** -
+  Point-in-time assessment of user management validation (November 2025)
+- **[file-level-rework-indicators-blgu.md](./file-level-rework-indicators-blgu.md)** -
+  Implementation proposal for file-level rework indicators (implemented December 2025)
+- **[file-level-rework-visual-mockup.md](./file-level-rework-visual-mockup.md)** - Visual mockup for
+  file-level rework indicators (implemented December 2025)
 
 ## Why Archive Instead of Delete?
 
@@ -32,6 +46,7 @@ Documentation in this directory represents:
 ## When to Add to Archive
 
 Archive documentation when:
+
 - The issue is completely resolved and baked into the codebase
 - The problem is unlikely to recur (code now prevents it)
 - The documentation is more historical than practical
@@ -40,6 +55,7 @@ Archive documentation when:
 ## When NOT to Archive
 
 Keep documentation active (in `troubleshooting/` or `guides/`) when:
+
 - The issue could still happen (e.g., port conflicts, environment setup)
 - It's a common developer error pattern
 - The solution requires manual intervention
@@ -47,4 +63,4 @@ Keep documentation active (in `troubleshooting/` or `guides/`) when:
 
 ---
 
-**Archive maintained as of**: December 2, 2025
+**Archive maintained as of**: December 12, 2025

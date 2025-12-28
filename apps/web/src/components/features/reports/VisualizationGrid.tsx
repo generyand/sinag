@@ -2,14 +2,10 @@ import { SulopBarangayMapIntegrated } from "@/components/features/analytics";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ReportsDataResponse } from "@sinag/shared";
-import {
-  AreaBreakdownBarChart,
-  ComplianceStatusPieChart,
-  TrendLineChart,
-} from "./ChartComponents";
-import { AssessmentDataTable } from "./DataTable";
 import type { BarangayMapPoint } from "@sinag/shared";
+import { ReportsDataResponse } from "@sinag/shared";
+import { AreaBreakdownBarChart, ComplianceStatusPieChart, TrendLineChart } from "./ChartComponents";
+import { AssessmentDataTable } from "./DataTable";
 
 type VisualizationType = "bar" | "pie" | "line" | "map" | "table";
 
@@ -91,7 +87,11 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
 
             {/* Line Chart Card - Full width on mobile, spans 2 columns on desktop */}
             {shouldShow("line") && (
-              <Card className="md:col-span-2 rounded-sm" role="region" aria-labelledby="line-chart-title">
+              <Card
+                className="md:col-span-2 rounded-sm"
+                role="region"
+                aria-labelledby="line-chart-title"
+              >
                 <CardHeader>
                   <CardTitle id="line-chart-title">Trends Over Time</CardTitle>
                   <CardDescription>Historical pass rate across assessment cycles</CardDescription>
@@ -113,18 +113,104 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
             {(() => {
               const points = (data.map_data.barangays || []) as BarangayMapPoint[];
               const toStatus = (s?: string) => {
-                const v = (s || '').toLowerCase();
-                if (v === 'pass' || v === 'passed') return 'pass' as const;
-                if (v === 'fail' || v === 'failed') return 'fail' as const;
-                if (v === 'in_progress' || v === 'in progress') return 'in_progress' as const;
-                return 'not_started' as const;
+                const v = (s || "").toLowerCase();
+                if (v === "pass" || v === "passed") return "pass" as const;
+                if (v === "fail" || v === "failed") return "fail" as const;
+                if (v === "in_progress" || v === "in progress") return "in_progress" as const;
+                return "not_started" as const;
               };
-              const barangays = points.map((p) => ({
-                id: String(p.barangay_id),
-                name: p.name,
-                status: toStatus(p.status),
-                compliance_rate: p.score ?? undefined,
-              }));
+
+              // Transform backend data to match frontend component interface
+              const barangays = points.map((p) => {
+                const status = toStatus(p.status);
+
+                // Use real assessment status from backend if available
+
+                const backendAssessment = (p as any).assessment_status;
+
+                const backendWorkflow = (p as any).workflow_status;
+
+                // Only show assessment status for Pass/Fail (completed) assessments
+                // In Progress and Not Started should NOT show governance area results
+                const isCompleted = status === "pass" || status === "fail";
+
+                // Transform backend assessment status to frontend format
+                let assessmentStatus:
+                  | {
+                      core: {
+                        passed: number;
+                        total: number;
+                        indicators: { FAS: string; DP: string; SPO: string };
+                      };
+                      essential: {
+                        passed: number;
+                        total: number;
+                        indicators: { SPS: string; BFC: string; EM: string };
+                      };
+                    }
+                  | undefined;
+
+                // Only populate assessment status for completed assessments
+                if (isCompleted && backendAssessment) {
+                  // Transform indicators array to object format expected by component
+                  const coreIndicators = backendAssessment.core?.indicators || [];
+                  const essentialIndicators = backendAssessment.essential?.indicators || [];
+
+                  // Find indicator by code and get its status
+                  const getIndicatorStatus = (
+                    indicators: { code: string; status: string }[],
+                    code: string
+                  ): "passed" | "failed" | "pending" => {
+                    const indicator = indicators.find((i: { code: string }) => i.code === code);
+                    if (!indicator) return "pending";
+                    return indicator.status as "passed" | "failed" | "pending";
+                  };
+
+                  assessmentStatus = {
+                    core: {
+                      passed: backendAssessment.core?.passed ?? 0,
+                      total: backendAssessment.core?.total ?? 3,
+                      indicators: {
+                        FAS: getIndicatorStatus(coreIndicators, "FAS"),
+                        DP: getIndicatorStatus(coreIndicators, "DP"),
+                        SPO: getIndicatorStatus(coreIndicators, "SPO"),
+                      },
+                    },
+                    essential: {
+                      passed: backendAssessment.essential?.passed ?? 0,
+                      total: backendAssessment.essential?.total ?? 3,
+                      indicators: {
+                        SPS: getIndicatorStatus(essentialIndicators, "SPS"),
+                        BFC: getIndicatorStatus(essentialIndicators, "BFC"),
+                        EM: getIndicatorStatus(essentialIndicators, "EM"),
+                      },
+                    },
+                  };
+                }
+                // For non-completed assessments, assessmentStatus remains undefined
+
+                // Transform backend workflow status to frontend format
+                // Only show for assessments that have started (not "not_started")
+                let workflowStatus: { currentPhase: string; actionNeeded: string } | undefined;
+
+                if (backendWorkflow) {
+                  workflowStatus = {
+                    currentPhase: backendWorkflow.current_phase,
+                    actionNeeded: backendWorkflow.action_needed,
+                  };
+                }
+                // For assessments without workflow status, leave it undefined
+
+                return {
+                  id: String(p.barangay_id),
+                  name: p.name,
+                  status,
+                  compliance_rate: p.score ?? undefined,
+                  assessmentStatus,
+                  workflowStatus,
+                };
+              });
+
               return (
                 <SulopBarangayMapIntegrated
                   barangays={barangays as any}
@@ -156,14 +242,8 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
       {/* Metadata Footer - Only show when not filtering */}
       {!showOnly && (
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground border-t pt-4">
-          <div>
-            Report generated: {new Date(data.metadata.generated_at).toLocaleString()}
-          </div>
-          {data.metadata.cycle_id && (
-            <div>
-              Cycle ID: {data.metadata.cycle_id}
-            </div>
-          )}
+          <div>Report generated: {new Date(data.metadata.generated_at).toLocaleString()}</div>
+          {data.metadata.assessment_year && <div>Year: {data.metadata.assessment_year}</div>}
         </div>
       )}
     </div>

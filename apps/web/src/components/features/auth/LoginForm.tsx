@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useGetUsersMe, usePostAuthLogin } from "@sinag/shared";
-import { getGetUsersMeQueryKey } from "@sinag/shared/src/generated/endpoints/users";
+import { useGetUsersMe, usePostAuthLogin, getGetUsersMeQueryKey } from "@sinag/shared";
 import { AlertTriangle, Eye, EyeOff, Lock, Mail, ServerCrash, WifiOff } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,7 +41,6 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
     }, 150);
     return () => clearTimeout(timer);
   }, []);
-
 
   // Get auth store actions
   const { setToken, setUser } = useAuthStore();
@@ -277,10 +275,7 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
     }
 
     // Auth failure (401)
-    if (
-      error.response?.status === 401 ||
-      error.message?.includes("401")
-    ) {
+    if (error.response?.status === 401 || error.message?.includes("401")) {
       return {
         type: "auth",
         title: "Login failed",
@@ -397,15 +392,11 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
                 onKeyDown={(e) => {
                   // Show hint when Caps Lock is active
                   // getModifierState works across browsers
-                  const caps = (
-                    e as unknown as KeyboardEvent
-                  ).getModifierState?.("CapsLock");
+                  const caps = (e as unknown as KeyboardEvent).getModifierState?.("CapsLock");
                   if (typeof caps === "boolean") setIsCapsLockOn(caps);
                 }}
                 onKeyUp={(e) => {
-                  const caps = (
-                    e as unknown as KeyboardEvent
-                  ).getModifierState?.("CapsLock");
+                  const caps = (e as unknown as KeyboardEvent).getModifierState?.("CapsLock");
                   if (typeof caps === "boolean") setIsCapsLockOn(caps);
                 }}
                 required
@@ -442,11 +433,7 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
                 disabled={loginMutation.isPending}
                 title={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             {/* Remember Me Checkbox */}
@@ -569,12 +556,7 @@ export default function LoginForm({ isDarkMode = false }: LoginFormProps) {
               ) : (
                 <span className="flex items-center justify-center gap-2 font-semibold">
                   Sign in
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

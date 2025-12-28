@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { api } from '@/lib/api';
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { api } from "@/lib/api";
 
 /**
  * Supported language codes for AI-generated summaries.
@@ -10,24 +10,24 @@ import { api } from '@/lib/api';
  * - fil: Tagalog (Filipino)
  * - en: English
  */
-export type LanguageCode = 'ceb' | 'fil' | 'en';
+export type LanguageCode = "ceb" | "fil" | "en";
 
 /**
  * Human-readable labels for each language code.
  */
 export const LANGUAGE_LABELS: Record<LanguageCode, string> = {
-  ceb: 'Bisaya (Cebuano)',
-  fil: 'Tagalog (Filipino)',
-  en: 'English',
+  ceb: "Bisaya (Cebuano)",
+  fil: "Tagalog (Filipino)",
+  en: "English",
 };
 
 /**
  * Short labels for compact display.
  */
 export const LANGUAGE_SHORT_LABELS: Record<LanguageCode, string> = {
-  ceb: 'Bisaya',
-  fil: 'Tagalog',
-  en: 'English',
+  ceb: "Bisaya",
+  fil: "Tagalog",
+  en: "English",
 };
 
 interface LanguageContextType {
@@ -48,7 +48,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    throw new Error("useLanguage must be used within a LanguageProvider");
   }
   return context;
 }
@@ -66,7 +66,7 @@ interface LanguageProviderProps {
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const { user, setUser } = useAuthStore();
   const [language, setLanguageState] = useState<LanguageCode>(
-    (user?.preferred_language as LanguageCode) || 'ceb'
+    (user?.preferred_language as LanguageCode) || "ceb"
   );
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -81,26 +81,29 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
    * Update the user's preferred language.
    * Persists to the backend and updates local state.
    */
-  const setLanguage = useCallback(async (newLang: LanguageCode) => {
-    if (newLang === language) return;
+  const setLanguage = useCallback(
+    async (newLang: LanguageCode) => {
+      if (newLang === language) return;
 
-    setIsUpdating(true);
-    try {
-      const response = await api.patch(`/users/me/language?language=${newLang}`);
+      setIsUpdating(true);
+      try {
+        const response = await api.patch(`/users/me/language?language=${newLang}`);
 
-      if (response.status === 200) {
-        const updatedUser = response.data;
-        setUser(updatedUser);
-        setLanguageState(newLang);
+        if (response.status === 200) {
+          const updatedUser = response.data;
+          setUser(updatedUser);
+          setLanguageState(newLang);
+        }
+      } catch (error) {
+        console.error("Failed to update language preference:", error);
+        // Optionally show a toast notification here
+        throw error;
+      } finally {
+        setIsUpdating(false);
       }
-    } catch (error) {
-      console.error('Failed to update language preference:', error);
-      // Optionally show a toast notification here
-      throw error;
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [language, setUser]);
+    },
+    [language, setUser]
+  );
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, isUpdating }}>

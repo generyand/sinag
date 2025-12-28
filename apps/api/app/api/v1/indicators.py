@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.year_resolver import get_year_resolver
 from app.db.models.user import User
 from app.schemas.calculation_schema import CalculationSchema
 from app.schemas.form_schema import FormSchema
@@ -77,6 +78,7 @@ def list_indicators(
     is_active: bool | None = Query(None, description="Filter by active status"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Max records to return"),
+    year: int | None = Query(None, description="Assessment year for placeholder resolution"),
 ) -> list[IndicatorResponse]:
     """
     List indicators with optional filtering.
@@ -88,8 +90,9 @@ def list_indicators(
     - is_active: Filter by active status (optional)
     - skip: Pagination offset (default: 0)
     - limit: Max records (default: 100, max: 1000)
+    - year: Assessment year for placeholder resolution (optional, uses active year if not provided)
 
-    **Returns**: List of indicators matching filters
+    **Returns**: List of indicators matching filters with resolved year placeholders
     """
     indicators = indicator_service.list_indicators(
         db=db,
@@ -98,6 +101,20 @@ def list_indicators(
         skip=skip,
         limit=limit,
     )
+
+    # Resolve year placeholders in indicator names and descriptions
+    try:
+        year_resolver = get_year_resolver(db, year=year)
+        for indicator in indicators:
+            indicator.name = year_resolver.resolve_string(indicator.name) or indicator.name
+            if indicator.description:
+                indicator.description = (
+                    year_resolver.resolve_string(indicator.description) or indicator.description
+                )
+    except ValueError:
+        # If no active assessment year config and no year specified, return raw values
+        pass
+
     return indicators
 
 
@@ -312,6 +329,7 @@ def get_indicator(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
     indicator_id: int,
+    year: int | None = Query(None, description="Assessment year for placeholder resolution"),
 ) -> IndicatorResponse:
     """
     Get a specific indicator by ID.
@@ -321,7 +339,10 @@ def get_indicator(
     **Path Parameters**:
     - indicator_id: ID of the indicator
 
-    **Returns**: Indicator details including current version
+    **Query Parameters**:
+    - year: Assessment year for placeholder resolution (optional, uses active year if not provided)
+
+    **Returns**: Indicator details including current version with resolved year placeholders
 
     **Raises**:
     - 404: Indicator not found
@@ -332,6 +353,19 @@ def get_indicator(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Indicator with ID {indicator_id} not found",
         )
+
+    # Resolve year placeholders in indicator name and description
+    try:
+        year_resolver = get_year_resolver(db, year=year)
+        indicator.name = year_resolver.resolve_string(indicator.name) or indicator.name
+        if indicator.description:
+            indicator.description = (
+                year_resolver.resolve_string(indicator.description) or indicator.description
+            )
+    except ValueError:
+        # If no active assessment year config and no year specified, return raw values
+        pass
+
     return indicator
 
 
@@ -671,6 +705,7 @@ def get_indicator_by_code(
     *,
     db: Session = Depends(deps.get_db),
     indicator_code: str,
+    year: int | None = Query(None, description="Assessment year for placeholder resolution"),
 ) -> SimplifiedIndicatorResponse:
     """
     Get a single indicator by its code (e.g., "1.1", "1.1.1", "2.3").
@@ -681,7 +716,11 @@ def get_indicator_by_code(
     **Path Parameters**:
     - indicator_code: Indicator code (e.g., "1.1", "1.1.1")
 
+    **Query Parameters**:
+    - year: Assessment year for placeholder resolution (optional, uses active year if not provided)
+
     **Returns**: Indicator with checklist items (if sub-indicator) or children (if parent)
+                 with resolved year placeholders
 
     **Raises**:
     - 404: Indicator not found
@@ -713,6 +752,41 @@ def get_indicator_by_code(
             detail=f"Indicator with code '{indicator_code}' not found",
         )
 
+    # Resolve year placeholders in indicator name and description
+    try:
+        year_resolver = get_year_resolver(db, year=year)
+        indicator.name = year_resolver.resolve_string(indicator.name) or indicator.name
+        if indicator.description:
+            indicator.description = (
+                year_resolver.resolve_string(indicator.description) or indicator.description
+            )
+        # Resolve in children if any
+        for child in indicator.children:
+            child.name = year_resolver.resolve_string(child.name) or child.name
+            if child.description:
+                child.description = (
+                    year_resolver.resolve_string(child.description) or child.description
+                )
+            # Resolve in checklist items
+            for item in child.checklist_items:
+                if item.label:
+                    item.label = year_resolver.resolve_string(item.label) or item.label
+                if item.mov_description:
+                    item.mov_description = (
+                        year_resolver.resolve_string(item.mov_description) or item.mov_description
+                    )
+        # Resolve in parent's checklist items
+        for item in indicator.checklist_items:
+            if item.label:
+                item.label = year_resolver.resolve_string(item.label) or item.label
+            if item.mov_description:
+                item.mov_description = (
+                    year_resolver.resolve_string(item.mov_description) or item.mov_description
+                )
+    except ValueError:
+        # If no active assessment year config and no year specified, return raw values
+        pass
+
     return indicator
 
 
@@ -727,6 +801,7 @@ def get_indicator_tree(
     *,
     db: Session = Depends(deps.get_db),
     indicator_code: str,
+    year: int | None = Query(None, description="Assessment year for placeholder resolution"),
 ) -> IndicatorTreeResponse:
     """
     Get a full indicator tree (parent with all children and checklist items).
@@ -737,7 +812,11 @@ def get_indicator_tree(
     **Path Parameters**:
     - indicator_code: Parent indicator code (e.g., "1.1", "2.3")
 
+    **Query Parameters**:
+    - year: Assessment year for placeholder resolution (optional, uses active year if not provided)
+
     **Returns**: Complete indicator tree with all children and checklist items
+                 with resolved year placeholders
 
     **Raises**:
     - 404: Indicator not found
@@ -783,5 +862,32 @@ def get_indicator_tree(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Indicator '{indicator_code}' has no children. Use /code/{indicator_code} instead.",
         )
+
+    # Resolve year placeholders in indicator name and description
+    try:
+        year_resolver = get_year_resolver(db, year=year)
+        indicator.name = year_resolver.resolve_string(indicator.name) or indicator.name
+        if indicator.description:
+            indicator.description = (
+                year_resolver.resolve_string(indicator.description) or indicator.description
+            )
+        # Resolve in children
+        for child in indicator.children:
+            child.name = year_resolver.resolve_string(child.name) or child.name
+            if child.description:
+                child.description = (
+                    year_resolver.resolve_string(child.description) or child.description
+                )
+            # Resolve in checklist items
+            for item in child.checklist_items:
+                if item.label:
+                    item.label = year_resolver.resolve_string(item.label) or item.label
+                if item.mov_description:
+                    item.mov_description = (
+                        year_resolver.resolve_string(item.mov_description) or item.mov_description
+                    )
+    except ValueError:
+        # If no active assessment year config and no year specified, return raw values
+        pass
 
     return indicator

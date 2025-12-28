@@ -4,18 +4,18 @@ import { useAuthStore } from "../store/useAuthStore";
 
 // Get the appropriate API base URL based on environment
 export const getBaseURL = () => {
-  const isServer = typeof window === 'undefined';
+  const isServer = typeof window === "undefined";
 
   // Server-side (Next.js SSR/API Routes running in Docker)
   if (isServer) {
     // In Docker, use the internal service name
     // This comes from docker-compose.yml environment variable
-    return process.env.API_BASE_URL || 'http://api:8000';
+    return process.env.API_BASE_URL || "http://api:8000";
   }
 
   // Client-side (browser) - use the public environment variable
   // This is exposed by NEXT_PUBLIC_ prefix and accessible to the browser
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 };
 
 // Get the API V1 URL (base URL + /api/v1)
@@ -34,7 +34,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // Set base URL dynamically based on environment (server vs browser)
     config.baseURL = getBaseURL();
-    
+
     // Get token directly from Zustand store
     const token = useAuthStore.getState().token;
     if (token) {
@@ -54,17 +54,14 @@ axiosInstance.interceptors.response.use(
     // Handle 401 Unauthorized - redirect to login
     if (error.response?.status === 401) {
       // Don't redirect if we're already on the login page
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname !== "/login"
-      ) {
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
         // Clear auth data using the store
         useAuthStore.getState().logout();
         // Show toast notification (only in browser)
         if (typeof window !== "undefined") {
-          import('./toast').then(({ showWarning }) => {
-            showWarning('Session expired', {
-              description: 'Please log in again to continue.',
+          import("./toast").then(({ showWarning }) => {
+            showWarning("Session expired", {
+              description: "Please log in again to continue.",
             });
           });
         }
@@ -75,39 +72,39 @@ axiosInstance.interceptors.response.use(
 
     // Handle 403 Forbidden
     if (error.response?.status === 403 && typeof window !== "undefined") {
-      import('./toast').then(({ showError }) => {
-        showError('Access denied', {
-          description: 'You do not have permission to perform this action.',
+      import("./toast").then(({ showError }) => {
+        showError("Access denied", {
+          description: "You do not have permission to perform this action.",
         });
       });
     }
 
     // Handle 429 Rate Limit
     if (error.response?.status === 429 && typeof window !== "undefined") {
-      const retryAfter = error.response.headers['retry-after'];
-      import('./toast').then(({ showWarning }) => {
-        showWarning('Too many requests', {
+      const retryAfter = error.response.headers["retry-after"];
+      import("./toast").then(({ showWarning }) => {
+        showWarning("Too many requests", {
           description: retryAfter
             ? `Please wait ${retryAfter} seconds before trying again.`
-            : 'Please wait a moment and try again.',
+            : "Please wait a moment and try again.",
         });
       });
     }
 
     // Handle 500 Server Error
     if (error.response?.status === 500 && typeof window !== "undefined") {
-      import('./toast').then(({ showError }) => {
-        showError('Server error', {
-          description: 'Something went wrong on our end. Please try again later.',
+      import("./toast").then(({ showError }) => {
+        showError("Server error", {
+          description: "Something went wrong on our end. Please try again later.",
         });
       });
     }
 
     // Handle Network Errors
-    if (error.message === 'Network Error' && typeof window !== "undefined") {
-      import('./toast').then(({ showError }) => {
-        showError('Network error', {
-          description: 'Unable to connect to the server. Please check your internet connection.',
+    if (error.message === "Network Error" && typeof window !== "undefined") {
+      import("./toast").then(({ showError }) => {
+        showError("Network error", {
+          description: "Unable to connect to the server. Please check your internet connection.",
         });
       });
     }
@@ -189,9 +186,7 @@ export async function uploadWithProgress(
  * Decode a JWT token (without verification) to extract the payload.
  * Used for server-side role checks in Next.js server components.
  */
-export function decodeJwtPayload(
-  token: string
-): Record<string, unknown> | null {
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   if (!token) return null;
   try {
     const payload = token.split(".")[1];
@@ -230,9 +225,7 @@ export const apiClient = {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`
-      );
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
 
     return response;
@@ -245,11 +238,7 @@ export const apiClient = {
   },
 
   // POST request
-  async post<T = unknown>(
-    url: string,
-    data: unknown,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async post<T = unknown>(url: string, data: unknown, options: RequestInit = {}): Promise<T> {
     const response = await this.fetch(url, {
       ...options,
       method: "POST",
@@ -259,11 +248,7 @@ export const apiClient = {
   },
 
   // PUT request
-  async put<T = unknown>(
-    url: string,
-    data: unknown,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async put<T = unknown>(url: string, data: unknown, options: RequestInit = {}): Promise<T> {
     const response = await this.fetch(url, {
       ...options,
       method: "PUT",
@@ -273,10 +258,7 @@ export const apiClient = {
   },
 
   // DELETE request
-  async delete<T = unknown>(
-    url: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async delete<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
     const response = await this.fetch(url, { ...options, method: "DELETE" });
     return response.json();
   },

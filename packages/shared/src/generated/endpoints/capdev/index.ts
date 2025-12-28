@@ -80,7 +80,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentId>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCapdevAssessmentsAssessmentIdQueryResult = NonNullable<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentId>>>
@@ -152,7 +152,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId && language),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdLanguage$Language>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId && language),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdLanguage$Language>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCapdevAssessmentsAssessmentIdLanguageLanguageQueryResult = NonNullable<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdLanguage$Language>>>
@@ -222,7 +222,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdStatus>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetCapdevAssessmentsAssessmentIdStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCapdevAssessments$AssessmentIdStatus>>>
@@ -376,6 +376,138 @@ export const usePostCapdevAssessmentsAssessmentIdGenerateLanguageLanguage = <TEr
       > => {
 
       const mutationOptions = getPostCapdevAssessmentsAssessmentIdGenerateLanguageLanguageMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Check the current state of the Gemini API circuit breaker. MLGOO only.
+ * @summary Get Circuit Breaker Status
+ */
+export const getCapdevCircuitBreakerStatus = (
+    
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `/api/v1/capdev/circuit-breaker/status`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetCapdevCircuitBreakerStatusQueryKey = () => {
+    return [
+    `/api/v1/capdev/circuit-breaker/status`
+    ] as const;
+    }
+
+    
+export const getGetCapdevCircuitBreakerStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCapdevCircuitBreakerStatus>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapdevCircuitBreakerStatus>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCapdevCircuitBreakerStatusQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCapdevCircuitBreakerStatus>>> = ({ signal }) => getCapdevCircuitBreakerStatus(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapdevCircuitBreakerStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCapdevCircuitBreakerStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCapdevCircuitBreakerStatus>>>
+export type GetCapdevCircuitBreakerStatusQueryError = unknown
+
+
+/**
+ * @summary Get Circuit Breaker Status
+ */
+
+export function useGetCapdevCircuitBreakerStatus<TData = Awaited<ReturnType<typeof getCapdevCircuitBreakerStatus>>, TError = unknown>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapdevCircuitBreakerStatus>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCapdevCircuitBreakerStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Manually reset the Gemini API circuit breaker. MLGOO only.
+ * @summary Reset Circuit Breaker
+ */
+export const postCapdevCircuitBreakerReset = (
+    
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `/api/v1/capdev/circuit-breaker/reset`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostCapdevCircuitBreakerResetMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCapdevCircuitBreakerReset>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postCapdevCircuitBreakerReset>>, TError,void, TContext> => {
+
+const mutationKey = ['postCapdevCircuitBreakerReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postCapdevCircuitBreakerReset>>, void> = () => {
+          
+
+          return  postCapdevCircuitBreakerReset(requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostCapdevCircuitBreakerResetMutationResult = NonNullable<Awaited<ReturnType<typeof postCapdevCircuitBreakerReset>>>
+    
+    export type PostCapdevCircuitBreakerResetMutationError = unknown
+
+    /**
+ * @summary Reset Circuit Breaker
+ */
+export const usePostCapdevCircuitBreakerReset = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCapdevCircuitBreakerReset>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postCapdevCircuitBreakerReset>>,
+        TError,
+        void,
+        TContext
+      > => {
+
+      const mutationOptions = getPostCapdevCircuitBreakerResetMutationOptions(options);
 
       return useMutation(mutationOptions);
     }

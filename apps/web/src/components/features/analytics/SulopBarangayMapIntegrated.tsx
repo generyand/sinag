@@ -1,20 +1,71 @@
-'use client';
+"use client";
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClipboardList, X } from 'lucide-react';
-import React, { useState } from 'react';
-import { BARANGAY_PATHS } from './sulop-barangay-paths';
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import {
+  Check,
+  CheckCircle2,
+  Circle,
+  ClipboardList,
+  Clock,
+  MapPin,
+  X,
+  XCircle,
+} from "lucide-react";
+import React, { useState } from "react";
+import { BARANGAY_PATHS } from "./sulop-barangay-paths";
 
 /**
- * Barangay data structure
+ * Core indicator codes for governance assessment
+ */
+type CoreIndicatorCode = "FAS" | "DP" | "SPO";
+
+/**
+ * Essential indicator codes for governance assessment
+ */
+type EssentialIndicatorCode = "SPS" | "BFC" | "EM";
+
+/**
+ * Status for individual indicators
+ */
+type IndicatorStatus = "passed" | "failed" | "pending";
+
+/**
+ * Assessment status containing Core and Essential indicator results
+ */
+interface AssessmentStatus {
+  core: {
+    passed: number;
+    total: number;
+    indicators: Record<CoreIndicatorCode, IndicatorStatus>;
+  };
+  essential: {
+    passed: number;
+    total: number;
+    indicators: Record<EssentialIndicatorCode, IndicatorStatus>;
+  };
+}
+
+/**
+ * Workflow status showing current phase and action needed
+ */
+interface WorkflowStatus {
+  currentPhase: string;
+  actionNeeded: string;
+}
+
+/**
+ * Barangay data structure with assessment and workflow status
  */
 interface BarangayData {
   id: string; // e.g., "1katipunan", "2tanwalang"
   name: string; // Display name
-  status: 'pass' | 'fail' | 'in_progress' | 'not_started';
+  status: "pass" | "fail" | "in_progress" | "not_started";
   compliance_rate?: number;
   submission_count?: number;
+  assessmentStatus?: AssessmentStatus;
+  workflowStatus?: WorkflowStatus;
 }
 
 interface SulopBarangayMapProps {
@@ -28,66 +79,78 @@ interface SulopBarangayMapProps {
  * Color scheme for barangay status
  */
 const STATUS_COLORS = {
-  pass: '#22c55e', // Green
-  fail: '#ef4444', // Red
-  in_progress: '#f59e0b', // Orange
-  not_started: '#94a3b8', // Gray
+  pass: "#22c55e", // Green
+  fail: "#ef4444", // Red
+  in_progress: "#f59e0b", // Orange
+  not_started: "#94a3b8", // Gray
 } as const;
 
 /**
  * Darker stroke colors for selected state - same hue but darker shade
  */
 const STATUS_STROKE_COLORS = {
-  pass: '#15803d', // Darker green
-  fail: '#b91c1c', // Darker red
-  in_progress: '#b45309', // Darker orange
-  not_started: '#475569', // Darker gray
+  pass: "#15803d", // Darker green
+  fail: "#b91c1c", // Darker red
+  in_progress: "#b45309", // Darker orange
+  not_started: "#475569", // Darker gray
 } as const;
 
 const STATUS_LABELS = {
-  pass: 'Pass',
-  fail: 'Fail',
-  in_progress: 'In Progress',
-  not_started: 'Not Started',
+  pass: "Pass",
+  fail: "Fail",
+  in_progress: "In Progress",
+  not_started: "Not Started",
 } as const;
+
+/**
+ * Full names for indicator codes
+ */
+const INDICATOR_FULL_NAMES: Record<CoreIndicatorCode | EssentialIndicatorCode, string> = {
+  FAS: "Financial Administration & Sustainability",
+  DP: "Disaster Preparedness",
+  SPO: "Safety, Peace & Order",
+  SPS: "Social Protection & Sensitivity",
+  BFC: "Business-Friendliness & Competitiveness",
+  EM: "Environmental Management",
+};
 
 /**
  * Mapping from SVG path IDs to possible barangay name variations
  * This allows matching API data (which uses barangay names) to SVG paths (which use IDs)
  */
 const SVG_ID_TO_NAME_VARIATIONS: Record<string, string[]> = {
-  '1katipunan': ['katipunan'],
-  '2tanwalang': ['tanwalang'],
-  '3solongvale': ['solongvale', 'solong vale', 'solong-vale'],
-  '4tala-o': ['tala-o', 'talao', 'tala o'],
-  '5balasinon': ['balasinon'],
-  '6haradabutai': ['harada-butai', 'haradabutai', 'harada butai'],
-  '7roxas': ['roxas'],
-  '8newcebu': ['new cebu', 'newcebu', 'new-cebu'],
-  '9palili': ['palili'],
-  '10talas': ['talas'],
-  '11carre': ['carre'],
-  '12buguis': ['buguis'],
-  '13mckinley': ['mckinley', 'mc kinley', 'mc-kinley'],
-  '14kiblagon': ['kiblagon'],
-  '15laperas': ['laperas'],
-  '16clib': ['clib'],
-  '17osmena': ['osmena', 'osmeña'],
-  '18luparan': ['luparan'],
-  '19poblacion': ['poblacion'],
-  '20tagolilong': ['tagolilong'],
-  '21lapla': ['lapla'],
-  '22litos': ['litos'],
-  '23parame': ['parame'],
-  '24labon': ['labon'],
-  '25waterfall': ['waterfall'],
+  "1katipunan": ["katipunan"],
+  "2tanwalang": ["tanwalang"],
+  "3solongvale": ["solongvale", "solong vale", "solong-vale"],
+  "4tala-o": ["tala-o", "talao", "tala o"],
+  "5balasinon": ["balasinon"],
+  "6haradabutai": ["harada-butai", "haradabutai", "harada butai"],
+  "7roxas": ["roxas"],
+  "8newcebu": ["new cebu", "newcebu", "new-cebu"],
+  "9palili": ["palili"],
+  "10talas": ["talas"],
+  "11carre": ["carre"],
+  "12buguis": ["buguis"],
+  "13mckinley": ["mckinley", "mc kinley", "mc-kinley"],
+  "14kiblagon": ["kiblagon"],
+  "15laperas": ["laperas"],
+  "16clib": ["clib"],
+  "17osmena": ["osmena", "osmeña"],
+  "18luparan": ["luparan"],
+  "19poblacion": ["poblacion"],
+  "20tagolilong": ["tagolilong"],
+  "21lapla": ["lapla"],
+  "22litos": ["litos"],
+  "23parame": ["parame"],
+  "24labon": ["labon"],
+  "25waterfall": ["waterfall"],
 };
 
 /**
  * Normalizes a name for comparison (lowercase, no special chars except alphanumeric)
  */
 const normalizeName = (name: string): string => {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 };
 
 /**
@@ -109,7 +172,10 @@ const findSvgIdFromBarangay = (barangayId: string, barangayName: string): string
   for (const [svgId, variations] of Object.entries(SVG_ID_TO_NAME_VARIATIONS)) {
     for (const variation of variations) {
       const normalizedVariation = normalizeName(variation);
-      if (normalizedName.includes(normalizedVariation) || normalizedVariation.includes(normalizedName)) {
+      if (
+        normalizedName.includes(normalizedVariation) ||
+        normalizedVariation.includes(normalizedName)
+      ) {
         return svgId;
       }
     }
@@ -127,6 +193,395 @@ const findSvgIdFromBarangay = (barangayId: string, barangayName: string): string
 };
 
 /**
+ * Hero Status Card - Prominent display of pass/fail status with compliance rate
+ */
+function HeroStatusCard({
+  status,
+  complianceRate,
+}: {
+  status: "pass" | "fail" | "in_progress" | "not_started";
+  complianceRate?: number;
+}) {
+  const isPassed = status === "pass";
+  const isFailed = status === "fail";
+  const isInProgress = status === "in_progress";
+
+  const statusConfig = {
+    pass: {
+      bgGradient:
+        "from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20",
+      border: "border-emerald-200 dark:border-emerald-800",
+      iconBg: "bg-emerald-500",
+      labelColor: "text-emerald-700 dark:text-emerald-400",
+      valueColor: "text-emerald-900 dark:text-emerald-300",
+      progressBg: "bg-emerald-600",
+      icon: <CheckCircle2 className="h-5 w-5 text-white" />,
+      label: "PASSED",
+    },
+    fail: {
+      bgGradient: "from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20",
+      border: "border-red-200 dark:border-red-800",
+      iconBg: "bg-red-500",
+      labelColor: "text-red-700 dark:text-red-400",
+      valueColor: "text-red-900 dark:text-red-300",
+      progressBg: "bg-red-600",
+      icon: <XCircle className="h-5 w-5 text-white" />,
+      label: "FAILED",
+    },
+    in_progress: {
+      bgGradient: "from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20",
+      border: "border-amber-200 dark:border-amber-800",
+      iconBg: "bg-amber-500",
+      labelColor: "text-amber-700 dark:text-amber-400",
+      valueColor: "text-amber-900 dark:text-amber-300",
+      progressBg: "bg-amber-600",
+      icon: <Clock className="h-5 w-5 text-white" />,
+      label: "IN PROGRESS",
+    },
+    not_started: {
+      bgGradient: "from-slate-50 to-slate-100/50 dark:from-slate-950/30 dark:to-slate-900/20",
+      border: "border-slate-200 dark:border-slate-700",
+      iconBg: "bg-slate-400",
+      labelColor: "text-slate-600 dark:text-slate-400",
+      valueColor: "text-slate-700 dark:text-slate-300",
+      progressBg: "bg-slate-500",
+      icon: <Circle className="h-5 w-5 text-white" />,
+      label: "NOT STARTED",
+    },
+  };
+
+  const config = statusConfig[status];
+
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-sm p-3 border-2",
+        `bg-gradient-to-br ${config.bgGradient}`,
+        config.border
+      )}
+    >
+      {/* Decorative background blur */}
+      <div className="absolute top-0 right-0 -mr-6 -mt-6 h-24 w-24 rounded-full bg-white/20 dark:bg-white/5 blur-2xl" />
+
+      <div className="relative flex items-center justify-between gap-4">
+        {/* Status indicator */}
+        <div className="flex items-center gap-2.5">
+          <div
+            className={cn(
+              "flex items-center justify-center w-9 h-9 rounded-md shadow-md",
+              config.iconBg
+            )}
+          >
+            {config.icon}
+          </div>
+          <div>
+            <div
+              className={cn("text-[9px] font-semibold uppercase tracking-wider", config.labelColor)}
+            >
+              Assessment Result
+            </div>
+            <div className={cn("text-lg font-bold", config.valueColor)}>{config.label}</div>
+          </div>
+        </div>
+
+        {/* Compliance Rate (or Completion for in-progress) */}
+        {complianceRate !== undefined && (
+          <div className="text-right">
+            <div className="text-[9px] font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              {isInProgress ? "Completion" : "Compliance"}
+            </div>
+            <div className={cn("text-xl font-bold tabular-nums", config.valueColor)}>
+              {complianceRate.toFixed(1)}%
+            </div>
+            {/* Mini progress bar */}
+            <div className="mt-1 w-16 h-1 bg-white/60 dark:bg-white/10 rounded-full overflow-hidden ml-auto">
+              <div
+                className={cn("h-full rounded-full transition-all duration-700", config.progressBg)}
+                style={{ width: `${Math.min(complianceRate, 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact Assessment Status Section with inline indicators
+ */
+function AssessmentStatusSection({ assessmentStatus }: { assessmentStatus: AssessmentStatus }) {
+  const coreIndicators: CoreIndicatorCode[] = ["FAS", "DP", "SPO"];
+  const essentialIndicators: EssentialIndicatorCode[] = ["SPS", "BFC", "EM"];
+
+  const allCorePassed = assessmentStatus.core.passed === assessmentStatus.core.total;
+  // Essential only requires at least 1 to pass
+  const essentialMet = assessmentStatus.essential.passed >= 1;
+
+  const IndicatorPill = ({
+    code,
+    status,
+    fullName,
+  }: {
+    code: string;
+    status: IndicatorStatus;
+    fullName: string;
+  }) => {
+    const isPassed = status === "passed";
+    const isFailed = status === "failed";
+
+    return (
+      <div
+        className={cn(
+          "group relative flex items-center gap-1 px-2 py-1 rounded border transition-all duration-200",
+          isPassed &&
+            "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700",
+          isFailed && "bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-700",
+          !isPassed &&
+            !isFailed &&
+            "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
+        )}
+        title={fullName}
+      >
+        {/* Status icon */}
+        <div
+          className={cn(
+            "flex items-center justify-center w-4 h-4 rounded-full",
+            isPassed && "bg-emerald-500",
+            isFailed && "bg-red-500",
+            !isPassed && !isFailed && "bg-slate-300 dark:bg-slate-600"
+          )}
+        >
+          {isPassed && <Check className="h-2.5 w-2.5 text-white stroke-[3]" />}
+          {isFailed && <X className="h-2.5 w-2.5 text-white stroke-[3]" />}
+          {!isPassed && !isFailed && <Circle className="h-2 w-2 text-white" />}
+        </div>
+
+        {/* Indicator code */}
+        <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">{code}</span>
+
+        {/* Tooltip on hover */}
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-slate-900 dark:bg-slate-700 text-white text-[9px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
+          {fullName}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700" />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        Governance Area Performance
+      </h4>
+
+      {/* Core Indicators - responsive layout */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-semibold text-[9px] px-1.5 py-0"
+            >
+              Core
+            </Badge>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+              Must all pass
+            </span>
+          </div>
+          <span
+            className={cn(
+              "text-xs font-bold tabular-nums",
+              allCorePassed
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-red-600 dark:text-red-400"
+            )}
+          >
+            {assessmentStatus.core.passed}/{assessmentStatus.core.total}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {coreIndicators.map((code) => (
+            <IndicatorPill
+              key={code}
+              code={code}
+              status={assessmentStatus.core.indicators[code]}
+              fullName={INDICATOR_FULL_NAMES[code]}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Essential Indicators - responsive layout */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className="bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800 font-semibold text-[9px] px-1.5 py-0"
+            >
+              Essential
+            </Badge>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+              At least 1 must pass
+            </span>
+          </div>
+          <span
+            className={cn(
+              "text-xs font-bold tabular-nums",
+              essentialMet
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-red-600 dark:text-red-400"
+            )}
+          >
+            {assessmentStatus.essential.passed}/{assessmentStatus.essential.total}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {essentialIndicators.map((code) => (
+            <IndicatorPill
+              key={code}
+              code={code}
+              status={assessmentStatus.essential.indicators[code]}
+              fullName={INDICATOR_FULL_NAMES[code]}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Compact Workflow Progress Stepper
+ */
+function WorkflowStatusSection({ workflowStatus }: { workflowStatus: WorkflowStatus }) {
+  const workflowSteps = [
+    { key: "submitted", shortName: "Submit" },
+    { key: "review", shortName: "Review" },
+    { key: "validation", shortName: "Validate" },
+    { key: "approval", shortName: "Approve" },
+    { key: "completed", shortName: "Done" },
+  ];
+
+  // Determine current step based on phase
+  const getCurrentStepIndex = () => {
+    const phase = workflowStatus.currentPhase.toLowerCase();
+    if (phase.includes("completed") || phase.includes("done") || phase.includes("final")) return 4;
+    if (phase.includes("approval") || phase.includes("mlgoo") || phase.includes("phase 3"))
+      return 3;
+    if (phase.includes("validation") || phase.includes("phase 2")) return 2;
+    if (phase.includes("review") || phase.includes("rework")) return 1;
+    if (phase.includes("submitted") || phase.includes("phase 1")) return 0;
+    return 0;
+  };
+
+  const currentStepIndex = getCurrentStepIndex();
+  const isCompleted = currentStepIndex === 4;
+  const noActionNeeded =
+    workflowStatus.actionNeeded.toLowerCase().includes("none") ||
+    workflowStatus.actionNeeded.toLowerCase().includes("finalized");
+
+  return (
+    <div className="space-y-2.5">
+      <h4 className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        Workflow Progress
+      </h4>
+
+      {/* Compact Stepper */}
+      <div className="relative">
+        {/* Connection line */}
+        <div className="absolute top-3 left-3 right-3 h-0.5 bg-slate-200 dark:bg-slate-700" />
+        <div
+          className="absolute top-3 left-3 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-500 transition-all duration-700"
+          style={{ width: `${(currentStepIndex / (workflowSteps.length - 1)) * (100 - 6)}%` }}
+        />
+
+        <div className="relative flex items-start justify-between">
+          {workflowSteps.map((step, index) => {
+            const isStepCompleted = index < currentStepIndex;
+            const isCurrent = index === currentStepIndex;
+
+            return (
+              <div key={step.key} className="flex flex-col items-center relative z-10">
+                {/* Step circle */}
+                <div
+                  className={cn(
+                    "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+                    isStepCompleted && "bg-emerald-500 border-emerald-500",
+                    isCurrent &&
+                      "bg-blue-500 border-blue-500 shadow-md shadow-blue-500/30 ring-2 ring-blue-100 dark:ring-blue-900/50",
+                    !isStepCompleted &&
+                      !isCurrent &&
+                      "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                  )}
+                >
+                  {isStepCompleted ? (
+                    <Check className="h-3 w-3 text-white stroke-[3]" />
+                  ) : (
+                    <div
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        isCurrent ? "bg-white" : "bg-slate-300 dark:bg-slate-600"
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Label */}
+                <span
+                  className={cn(
+                    "mt-1 text-[8px] font-medium text-center leading-tight",
+                    isStepCompleted || isCurrent
+                      ? "text-slate-700 dark:text-slate-200"
+                      : "text-slate-400 dark:text-slate-500"
+                  )}
+                >
+                  {step.shortName}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Compact Status Badge */}
+      <div
+        className={cn(
+          "flex items-center gap-2 px-2.5 py-1.5 rounded border",
+          isCompleted
+            ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
+            : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
+        )}
+      >
+        {isCompleted ? (
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+        ) : (
+          <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <span
+            className={cn(
+              "text-[10px] font-semibold",
+              isCompleted
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-slate-700 dark:text-slate-200"
+            )}
+          >
+            {workflowStatus.currentPhase}
+          </span>
+          {!noActionNeeded && (
+            <span className="text-[9px] text-amber-600 dark:text-amber-400 ml-1.5">
+              • {workflowStatus.actionNeeded}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Sulop Barangay Map - Fully Integrated with Your SVG Data
  *
  * This component now contains the actual barangay boundary paths from your SVG.
@@ -135,8 +590,8 @@ const findSvgIdFromBarangay = (barangayId: string, barangayName: string): string
 export function SulopBarangayMapIntegrated({
   barangays,
   onBarangayClick,
-  title = 'Sulop Barangay Assessment Status',
-  description = 'Interactive map showing assessment status for each barangay in Sulop',
+  title = "Sulop Barangay Assessment Status",
+  description = "Interactive map showing assessment status for each barangay in Sulop",
 }: SulopBarangayMapProps) {
   const [hoveredBarangay, setHoveredBarangay] = useState<string | null>(null);
   const [selectedBarangay, setSelectedBarangay] = useState<string | null>(null);
@@ -179,7 +634,7 @@ export function SulopBarangayMapIntegrated({
       return variations[0]
         .split(/[-\s]/)
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+        .join(" ");
     }
     return svgId;
   };
@@ -195,15 +650,16 @@ export function SulopBarangayMapIntegrated({
       const placeholderBarangay: BarangayData = {
         id: svgId,
         name: getDisplayName(svgId),
-        status: 'not_started',
+        status: "not_started",
       };
       onBarangayClick?.(placeholderBarangay);
     }
   };
 
-  // Get currently displayed barangay (hovered or selected) - includes placeholder for barangays without data
+  // Get currently displayed barangay - when panel is open, only show selected barangay (not hovered)
   const getDisplayedBarangay = (): BarangayData | null => {
-    const targetId = hoveredBarangay || selectedBarangay;
+    // When details panel is open, only show the selected barangay (ignore hover)
+    const targetId = selectedBarangay ? selectedBarangay : hoveredBarangay;
     if (!targetId) return null;
 
     const existing = svgIdToBarangayMap.get(targetId);
@@ -213,7 +669,7 @@ export function SulopBarangayMapIntegrated({
     return {
       id: targetId,
       name: getDisplayName(targetId),
-      status: 'not_started',
+      status: "not_started",
     };
   };
 
@@ -237,13 +693,17 @@ export function SulopBarangayMapIntegrated({
   }, [barangays]);
 
   return (
-    <Card className="w-full rounded-sm" role="region" aria-label={title}>
-      <CardHeader>
+    <Card className="w-full rounded-sm mb-12 overflow-hidden" role="region" aria-label={title}>
+      <CardHeader className="px-4 sm:px-6">
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
 
         {/* Status Legend */}
-        <div className="flex flex-wrap gap-2 pt-2" role="list" aria-label="Assessment status legend">
+        <div
+          className="flex flex-wrap gap-2 pt-2"
+          role="list"
+          aria-label="Assessment status legend"
+        >
           {Object.entries(STATUS_COLORS).map(([status, color]) => (
             <Badge
               key={status}
@@ -265,15 +725,22 @@ export function SulopBarangayMapIntegrated({
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="flex gap-4">
+      <CardContent className="pb-12 px-4 sm:px-6 overflow-hidden">
+        {/* Main container with equal heights for map and details */}
+        <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 overflow-hidden">
           {/* Map Container - Expands/Shrinks based on selection */}
           <div
-            className={`transition-all duration-500 ease-in-out ${
-              showDetailsPanel ? 'w-2/3' : 'w-full'
+            className={`w-full flex items-center transition-[width] duration-300 ease-out overflow-hidden ${
+              showDetailsPanel ? "lg:w-2/3" : "lg:w-full"
             }`}
           >
-            <div className="relative w-full aspect-[2.15/1] bg-gray-50 dark:bg-gray-900 rounded-sm overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="relative w-full aspect-[2.15/1] min-h-[200px] md:min-h-[250px] overflow-hidden">
+              {/* Title Overlay */}
+              <div className="absolute top-4 left-0 right-0 text-center pointer-events-none z-10 w-full px-4">
+                <h3 className="text-xs md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-gray-100 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full inline-block mx-auto">
+                  {displayedBarangay?.name || "Sulop, Davao del Sur"}
+                </h3>
+              </div>
               <svg
                 viewBox="0 0 1920 892"
                 className="w-full h-full"
@@ -282,50 +749,43 @@ export function SulopBarangayMapIntegrated({
                 aria-label="Interactive map of Sulop barangays showing assessment status. Click on a barangay to view details."
               >
                 <title>Sulop Barangay Assessment Map</title>
-                <desc>Interactive map showing the assessment status of all 25 barangays in Sulop, Davao del Sur. Colors indicate: green for passed, red for failed, orange for in progress, and gray for not started.</desc>
+                <desc>
+                  Interactive map showing the assessment status of all 25 barangays in Sulop, Davao
+                  del Sur. Colors indicate: green for passed, red for failed, orange for in
+                  progress, and gray for not started.
+                </desc>
 
                 {/* Background - Click to close details panel */}
                 <rect
                   width="1920"
                   height="892"
-                  className="fill-gray-50 dark:fill-gray-900 cursor-pointer"
+                  className="fill-transparent cursor-pointer"
                   onClick={() => setSelectedBarangay(null)}
                   aria-hidden="true"
                 />
-
-                {/* Title */}
-                <text
-                  x="960"
-                  y="30"
-                  textAnchor="middle"
-                  className="text-2xl font-semibold fill-gray-900 dark:fill-gray-100"
-                  aria-hidden="true"
-                >
-                  Sulop, Davao del Sur
-                </text>
 
                 {/* Barangay Paths - High Quality SVG with Bezier Curves */}
                 {Object.entries(BARANGAY_PATHS).map(([svgId, pathData]) => {
                   const brgy = svgIdToBarangayMap.get(svgId);
                   const displayName = brgy?.name || getDisplayName(svgId);
-                  const statusLabel = brgy ? STATUS_LABELS[brgy.status] : 'Not Started';
+                  const statusLabel = brgy ? STATUS_LABELS[brgy.status] : "Not Started";
                   return (
                     <path
                       key={svgId}
                       id={svgId}
                       d={pathData}
                       fill={getBarangayColor(svgId)}
-                      stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : 'none'}
+                      stroke={selectedBarangay === svgId ? getBarangayStrokeColor(svgId) : "none"}
                       strokeWidth={selectedBarangay === svgId ? 4 : 0}
-                      className="cursor-pointer transition-all duration-200 hover:brightness-110"
+                      className="cursor-pointer transition-all duration-200 hover:brightness-110 focus:outline-none"
                       onClick={() => handleBarangayClick(svgId)}
                       onMouseEnter={() => setHoveredBarangay(svgId)}
                       onMouseLeave={() => setHoveredBarangay(null)}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${displayName}: ${statusLabel}${brgy?.compliance_rate !== undefined ? `, ${brgy.compliance_rate.toFixed(1)}% compliance` : ''}`}
+                      aria-label={`${displayName}: ${statusLabel}${brgy?.compliance_rate !== undefined ? `, ${brgy.compliance_rate.toFixed(1)}% compliance` : ""}`}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
                           handleBarangayClick(svgId);
                         }
@@ -337,23 +797,59 @@ export function SulopBarangayMapIntegrated({
 
               {/* Hover Tooltip */}
               {hoveredBarangay && displayedBarangay && !showDetailsPanel && (
-                <div className="absolute top-2 left-2 bg-white shadow-lg rounded-sm p-3 border pointer-events-none z-10" role="tooltip" aria-live="polite">
-                  <div className="text-sm font-semibold">{displayedBarangay.name}</div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    Status:{' '}
-                    <span
-                      className="font-medium"
-                      style={{ color: STATUS_COLORS[displayedBarangay.status] }}
-                    >
-                      {STATUS_LABELS[displayedBarangay.status]}
-                    </span>
-                  </div>
-                  {displayedBarangay.compliance_rate !== undefined && (
-                    <div className="text-xs text-gray-600">
-                      Compliance: {displayedBarangay.compliance_rate.toFixed(1)}%
+                <div
+                  className="absolute top-2 left-2 bg-white dark:bg-slate-900 shadow-lg rounded-sm border border-slate-200 dark:border-slate-700 pointer-events-none z-10 min-w-[160px] overflow-hidden"
+                  role="tooltip"
+                  aria-live="polite"
+                >
+                  {/* Header with status color accent */}
+                  <div
+                    className="px-3 py-2 border-b border-slate-100 dark:border-slate-800"
+                    style={{
+                      borderLeftWidth: 3,
+                      borderLeftColor: STATUS_COLORS[displayedBarangay.status],
+                    }}
+                  >
+                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {displayedBarangay.name}
                     </div>
-                  )}
-                  <div className="text-xs text-gray-400 mt-2 italic">Click to view details</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                      Sulop, Davao del Sur
+                    </div>
+                  </div>
+
+                  {/* Status info */}
+                  <div className="px-3 py-2 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                        Status
+                      </span>
+                      <span
+                        className="text-xs font-semibold"
+                        style={{ color: STATUS_COLORS[displayedBarangay.status] }}
+                      >
+                        {STATUS_LABELS[displayedBarangay.status]}
+                      </span>
+                    </div>
+
+                    {displayedBarangay.compliance_rate !== undefined && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                          {displayedBarangay.status === "in_progress" ? "Completion" : "Compliance"}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {displayedBarangay.compliance_rate.toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer hint */}
+                  <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                    <div className="text-[9px] text-slate-400 dark:text-slate-500 text-center">
+                      Click to view details
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -361,89 +857,149 @@ export function SulopBarangayMapIntegrated({
 
           {/* Details Panel - Slides in from right when barangay is selected */}
           <aside
-            className={`transition-all duration-500 ease-in-out overflow-hidden ${
-              showDetailsPanel ? 'w-1/3 opacity-100' : 'w-0 opacity-0'
+            className={`w-full transition-all duration-300 ease-out overflow-hidden ${
+              showDetailsPanel
+                ? "opacity-100 lg:w-1/3 lg:min-w-[260px] translate-x-0 scale-100"
+                : "opacity-0 lg:w-0 translate-x-2 scale-[0.98] h-0 lg:h-auto pointer-events-none"
             }`}
             aria-label="Barangay details panel"
             aria-hidden={!showDetailsPanel}
           >
-            <div className="bg-gray-50 rounded-sm p-4 border-2 border-gray-200 shadow-sm h-full min-w-[280px]">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold" id="details-panel-heading">Barangay Details</h3>
+            <div
+              className={`bg-white dark:bg-slate-900 rounded-sm p-3 sm:p-4 border border-slate-200 dark:border-slate-700 shadow-lg h-full transition-all duration-300 ease-out overflow-hidden ${
+                showDetailsPanel ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+              }`}
+            >
+              {/* Header */}
+              <div
+                className={`flex items-start justify-between gap-2 mb-3 transition-all duration-300 ease-out ${
+                  showDetailsPanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
+                }`}
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="p-1.5 bg-blue-50 dark:bg-blue-950/50 rounded flex-shrink-0">
+                    <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 truncate">
+                      {displayedBarangay?.name || "Select a barangay"}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      Sulop, Davao del Sur
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setSelectedBarangay(null)}
-                  className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors flex-shrink-0"
                   aria-label="Close details panel"
                 >
-                  <X className="w-4 h-4 text-gray-500" aria-hidden="true" />
+                  <X className="w-4 h-4 text-slate-500" aria-hidden="true" />
                 </button>
               </div>
 
               {displayedBarangay ? (
-                displayedBarangay.status === 'not_started' ? (
+                displayedBarangay.status === "not_started" ? (
                   /* Empty state for barangays without assessment */
                   <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4" aria-hidden="true">
-                      <ClipboardList className="w-8 h-8 text-gray-400" aria-hidden="true" />
-                    </div>
-                    <div className="text-lg font-bold text-gray-900 mb-1">
-                      {displayedBarangay.name}
+                    <div
+                      className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3"
+                      aria-hidden="true"
+                    >
+                      <ClipboardList className="w-6 h-6 text-slate-400" aria-hidden="true" />
                     </div>
                     <Badge
                       variant="secondary"
-                      className="mb-4 bg-gray-200 text-gray-600 rounded-sm"
+                      className="mb-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px]"
                     >
                       No Assessment Yet
                     </Badge>
-                    <p className="text-xs text-gray-500 leading-relaxed max-w-[200px]">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-[200px]">
                       This barangay hasn&apos;t submitted an assessment for the current cycle yet.
                     </p>
                   </div>
                 ) : (
                   /* Details for barangays with assessment data */
                   <div className="space-y-3">
-                    <div>
-                      <div className="text-lg font-bold text-gray-900">
-                        {displayedBarangay.name}
-                      </div>
-                      <div className="text-xs text-gray-500">ID: {displayedBarangay.id}</div>
+                    {/* Hero Status Card - appears first */}
+                    <div
+                      className={`transition-all duration-300 ease-out ${
+                        showDetailsPanel
+                          ? "opacity-100 translate-y-0 delay-[50ms]"
+                          : "opacity-0 translate-y-2"
+                      }`}
+                    >
+                      <HeroStatusCard
+                        status={displayedBarangay.status}
+                        complianceRate={displayedBarangay.compliance_rate}
+                      />
                     </div>
 
-                    <div className="pt-2 border-t">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-600">Status:</span>
-                        <Badge
-                          style={{
-                            backgroundColor: STATUS_COLORS[displayedBarangay.status],
-                            color: 'white',
-                          }}
-                        >
-                          {STATUS_LABELS[displayedBarangay.status]}
-                        </Badge>
+                    {/* Assessment Status Section - appears second */}
+                    {displayedBarangay.assessmentStatus && (
+                      <div
+                        className={`pt-3 border-t border-slate-200 dark:border-slate-700 transition-all duration-300 ease-out ${
+                          showDetailsPanel
+                            ? "opacity-100 translate-y-0 delay-[100ms]"
+                            : "opacity-0 translate-y-2"
+                        }`}
+                      >
+                        <AssessmentStatusSection
+                          assessmentStatus={displayedBarangay.assessmentStatus}
+                        />
                       </div>
+                    )}
 
-                      {displayedBarangay.compliance_rate !== undefined && (
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-gray-600">Compliance Rate:</span>
-                          <span className="text-sm font-semibold">
-                            {displayedBarangay.compliance_rate.toFixed(1)}%
-                          </span>
+                    {/* Workflow Status Section - appears third */}
+                    {displayedBarangay.workflowStatus ? (
+                      <div
+                        className={`pt-3 border-t border-slate-200 dark:border-slate-700 transition-all duration-300 ease-out ${
+                          showDetailsPanel
+                            ? "opacity-100 translate-y-0 delay-[150ms]"
+                            : "opacity-0 translate-y-2"
+                        }`}
+                      >
+                        <WorkflowStatusSection workflowStatus={displayedBarangay.workflowStatus} />
+                      </div>
+                    ) : displayedBarangay.status === "in_progress" ? (
+                      /* Draft state - not yet submitted to assessor */
+                      <div
+                        className={`pt-3 border-t border-slate-200 dark:border-slate-700 transition-all duration-300 ease-out ${
+                          showDetailsPanel
+                            ? "opacity-100 translate-y-0 delay-[150ms]"
+                            : "opacity-0 translate-y-2"
+                        }`}
+                      >
+                        <h4 className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                          Workflow Progress
+                        </h4>
+                        <div className="flex items-center gap-2 px-2.5 py-2 rounded border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+                          <div className="p-1 bg-amber-100 dark:bg-amber-900/50 rounded">
+                            <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <div className="flex-1">
+                            <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                              {(displayedBarangay.compliance_rate ?? 0) === 0
+                                ? "Not Started"
+                                : (displayedBarangay.compliance_rate ?? 0) >= 100
+                                  ? "Ready to Submit"
+                                  : "Draft in Progress"}
+                            </span>
+                            <p className="text-[9px] text-amber-600/80 dark:text-amber-400/70">
+                              {(displayedBarangay.compliance_rate ?? 0) === 0
+                                ? "BLGU has not started filling out the assessment"
+                                : (displayedBarangay.compliance_rate ?? 0) >= 100
+                                  ? "BLGU has filled out the form, pending submission"
+                                  : "BLGU is currently filling out the assessment"}
+                            </p>
+                          </div>
                         </div>
-                      )}
-
-                      {displayedBarangay.submission_count !== undefined && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">Submissions:</span>
-                          <span className="text-sm font-semibold">
-                            {displayedBarangay.submission_count}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
                 )
               ) : (
-                <div className="text-sm text-gray-500 text-center py-8">
+                <div className="text-sm text-slate-500 text-center py-8">
                   Click a barangay to view details
                 </div>
               )}

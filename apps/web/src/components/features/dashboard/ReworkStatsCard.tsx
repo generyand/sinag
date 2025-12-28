@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface ReworkStats {
   totalAssessments: number;
@@ -13,20 +13,16 @@ interface ReworkStatsCardProps {
 }
 
 export function ReworkStatsCard({ data }: ReworkStatsCardProps) {
-  const cleanSubmissions = data.totalAssessments - data.assessmentsWithRework - data.assessmentsWithCalibration;
-  const cleanRate = data.totalAssessments > 0
-    ? ((cleanSubmissions / data.totalAssessments) * 100).toFixed(1)
-    : '0';
+  const cleanSubmissions =
+    data.totalAssessments - data.assessmentsWithRework - data.assessmentsWithCalibration;
+  const cleanRate =
+    data.totalAssessments > 0 ? ((cleanSubmissions / data.totalAssessments) * 100).toFixed(1) : "0";
 
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Submission Quality
-        </h3>
-        <p className="text-sm text-[var(--muted-foreground)]">
-          Rework and calibration usage rates
-        </p>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Submission Quality</h3>
+        <p className="text-sm text-[var(--muted-foreground)]">Rework and calibration usage rates</p>
       </div>
 
       <div className="space-y-4">
@@ -79,12 +75,8 @@ export function ReworkStatsCard({ data }: ReworkStatsCardProps) {
       {/* Total assessments footer */}
       <div className="mt-4 pt-4 border-t border-[var(--border)]">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-[var(--muted-foreground)]">
-            Total Assessments
-          </span>
-          <span className="font-semibold text-[var(--foreground)]">
-            {data.totalAssessments}
-          </span>
+          <span className="text-[var(--muted-foreground)]">Total Assessments</span>
+          <span className="font-semibold text-[var(--foreground)]">{data.totalAssessments}</span>
         </div>
       </div>
     </div>

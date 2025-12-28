@@ -27,7 +27,11 @@ interface ReworkAlertBannerProps {
 export function ReworkAlertBanner({ indicator, assessmentId }: ReworkAlertBannerProps) {
   const { language: defaultLang } = useLanguage();
   const [selectedLang, setSelectedLang] = useState<LanguageCode>(defaultLang);
-  const { data: reworkSummary, isLoading, isGenerating } = useReworkSummary(assessmentId, {
+  const {
+    data: reworkSummary,
+    isLoading,
+    isGenerating,
+  } = useReworkSummary(assessmentId, {
     language: selectedLang,
   });
 
@@ -49,16 +53,15 @@ export function ReworkAlertBanner({ indicator, assessmentId }: ReworkAlertBanner
             {indicator.comments.length > 0 && (
               <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
                 <MessageSquare className="h-4 w-4" />
-                <span className="font-medium">
-                  Assessor note provided
-                </span>
+                <span className="font-medium">Assessor note provided</span>
               </div>
             )}
             {indicator.annotations.length > 0 && (
               <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-300">
                 <FileText className="h-4 w-4" />
                 <span className="font-medium">
-                  {indicator.annotations.length} MOV {indicator.annotations.length === 1 ? "annotation" : "annotations"}
+                  {indicator.annotations.length} MOV{" "}
+                  {indicator.annotations.length === 1 ? "annotation" : "annotations"}
                 </span>
               </div>
             )}
@@ -83,8 +86,8 @@ export function ReworkAlertBanner({ indicator, assessmentId }: ReworkAlertBanner
             <div className="mt-3 pt-3 border-t border-orange-200 dark:border-orange-800">
               <p className="text-sm text-orange-800 dark:text-orange-200">
                 📎 <strong>MOV Feedback:</strong> The assessor has highlighted and commented on{" "}
-                {indicator.annotations.length} of your uploaded files. Review the MOV section below to see the
-                annotations.
+                {indicator.annotations.length} of your uploaded files. Review the MOV section below
+                to see the annotations.
               </p>
             </div>
           )}

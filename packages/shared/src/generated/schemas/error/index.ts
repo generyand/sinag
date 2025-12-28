@@ -12,6 +12,12 @@ export interface HTTPValidationError {
 
 
 /**
+ * OverrideValidationStatusRequestRemarks
+ */
+export type OverrideValidationStatusRequestRemarks = string | null;
+
+
+/**
  * SubmissionValidationResult
  */
 export interface SubmissionValidationResult {
@@ -48,6 +54,12 @@ export interface ValidationError {
  * ValidationErrorLocItem
  */
 export type ValidationErrorLocItem = string | number;
+
+
+/**
+ * ValidationRequestFlaggedForCalibration
+ */
+export type ValidationRequestFlaggedForCalibration = boolean | null;
 
 
 /**

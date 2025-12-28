@@ -52,7 +52,14 @@ const eslintConfig = [
       ...jsxA11yPlugin.configs.recommended.rules,
       
       "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }
+      ],
       "@next/next/no-assign-module-variable": "off",
       "react/no-unescaped-entities": "off",
       "jsx-a11y/alt-text": "warn",
@@ -91,7 +98,12 @@ const eslintConfig = [
     },
   },
   {
-    files: ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}", "src/tests/**/*.{ts,tsx}"],
+    files: [
+      "**/__tests__/**/*.{ts,tsx}",
+      "**/*.test.{ts,tsx}",
+      "src/tests/**/*.{ts,tsx}",
+      "tests/**/*.{ts,tsx}"
+    ],
     rules: {
       "@typescript-eslint/no-unused-vars": "off",
       "@next/next/no-img-element": "off",

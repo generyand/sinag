@@ -2,13 +2,13 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import {
-    useGetAssessorAnalytics,
-    useGetAssessorAssessmentsAssessmentId,
-    useGetAssessorQueue,
-    usePostAssessorAssessmentResponsesResponseIdMovsUpload,
-    usePostAssessorAssessmentResponsesResponseIdValidate,
-    usePostAssessorAssessmentsAssessmentIdFinalize,
-    usePostAssessorAssessmentsAssessmentIdRework
+  useGetAssessorAnalytics,
+  useGetAssessorAssessmentsAssessmentId,
+  useGetAssessorQueue,
+  usePostAssessorAssessmentResponsesResponseIdMovsUpload,
+  usePostAssessorAssessmentResponsesResponseIdValidate,
+  usePostAssessorAssessmentsAssessmentIdFinalize,
+  usePostAssessorAssessmentsAssessmentIdRework,
 } from "@sinag/shared";
 
 const assessorKeys = {
@@ -42,13 +42,13 @@ export function useAssessorValidationMutation(_assessmentId: string) {
 
 export function useAssessorMOVUploadMutation(assessmentId: string) {
   const queryClient = useQueryClient();
-  
+
   return usePostAssessorAssessmentResponsesResponseIdMovsUpload({
     mutation: {
       onSuccess: () => {
         // Invalidate the assessment details query to refresh the data and show new MOVs
-        queryClient.invalidateQueries({ 
-          queryKey: assessorKeys.assessmentDetails(assessmentId) 
+        queryClient.invalidateQueries({
+          queryKey: assessorKeys.assessmentDetails(assessmentId),
         });
       },
     },
@@ -57,17 +57,24 @@ export function useAssessorMOVUploadMutation(assessmentId: string) {
 
 export function useAssessorReworkMutation(assessmentId: string) {
   const queryClient = useQueryClient();
-  
+
   return usePostAssessorAssessmentsAssessmentIdRework({
     mutation: {
       onSuccess: () => {
         // Invalidate the assessment details query to refresh the data
-        queryClient.invalidateQueries({ 
-          queryKey: assessorKeys.assessmentDetails(assessmentId) 
+        queryClient.invalidateQueries({
+          queryKey: assessorKeys.assessmentDetails(assessmentId),
         });
         // Also invalidate the queue to reflect status changes
-        queryClient.invalidateQueries({ 
-          queryKey: assessorKeys.queue() 
+        queryClient.invalidateQueries({
+          queryKey: assessorKeys.queue(),
+        });
+        // Invalidate BLGU-side queries so their dashboard updates immediately
+        queryClient.invalidateQueries({
+          queryKey: ["/api/v1/assessments/my-assessment"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/v1/blgu-dashboard/${assessmentId}`],
         });
       },
     },
@@ -76,17 +83,24 @@ export function useAssessorReworkMutation(assessmentId: string) {
 
 export function useAssessorFinalizeMutation(assessmentId: string) {
   const queryClient = useQueryClient();
-  
+
   return usePostAssessorAssessmentsAssessmentIdFinalize({
     mutation: {
       onSuccess: () => {
         // Invalidate the assessment details query to refresh the data
-        queryClient.invalidateQueries({ 
-          queryKey: assessorKeys.assessmentDetails(assessmentId) 
+        queryClient.invalidateQueries({
+          queryKey: assessorKeys.assessmentDetails(assessmentId),
         });
         // Also invalidate the queue to reflect status changes
-        queryClient.invalidateQueries({ 
-          queryKey: assessorKeys.queue() 
+        queryClient.invalidateQueries({
+          queryKey: assessorKeys.queue(),
+        });
+        // Invalidate BLGU-side queries so their dashboard updates immediately
+        queryClient.invalidateQueries({
+          queryKey: ["/api/v1/assessments/my-assessment"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/v1/blgu-dashboard/${assessmentId}`],
         });
       },
     },

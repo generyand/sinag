@@ -2,13 +2,18 @@
 
 ## Overview
 
-The **Classification Algorithm Workflow** implements the official DILG "3+1" SGLGB (Seal of Good Local Governance for Barangays) compliance determination logic. This automated backend process analyzes validated assessment data to calculate whether a barangay has passed or failed the SGLGB assessment based on governance area performance.
+The **Classification Algorithm Workflow** implements the official DILG "3+1" SGLGB (Seal of Good
+Local Governance for Barangays) compliance determination logic. This automated backend process
+analyzes validated assessment data to calculate whether a barangay has passed or failed the SGLGB
+assessment based on governance area performance.
 
 ### SGLGB Stage
 
 **Stage 3**: Automated Compliance Determination
 
-This stage transforms validated indicator results into an official compliance decision using the legislated "3+1" rule, providing a definitive Pass/Fail outcome for each barangay's SGLGB assessment.
+This stage transforms validated indicator results into an official compliance decision using the
+legislated "3+1" rule, providing a definitive Pass/Fail outcome for each barangay's SGLGB
+assessment.
 
 ### Key Stakeholders
 
@@ -19,10 +24,12 @@ This stage transforms validated indicator results into an official compliance de
 
 ### Business Objectives
 
-1. **Eliminate Manual Errors**: Automate compliance calculation to ensure 100% accuracy and consistency
+1. **Eliminate Manual Errors**: Automate compliance calculation to ensure 100% accuracy and
+   consistency
 2. **Instant Results**: Provide immediate compliance determination upon validator finalization
 3. **Transparency**: Store detailed area-level results for audit trails and appeals
-4. **Data-Driven Decisions**: Enable MLGOO-DILG to identify patterns and allocate resources based on compliance data
+4. **Data-Driven Decisions**: Enable MLGOO-DILG to identify patterns and allocate resources based on
+   compliance data
 5. **Historical Tracking**: Maintain compliance records for trend analysis and longitudinal studies
 
 ---
@@ -233,7 +240,9 @@ stateDiagram-v2
 **Purpose**: Initiate classification immediately after final validation is complete.
 
 **API Endpoints**:
-- `POST /api/v1/assessor/assessments/{assessment_id}/complete` - Validator completion (triggers classification)
+
+- `POST /api/v1/assessor/assessments/{assessment_id}/complete` - Validator completion (triggers
+  classification)
 - `POST /api/v1/assessments/{assessment_id}/classify` - Manual classification trigger (for testing)
 
 **Process**:
@@ -275,6 +284,7 @@ def complete_validation(
 ```
 
 **Database Changes**:
+
 - Update `assessments.status` = `COMPLETED`
 - Update `assessments.validated_at` = current timestamp
 
@@ -311,6 +321,7 @@ def get_validated_responses_by_area(
    - Environmental Management
 
 **Database Tables**:
+
 - `assessment_responses`: Individual indicator responses
 - `indicators`: Indicator metadata
 - `governance_areas`: Area definitions
@@ -341,22 +352,26 @@ def determine_area_compliance(
 **Business Rules**:
 
 **Rule 1: 100% Indicator Compliance Required**
+
 - ALL indicators in an area must have successful validation status
 - If even ONE indicator fails, the ENTIRE area fails
 - No partial credit or weighted scoring
 
 **Rule 2: Successful Validation Statuses**
+
 - **PASS**: Indicator fully complies with requirements → Counts as success
 - **CONSIDERED**: Indicator complies with grace period or alternative evidence → Counts as success
 - **CONDITIONAL**: Minor issue to resolve during table validation → Counts as success
 
 **Rule 3: Unsuccessful Validation Statuses**
+
 - **FAIL**: Indicator does not meet requirements → Blocks area pass
 - **No Response** (NULL): Missing validation → Blocks area pass
 
 **Example Scenarios**:
 
 **Scenario 1: Area Passes**
+
 ```
 Financial Administration and Sustainability (5 indicators)
 ├─ 1.1 BFDP Compliance: PASS ✓
@@ -369,6 +384,7 @@ Result: ALL indicators successful → Area PASSED
 ```
 
 **Scenario 2: Area Fails (One Indicator Fails)**
+
 ```
 Disaster Preparedness (3 indicators)
 ├─ 2.1 BDRRMC Functionality: PASS ✓
@@ -379,6 +395,7 @@ Result: ONE indicator failed → Area FAILED
 ```
 
 **Scenario 3: Area Fails (Missing Validation)**
+
 ```
 Safety, Peace and Order (6 indicators)
 ├─ 3.1 BADAC Functionality: PASS ✓
@@ -392,6 +409,7 @@ Result: ONE indicator missing validation → Area FAILED
 ```
 
 **Database Changes**:
+
 - Read from `assessment_responses.validation_status`
 - No write operations at this step
 
@@ -433,6 +451,7 @@ def get_all_area_results(self, db: Session, assessment_id: int) -> dict[str, str
 3. **Return Complete Summary**: All six areas always included in result
 
 **Database Changes**:
+
 - None (read-only operation)
 
 ---
@@ -463,14 +482,14 @@ def determine_compliance_status(
 **The "3+1" Rule Explained**:
 
 **Core Areas (All 3 Must Pass)**:
+
 1. **Financial Administration and Sustainability** (CORE)
 2. **Disaster Preparedness** (CORE)
 3. **Safety, Peace and Order** (CORE)
 
-**Essential Areas (At Least 1 Must Pass)**:
-4. **Social Protection and Sensitivity** (ESSENTIAL)
-5. **Business-Friendliness and Competitiveness** (ESSENTIAL)
-6. **Environmental Management** (ESSENTIAL)
+**Essential Areas (At Least 1 Must Pass)**: 4. **Social Protection and Sensitivity** (ESSENTIAL) 5.
+**Business-Friendliness and Competitiveness** (ESSENTIAL) 6. **Environmental Management**
+(ESSENTIAL)
 
 **Mathematical Logic**:
 
@@ -484,17 +503,18 @@ Where:
 
 **Truth Table for Final Status**:
 
-| Core Areas | Essential Areas | Final Status | Explanation |
-|-----------|----------------|--------------|-------------|
-| All 3 Pass | At least 1 Pass | **PASSED** | Meets "3+1" requirement |
-| All 3 Pass | All 3 Fail | **FAILED** | No Essential area passed |
-| 2 Pass, 1 Fail | At least 1 Pass | **FAILED** | Core area failed |
-| 2 Pass, 1 Fail | All 3 Fail | **FAILED** | Core area failed |
-| 1 Pass, 2 Fail | At least 1 Pass | **FAILED** | Multiple Core areas failed |
+| Core Areas     | Essential Areas | Final Status | Explanation                |
+| -------------- | --------------- | ------------ | -------------------------- |
+| All 3 Pass     | At least 1 Pass | **PASSED**   | Meets "3+1" requirement    |
+| All 3 Pass     | All 3 Fail      | **FAILED**   | No Essential area passed   |
+| 2 Pass, 1 Fail | At least 1 Pass | **FAILED**   | Core area failed           |
+| 2 Pass, 1 Fail | All 3 Fail      | **FAILED**   | Core area failed           |
+| 1 Pass, 2 Fail | At least 1 Pass | **FAILED**   | Multiple Core areas failed |
 
 **Example Calculations**:
 
 **Example 1: PASSED**
+
 ```
 Core Areas:
 ✓ Financial Administration: Passed
@@ -513,6 +533,7 @@ Result: PASSED
 ```
 
 **Example 2: FAILED (Core Area Deficiency)**
+
 ```
 Core Areas:
 ✓ Financial Administration: Passed
@@ -530,6 +551,7 @@ Result: FAILED
 ```
 
 **Example 3: FAILED (Essential Area Deficiency)**
+
 ```
 Core Areas:
 ✓ Financial Administration: Passed
@@ -564,6 +586,7 @@ else:
 ```
 
 **Database Changes**:
+
 - None (read-only calculation)
 
 ---
@@ -592,11 +615,13 @@ def classify_assessment(self, db: Session, assessment_id: int) -> dict[str, Any]
 **Table**: `assessments`
 
 **Updated Fields**:
+
 1. **`final_compliance_status`**: Enum field (PASSED or FAILED)
    - Example: `ComplianceStatus.PASSED`
 
 2. **`area_results`**: JSONB field with area-level results
    - Example:
+
    ```json
    {
      "Financial Administration and Sustainability": "Passed",
@@ -641,6 +666,7 @@ WHERE id = :assessment_id;
 ```
 
 **Database Changes**:
+
 - Update `assessments.final_compliance_status`
 - Update `assessments.area_results`
 - Update `assessments.updated_at`
@@ -654,30 +680,35 @@ WHERE id = :assessment_id;
 
 The system recognizes five validation statuses, defined in `apps/api/app/db/enums.py`:
 
-| Status | Database Value | Meaning | Classification Treatment |
-|--------|---------------|---------|-------------------------|
-| **PASS** | `"Pass"` | Indicator fully complies with SGLGB requirements | Counts as **successful** |
-| **CONSIDERED** | `"Considered"` | Indicator complies with grace period or alternative evidence | Counts as **successful** |
-| **CONDITIONAL** | `"Conditional"` | Minor issue to resolve during table validation | Counts as **successful** |
-| **FAIL** | `"Fail"` | Indicator does not meet requirements | Counts as **unsuccessful** |
-| **NULL** | `NULL` | Indicator not yet validated | Counts as **unsuccessful** |
+| Status          | Database Value  | Meaning                                                      | Classification Treatment   |
+| --------------- | --------------- | ------------------------------------------------------------ | -------------------------- |
+| **PASS**        | `"Pass"`        | Indicator fully complies with SGLGB requirements             | Counts as **successful**   |
+| **CONSIDERED**  | `"Considered"`  | Indicator complies with grace period or alternative evidence | Counts as **successful**   |
+| **CONDITIONAL** | `"Conditional"` | Minor issue to resolve during table validation               | Counts as **successful**   |
+| **FAIL**        | `"Fail"`        | Indicator does not meet requirements                         | Counts as **unsuccessful** |
+| **NULL**        | `NULL`          | Indicator not yet validated                                  | Counts as **unsuccessful** |
 
 ### "Considered" Status Explained
 
 **What is "Considered" Status?**
 
-The "Considered" validation status was introduced in [Indicator Builder Specification v1.4](/docs/indicator-builder-specification.md) to handle:
-- **Grace Period Compliance**: Documents dated slightly after deadlines within allowable grace periods
+The "Considered" validation status was introduced in
+[Indicator Builder Specification v1.4](/docs/indicator-builder-specification.md) to handle:
+
+- **Grace Period Compliance**: Documents dated slightly after deadlines within allowable grace
+  periods
 - **Alternative Evidence**: Acceptable substitute documents when primary evidence unavailable
 
 **Why Treat "Considered" as "Pass"?**
 
 For classification purposes, "Considered" is **functionally equivalent to "Pass"** because:
+
 1. **Compliance Achieved**: The indicator meets SGLGB requirements, just through alternate means
 2. **DILG Policy**: Grace periods and alternative evidence are officially sanctioned
 3. **No Quality Difference**: Both represent successful indicator completion
 
 **Example**:
+
 ```
 Indicator 2.2: BDRRMFIP Compliance
 - Required: BDRRMFIP approved by December 31, 2024
@@ -690,12 +721,14 @@ Indicator 2.2: BDRRMFIP Compliance
 ### Conditional vs. Considered
 
 **CONDITIONAL**:
+
 - Minor issues to verify during in-person table validation
 - Example: "Verify signature on page 3 during table meeting"
 - Does NOT block compliance
 - Counts as successful for classification
 
 **CONSIDERED**:
+
 - Compliance achieved with grace period or alternative evidence
 - Example: "Document dated 15 days after deadline (within 30-day grace period)"
 - Does NOT block compliance
@@ -712,16 +745,19 @@ Indicator 2.2: BDRRMFIP Compliance
 **Scenario**: A governance area has no indicators defined.
 
 **System Behavior**:
+
 - Area is treated as **FAILED**
 - Rationale: Cannot verify compliance without indicators
 
 **Implementation**:
+
 ```python
 if not indicators:
     return False  # No indicators = failed area
 ```
 
 **Example**:
+
 ```
 Environmental Management (0 indicators)
 ├─ (No indicators defined)
@@ -731,23 +767,28 @@ Result: Area FAILED (no evidence to evaluate)
 
 ### Edge Case 2: All Indicators "Not Applicable"
 
-**Scenario**: All indicators in an area marked as "Not Applicable" (e.g., coastal barangays vs. landlocked).
+**Scenario**: All indicators in an area marked as "Not Applicable" (e.g., coastal barangays vs.
+landlocked).
 
 **System Behavior**:
+
 - Currently: Area is treated as **FAILED** (no successful indicators)
 - **Future Enhancement**: System may need "Not Applicable" area status for special barangay types
 
-**Note**: This edge case requires DILG policy clarification - should barangays be exempt from entire areas?
+**Note**: This edge case requires DILG policy clarification - should barangays be exempt from entire
+areas?
 
 ### Edge Case 3: Mixed Successful Statuses
 
 **Scenario**: Area has mix of PASS, CONSIDERED, and CONDITIONAL statuses.
 
 **System Behavior**:
+
 - All three count as successful
 - Area PASSES if no FAIL statuses present
 
 **Example**:
+
 ```
 Social Protection and Sensitivity
 ├─ 4.1 VAW Desk: PASS ✓
@@ -764,11 +805,13 @@ Result: Area PASSED (all successful statuses)
 **Scenario**: MLGOO-DILG corrects a validation error after classification runs.
 
 **System Behavior**:
+
 - **Manual Reclassification Required**: Admin must trigger re-classification
 - Endpoint: `POST /api/v1/assessments/{assessment_id}/classify`
 - Results overwrite previous classification
 
 **Process**:
+
 1. MLGOO-DILG updates validation status for corrected indicator
 2. MLGOO-DILG clicks "Re-run Classification" button
 3. Algorithm recalculates with updated data
@@ -779,11 +822,13 @@ Result: Area PASSED (all successful statuses)
 **Scenario**: Classification takes longer than 5 seconds (performance requirement).
 
 **System Behavior**:
+
 - **Current**: Synchronous execution may block
 - **Mitigation**: Algorithm optimized for sub-second performance
 - **Future Enhancement**: Move to Celery background task if timeout occurs
 
 **Performance Benchmark**:
+
 - Target: < 1 second for typical assessment (29 indicators)
 - Acceptable: < 5 seconds for large assessments (50+ indicators)
 
@@ -796,11 +841,13 @@ Result: Area PASSED (all successful statuses)
 **Primary Table**: `assessments`
 
 **Fields Written**:
+
 - `final_compliance_status` (Enum: PASSED/FAILED)
 - `area_results` (JSONB: area-level results)
 - `updated_at` (Timestamp)
 
 **Fields Read**:
+
 - `id` (Assessment identifier)
 - `status` (Must be COMPLETED)
 
@@ -823,6 +870,7 @@ Result: Area PASSED (all successful statuses)
 **Intelligence Service** (`apps/api/app/services/intelligence_service.py`):
 
 **Core Methods**:
+
 1. `classify_assessment(db, assessment_id)` - Main entry point
 2. `get_all_area_results(db, assessment_id)` - Area-level calculation
 3. `determine_area_compliance(db, assessment_id, area_name)` - Single area check
@@ -831,6 +879,7 @@ Result: Area PASSED (all successful statuses)
 6. `check_essential_areas_compliance(db, assessment_id)` - Essential areas check
 
 **Service Export**:
+
 ```python
 intelligence_service = IntelligenceService()
 ```
@@ -838,10 +887,12 @@ intelligence_service = IntelligenceService()
 ### Related Workflows
 
 **Previous Workflow**: [Assessor Validation Workflow](./assessor-validation.md)
+
 - Provides validated indicator statuses (PASS/FAIL/CONDITIONAL/CONSIDERED)
 - Triggers classification on completion
 
 **Next Workflow**: [Intelligence Layer Workflow](./intelligence-layer.md)
+
 - Uses classification results to generate AI insights
 - Provides CapDev recommendations for failed areas
 
@@ -852,15 +903,18 @@ intelligence_service = IntelligenceService()
 ### Algorithm Complexity
 
 **Time Complexity**: O(n) where n = number of indicators
+
 - Single pass through all indicators
 - Grouped by area (6 areas constant)
 - No nested loops or recursive operations
 
 **Space Complexity**: O(6) = O(1)
+
 - Fixed number of governance areas (6)
 - Area results stored as simple dictionary
 
 **Database Queries**:
+
 - 1 query to fetch all assessment responses with joins
 - 1 query to fetch all indicators (cached)
 - 1 update query to store results
@@ -870,14 +924,15 @@ intelligence_service = IntelligenceService()
 
 **Tested Scenarios**:
 
-| Scenario | Indicators | Expected Duration | Actual Duration |
-|----------|-----------|------------------|-----------------|
-| Small Assessment | 10 indicators | < 0.5 seconds | 0.2 seconds |
-| Typical Assessment | 29 indicators | < 1 second | 0.4 seconds |
-| Large Assessment | 50 indicators | < 2 seconds | 0.8 seconds |
-| Very Large Assessment | 100 indicators | < 5 seconds | 1.5 seconds |
+| Scenario              | Indicators     | Expected Duration | Actual Duration |
+| --------------------- | -------------- | ----------------- | --------------- |
+| Small Assessment      | 10 indicators  | < 0.5 seconds     | 0.2 seconds     |
+| Typical Assessment    | 29 indicators  | < 1 second        | 0.4 seconds     |
+| Large Assessment      | 50 indicators  | < 2 seconds       | 0.8 seconds     |
+| Very Large Assessment | 100 indicators | < 5 seconds       | 1.5 seconds     |
 
 **Performance Targets**:
+
 - **99th Percentile**: < 5 seconds (meets PRD requirement)
 - **95th Percentile**: < 2 seconds
 - **Average**: < 1 second
@@ -900,6 +955,7 @@ intelligence_service = IntelligenceService()
 **Test Scenarios**:
 
 **1. Test "3+1" Rule - PASSED Scenario**
+
 ```python
 def test_classification_passed():
     """
@@ -916,6 +972,7 @@ def test_classification_passed():
 ```
 
 **2. Test "3+1" Rule - FAILED (Core Deficiency)**
+
 ```python
 def test_classification_failed_core():
     """
@@ -932,6 +989,7 @@ def test_classification_failed_core():
 ```
 
 **3. Test "3+1" Rule - FAILED (Essential Deficiency)**
+
 ```python
 def test_classification_failed_essential():
     """
@@ -947,6 +1005,7 @@ def test_classification_failed_essential():
 ```
 
 **4. Test CONSIDERED Status Handling**
+
 ```python
 def test_considered_status_counts_as_pass():
     """
@@ -963,6 +1022,7 @@ def test_considered_status_counts_as_pass():
 ```
 
 **5. Test CONDITIONAL Status Handling**
+
 ```python
 def test_conditional_status_counts_as_pass():
     """
@@ -979,6 +1039,7 @@ def test_conditional_status_counts_as_pass():
 ```
 
 **6. Test Mixed Successful Statuses**
+
 ```python
 def test_mixed_successful_statuses():
     """
@@ -997,6 +1058,7 @@ def test_mixed_successful_statuses():
 ```
 
 **7. Test Single Failure Blocks Area**
+
 ```python
 def test_single_failure_blocks_area():
     """
@@ -1037,6 +1099,7 @@ def test_complete_validation_triggers_classification():
 ### Manual Testing Scenarios
 
 **Scenario 1: PASSED Assessment**
+
 ```
 1. Create test assessment
 2. Mark all Core area indicators as PASS
@@ -1046,6 +1109,7 @@ def test_complete_validation_triggers_classification():
 ```
 
 **Scenario 2: FAILED Assessment (Core)**
+
 ```
 1. Create test assessment
 2. Mark 2 Core areas as PASS, 1 as FAIL
@@ -1055,6 +1119,7 @@ def test_complete_validation_triggers_classification():
 ```
 
 **Scenario 3: FAILED Assessment (Essential)**
+
 ```
 1. Create test assessment
 2. Mark all Core areas as PASS
@@ -1071,10 +1136,10 @@ def test_complete_validation_triggers_classification():
 
 All endpoints require `VALIDATOR` or `MLGOO_DILG` role.
 
-| Endpoint | Method | Purpose | Role Restriction | Response |
-|----------|--------|---------|------------------|----------|
-| `/api/v1/assessor/assessments/{id}/complete` | POST | Complete validation and auto-trigger classification | VALIDATOR | Classification results |
-| `/api/v1/assessments/{id}/classify` | POST | Manually trigger classification (testing) | MLGOO_DILG | Classification results |
+| Endpoint                                     | Method | Purpose                                             | Role Restriction | Response               |
+| -------------------------------------------- | ------ | --------------------------------------------------- | ---------------- | ---------------------- |
+| `/api/v1/assessor/assessments/{id}/complete` | POST   | Complete validation and auto-trigger classification | VALIDATOR        | Classification results |
+| `/api/v1/assessments/{id}/classify`          | POST   | Manually trigger classification (testing)           | MLGOO_DILG       | Classification results |
 
 ### Response Schema
 
@@ -1099,6 +1164,7 @@ All endpoints require `VALIDATOR` or `MLGOO_DILG` role.
 **Error Responses**:
 
 **404 Not Found**:
+
 ```json
 {
   "detail": "Assessment 123 not found"
@@ -1106,6 +1172,7 @@ All endpoints require `VALIDATOR` or `MLGOO_DILG` role.
 ```
 
 **400 Bad Request** (Not Validated):
+
 ```json
 {
   "detail": "Assessment must be in COMPLETED status for classification"
@@ -1116,13 +1183,16 @@ All endpoints require `VALIDATOR` or `MLGOO_DILG` role.
 
 ## Summary
 
-The Classification Algorithm Workflow automates the critical compliance determination process using the official DILG "3+1" SGLGB rule. Key success factors include:
+The Classification Algorithm Workflow automates the critical compliance determination process using
+the official DILG "3+1" SGLGB rule. Key success factors include:
 
 1. **100% Accuracy**: Automated calculation eliminates human error in compliance determination
 2. **Instant Results**: Classification completes in < 1 second for typical assessments
 3. **Transparent Logic**: Area-level results stored for audit trails and appeals
 4. **Validation Status Handling**: Correctly treats PASS, CONSIDERED, and CONDITIONAL as successful
-5. **Strict "3+1" Rule Enforcement**: All 3 Core areas + at least 1 Essential area required for SGLGB pass
+5. **Strict "3+1" Rule Enforcement**: All 3 Core areas + at least 1 Essential area required for
+   SGLGB pass
 6. **Historical Tracking**: Results stored in database for trend analysis and reporting
 
-This workflow ensures consistent, accurate, and transparent SGLGB compliance determination for all barangays in the SINAG system.
+This workflow ensures consistent, accurate, and transparent SGLGB compliance determination for all
+barangays in the SINAG system.

@@ -134,9 +134,7 @@ export function RequestReworkForm({
     return (
       <Alert variant="destructive" className="border-red-600 bg-red-50 dark:bg-red-950/20">
         <AlertTriangle className="h-4 w-4 text-red-600" />
-        <AlertTitle className="text-red-700 dark:text-red-400">
-          Rework Limit Reached
-        </AlertTitle>
+        <AlertTitle className="text-red-700 dark:text-red-400">Rework Limit Reached</AlertTitle>
         <AlertDescription className="text-red-600 dark:text-red-300">
           This BLGU has already used their one rework cycle. No further rework requests are allowed.
         </AlertDescription>
@@ -151,7 +149,10 @@ export function RequestReworkForm({
     <div className="space-y-4">
       {/* Form */}
       <div className="space-y-2">
-        <Label htmlFor="rework-comments" className="flex items-center gap-2 text-base font-semibold">
+        <Label
+          htmlFor="rework-comments"
+          className="flex items-center gap-2 text-base font-semibold"
+        >
           <MessageSquare className="h-4 w-4" />
           Rework Comments
           <span className="text-destructive">*</span>
@@ -209,17 +210,13 @@ export function RequestReworkForm({
               {/* Preview of comments */}
               <div className="rounded-md border bg-muted p-3">
                 <p className="text-xs font-semibold text-foreground mb-1">Your feedback:</p>
-                <p className="text-sm text-foreground whitespace-pre-wrap">
-                  {comments.trim()}
-                </p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{comments.trim()}</p>
               </div>
 
               <div className="flex items-start gap-2 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-md">
                 <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-orange-600" />
                 <div className="text-xs space-y-1">
-                  <p className="font-semibold text-orange-700 dark:text-orange-400">
-                    This will:
-                  </p>
+                  <p className="font-semibold text-orange-700 dark:text-orange-400">This will:</p>
                   <ul className="list-disc list-inside text-orange-600 dark:text-orange-300 space-y-0.5">
                     <li>Send the assessment back to the BLGU for revisions</li>
                     <li>Change the status to REWORK</li>

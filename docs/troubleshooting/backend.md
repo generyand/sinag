@@ -7,10 +7,12 @@ Backend-specific troubleshooting for FastAPI, Python, and API issues.
 ### Port 8000 Already in Use
 
 **Symptoms**:
+
 - `ERROR: [Errno 98] Address already in use` when starting backend
 - `Connection reset by peer` when frontend tries to connect
 
-**Root Cause**: Port 8000 is occupied by a zombie process (previous Docker container or test run that didn't shut down properly).
+**Root Cause**: Port 8000 is occupied by a zombie process (previous Docker container or test run
+that didn't shut down properly).
 
 **Diagnosis**:
 
@@ -28,6 +30,7 @@ ps aux | grep "python.*8000"
 **Solutions**:
 
 **Option 1: Kill the zombie process**
+
 ```bash
 # Find and kill the process
 PID=$(pgrep -f "uvicorn.*8000" | head -1)
@@ -41,6 +44,7 @@ pkill -f uvicorn
 ```
 
 **Option 2: Quick kill command**
+
 ```bash
 # Kill any process on port 8000 (requires password)
 sudo fuser -k 8000/tcp
@@ -49,16 +53,19 @@ sudo fuser -k 8000/tcp
 **Option 3: Use a different port temporarily**
 
 Edit `apps/api/main.py`:
+
 ```python
 uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
 ```
 
 Update `apps/web/.env.local`:
+
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8001
 ```
 
 **Prevention**:
+
 - Always stop servers gracefully with `Ctrl+C`
 - Always run `docker compose down` to stop containers
 - Check for running processes before starting: `lsof -i :8000`

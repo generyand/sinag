@@ -9,31 +9,33 @@
  * - Loading states
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { TestCalculationPanel } from '../TestCalculationPanel';
-import { useCalculationRuleStore } from '@/store/useCalculationRuleStore';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TestCalculationPanel } from "../TestCalculationPanel";
+import { useCalculationRuleStore } from "@/store/useCalculationRuleStore";
 
 // Mock the Zustand store
-vi.mock('@/store/useCalculationRuleStore', () => ({
+vi.mock("@/store/useCalculationRuleStore", () => ({
   useCalculationRuleStore: vi.fn(),
 }));
 
 // Mock the API hook
-vi.mock('@sinag/shared', async () => {
-  const actual = await vi.importActual('@sinag/shared');
+vi.mock("@sinag/shared", async () => {
+  const actual = await vi.importActual("@sinag/shared");
   return {
     ...actual,
     usePostIndicatorsTestCalculation: vi.fn(),
   };
 });
 
-import { usePostIndicatorsTestCalculation } from '@sinag/shared';
+import { usePostIndicatorsTestCalculation } from "@sinag/shared";
 
 const mockUseCalculationRuleStore = useCalculationRuleStore as ReturnType<typeof vi.fn>;
-const mockUsePostIndicatorsTestCalculation = usePostIndicatorsTestCalculation as ReturnType<typeof vi.fn>;
+const mockUsePostIndicatorsTestCalculation = usePostIndicatorsTestCalculation as ReturnType<
+  typeof vi.fn
+>;
 
 // Helper to create a QueryClient for each test
 const createTestQueryClient = () =>
@@ -47,24 +49,22 @@ const createTestQueryClient = () =>
 // Helper to wrap component with QueryClientProvider
 const renderWithQueryClient = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
 // Mock form schema (using the structure the component expects)
 const mockFormSchema: any = {
   input_fields: [
     {
-      field_id: 'text_field',
-      label: 'Text Field',
-      type: 'text',
+      field_id: "text_field",
+      label: "Text Field",
+      type: "text",
       required: true,
     },
     {
-      field_id: 'number_field',
-      label: 'Number Field',
-      type: 'number',
+      field_id: "number_field",
+      label: "Number Field",
+      type: "number",
       required: false,
     },
   ],
@@ -74,22 +74,22 @@ const mockFormSchema: any = {
 const mockCalculationSchema = {
   condition_groups: [
     {
-      operator: 'AND' as const,
+      operator: "AND" as const,
       rules: [
         {
-          rule_type: 'MATCH_VALUE' as const,
-          field_id: 'text_field',
-          operator: '==' as const,
-          expected_value: 'approved',
+          rule_type: "MATCH_VALUE" as const,
+          field_id: "text_field",
+          operator: "==" as const,
+          expected_value: "approved",
         },
       ],
     },
   ],
-  output_status_on_pass: 'Pass' as const,
-  output_status_on_fail: 'Fail' as const,
+  output_status_on_pass: "Pass" as const,
+  output_status_on_fail: "Fail" as const,
 };
 
-describe('TestCalculationPanel', () => {
+describe("TestCalculationPanel", () => {
   const mockIsSchemaValid = vi.fn();
   const mockMutate = vi.fn();
 
@@ -129,73 +129,61 @@ describe('TestCalculationPanel', () => {
     });
   });
 
-  it('renders title and description', () => {
+  it("renders title and description", () => {
     mockIsSchemaValid.mockReturnValue(true);
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
     expect(screen.getByText(/test calculation/i)).toBeInTheDocument();
     expect(screen.getByText(/test your calculation rules with sample data/i)).toBeInTheDocument();
   });
 
-  it('shows validation error when schema is invalid', () => {
+  it("shows validation error when schema is invalid", () => {
     mockIsSchemaValid.mockReturnValue(false);
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
     expect(screen.getByText(/please add at least one condition group/i)).toBeInTheDocument();
   });
 
-  it('shows error when no form schema provided', () => {
+  it("shows error when no form schema provided", () => {
     mockIsSchemaValid.mockReturnValue(true);
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={null} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={null} />);
 
     expect(screen.getByText(/no form schema found/i)).toBeInTheDocument();
   });
 
-  it('shows error when form schema has no fields', () => {
+  it("shows error when form schema has no fields", () => {
     mockIsSchemaValid.mockReturnValue(true);
 
     const emptyFormSchema: any = {
       input_fields: [],
     };
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={emptyFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={emptyFormSchema} />);
 
     expect(screen.getByText(/form schema has no fields/i)).toBeInTheDocument();
   });
 
-  it('displays Run Test button when valid', () => {
+  it("displays Run Test button when valid", () => {
     mockIsSchemaValid.mockReturnValue(true);
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
-    const runButton = screen.getByRole('button', { name: /run test/i });
+    const runButton = screen.getByRole("button", { name: /run test/i });
     expect(runButton).toBeInTheDocument();
     expect(runButton).toBeEnabled();
   });
 
-  it('calls API when Run Test clicked', async () => {
+  it("calls API when Run Test clicked", async () => {
     const user = userEvent.setup();
     mockIsSchemaValid.mockReturnValue(true);
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
     // Click Run Test
-    const runButton = screen.getByRole('button', { name: /run test/i });
+    const runButton = screen.getByRole("button", { name: /run test/i });
     await user.click(runButton);
 
     // Verify mutation was called
@@ -207,7 +195,7 @@ describe('TestCalculationPanel', () => {
     });
   });
 
-  it('displays loading state during API call', () => {
+  it("displays loading state during API call", () => {
     mockIsSchemaValid.mockReturnValue(true);
     mockUsePostIndicatorsTestCalculation.mockReturnValue({
       mutate: mockMutate,
@@ -218,74 +206,66 @@ describe('TestCalculationPanel', () => {
       isError: false,
     });
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
     // Check for loading indicator
     expect(screen.getByText(/testing/i)).toBeInTheDocument();
   });
 
-  it('displays Pass result', async () => {
+  it("displays Pass result", async () => {
     mockIsSchemaValid.mockReturnValue(true);
     mockUsePostIndicatorsTestCalculation.mockReturnValue({
       mutate: mockMutate,
       isPending: false,
       data: {
-        result: 'Pass',
-        explanation: 'All conditions passed',
+        result: "Pass",
+        explanation: "All conditions passed",
       },
       error: null,
       isSuccess: true,
       isError: false,
     });
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Pass')).toBeInTheDocument();
+      expect(screen.getByText("Pass")).toBeInTheDocument();
     });
   });
 
-  it('displays Fail result', async () => {
+  it("displays Fail result", async () => {
     mockIsSchemaValid.mockReturnValue(true);
     mockUsePostIndicatorsTestCalculation.mockReturnValue({
       mutate: mockMutate,
       isPending: false,
       data: {
-        result: 'Fail',
-        explanation: 'Condition not met',
+        result: "Fail",
+        explanation: "Condition not met",
       },
       error: null,
       isSuccess: true,
       isError: false,
     });
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Fail')).toBeInTheDocument();
+      expect(screen.getByText("Fail")).toBeInTheDocument();
     });
   });
 
-  it('displays error message when API call fails', async () => {
+  it("displays error message when API call fails", async () => {
     mockIsSchemaValid.mockReturnValue(true);
     mockUsePostIndicatorsTestCalculation.mockReturnValue({
       mutate: mockMutate,
       isPending: false,
       data: null,
-      error: new Error('API Error: Invalid schema'),
+      error: new Error("API Error: Invalid schema"),
       isSuccess: false,
       isError: true,
     });
 
-    renderWithQueryClient(
-      <TestCalculationPanel formSchema={mockFormSchema} />
-    );
+    renderWithQueryClient(<TestCalculationPanel formSchema={mockFormSchema} />);
 
     await waitFor(() => {
       expect(screen.getByText(/error/i)).toBeInTheDocument();

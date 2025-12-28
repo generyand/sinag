@@ -1,15 +1,18 @@
 # DevOps Pre-Deployment Checklist
 
-This checklist ensures your SINAG deployment is production-ready. Follow these steps before deploying to EC2.
+This checklist ensures your SINAG deployment is production-ready. Follow these steps before
+deploying to EC2.
 
 ## Prerequisites
 
 ### 1. GitHub Setup
+
 - [ ] Repository is on GitHub with appropriate permissions
 - [ ] GitHub Actions is enabled
 - [ ] Repository packages/containers setting is set to public or PAT is ready
 
 ### 2. AWS EC2 Setup
+
 - [ ] EC2 instance created (recommended: t2.medium or t3.medium)
 - [ ] Security groups configured:
   - [ ] Port 22 (SSH) - restricted to your IP
@@ -19,6 +22,7 @@ This checklist ensures your SINAG deployment is production-ready. Follow these s
 - [ ] Public IP address noted
 
 ### 3. Supabase Setup
+
 - [ ] Supabase project created
 - [ ] Database credentials obtained:
   - [ ] `SUPABASE_URL`
@@ -27,6 +31,7 @@ This checklist ensures your SINAG deployment is production-ready. Follow these s
   - [ ] `DATABASE_URL` (use Transaction pooler, port 6543)
 
 ### 4. Optional Services
+
 - [ ] Gemini API key (for AI features) - optional
 - [ ] Domain name (for custom domain) - optional
 
@@ -44,6 +49,7 @@ git push origin main
 ```
 
 **Verify build:**
+
 - Go to GitHub → Actions
 - Wait for workflow to complete (green checkmark)
 - Go to GitHub → Packages
@@ -118,6 +124,7 @@ GEMINI_API_KEY=
 ```
 
 **Expected output:**
+
 ```
 [1/6] Running pre-flight checks...
 ✓ Pre-flight checks passed
@@ -160,6 +167,7 @@ curl http://localhost/health
 Open browser: `http://YOUR_EC2_PUBLIC_IP`
 
 **Expected:**
+
 - Login page loads
 - No console errors
 - API endpoints are accessible
@@ -240,6 +248,7 @@ docker compose -f docker-compose.prod.yml exec redis redis-cli
 **Symptom**: `Error response from daemon: pull access denied`
 
 **Solution**:
+
 ```bash
 # Re-login to GHCR
 echo "YOUR_GITHUB_TOKEN" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
@@ -254,6 +263,7 @@ docker pull ghcr.io/YOUR_USERNAME/sinag/sinag-api:latest
 **Symptom**: API container exits immediately or shows unhealthy
 
 **Solution**:
+
 ```bash
 # Check logs
 docker compose -f docker-compose.prod.yml logs api
@@ -269,6 +279,7 @@ docker compose -f docker-compose.prod.yml logs api
 **Symptom**: Web container exits or health check fails
 
 **Solution**:
+
 ```bash
 # Check logs
 docker compose -f docker-compose.prod.yml logs web
@@ -283,6 +294,7 @@ docker compose -f docker-compose.prod.yml logs web
 **Symptom**: `Could not connect to database`
 
 **Solution**:
+
 1. Verify DATABASE_URL uses pooler port (6543), not direct (5432)
 2. Check Supabase project is active
 3. Verify EC2 security group allows outbound HTTPS (port 443)
@@ -296,6 +308,7 @@ docker compose -f docker-compose.prod.yml logs web
 **Symptom**: Connection timeout when accessing `http://EC2_IP`
 
 **Solution**:
+
 1. Check EC2 security group allows inbound port 80
 2. Verify Nginx is running: `docker compose -f docker-compose.prod.yml ps nginx`
 3. Check Nginx logs: `docker compose -f docker-compose.prod.yml logs nginx`
@@ -306,6 +319,7 @@ docker compose -f docker-compose.prod.yml logs web
 **Symptom**: Background tasks (classification, AI) not executing
 
 **Solution**:
+
 ```bash
 # Check Celery logs
 docker compose -f docker-compose.prod.yml logs celery-worker

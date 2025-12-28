@@ -49,8 +49,7 @@ export function classifyError(error: unknown): ErrorInfo {
     return {
       type: "network",
       title: "Unable to connect to server",
-      message:
-        "The server may be down or unreachable. Please check your connection and try again.",
+      message: "The server may be down or unreachable. Please check your connection and try again.",
     };
   }
 
@@ -96,9 +95,7 @@ export function classifyError(error: unknown): ErrorInfo {
 
     // Handle array of validation errors (FastAPI validation)
     if (Array.isArray(detail)) {
-      const messages = detail
-        .map((d: { msg?: string }) => d.msg || "Validation error")
-        .join(", ");
+      const messages = detail.map((d: { msg?: string }) => d.msg || "Validation error").join(", ");
       return {
         type: "validation",
         title: "Validation failed",

@@ -134,18 +134,14 @@ export function FeaturesSection() {
     <section
       ref={featuresAnimation.elementRef}
       className={`w-full max-w-7xl mx-auto min-h-screen px-8 py-12 flex flex-col justify-center transition-all duration-1000 ${
-        featuresAnimation.isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-8"
+        featuresAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
       aria-labelledby="features-heading"
     >
       {/* Enhanced Header */}
       <div
         className={`text-left mb-12 transition-all duration-1000 delay-200 ${
-          featuresAnimation.isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4"
+          featuresAnimation.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
         <h2
@@ -160,9 +156,7 @@ export function FeaturesSection() {
         {/* Left: Enhanced Image with Overlay */}
         <div
           className={`flex-1 transition-all duration-1000 delay-300 ${
-            featuresAnimation.isVisible
-              ? "opacity-100 translate-x-0"
-              : "opacity-0 -translate-x-8"
+            featuresAnimation.isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
           }`}
         >
           <div className="relative group h-full">
@@ -182,9 +176,7 @@ export function FeaturesSection() {
                   key={stat.label}
                   className={`absolute ${stat.position} bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg transform group-hover:scale-105 transition-all duration-300 delay-${stat.delay}`}
                 >
-                  <div className={`text-2xl font-bold ${stat.color} mb-1`}>
-                    {stat.value}
-                  </div>
+                  <div className={`text-2xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
                   <div className="text-sm text-gray-600">{stat.label}</div>
                 </div>
               ))}
@@ -195,9 +187,7 @@ export function FeaturesSection() {
         {/* Right: Enhanced Feature Cards */}
         <div
           className={`flex-1 flex flex-col gap-6 transition-all duration-1000 delay-400 ${
-            featuresAnimation.isVisible
-              ? "opacity-100 translate-x-0"
-              : "opacity-0 translate-x-8"
+            featuresAnimation.isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
           }`}
         >
           {featureCards.map((card) => (
@@ -229,15 +219,11 @@ export function FeaturesSection() {
                       {card.step}
                     </div>
                   </div>
-                  <p className="text-gray-600 leading-relaxed mb-3">
-                    {card.description}
-                  </p>
+                  <p className="text-gray-600 leading-relaxed mb-3">{card.description}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     {card.bulletPoints.map((point, _index) => (
                       <div key={_index} className="flex items-center gap-1">
-                        <div
-                          className={`w-2 h-2 ${point.color} rounded-full`}
-                        ></div>
+                        <div className={`w-2 h-2 ${point.color} rounded-full`}></div>
                         <span>{point.label}</span>
                       </div>
                     ))}

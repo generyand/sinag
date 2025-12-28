@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
   MOVChecklistConfig,
   MOVItem,
@@ -14,7 +14,7 @@ import {
   isMOVDateInputItem,
   isMOVRadioGroupItem,
   isMOVDropdownItem,
-} from '@/types/mov-checklist';
+} from "@/types/mov-checklist";
 
 /**
  * MOV Validation Hook
@@ -45,7 +45,7 @@ export interface ValidationError {
   /** Error message */
   message: string;
   /** Severity level */
-  severity: 'error' | 'warning';
+  severity: "error" | "warning";
 }
 
 export interface MOVValidationResult {
@@ -69,9 +69,9 @@ function validateMOVItem(item: MOVItem): ValidationError[] {
   if (!item.label || item.label.trim().length === 0) {
     errors.push({
       itemId: item.id,
-      field: 'label',
-      message: 'Label is required',
-      severity: 'error',
+      field: "label",
+      message: "Label is required",
+      severity: "error",
     });
   }
 
@@ -103,45 +103,49 @@ function validateGroupItem(item: MOVGroupItem): ValidationError[] {
   if (!item.children || item.children.length === 0) {
     errors.push({
       itemId: item.id,
-      field: 'children',
-      message: 'Group must have at least 1 child item',
-      severity: 'error',
+      field: "children",
+      message: "Group must have at least 1 child item",
+      severity: "error",
     });
   }
 
   // Rule: OR groups must have min_required set
-  if (item.logic_operator === 'OR') {
+  if (item.logic_operator === "OR") {
     if (item.min_required === undefined || item.min_required === null) {
       errors.push({
         itemId: item.id,
-        field: 'min_required',
-        message: 'OR groups must have min_required set',
-        severity: 'error',
+        field: "min_required",
+        message: "OR groups must have min_required set",
+        severity: "error",
       });
     } else if (item.min_required < 1) {
       errors.push({
         itemId: item.id,
-        field: 'min_required',
-        message: 'min_required must be at least 1',
-        severity: 'error',
+        field: "min_required",
+        message: "min_required must be at least 1",
+        severity: "error",
       });
     } else if (item.children && item.min_required > item.children.length) {
       errors.push({
         itemId: item.id,
-        field: 'min_required',
+        field: "min_required",
         message: `min_required (${item.min_required}) cannot exceed number of children (${item.children.length})`,
-        severity: 'error',
+        severity: "error",
       });
     }
   }
 
   // Rule: AND groups should not have min_required set
-  if (item.logic_operator === 'AND' && item.min_required !== undefined && item.min_required !== null) {
+  if (
+    item.logic_operator === "AND" &&
+    item.min_required !== undefined &&
+    item.min_required !== null
+  ) {
     errors.push({
       itemId: item.id,
-      field: 'min_required',
-      message: 'AND groups should not have min_required set',
-      severity: 'warning',
+      field: "min_required",
+      message: "AND groups should not have min_required set",
+      severity: "warning",
     });
   }
 
@@ -169,9 +173,9 @@ function validateCurrencyInputItem(item: MOVCurrencyInputItem): ValidationError[
   ) {
     errors.push({
       itemId: item.id,
-      field: 'max_value',
+      field: "max_value",
       message: `max_value (${item.max_value}) must be greater than min_value (${item.min_value})`,
-      severity: 'error',
+      severity: "error",
     });
   }
 
@@ -183,9 +187,9 @@ function validateCurrencyInputItem(item: MOVCurrencyInputItem): ValidationError[
   ) {
     errors.push({
       itemId: item.id,
-      field: 'threshold',
+      field: "threshold",
       message: `threshold (${item.threshold}) should be >= min_value (${item.min_value})`,
-      severity: 'warning',
+      severity: "warning",
     });
   }
 
@@ -196,9 +200,9 @@ function validateCurrencyInputItem(item: MOVCurrencyInputItem): ValidationError[
   ) {
     errors.push({
       itemId: item.id,
-      field: 'threshold',
+      field: "threshold",
       message: `threshold (${item.threshold}) should be <= max_value (${item.max_value})`,
-      severity: 'warning',
+      severity: "warning",
     });
   }
 
@@ -206,9 +210,9 @@ function validateCurrencyInputItem(item: MOVCurrencyInputItem): ValidationError[
   if (item.threshold === undefined || item.threshold === null) {
     errors.push({
       itemId: item.id,
-      field: 'threshold',
+      field: "threshold",
       message: 'Consider setting a threshold for "Passed" vs "Considered" status',
-      severity: 'warning',
+      severity: "warning",
     });
   }
 
@@ -229,9 +233,9 @@ function validateNumberInputItem(item: MOVNumberInputItem): ValidationError[] {
   ) {
     errors.push({
       itemId: item.id,
-      field: 'max_value',
+      field: "max_value",
       message: `max_value (${item.max_value}) must be greater than min_value (${item.min_value})`,
-      severity: 'error',
+      severity: "error",
     });
   }
 
@@ -243,9 +247,9 @@ function validateNumberInputItem(item: MOVNumberInputItem): ValidationError[] {
   ) {
     errors.push({
       itemId: item.id,
-      field: 'threshold',
+      field: "threshold",
       message: `threshold (${item.threshold}) should be >= min_value (${item.min_value})`,
-      severity: 'warning',
+      severity: "warning",
     });
   }
 
@@ -256,9 +260,9 @@ function validateNumberInputItem(item: MOVNumberInputItem): ValidationError[] {
   ) {
     errors.push({
       itemId: item.id,
-      field: 'threshold',
+      field: "threshold",
       message: `threshold (${item.threshold}) should be <= max_value (${item.max_value})`,
-      severity: 'warning',
+      severity: "warning",
     });
   }
 
@@ -276,16 +280,16 @@ function validateDateInputItem(item: MOVDateInputItem): ValidationError[] {
     if (item.grace_period_days === undefined || item.grace_period_days === null) {
       errors.push({
         itemId: item.id,
-        field: 'grace_period_days',
-        message: 'grace_period_days is required when considered_status_enabled is true',
-        severity: 'error',
+        field: "grace_period_days",
+        message: "grace_period_days is required when considered_status_enabled is true",
+        severity: "error",
       });
     } else if (item.grace_period_days <= 0) {
       errors.push({
         itemId: item.id,
-        field: 'grace_period_days',
-        message: 'grace_period_days must be greater than 0',
-        severity: 'error',
+        field: "grace_period_days",
+        message: "grace_period_days must be greater than 0",
+        severity: "error",
       });
     }
   }
@@ -298,9 +302,9 @@ function validateDateInputItem(item: MOVDateInputItem): ValidationError[] {
     if (minDate > maxDate) {
       errors.push({
         itemId: item.id,
-        field: 'max_date',
-        message: 'max_date must be after min_date',
-        severity: 'error',
+        field: "max_date",
+        message: "max_date must be after min_date",
+        severity: "error",
       });
     }
   }
@@ -318,9 +322,9 @@ function validateRadioGroupItem(item: MOVRadioGroupItem): ValidationError[] {
   if (!item.options || item.options.length < 2) {
     errors.push({
       itemId: item.id,
-      field: 'options',
-      message: 'Radio groups must have at least 2 options',
-      severity: 'error',
+      field: "options",
+      message: "Radio groups must have at least 2 options",
+      severity: "error",
     });
     return errors;
   }
@@ -332,7 +336,7 @@ function validateRadioGroupItem(item: MOVRadioGroupItem): ValidationError[] {
         itemId: item.id,
         field: `options[${index}].label`,
         message: `Option ${index + 1} must have a label`,
-        severity: 'error',
+        severity: "error",
       });
     }
     if (!option.value || option.value.trim().length === 0) {
@@ -340,7 +344,7 @@ function validateRadioGroupItem(item: MOVRadioGroupItem): ValidationError[] {
         itemId: item.id,
         field: `options[${index}].value`,
         message: `Option ${index + 1} must have a value`,
-        severity: 'error',
+        severity: "error",
       });
     }
   });
@@ -351,9 +355,9 @@ function validateRadioGroupItem(item: MOVRadioGroupItem): ValidationError[] {
   if (values.length !== uniqueValues.size) {
     errors.push({
       itemId: item.id,
-      field: 'options',
-      message: 'Option values must be unique',
-      severity: 'error',
+      field: "options",
+      message: "Option values must be unique",
+      severity: "error",
     });
   }
 
@@ -361,9 +365,9 @@ function validateRadioGroupItem(item: MOVRadioGroupItem): ValidationError[] {
   if (item.default_value && !values.includes(item.default_value)) {
     errors.push({
       itemId: item.id,
-      field: 'default_value',
+      field: "default_value",
       message: `default_value "${item.default_value}" does not match any option value`,
-      severity: 'warning',
+      severity: "warning",
     });
   }
 
@@ -380,9 +384,9 @@ function validateDropdownItem(item: MOVDropdownItem): ValidationError[] {
   if (!item.options || item.options.length < 1) {
     errors.push({
       itemId: item.id,
-      field: 'options',
-      message: 'Dropdowns must have at least 1 option',
-      severity: 'error',
+      field: "options",
+      message: "Dropdowns must have at least 1 option",
+      severity: "error",
     });
     return errors;
   }
@@ -394,7 +398,7 @@ function validateDropdownItem(item: MOVDropdownItem): ValidationError[] {
         itemId: item.id,
         field: `options[${index}].label`,
         message: `Option ${index + 1} must have a label`,
-        severity: 'error',
+        severity: "error",
       });
     }
     if (!option.value || option.value.trim().length === 0) {
@@ -402,7 +406,7 @@ function validateDropdownItem(item: MOVDropdownItem): ValidationError[] {
         itemId: item.id,
         field: `options[${index}].value`,
         message: `Option ${index + 1} must have a value`,
-        severity: 'error',
+        severity: "error",
       });
     }
   });
@@ -413,9 +417,9 @@ function validateDropdownItem(item: MOVDropdownItem): ValidationError[] {
   if (values.length !== uniqueValues.size) {
     errors.push({
       itemId: item.id,
-      field: 'options',
-      message: 'Option values must be unique',
-      severity: 'error',
+      field: "options",
+      message: "Option values must be unique",
+      severity: "error",
     });
   }
 
@@ -430,7 +434,9 @@ function validateDropdownItem(item: MOVDropdownItem): ValidationError[] {
  * @param checklistConfig - The MOV checklist configuration to validate
  * @returns Validation result with errors, warnings, and validity status
  */
-export function useMOVValidation(checklistConfig: MOVChecklistConfig | undefined): MOVValidationResult {
+export function useMOVValidation(
+  checklistConfig: MOVChecklistConfig | undefined
+): MOVValidationResult {
   return useMemo(() => {
     if (!checklistConfig || !checklistConfig.items || checklistConfig.items.length === 0) {
       return {
@@ -449,8 +455,8 @@ export function useMOVValidation(checklistConfig: MOVChecklistConfig | undefined
     });
 
     // Separate errors and warnings
-    const errors = allErrors.filter((e) => e.severity === 'error');
-    const warnings = allErrors.filter((e) => e.severity === 'warning');
+    const errors = allErrors.filter((e) => e.severity === "error");
+    const warnings = allErrors.filter((e) => e.severity === "warning");
 
     // Group errors by item ID
     const errorsByItem = new Map<string, ValidationError[]>();

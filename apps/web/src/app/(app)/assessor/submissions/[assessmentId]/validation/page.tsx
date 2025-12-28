@@ -1,5 +1,5 @@
-import { AssessorValidationClient } from '@/components/features/assessor/validation';
-import { notFound } from 'next/navigation';
+import { AssessorValidationClient } from "@/components/features/assessor/validation";
+import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ assessmentId: string }>;
@@ -14,5 +14,3 @@ export default async function ValidationPage({ params }: PageProps) {
 
   return <AssessorValidationClient assessmentId={numericId} />;
 }
-
-

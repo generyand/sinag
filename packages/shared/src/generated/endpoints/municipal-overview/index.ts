@@ -84,7 +84,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewDashboard>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewDashboard>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMunicipalOverviewDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getMunicipalOverviewDashboard>>>
@@ -154,7 +154,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewComplianceSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewComplianceSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMunicipalOverviewComplianceSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getMunicipalOverviewComplianceSummary>>>
@@ -224,7 +224,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewGovernanceAreas>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewGovernanceAreas>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMunicipalOverviewGovernanceAreasQueryResult = NonNullable<Awaited<ReturnType<typeof getMunicipalOverviewGovernanceAreas>>>
@@ -294,7 +294,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewTopFailingIndicators>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewTopFailingIndicators>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMunicipalOverviewTopFailingIndicatorsQueryResult = NonNullable<Awaited<ReturnType<typeof getMunicipalOverviewTopFailingIndicators>>>
@@ -364,7 +364,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewCapdevSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewCapdevSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMunicipalOverviewCapdevSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getMunicipalOverviewCapdevSummary>>>
@@ -434,7 +434,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewBarangayStatuses>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMunicipalOverviewBarangayStatuses>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMunicipalOverviewBarangayStatusesQueryResult = NonNullable<Awaited<ReturnType<typeof getMunicipalOverviewBarangayStatuses>>>

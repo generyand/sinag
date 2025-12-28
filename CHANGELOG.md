@@ -9,6 +9,101 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+#### Analytics Scrollable Table and Unified Adjustment Terminology (2025-12-28)
+
+**Summary:** Improved analytics table usability with scrollable containers and unified terminology
+for rework/calibration actions across the codebase.
+
+- **Scrollable Table Improvements**
+  - Added scrollable container with sticky headers to BarangayStatusTable
+  - Implemented visual scroll indicator (gradient fade) for better UX
+  - Added accessibility attributes (role, aria-label, tabIndex) for keyboard navigation
+  - Optimized scroll handler to prevent unnecessary re-renders
+  - Added disabled state styling for rows without assessment data
+  - Responsive height: 300px mobile, 400px desktop
+
+- **Unified Adjustment Terminology**
+  - Consolidated "rework" and "calibration" terms to "adjustment" across API and UI
+  - Simplified TopReworkReasonsCard by removing source-based color differentiation
+  - Updated schemas and services to use consistent adjustment terminology
+
+**Files Changed:**
+
+- `apps/api/app/api/v1/analytics.py`
+- `apps/api/app/schemas/analytics.py`
+- `apps/api/app/services/analytics_service.py`
+- `apps/web/src/components/features/dashboard/TopReworkReasonsCard.tsx`
+- `apps/web/src/components/features/municipal-overview/BarangayStatusTable.tsx`
+
+#### Technical Notes Repositioned in BLGU Assessment Form (2025-12-28)
+
+**Summary:** Improved user experience by moving Technical Notes to a more prominent position.
+
+- Moved TechNotesPDF component from bottom to top of indicator form
+- Enhances visibility for BLGU users when filling out assessments
+
+**Files Changed:**
+
+- `apps/web/src/components/features/assessments/AssessmentContentPanel.tsx`
+
+### Changed
+
+### Fixed
+
+#### Rework Handling for OR-Logic Indicators (2025-12-28)
+
+**Summary:** Fixed critical validation bugs affecting BLGU rework submissions for indicators with
+OR-logic validation rules.
+
+- **OR-Logic Validation Fixes**
+  - Fixed ANY_ITEM_REQUIRED, OR_LOGIC_AT_LEAST_1_REQUIRED, ANY_OPTION_GROUP_REQUIRED, and
+    SHARED_PLUS_OR_LOGIC validation during rework mode
+  - BLGU users now only need to satisfy ONE option group, not replace ALL rejected files
+  - Aligns with SGLGB assessment workflow expectations
+
+- **Field-Level Rework Bug Fix**
+  - Only files WITH annotations are marked invalid during rework
+  - Files in other fields without annotations remain valid
+  - Updated CompletionFeedbackPanel to match DynamicFormRenderer validation logic
+
+**Files Changed:**
+
+- `apps/web/src/components/features/forms/CompletionFeedbackPanel.tsx`
+- `apps/web/src/components/features/forms/DynamicFormRenderer.tsx`
+- `apps/web/src/components/features/forms/fields/FileFieldComponent.tsx`
+
+#### Onboarding Tour Loop and Tooltip Placement (2025-12-28)
+
+**Summary:** Resolved recurring onboarding tour issues and improved tooltip responsiveness.
+
+- Fixed recurring loop where BLGU tour restarted after tab close
+- Improved tooltip responsiveness for mobile screens
+- Added preventOverflow config to keep tooltips within viewport
+- Enhanced preferences caching to persist tour completion state
+
+**Files Changed:**
+
+- `apps/web/src/components/tour/TourTooltip.tsx`
+- `apps/web/src/hooks/useTourAutoStart.ts`
+- `apps/web/src/providers/TourProvider.tsx`
+
+### Security
+
+#### React and Next.js Security Patch (2025-12-28)
+
+**Summary:** Critical security update addressing CVE-2025-55182 (React2Shell vulnerability).
+
+- Updated React to 19.2.3 (from vulnerable version)
+- Updated Next.js to 16.0.10
+- Addresses CVSS 10.0 RCE vulnerability in React Server Components
+
+**Files Changed:**
+
+- `apps/web/package.json`
+- `pnpm-lock.yaml`
+
+---
+
 #### BBI 4-Tier Compliance Rating System (2025-12-08)
 
 **Summary:** Implemented the official DILG MC 2024-417 BBI (Barangay-Based Institutions) compliance

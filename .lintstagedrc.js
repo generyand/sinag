@@ -1,6 +1,9 @@
 export default {
   // TypeScript/JavaScript files in web app
-  "apps/web/**/*.{ts,tsx,js,jsx}": ["eslint --fix --config apps/web/eslint.config.mjs", "prettier --write"],
+  "apps/web/**/*.{ts,tsx,js,jsx}": [
+    "eslint --fix --config apps/web/eslint.config.mjs",
+    "prettier --write",
+  ],
 
   // TypeScript/JavaScript files in packages
   "packages/**/*.{ts,tsx,js,jsx}": ["prettier --write"],

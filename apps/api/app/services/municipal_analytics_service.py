@@ -4,7 +4,7 @@
 
 import logging
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import Session, joinedload
@@ -24,6 +24,7 @@ from app.schemas.municipal_insights import (
     MunicipalComplianceSummary,
     MunicipalOverviewDashboard,
     TopFailingIndicatorsList,
+    WorkflowStatusBreakdown,
 )
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,110 @@ class MunicipalAnalyticsService:
         compliance_rate = (passed_count / assessed_count * 100) if assessed_count > 0 else 0.0
         assessment_rate = (assessed_count / total_barangays * 100) if total_barangays > 0 else 0.0
 
+        # =====================================================================
+        # NEW: Calculate workflow breakdown and enhanced metrics
+        # =====================================================================
+
+        # Get all assessments for workflow breakdown
+        all_assessments_query = db.query(Assessment)
+        if year is not None:
+            all_assessments_query = all_assessments_query.filter(Assessment.assessment_year == year)
+        all_assessments = all_assessments_query.all()
+
+        # Count assessments by status
+        status_counts = {
+            AssessmentStatus.DRAFT: 0,
+            AssessmentStatus.SUBMITTED: 0,
+            AssessmentStatus.IN_REVIEW: 0,
+            AssessmentStatus.REWORK: 0,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION: 0,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL: 0,
+            AssessmentStatus.COMPLETED: 0,
+        }
+
+        # Weights for weighted progress calculation
+        status_weights = {
+            AssessmentStatus.DRAFT: 10,
+            AssessmentStatus.SUBMITTED: 25,
+            AssessmentStatus.IN_REVIEW: 40,
+            AssessmentStatus.REWORK: 25,  # Same as submitted (needs re-submission)
+            AssessmentStatus.AWAITING_FINAL_VALIDATION: 55,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL: 70,
+            AssessmentStatus.COMPLETED: 100,
+        }
+
+        # Stalled threshold (14 days) - use naive datetime for comparison with DB
+        stalled_threshold = datetime.utcnow() - timedelta(days=14)
+        stalled_count = 0
+        rework_count = 0
+        total_weighted_progress = 0
+
+        for assessment in all_assessments:
+            if assessment.status in status_counts:
+                status_counts[assessment.status] += 1
+
+            # Check if stalled (status unchanged for >14 days)
+            # Use updated_at or status_updated_at if available, otherwise created_at
+            last_update = assessment.updated_at or assessment.created_at
+            if last_update:
+                # Handle both timezone-aware and naive datetimes
+                if last_update.tzinfo is not None:
+                    last_update = last_update.replace(tzinfo=None)
+                if last_update < stalled_threshold:
+                    if assessment.status not in [
+                        AssessmentStatus.COMPLETED,
+                        AssessmentStatus.DRAFT,
+                    ]:
+                        stalled_count += 1
+
+            # Count reworks (assessments that went through REWORK status)
+            if assessment.status == AssessmentStatus.REWORK or (
+                hasattr(assessment, "rework_count")
+                and assessment.rework_count
+                and assessment.rework_count > 0
+            ):
+                rework_count += 1
+
+            # Calculate weighted progress
+            if assessment.status in status_weights:
+                total_weighted_progress += status_weights[assessment.status]
+
+        # Count barangays with no assessment started
+        barangays_with_assessments = db.query(
+            func.count(func.distinct(Assessment.blgu_user_id))
+        ).join(User, User.id == Assessment.blgu_user_id)
+        if year is not None:
+            barangays_with_assessments = barangays_with_assessments.filter(
+                Assessment.assessment_year == year
+            )
+        barangays_with_assessments_count = barangays_with_assessments.scalar() or 0
+        not_started = max(0, total_barangays - barangays_with_assessments_count)
+
+        # Build workflow breakdown
+        workflow_breakdown = WorkflowStatusBreakdown(
+            not_started=not_started,
+            draft=status_counts[AssessmentStatus.DRAFT],
+            submitted=status_counts[AssessmentStatus.SUBMITTED],
+            in_review=status_counts[AssessmentStatus.IN_REVIEW],
+            rework=status_counts[AssessmentStatus.REWORK],
+            awaiting_validation=status_counts[AssessmentStatus.AWAITING_FINAL_VALIDATION],
+            awaiting_approval=status_counts[AssessmentStatus.AWAITING_MLGOO_APPROVAL],
+            completed=status_counts[AssessmentStatus.COMPLETED],
+        )
+
+        # Calculate rework rate (assessments that required rework / total non-draft)
+        total_non_draft = len(all_assessments) - status_counts[AssessmentStatus.DRAFT]
+        rework_rate = (rework_count / total_non_draft * 100) if total_non_draft > 0 else 0.0
+
+        # Calculate weighted progress (average progress across all barangays)
+        # Include not_started barangays with 0% weight
+        total_possible_progress = total_barangays * 100
+        weighted_progress = (
+            (total_weighted_progress / total_possible_progress * 100)
+            if total_possible_progress > 0
+            else 0.0
+        )
+
         return MunicipalComplianceSummary(
             total_barangays=total_barangays,
             assessed_barangays=assessed_count,
@@ -109,6 +214,10 @@ class MunicipalAnalyticsService:
             assessment_rate=round(assessment_rate, 2),
             pending_mlgoo_approval=pending_mlgoo,
             in_progress=in_progress,
+            workflow_breakdown=workflow_breakdown,
+            stalled_assessments=stalled_count,
+            rework_rate=round(rework_rate, 2),
+            weighted_progress=round(weighted_progress, 2),
         )
 
     def get_governance_area_performance(
@@ -175,15 +284,23 @@ class MunicipalAnalyticsService:
             )
 
             # Calculate pass/fail counts from area_results in assessments
+            # area_results is stored with area names as keys and "Passed"/"Failed" as values
+            # (populated by intelligence_service.get_all_area_results())
             passed_count = 0
             failed_count = 0
 
             for assessment in completed_assessments:
-                if assessment.area_results and str(ga.id) in assessment.area_results:
-                    area_result = assessment.area_results[str(ga.id)]
-                    if area_result.get("passed", False):
+                if not assessment.area_results:
+                    continue
+
+                # Match by governance area name (the format used by intelligence_service)
+                area_result = assessment.area_results.get(ga.name)
+
+                if area_result is not None:
+                    # Case-insensitive comparison for defensive coding
+                    if area_result.lower() == "passed":
                         passed_count += 1
-                    else:
+                    elif area_result.lower() == "failed":
                         failed_count += 1
 
             total_assessed = passed_count + failed_count
@@ -602,17 +719,46 @@ class MunicipalAnalyticsService:
                 )
                 continue
 
-            # Calculate overall score from area_results
+            # Only calculate detailed metrics for COMPLETED assessments
+            # For in-progress assessments, these fields should remain None
             overall_score = None
-            if assessment.area_results:
-                passed_areas = sum(
-                    1
-                    for result in assessment.area_results.values()
-                    if isinstance(result, dict) and result.get("passed", False)
+            governance_areas_passed = None
+            total_governance_areas = None
+            pass_count = None
+            conditional_count = None
+            total_responses = None
+
+            if assessment.status == AssessmentStatus.COMPLETED:
+                # Calculate governance areas from area_results
+                # area_results is a dict with area names as keys and "Passed"/"Failed" as values
+                if assessment.area_results:
+                    # Case-insensitive comparison for defensive coding
+                    passed_areas = sum(
+                        1
+                        for result in assessment.area_results.values()
+                        if result and result.lower() == "passed"
+                    )
+                    total_areas = len(assessment.area_results)
+                    if total_areas > 0:
+                        overall_score = round(passed_areas / total_areas * 100, 2)
+                        governance_areas_passed = passed_areas
+                        total_governance_areas = total_areas
+
+                # Calculate indicator counts from assessment responses
+                responses = (
+                    db.query(AssessmentResponse)
+                    .filter(AssessmentResponse.assessment_id == assessment.id)
+                    .all()
                 )
-                total_areas = len(assessment.area_results)
-                if total_areas > 0:
-                    overall_score = round(passed_areas / total_areas * 100, 2)
+
+                if responses:
+                    pass_count = sum(
+                        1 for r in responses if r.validation_status == ValidationStatus.PASS
+                    )
+                    conditional_count = sum(
+                        1 for r in responses if r.validation_status == ValidationStatus.CONDITIONAL
+                    )
+                    total_responses = len(responses)
 
             barangay_statuses.append(
                 BarangayAssessmentStatus(
@@ -621,8 +767,11 @@ class MunicipalAnalyticsService:
                     assessment_id=assessment.id,
                     status=assessment.status.value,
                     compliance_status=(
+                        # Only show compliance status if assessment is COMPLETED
+                        # This ensures consistency between overview and verdict results tabs
                         assessment.final_compliance_status.value
-                        if assessment.final_compliance_status
+                        if assessment.status == AssessmentStatus.COMPLETED
+                        and assessment.final_compliance_status
                         else None
                     ),
                     submitted_at=assessment.submitted_at,
@@ -630,6 +779,11 @@ class MunicipalAnalyticsService:
                     overall_score=overall_score,
                     has_capdev_insights=bool(assessment.capdev_insights),
                     capdev_status=assessment.capdev_insights_status,
+                    governance_areas_passed=governance_areas_passed,
+                    total_governance_areas=total_governance_areas,
+                    pass_count=pass_count,
+                    conditional_count=conditional_count,
+                    total_responses=total_responses,
                 )
             )
 

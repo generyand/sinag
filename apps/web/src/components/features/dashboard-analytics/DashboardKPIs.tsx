@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
+import { AnalyticsEmptyState } from "@/components/features/analytics";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
-  ComplianceRate,
   AreaBreakdown,
-  FailedIndicator,
   BarangayRanking,
-} from '@sinag/shared';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { CheckCircle2, XCircle, AlertCircle, TrendingUp, TrendingDown, Info } from 'lucide-react';
-import { AnalyticsEmptyState } from '@/components/features/analytics';
+  ComplianceRate,
+  FailedIndicator,
+} from "@sinag/shared";
+import { AlertCircle, CheckCircle2, Info, TrendingDown, TrendingUp, XCircle } from "lucide-react";
 
 /**
  * Returns semantic color based on percentage value.
@@ -22,22 +22,22 @@ import { AnalyticsEmptyState } from '@/components/features/analytics';
 function getSemanticColor(percentage: number): { text: string; progress: string; badge: string } {
   if (percentage >= 70) {
     return {
-      text: 'text-green-600 dark:text-green-400',
-      progress: '#16a34a', // green-600
-      badge: 'border-green-600 dark:border-green-400 text-green-700 dark:text-green-300',
+      text: "text-green-600 dark:text-green-400",
+      progress: "#16a34a", // green-600
+      badge: "border-green-600 dark:border-green-400 text-green-700 dark:text-green-300",
     };
   }
   if (percentage >= 50) {
     return {
-      text: 'text-yellow-600 dark:text-yellow-400',
-      progress: '#ca8a04', // yellow-600
-      badge: 'border-yellow-600 dark:border-yellow-400 text-yellow-700 dark:text-yellow-300',
+      text: "text-yellow-600 dark:text-yellow-400",
+      progress: "#ca8a04", // yellow-600
+      badge: "border-yellow-600 dark:border-yellow-400 text-yellow-700 dark:text-yellow-300",
     };
   }
   return {
-    text: 'text-red-600 dark:text-red-400',
-    progress: '#dc2626', // red-600
-    badge: 'border-red-600 dark:border-red-400 text-red-700 dark:text-red-300',
+    text: "text-red-600 dark:text-red-400",
+    progress: "#dc2626", // red-600
+    badge: "border-red-600 dark:border-red-400 text-red-700 dark:text-red-300",
   };
 }
 
@@ -52,8 +52,8 @@ interface ComplianceRateCardProps {
 
 export function ComplianceRateCard({
   data,
-  title = 'Overall Compliance Rate',
-  description = 'Total pass/fail statistics across all barangays',
+  title = "Overall Compliance Rate",
+  description = "Total pass/fail statistics across all barangays",
 }: ComplianceRateCardProps) {
   const { total_barangays, passed, failed, pass_percentage } = data;
   const colors = getSemanticColor(pass_percentage);
@@ -68,7 +68,10 @@ export function ComplianceRateCard({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-[var(--muted-foreground)] cursor-help" aria-hidden="true" />
+                  <Info
+                    className="h-4 w-4 text-[var(--muted-foreground)] cursor-help"
+                    aria-hidden="true"
+                  />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Percentage of barangays that passed SGLGB compliance</p>
@@ -100,14 +103,21 @@ export function ComplianceRateCard({
         />
 
         {/* Statistics Grid */}
-        <div className="grid grid-cols-3 gap-3 pt-2" role="group" aria-label="Compliance statistics">
+        <div
+          className="grid grid-cols-3 gap-3 pt-2"
+          role="group"
+          aria-label="Compliance statistics"
+        >
           <div className="space-y-1">
             <p className="text-xs text-[var(--muted-foreground)]">Total</p>
             <p className="text-lg font-semibold text-[var(--foreground)]">{total_barangays}</p>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" aria-hidden="true" />
+              <CheckCircle2
+                className="h-3 w-3 text-green-600 dark:text-green-400"
+                aria-hidden="true"
+              />
               <p className="text-xs text-[var(--muted-foreground)]">Passed</p>
             </div>
             <p className="text-lg font-semibold text-green-600 dark:text-green-400">{passed}</p>
@@ -133,7 +143,12 @@ interface CompletionStatusCardProps {
 }
 
 export function CompletionStatusCard({ data }: CompletionStatusCardProps) {
-  const { total_barangays, passed: validated, failed: inProgress, pass_percentage: completionRate } = data;
+  const {
+    total_barangays,
+    passed: validated,
+    failed: inProgress,
+    pass_percentage: completionRate,
+  } = data;
   const colors = getSemanticColor(completionRate);
 
   return (
@@ -158,12 +173,22 @@ export function CompletionStatusCard({ data }: CompletionStatusCardProps) {
         />
 
         {/* Status Badges */}
-        <div className="flex flex-wrap gap-2 pt-2" role="group" aria-label="Validation status breakdown">
-          <Badge variant="default" className="rounded-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30">
+        <div
+          className="flex flex-wrap gap-2 pt-2"
+          role="group"
+          aria-label="Validation status breakdown"
+        >
+          <Badge
+            variant="default"
+            className="rounded-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30"
+          >
             <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
             {validated} Validated
           </Badge>
-          <Badge variant="default" className="rounded-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30">
+          <Badge
+            variant="default"
+            className="rounded-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+          >
             <AlertCircle className="mr-1 h-3 w-3" aria-hidden="true" />
             {inProgress} In Progress
           </Badge>
@@ -187,7 +212,11 @@ interface AreaBreakdownCardProps {
 
 export function AreaBreakdownCard({ data }: AreaBreakdownCardProps) {
   return (
-    <Card className="col-span-full lg:col-span-2" role="region" aria-labelledby="area-breakdown-title">
+    <Card
+      className="col-span-full lg:col-span-2"
+      role="region"
+      aria-labelledby="area-breakdown-title"
+    >
       <CardHeader>
         <CardTitle id="area-breakdown-title">Governance Area Breakdown</CardTitle>
         <CardDescription>Compliance rates by governance area</CardDescription>
@@ -203,12 +232,16 @@ export function AreaBreakdownCard({ data }: AreaBreakdownCardProps) {
                 <div key={area.area_code} className="space-y-2" role="listitem">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-[var(--foreground)]">{area.area_name}</p>
+                      <p className="text-sm font-medium text-[var(--foreground)]">
+                        {area.area_name}
+                      </p>
                       <p className="text-xs text-[var(--muted-foreground)]">{area.area_code}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right text-xs">
-                        <span className="text-green-600 dark:text-green-400">{area.passed} pass</span>
+                        <span className="text-green-600 dark:text-green-400">
+                          {area.passed} pass
+                        </span>
                         <span className="mx-1 text-[var(--muted-foreground)]">•</span>
                         <span className="text-red-600 dark:text-red-400">{area.failed} fail</span>
                       </div>
@@ -252,7 +285,11 @@ export function TopFailedIndicatorsCard({ data }: TopFailedIndicatorsCardProps) 
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <AnalyticsEmptyState variant="no-assessments" compact description="No failed indicators to display" />
+          <AnalyticsEmptyState
+            variant="no-assessments"
+            compact
+            description="No failed indicators to display"
+          />
         ) : (
           <div className="space-y-3" role="list" aria-label="Failed indicators">
             {data.map((indicator, index) => (
@@ -298,7 +335,7 @@ export function TopFailedIndicatorsCard({ data }: TopFailedIndicatorsCardProps) 
 }
 
 /**
- * BarangayRankingsCard - Shows barangays ranked by compliance score
+ * BarangayRankingsCard - Shows barangays ranked by compliance rate
  */
 interface BarangayRankingsCardProps {
   data: BarangayRanking[];
@@ -315,7 +352,7 @@ export function BarangayRankingsCard({ data }: BarangayRankingsCardProps) {
           <TrendingUp className="h-5 w-5 text-blue-600" aria-hidden="true" />
           Barangay Rankings
         </CardTitle>
-        <CardDescription>Top performing barangays by compliance score</CardDescription>
+        <CardDescription>Top performing barangays by compliance rate</CardDescription>
       </CardHeader>
       <CardContent>
         {topRankings.length === 0 ? (
@@ -334,12 +371,12 @@ export function BarangayRankingsCard({ data }: BarangayRankingsCardProps) {
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full font-bold text-white flex-shrink-0 ${
                       ranking.rank === 1
-                        ? 'bg-yellow-500'
+                        ? "bg-yellow-500"
                         : ranking.rank === 2
-                          ? 'bg-gray-400'
+                          ? "bg-gray-400"
                           : ranking.rank === 3
-                            ? 'bg-orange-600'
-                            : 'bg-blue-600'
+                            ? "bg-orange-600"
+                            : "bg-blue-600"
                     }`}
                     aria-label={`Rank ${ranking.rank}`}
                   >

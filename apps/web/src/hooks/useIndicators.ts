@@ -11,7 +11,7 @@ import {
   type GetIndicatorsParams,
   type IndicatorCreate,
   type IndicatorUpdate,
-} from '@sinag/shared';
+} from "@sinag/shared";
 
 /**
  * Hook to fetch list of indicators with optional filters

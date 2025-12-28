@@ -2,15 +2,17 @@
 
 ## Overview
 
-Implement percentage-based BBI functionality ratings following DILG MC 2024-417 guidelines. Each BBI will have a compliance rate calculated from sub-indicator pass/fail status, mapped to a 3-tier adjectival rating.
+Implement percentage-based BBI functionality ratings following DILG MC 2024-417 guidelines. Each BBI
+will have a compliance rate calculated from sub-indicator pass/fail status, mapped to a 3-tier
+adjectival rating.
 
 ### Rating Tiers (per DILG MC)
 
-| Compliance Rate | Adjectival Rating |
-|-----------------|-------------------|
-| 75% - 100% | Highly Functional |
-| 50% - 74% | Moderately Functional |
-| Below 50% | Low Functional |
+| Compliance Rate | Adjectival Rating     |
+| --------------- | --------------------- |
+| 75% - 100%      | Highly Functional     |
+| 50% - 74%       | Moderately Functional |
+| Below 50%       | Low Functional        |
 
 ### Calculation Logic
 
@@ -44,6 +46,7 @@ class BBIStatus(str, enum.Enum):
 **File**: `apps/api/app/db/models/bbi.py`
 
 Add new fields to `BBIResult`:
+
 - `compliance_percentage: Float` - Calculated percentage (0-100)
 - `compliance_rating: BBIStatus` - 3-tier rating
 - `sub_indicator_results: JSON` - Details of each sub-indicator's pass/fail
@@ -51,6 +54,7 @@ Add new fields to `BBIResult`:
 ### 1.3 Database Migration
 
 Create Alembic migration to:
+
 1. Add new enum values to `bbi_status_enum`
 2. Add `compliance_percentage` column (Float, nullable)
 3. Add `compliance_rating` column (using extended enum)
@@ -180,6 +184,7 @@ Response: BBIComplianceResult
 ### 4.2 Update Existing Endpoints
 
 Update `GET /api/v1/bbis/results/assessment/{assessment_id}` to include:
+
 - `compliance_percentage`
 - `compliance_rating`
 - `sub_indicator_results`
@@ -195,10 +200,7 @@ Update `GET /api/v1/bbis/results/assessment/{assessment_id}` to include:
 Add a new card showing BBI functionality ratings when assessment is COMPLETED:
 
 ```tsx
-<BBIVerdictCard
-  assessmentId={assessment.id}
-  showWhen={assessment.status === "COMPLETED"}
-/>
+<BBIVerdictCard assessmentId={assessment.id} showWhen={assessment.status === "COMPLETED"} />
 ```
 
 ### 5.2 Create BBIVerdictCard Component
@@ -206,6 +208,7 @@ Add a new card showing BBI functionality ratings when assessment is COMPLETED:
 **File**: `apps/web/src/components/features/blgu/dashboard/BBIVerdictCard.tsx`
 
 Display:
+
 - List of 7 BBIs with their compliance ratings
 - Color-coded badges (Green=Highly, Yellow=Moderate, Red=Low)
 - Percentage for each BBI
@@ -222,15 +225,13 @@ Display:
 Add new section after governance areas showing BBI functionality:
 
 ```tsx
-<BBIComplianceSection
-  assessmentId={selectedAssessment.id}
-  barangayName={selectedBarangay.name}
-/>
+<BBIComplianceSection assessmentId={selectedAssessment.id} barangayName={selectedBarangay.name} />
 ```
 
 ### 6.2 Include in Export
 
 Update PDF/Excel export to include BBI compliance table with:
+
 - BBI name
 - Compliance percentage
 - Adjectival rating
@@ -245,6 +246,7 @@ Update PDF/Excel export to include BBI compliance table with:
 **File**: `apps/web/src/app/(app)/validator/submissions/[id]/page.tsx`
 
 Add read-only BBI status preview panel:
+
 - Shows current compliance calculation based on checked items
 - Updates in real-time as validator checks/unchecks items
 - Informational only (validators don't directly set BBI status)
@@ -258,6 +260,7 @@ Add read-only BBI status preview panel:
 **File**: `apps/web/src/app/(app)/mlgoo/dashboard/page.tsx`
 
 Add KPI card showing aggregate BBI stats:
+
 - Total barangays with Highly Functional BBIs
 - Percentage breakdown by rating tier
 - Trend vs previous cycle
@@ -271,6 +274,7 @@ Leverage existing `BBIFunctionalityWidget` in analytics page (already implemente
 ## Implementation Order
 
 ### Week 1: Backend Foundation
+
 1. [ ] Extend BBIStatus enum
 2. [ ] Create database migration
 3. [ ] Update BBIResult model
@@ -280,6 +284,7 @@ Leverage existing `BBIFunctionalityWidget` in analytics page (already implemente
 7. [ ] Run `pnpm generate-types`
 
 ### Week 2: Frontend Integration
+
 1. [ ] BLGU Dashboard - BBIVerdictCard
 2. [ ] GAR Report - BBIComplianceSection
 3. [ ] GAR Export - Include BBI data
@@ -287,6 +292,7 @@ Leverage existing `BBIFunctionalityWidget` in analytics page (already implemente
 5. [ ] MLGOO Dashboard - BBI KPI card
 
 ### Week 3: Testing & Polish
+
 1. [ ] Unit tests for calculation logic
 2. [ ] Integration tests for API endpoints
 3. [ ] E2E tests for frontend flows
@@ -298,6 +304,7 @@ Leverage existing `BBIFunctionalityWidget` in analytics page (already implemente
 ## Files to Modify
 
 ### Backend
+
 - `apps/api/app/db/enums.py` - Extend BBIStatus enum
 - `apps/api/app/db/models/bbi.py` - Add compliance fields to BBIResult
 - `apps/api/app/services/bbi_service.py` - New compliance calculation logic
@@ -306,6 +313,7 @@ Leverage existing `BBIFunctionalityWidget` in analytics page (already implemente
 - `apps/api/alembic/versions/` - New migration file
 
 ### Frontend
+
 - `apps/web/src/components/features/blgu/dashboard/VerdictSection.tsx`
 - `apps/web/src/components/features/blgu/dashboard/BBIVerdictCard.tsx` (new)
 - `apps/web/src/components/features/reports/GARReportDisplay.tsx`
@@ -314,6 +322,7 @@ Leverage existing `BBIFunctionalityWidget` in analytics page (already implemente
 - `apps/web/src/app/(app)/mlgoo/dashboard/page.tsx`
 
 ### Generated (auto)
+
 - `packages/shared/src/generated/` - After running `pnpm generate-types`
 
 ---

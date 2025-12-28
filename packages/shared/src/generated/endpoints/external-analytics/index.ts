@@ -84,7 +84,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsOverall>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsOverall>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExternalAnalyticsOverallQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsOverall>>>
@@ -154,7 +154,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsGovernanceAreas>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsGovernanceAreas>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExternalAnalyticsGovernanceAreasQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsGovernanceAreas>>>
@@ -224,7 +224,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsTopFailingIndicators>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsTopFailingIndicators>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExternalAnalyticsTopFailingIndicatorsQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsTopFailingIndicators>>>
@@ -294,7 +294,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsAiInsightsSummary>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsAiInsightsSummary>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExternalAnalyticsAiInsightsSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsAiInsightsSummary>>>
@@ -364,7 +364,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsDashboard>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsDashboard>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExternalAnalyticsDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsDashboard>>>
@@ -434,7 +434,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsExportCsv>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsExportCsv>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExternalAnalyticsExportCsvQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsExportCsv>>>
@@ -504,7 +504,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn,   staleTime: 300000, refetchOnWindowFocus: false,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsExportPdf>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsExportPdf>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetExternalAnalyticsExportPdfQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsExportPdf>>>

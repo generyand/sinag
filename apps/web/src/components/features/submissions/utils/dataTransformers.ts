@@ -2,6 +2,23 @@ import { AssessmentStatus } from "@sinag/shared";
 import { API_STATUS_TO_LABEL } from "./statusConfig";
 
 /**
+ * Reviewer role type - distinguishes between assessors and validators.
+ */
+export type ReviewerRole = "assessor" | "validator" | "unknown";
+
+/**
+ * UI representation of a reviewer (assessor or validator) who has reviewed an assessment.
+ */
+export interface ReviewerInfo {
+  id: number;
+  name: string;
+  avatar: string;
+  role: ReviewerRole;
+  /** Governance area ID for validators (used to show area icon) */
+  governanceAreaId?: number;
+}
+
+/**
  * UI representation of a submission for the table view.
  */
 export interface SubmissionUIModel {
@@ -9,17 +26,16 @@ export interface SubmissionUIModel {
   barangayName: string;
   overallProgress: number;
   currentStatus: string;
-  assignedValidators: Array<{
-    id: number;
-    name: string;
-    avatar: string;
-  }>;
+  /** Reviewers who have reviewed this assessment (assessors and validators) */
+  reviewers: ReviewerInfo[];
+  /** @deprecated Use `reviewers` instead. Kept for backward compatibility. */
+  assignedValidators: ReviewerInfo[];
   lastUpdated: string;
 }
 
 /**
  * Raw assessment data from the API.
- * Using a flexible type since the API response structure may vary.
+ * Matches the response from GET /assessments/list endpoint.
  */
 interface ApiAssessment {
   id: number;
@@ -27,12 +43,16 @@ interface ApiAssessment {
   status: string;
   is_mlgoo_recalibration?: boolean;
   final_compliance_status?: string;
-  area_results?: Record<string, { compliance_rate?: number }>;
+  /** Area results mapping area names to "Passed" or "Failed" status */
+  area_results?: Record<string, string>;
   updated_at?: string;
+  /** Reviewers (assessors/validators) who have reviewed this assessment */
   validators?: Array<{
     id: number;
     name: string;
     initials?: string;
+    role?: "assessor" | "validator";
+    governance_area_id?: number;
   }>;
 }
 
@@ -40,12 +60,14 @@ interface ApiAssessment {
  * Transforms a single API assessment into a UI model.
  */
 export function transformAssessmentToUI(assessment: ApiAssessment): SubmissionUIModel {
+  const reviewers = transformReviewers(assessment.validators);
   return {
     id: assessment.id,
     barangayName: assessment.barangay_name ?? "Unknown",
     overallProgress: calculateProgress(assessment),
     currentStatus: determineDisplayStatus(assessment),
-    assignedValidators: transformValidators(assessment.validators),
+    reviewers,
+    assignedValidators: reviewers, // Backward compatibility
     lastUpdated: formatLastUpdated(assessment.updated_at),
   };
 }
@@ -73,8 +95,19 @@ function determineDisplayStatus(assessment: ApiAssessment): string {
 }
 
 /**
- * Calculates the overall progress percentage based on assessment status and data.
- * Completed assessments always show 100%.
+ * Calculates the overall progress percentage based on assessment workflow status.
+ *
+ * Progress represents how far an assessment has progressed through the workflow:
+ * - DRAFT: 0% (not started)
+ * - SUBMITTED: 25% (submitted, awaiting review)
+ * - IN_REVIEW: 50% (being reviewed by assessor)
+ * - REWORK: 50% (sent back for corrections, still in review phase)
+ * - AWAITING_FINAL_VALIDATION: 75% (assessor done, awaiting validators)
+ * - AWAITING_MLGOO_APPROVAL: 90% (validators done, awaiting final approval)
+ * - COMPLETED/VALIDATED: 100% (fully complete)
+ *
+ * Note: This is purely workflow progress, NOT compliance/pass rate.
+ * Compliance rate should be shown separately if needed.
  */
 function calculateProgress(assessment: ApiAssessment): number {
   // Final states always show 100%
@@ -85,7 +118,7 @@ function calculateProgress(assessment: ApiAssessment): number {
     return 100;
   }
 
-  // Check compliance status
+  // Check compliance status - if already marked compliant, show 100%
   if (
     assessment.final_compliance_status === "COMPLIANT" ||
     assessment.final_compliance_status === "PASSED"
@@ -93,54 +126,95 @@ function calculateProgress(assessment: ApiAssessment): number {
     return 100;
   }
 
-  // Calculate from area results if available
-  if (assessment.area_results && typeof assessment.area_results === "object") {
-    const results = Object.values(assessment.area_results);
-    if (results.length > 0) {
-      const totalCompliance = results.reduce((sum, result) => {
-        return sum + (result?.compliance_rate ?? 0);
-      }, 0);
-      return Math.round(totalCompliance / results.length);
-    }
-  }
-
-  // Fallback based on status
+  // Return workflow-based progress
   return getProgressFallbackByStatus(assessment.status);
 }
 
 /**
- * Returns a fallback progress percentage based on assessment status.
+ * Returns workflow progress percentage based on assessment status.
+ *
+ * Workflow stages (linear progression):
+ * 1. DRAFT (0%) - BLGU working on assessment
+ * 2. SUBMITTED (25%) - Submitted, waiting for assessor
+ * 3. IN_REVIEW (50%) - Assessor reviewing
+ * 4. REWORK (50%) - Sent back for fixes (same stage as review)
+ * 5. AWAITING_FINAL_VALIDATION (75%) - Assessor done, validators reviewing
+ * 6. AWAITING_MLGOO_APPROVAL (90%) - Validators done, MLGOO final review
+ * 7. COMPLETED (100%) - Fully approved
  */
 function getProgressFallbackByStatus(status: string): number {
   const progressByStatus: Record<string, number> = {
-    [AssessmentStatus.AWAITING_MLGOO_APPROVAL]: 95,
-    [AssessmentStatus.AWAITING_FINAL_VALIDATION]: 90,
-    [AssessmentStatus.IN_REVIEW]: 75,
-    [AssessmentStatus.SUBMITTED]: 50,
-    [AssessmentStatus.SUBMITTED_FOR_REVIEW]: 50,
-    [AssessmentStatus.REWORK]: 25,
-    [AssessmentStatus.NEEDS_REWORK]: 25,
     [AssessmentStatus.DRAFT]: 0,
+    [AssessmentStatus.SUBMITTED]: 25,
+    [AssessmentStatus.SUBMITTED_FOR_REVIEW]: 25,
+    [AssessmentStatus.IN_REVIEW]: 50,
+    [AssessmentStatus.REWORK]: 50,
+    [AssessmentStatus.NEEDS_REWORK]: 50,
+    [AssessmentStatus.AWAITING_FINAL_VALIDATION]: 75,
+    [AssessmentStatus.AWAITING_MLGOO_APPROVAL]: 90,
+    [AssessmentStatus.COMPLETED]: 100,
+    [AssessmentStatus.VALIDATED]: 100,
   };
 
   return progressByStatus[status] ?? 0;
 }
 
 /**
- * Transforms validator data from the API into UI format.
+ * Transforms reviewer data from the API into UI format.
+ * Includes role information to distinguish between assessors and validators.
+ *
+ * Avatar display:
+ * - Assessors: Show "A" + first letter of initials (e.g., "AJ" for Assessor Juan)
+ * - Validators: Show "V" + first letter of initials (e.g., "VM" for Validator Maria)
+ * - Unknown: Show initials as-is
+ *
+ * Colors are applied in the UI component:
+ * - Assessors: Purple gradient
+ * - Validators: Blue gradient
  */
-function transformValidators(
-  validators?: ApiAssessment["validators"]
-): SubmissionUIModel["assignedValidators"] {
+function transformReviewers(validators?: ApiAssessment["validators"]): ReviewerInfo[] {
   if (!validators || !Array.isArray(validators)) {
     return [];
   }
 
-  return validators.map((v) => ({
-    id: v.id,
-    name: v.name,
-    avatar: v.initials ?? "?",
-  }));
+  return validators.map((v) => {
+    // Determine role from API data
+    let role: ReviewerRole = "unknown";
+    if (v.role === "assessor") {
+      role = "assessor";
+    } else if (v.role === "validator") {
+      role = "validator";
+    }
+
+    const initials = v.initials ?? "?";
+
+    // Create role-prefixed avatar for visual distinction
+    // Format: RolePrefix + First initial (e.g., "AJ", "VM")
+    let avatar: string;
+    if (role === "assessor") {
+      avatar = `A${initials.charAt(0)}`;
+    } else if (role === "validator") {
+      avatar = `V${initials.charAt(0)}`;
+    } else {
+      // For unknown roles (e.g., feedback commenters), just show initials
+      avatar = initials.substring(0, 2);
+    }
+
+    return {
+      id: v.id,
+      name: v.name,
+      avatar,
+      role,
+      governanceAreaId: v.governance_area_id,
+    };
+  });
+}
+
+/**
+ * @deprecated Use transformReviewers instead.
+ */
+function transformValidators(validators?: ApiAssessment["validators"]): ReviewerInfo[] {
+  return transformReviewers(validators);
 }
 
 /**

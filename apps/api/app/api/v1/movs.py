@@ -12,7 +12,7 @@ from app.db.enums import UserRole
 from app.db.models.assessment import MOVFile
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
-from app.schemas.assessment import MOVFileListResponse, MOVFileResponse
+from app.schemas.assessment import MOVFileListResponse, MOVFileResponse, SignedUrlResponse
 from app.services.file_validation_service import file_validation_service
 from app.services.storage_service import storage_service
 
@@ -170,6 +170,70 @@ def list_mov_files(
     file_responses = [MOVFileResponse.model_validate(f) for f in files]
 
     return MOVFileListResponse(files=file_responses)
+
+
+@router.get(
+    "/files/{file_id}/signed-url",
+    response_model=SignedUrlResponse,
+    status_code=status.HTTP_200_OK,
+    tags=["movs"],
+    summary="Get a signed URL for a MOV file",
+    description="""
+    Generate a time-limited signed URL for secure access to a MOV file.
+
+    - **Permission check**: Validates user has access to the file
+    - **Time-limited**: URL expires after 1 hour by default
+    - **Secure**: Only authenticated users can generate URLs
+
+    Returns a signed URL that can be used to access the file directly.
+    """,
+)
+def get_signed_url(
+    file_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> SignedUrlResponse:
+    """
+    Get a signed URL for accessing a MOV file.
+
+    Args:
+        file_id: ID of the MOV file
+        db: Database session
+        current_user: Currently authenticated user
+
+    Returns:
+        SignedUrlResponse with signed_url field
+
+    Raises:
+        HTTPException 403: Permission denied
+        HTTPException 404: File not found
+        HTTPException 500: Failed to generate signed URL
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        signed_url = storage_service.get_signed_url_for_file(
+            db=db,
+            file_id=file_id,
+            user_id=current_user.id,
+            expires_in=3600,  # 1 hour
+        )
+
+        return SignedUrlResponse(signed_url=signed_url)
+
+    except HTTPException:
+        # Re-raise HTTPExceptions from the service (403, 404)
+        raise
+
+    except Exception as e:
+        # Log the full error server-side but return a generic message to clients
+        logger.error(f"Failed to generate signed URL for file {file_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate signed URL. Please try again.",
+        )
 
 
 @router.delete(

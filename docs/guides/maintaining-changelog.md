@@ -4,7 +4,8 @@ This guide explains how to maintain the CHANGELOG.md file for the SINAG project.
 
 ## Overview
 
-We follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format, which provides a structured way to document changes for users and developers.
+We follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format, which provides a
+structured way to document changes for users and developers.
 
 **Location**: `/CHANGELOG.md` (project root)
 
@@ -30,58 +31,70 @@ This interactive command will guide you through adding a changelog entry.
 Organize changes under these categories (in order):
 
 ### Added
+
 For new features.
 
 ```markdown
 ### Added
+
 - New user dashboard with real-time metrics
 - Export functionality for assessment reports
 - `/health` endpoint for monitoring
 ```
 
 ### Changed
+
 For changes in existing functionality.
 
 ```markdown
 ### Changed
+
 - Improved performance of assessment query by 50%
 - Updated UI design for login page
 - Refactored service layer to use dependency injection
 ```
 
 ### Deprecated
+
 For soon-to-be removed features (give users warning).
 
 ```markdown
 ### Deprecated
+
 - Old `/api/v1/users/legacy` endpoint (use `/api/v1/users` instead)
 - `AssessmentOldSchema` (will be removed in v2.0.0)
 ```
 
 ### Removed
+
 For removed features.
 
 ```markdown
 ### Removed
+
 - Legacy authentication system
 - Deprecated `/api/v1/old-endpoint`
 ```
 
 ### Fixed
+
 For bug fixes.
 
 ```markdown
 ### Fixed
+
 - Login page infinite loop when credentials invalid
 - Memory leak in assessment processing
 - Incorrect date formatting in reports
 ```
 
 ### Security
+
 For security vulnerability fixes (always highlight these).
 
 ```markdown
 ### Security
+
 - Fixed SQL injection vulnerability in search endpoint
 - Updated dependencies to patch security issues
 ```
@@ -91,11 +104,13 @@ For security vulnerability fixes (always highlight these).
 ### Do ✅
 
 **Be concise but descriptive**
+
 ```markdown
 - Add bulk import functionality for barangays with CSV support
 ```
 
 **Start with a verb**
+
 ```markdown
 - Fix memory leak in Celery worker
 - Add validation for MOV file uploads
@@ -103,18 +118,21 @@ For security vulnerability fixes (always highlight these).
 ```
 
 **Include context when helpful**
+
 ```markdown
 - Improve assessment query performance from 2s to 200ms
 - Add pagination to user list (default 25 per page)
 ```
 
 **Link to PRs or issues when relevant**
+
 ```markdown
 - Fix login error on Safari ([#123](https://github.com/org/repo/pull/123))
 - Add dark mode support ([#45](https://github.com/org/repo/issues/45))
 ```
 
 **Group related changes**
+
 ```markdown
 - Enhance assessment workflow:
   - Add validation step before submission
@@ -125,25 +143,25 @@ For security vulnerability fixes (always highlight these).
 ### Don't ❌
 
 **Don't be vague**
+
 ```markdown
-❌ - Fix bug
-❌ - Update stuff
-❌ - Various improvements
+❌ - Fix bug ❌ - Update stuff ❌ - Various improvements
 ```
 
 **Don't include internal details users don't care about**
+
 ```markdown
-❌ - Refactor internal helper function `_processData`
-❌ - Update dev dependencies
+❌ - Refactor internal helper function `_processData` ❌ - Update dev dependencies
 ```
 
 **Don't duplicate information**
+
 ```markdown
-❌ - Add feature X
-    - Implement feature X  # Same thing!
+❌ - Add feature X - Implement feature X # Same thing!
 ```
 
 **Don't include commit hashes** (users don't need these)
+
 ```markdown
 ❌ - Add feature (commit abc123)
 ```
@@ -161,6 +179,7 @@ Follow [Semantic Versioning](https://semver.org/):
 - **PATCH** (0.0.X): Bug fixes, backward compatible (e.g., 1.2.3 → 1.2.4)
 
 **Examples**:
+
 - `0.1.0` → `0.2.0`: Added assessor validation workflow (new feature)
 - `1.2.0` → `1.2.1`: Fixed login bug (bug fix)
 - `1.5.0` → `2.0.0`: Changed API authentication (breaking change)
@@ -175,10 +194,12 @@ Follow [Semantic Versioning](https://semver.org/):
 ## [1.3.0] - 2025-11-15
 
 ### Added
+
 - Bulk import for barangays
 - Dark mode support
 
 ### Fixed
+
 - Login error on Safari
 ```
 
@@ -250,13 +271,17 @@ git push origin main
 
 1. Review all `[Unreleased]` entries
 2. Rename section:
+
    ```markdown
    ## [0.5.0] - 2025-11-20
 
    ### Added
+
    - ...
    ```
+
 3. Add new `[Unreleased]` section at top:
+
    ```markdown
    ## [Unreleased]
 
@@ -264,6 +289,7 @@ git push origin main
 
    ## [0.5.0] - 2025-11-20
    ```
+
 4. Commit, tag, and push:
    ```bash
    git add CHANGELOG.md
@@ -275,29 +301,35 @@ git push origin main
 ## Best Practices
 
 ### Update Frequently
+
 Update the changelog with each PR or significant commit, not all at once before release.
 
 ### Be User-Focused
+
 Write for your users (other developers, stakeholders), not for yourself.
 
 ### Review Before Release
+
 Before releasing, review all `[Unreleased]` entries for:
+
 - Clarity
 - Completeness
 - Proper categorization
 - User value
 
 ### Keep It Clean
+
 - Remove duplicate entries
 - Merge related changes
 - Fix typos and grammar
 
 ### Version Consistency
+
 Ensure version numbers in:
+
 - CHANGELOG.md
 - package.json (if applicable)
-- Git tags
-all match.
+- Git tags all match.
 
 ## Tools and Automation
 
@@ -308,6 +340,7 @@ Interactive command to add changelog entries.
 ### GitHub Actions (Future)
 
 Consider automating:
+
 - Changelog validation (ensure [Unreleased] exists)
 - Release notes generation from changelog
 - Version bump automation
@@ -330,21 +363,27 @@ These can help auto-generate changelog entries.
 ## Common Mistakes to Avoid
 
 ❌ **Forgetting to update the changelog**
+
 - Solution: Make it part of your PR checklist
 
 ❌ **Adding too much detail**
+
 - Solution: Focus on user-facing changes
 
 ❌ **Using technical jargon**
+
 - Solution: Write for users, not developers (unless it's a technical library)
 
 ❌ **Not categorizing properly**
+
 - Solution: If unsure, discuss with team
 
 ❌ **Forgetting the date on releases**
+
 - Solution: Use today's date in YYYY-MM-DD format
 
 ❌ **Not creating git tags**
+
 - Solution: Always tag releases for easy reference
 
 ## Questions?

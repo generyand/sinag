@@ -1,7 +1,7 @@
 // 🎯 Custom Hooks - Reusable state logic and data management
 
 // Theme hooks
-export { useThemeToggle } from './useThemeToggle';
+export { useThemeToggle } from "./useThemeToggle";
 
 // Assessment Year hooks
 export {
@@ -11,41 +11,54 @@ export {
   useYearSelector,
   useEffectiveYear,
   useIsActiveYear,
-} from './useAssessmentYear';
+} from "./useAssessmentYear";
 
 // User management hooks
-export { useUsers } from './useUsers';
+export { useUsers } from "./useUsers";
 
 // Assessment hooks
 export {
-    useAssessmentValidation, useCurrentAssessment, useDeleteMOV, useGovernanceArea, useIndicator, useSubmitAssessment, useUpdateIndicatorAnswer,
-    useUploadMOV
-} from './useAssessment';
-export { useIndicatorNavigation } from './useIndicatorNavigation';
+  useAssessmentValidation,
+  useCurrentAssessment,
+  useDeleteMOV,
+  useGovernanceArea,
+  useIndicator,
+  useSubmitAssessment,
+  useUpdateIndicatorAnswer,
+  useUploadMOV,
+} from "./useAssessment";
+export { useIndicatorNavigation } from "./useIndicatorNavigation";
 
 // Intelligence hooks
-export { useIntelligence } from './useIntelligence';
+export { useIntelligence } from "./useIntelligence";
 
 // Submissions hooks
-export { useSubmissions } from './useSubmissions';
+export { useSubmissions } from "./useSubmissions";
 
 // Analytics hooks
 export {
-    useBarangays as useAnalyticsBarangays, useCrossMatching, useOfficialPerformance, useSystemicWeakness
-} from './useAnalytics';
+  useBarangays as useAnalyticsBarangays,
+  useCrossMatching,
+  useOfficialPerformance,
+  useSystemicWeakness,
+} from "./useAnalytics";
 
 // Dashboard hooks
-export { useAdminDashboard } from './useAdminDashboard';
-export { useDashboard } from './useDashboard';
+export { useAdminDashboard } from "./useAdminDashboard";
+export { useDashboard } from "./useDashboard";
 
 // Lookup data hooks
-export { useAssessorGovernanceArea } from './useAssessorGovernanceArea';
-export { useBarangays } from './useBarangays';
-export { useGovernanceAreas } from './useGovernanceAreas';
-export { useUserBarangay } from './useUserBarangay';
+export { useAssessorGovernanceArea } from "./useAssessorGovernanceArea";
+export { useValidatorGovernanceArea } from "./useValidatorGovernanceArea";
+export { useBarangays } from "./useBarangays";
+export { useGovernanceAreas } from "./useGovernanceAreas";
+export { useUserBarangay } from "./useUserBarangay";
+
+// Review history hooks
+export { useReviewHistory, useReviewHistoryDetail } from "./useReviewHistory";
 
 // System settings hooks
-export { useSystemSettings } from './useSystemSettings';
+export { useSystemSettings } from "./useSystemSettings";
 
 // Notification hooks
-export { useNotifications, useNotificationCount } from './useNotifications';
+export { useNotifications, useNotificationCount } from "./useNotifications";

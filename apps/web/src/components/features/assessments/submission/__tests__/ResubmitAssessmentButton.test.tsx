@@ -31,10 +31,14 @@ vi.mock("@/hooks/use-toast", () => ({
   }),
 }));
 
-import { usePostAssessmentsAssessmentIdResubmit, usePostAssessmentsAssessmentIdSubmitForCalibration } from "@sinag/shared";
+import {
+  usePostAssessmentsAssessmentIdResubmit,
+  usePostAssessmentsAssessmentIdSubmitForCalibration,
+} from "@sinag/shared";
 
 const mockUseResubmit = usePostAssessmentsAssessmentIdResubmit as ReturnType<typeof vi.fn>;
-const mockUseSubmitForCalibration = usePostAssessmentsAssessmentIdSubmitForCalibration as ReturnType<typeof vi.fn>;
+const mockUseSubmitForCalibration =
+  usePostAssessmentsAssessmentIdSubmitForCalibration as ReturnType<typeof vi.fn>;
 
 describe("ResubmitAssessmentButton", () => {
   const mockAssessmentId = 123;
@@ -144,7 +148,7 @@ describe("ResubmitAssessmentButton", () => {
       await user.hover(button);
 
       // Tooltip should appear - check for role="tooltip"
-      const tooltip = await screen.findByRole('tooltip', { timeout: 2000 });
+      const tooltip = await screen.findByRole("tooltip", { timeout: 2000 });
       expect(tooltip).toHaveTextContent(/Complete all rework requirements before resubmitting/);
     });
 
@@ -233,9 +237,7 @@ describe("ResubmitAssessmentButton", () => {
 
       expect(screen.getByText(/Your assessment will be locked for editing/)).toBeInTheDocument();
       expect(screen.getByText(/An assessor will review your resubmission/)).toBeInTheDocument();
-      expect(
-        screen.getByText(/No additional rework requests are possible/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No additional rework requests are possible/)).toBeInTheDocument();
     });
 
     it("should display accuracy reminder", async () => {
