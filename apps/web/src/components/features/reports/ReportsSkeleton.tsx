@@ -65,7 +65,7 @@ export function ReportsSkeleton() {
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     <div className="grid grid-cols-3 gap-4 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wide pb-2 border-b border-[var(--border)]">
                       <div>Barangay</div>
-                      <div>Score</div>
+                      <div>Compliance Rate</div>
                       <div>Status</div>
                     </div>
 

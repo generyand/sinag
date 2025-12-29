@@ -1530,6 +1530,7 @@ class AnalyticsService:
 
             barangay_map[barangay_id] = BarangayMapPoint(
                 barangay_id=barangay_id,
+                assessment_id=assessment.id,
                 name=barangay.name,
                 lat=lat,
                 lng=lng,

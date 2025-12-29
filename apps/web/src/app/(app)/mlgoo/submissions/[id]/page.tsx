@@ -1344,7 +1344,7 @@ export default function SubmissionDetailsPage() {
                   <CardContent className="pt-6">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-blue-600">{overallScore}%</p>
-                      <p className="text-sm text-gray-500 mt-1">Overall Score</p>
+                      <p className="text-sm text-gray-500 mt-1">Compliance Rate</p>
                     </div>
                   </CardContent>
                 </Card>

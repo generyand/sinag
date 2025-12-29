@@ -13,6 +13,7 @@ import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { ApprovalQueueItemBlguUserId } from '../users';
 import type { ApprovalQueueItemComplianceStatus } from '../compliance';
 import type { ApprovalQueueItemOverallScore } from '../movs';
+import type { BarangayMapPointAssessmentId } from '../assessments';
 import type { BarangayMapPointAssessmentStatus } from '../assessments';
 import type { BarangayAssessmentStatus } from '../assessments';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
@@ -301,6 +302,8 @@ export interface BarangayDistributionItem {
 export interface BarangayMapPoint {
   /** Unique identifier for the barangay */
   barangay_id: number;
+  /** Assessment ID for linking to GAR report */
+  assessment_id?: BarangayMapPointAssessmentId;
   /** Barangay name */
   name: string;
   /** Latitude coordinate */

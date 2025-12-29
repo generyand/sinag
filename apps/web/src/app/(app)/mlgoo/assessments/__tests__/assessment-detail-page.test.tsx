@@ -206,14 +206,14 @@ describe("MLGOO Assessment Detail Page - Async Params Handling", () => {
       expect(componentString).toContain("/assessments");
     });
 
-    it("should display score and status information", async () => {
+    it("should display compliance rate and status information", async () => {
       const { default: AssessmentDetailPage } = await import("../[id]/page");
 
       const params = Promise.resolve({ id: "test-789" });
       const component = await AssessmentDetailPage({ params });
 
       const componentString = JSON.stringify(component);
-      expect(componentString).toContain("Overall Score");
+      expect(componentString).toContain("Overall Compliance Rate");
       expect(componentString).toContain("Completed");
     });
   });

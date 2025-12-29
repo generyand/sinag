@@ -1303,6 +1303,12 @@ export type BarangayAssessmentStatusTotalResponses = number | null;
 
 
 /**
+ * BarangayMapPointAssessmentId
+ */
+export type BarangayMapPointAssessmentId = number | null;
+
+
+/**
  * BarangayMapPointAssessmentStatus
  */
 export type BarangayMapPointAssessmentStatus = AssessmentStatusDetail | null;

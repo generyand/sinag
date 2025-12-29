@@ -351,6 +351,7 @@ class BarangayMapPoint(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     barangay_id: int = Field(..., description="Unique identifier for the barangay")
+    assessment_id: int | None = Field(None, description="Assessment ID for linking to GAR report")
     name: str = Field(..., description="Barangay name")
     lat: float | None = Field(None, description="Latitude coordinate")
     lng: float | None = Field(None, description="Longitude coordinate")

@@ -274,7 +274,7 @@ describe("BarangayRankingsCard", () => {
     },
   ];
 
-  it("renders barangay names and scores correctly", () => {
+  it("renders barangay names and compliance rates correctly", () => {
     render(<BarangayRankingsCard data={mockData} />);
 
     // Check title
@@ -286,7 +286,7 @@ describe("BarangayRankingsCard", () => {
     expect(screen.getByText("Barangay Gamma")).toBeInTheDocument();
     expect(screen.getByText("Barangay Delta")).toBeInTheDocument();
 
-    // Check scores
+    // Check compliance rates
     expect(screen.getByText("95.5%")).toBeInTheDocument();
     expect(screen.getByText("90.0%")).toBeInTheDocument();
     expect(screen.getByText("85.5%")).toBeInTheDocument();

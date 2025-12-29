@@ -9,11 +9,13 @@ import {
   Circle,
   ClipboardList,
   Clock,
+  ExternalLink,
   MapPin,
   X,
   XCircle,
 } from "lucide-react";
-import React, { useCallback, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { BARANGAY_PATHS } from "./sulop-barangay-paths";
 
 /**
@@ -64,9 +66,22 @@ interface BarangayData {
   status: "pass" | "fail" | "in_progress" | "not_started";
   compliance_rate?: number;
   submission_count?: number;
+  assessment_id?: number; // Assessment ID for linking to GAR page
   assessmentStatus?: AssessmentStatus;
   workflowStatus?: WorkflowStatus;
 }
+
+/**
+ * Mapping from indicator codes to governance area IDs for GAR page navigation
+ */
+const INDICATOR_TO_AREA_ID: Record<CoreIndicatorCode | EssentialIndicatorCode, string> = {
+  FAS: "1", // CGA 1: Financial Administration & Sustainability
+  DP: "2", // CGA 2: Disaster Preparedness
+  SPO: "3", // CGA 3: Safety, Peace & Order
+  SPS: "4", // EGA 1: Social Protection & Sensitivity
+  BFC: "5", // EGA 2: Business-Friendliness & Competitiveness
+  EM: "6", // EGA 3: Environmental Management
+};
 
 interface SulopBarangayMapProps {
   barangays: BarangayData[];
@@ -308,66 +323,123 @@ function HeroStatusCard({
 }
 
 /**
+ * Clickable indicator pill for governance area navigation
+ * Extracted as a separate component to prevent re-creation on every render
+ */
+const IndicatorPill = React.memo(function IndicatorPill({
+  code,
+  status,
+  fullName,
+  isClickable,
+  onClick,
+}: {
+  code: CoreIndicatorCode | EssentialIndicatorCode;
+  status: IndicatorStatus;
+  fullName: string;
+  isClickable: boolean;
+  onClick: () => void;
+}) {
+  const isPassed = status === "passed";
+  const isFailed = status === "failed";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!isClickable}
+      className={cn(
+        "group relative flex items-center gap-1 px-2 py-1 rounded border transition-all duration-200",
+        isPassed &&
+          "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700",
+        isFailed && "bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-700",
+        !isPassed &&
+          !isFailed &&
+          "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700",
+        isClickable &&
+          "cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-offset-1 dark:hover:ring-offset-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500",
+        !isClickable && "cursor-default"
+      )}
+      title={fullName}
+      aria-label={`${fullName}: ${status}${isClickable ? " - Click to view detailed results" : ""}`}
+    >
+      {/* Status icon */}
+      <div
+        className={cn(
+          "flex items-center justify-center w-4 h-4 rounded-full",
+          isPassed && "bg-emerald-500",
+          isFailed && "bg-red-500",
+          !isPassed && !isFailed && "bg-slate-300 dark:bg-slate-600"
+        )}
+      >
+        {isPassed && <Check className="h-2.5 w-2.5 text-white stroke-[3]" />}
+        {isFailed && <X className="h-2.5 w-2.5 text-white stroke-[3]" />}
+        {!isPassed && !isFailed && <Circle className="h-2 w-2 text-white" />}
+      </div>
+
+      {/* Indicator code */}
+      <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">{code}</span>
+
+      {/* External link icon for clickable indicators */}
+      {isClickable && (
+        <ExternalLink className="h-2.5 w-2.5 text-slate-400 dark:text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+      )}
+
+      {/* Enhanced tooltip on hover */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1.5 bg-slate-900 dark:bg-slate-700 text-white text-[9px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 max-w-[180px]">
+        <div className="font-semibold">{fullName}</div>
+        {isClickable && (
+          <div className="text-blue-300 dark:text-blue-400 mt-0.5 flex items-center gap-1">
+            <ExternalLink className="h-2 w-2" />
+            Click to view detailed results
+          </div>
+        )}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700" />
+      </div>
+    </button>
+  );
+});
+
+/**
  * Compact Assessment Status Section with inline indicators
  */
-function AssessmentStatusSection({ assessmentStatus }: { assessmentStatus: AssessmentStatus }) {
+function AssessmentStatusSection({
+  assessmentStatus,
+  assessmentId,
+}: {
+  assessmentStatus: AssessmentStatus;
+  assessmentId?: number;
+}) {
+  const router = useRouter();
   const coreIndicators: CoreIndicatorCode[] = ["FAS", "DP", "SPO"];
   const essentialIndicators: EssentialIndicatorCode[] = ["SPS", "BFC", "EM"];
 
   const allCorePassed = assessmentStatus.core.passed === assessmentStatus.core.total;
   // Essential only requires at least 1 to pass
   const essentialMet = assessmentStatus.essential.passed >= 1;
+  const isClickable = !!assessmentId;
 
-  const IndicatorPill = ({
-    code,
-    status,
-    fullName,
-  }: {
-    code: string;
-    status: IndicatorStatus;
-    fullName: string;
-  }) => {
-    const isPassed = status === "passed";
-    const isFailed = status === "failed";
+  // Memoized click handlers to prevent re-creation on every render
+  const handleIndicatorClick = useCallback(
+    (code: CoreIndicatorCode | EssentialIndicatorCode) => {
+      if (!assessmentId) return;
+      const areaId = INDICATOR_TO_AREA_ID[code];
+      router.push(`/mlgoo/gar?assessmentId=${assessmentId}&areaId=${areaId}`);
+    },
+    [assessmentId, router]
+  );
 
-    return (
-      <div
-        className={cn(
-          "group relative flex items-center gap-1 px-2 py-1 rounded border transition-all duration-200",
-          isPassed &&
-            "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700",
-          isFailed && "bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-700",
-          !isPassed &&
-            !isFailed &&
-            "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
-        )}
-        title={fullName}
-      >
-        {/* Status icon */}
-        <div
-          className={cn(
-            "flex items-center justify-center w-4 h-4 rounded-full",
-            isPassed && "bg-emerald-500",
-            isFailed && "bg-red-500",
-            !isPassed && !isFailed && "bg-slate-300 dark:bg-slate-600"
-          )}
-        >
-          {isPassed && <Check className="h-2.5 w-2.5 text-white stroke-[3]" />}
-          {isFailed && <X className="h-2.5 w-2.5 text-white stroke-[3]" />}
-          {!isPassed && !isFailed && <Circle className="h-2 w-2 text-white" />}
-        </div>
-
-        {/* Indicator code */}
-        <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">{code}</span>
-
-        {/* Tooltip on hover */}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-slate-900 dark:bg-slate-700 text-white text-[9px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
-          {fullName}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700" />
-        </div>
-      </div>
-    );
-  };
+  // Create stable click handlers for each indicator
+  const clickHandlers = useMemo(
+    () => ({
+      FAS: () => handleIndicatorClick("FAS"),
+      DP: () => handleIndicatorClick("DP"),
+      SPO: () => handleIndicatorClick("SPO"),
+      SPS: () => handleIndicatorClick("SPS"),
+      BFC: () => handleIndicatorClick("BFC"),
+      EM: () => handleIndicatorClick("EM"),
+    }),
+    [handleIndicatorClick]
+  );
 
   return (
     <div className="space-y-3">
@@ -407,6 +479,8 @@ function AssessmentStatusSection({ assessmentStatus }: { assessmentStatus: Asses
               code={code}
               status={assessmentStatus.core.indicators[code]}
               fullName={INDICATOR_FULL_NAMES[code]}
+              isClickable={isClickable}
+              onClick={clickHandlers[code]}
             />
           ))}
         </div>
@@ -444,6 +518,8 @@ function AssessmentStatusSection({ assessmentStatus }: { assessmentStatus: Asses
               code={code}
               status={assessmentStatus.essential.indicators[code]}
               fullName={INDICATOR_FULL_NAMES[code]}
+              isClickable={isClickable}
+              onClick={clickHandlers[code]}
             />
           ))}
         </div>
@@ -1028,6 +1104,7 @@ export function SulopBarangayMapIntegrated({
                       >
                         <AssessmentStatusSection
                           assessmentStatus={displayedBarangay.assessmentStatus}
+                          assessmentId={displayedBarangay.assessment_id}
                         />
                       </div>
                     )}
