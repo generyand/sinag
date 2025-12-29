@@ -94,9 +94,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 "window": 300,
             },  # 5 per 5 min (strict)
             "/api/v1/auth/change-password": {
-                "requests": 3,
-                "window": 300,
-            },  # 3 per 5 min
+                "requests": 100,
+                "window": 60,
+            },  # 100 per 1 min (testing phase - increase before production)
             "/api/v1/auth": {
                 "requests": 10,
                 "window": 60,
