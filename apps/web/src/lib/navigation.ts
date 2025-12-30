@@ -25,19 +25,20 @@ export const mlgooNavigation: NavItem[] = [
 export const blguNavigation: NavItem[] = [
   { name: "Dashboard", href: "/blgu/dashboard", icon: "home" },
   { name: "My Assessments", href: "/blgu/assessments", icon: "clipboard" },
+  { name: "Analytics", href: "/blgu/analytics", icon: "chart" },
   { name: "Profile", href: "/blgu/profile", icon: "user" },
 ];
 
 export const assessorNavigation: NavItem[] = [
   { name: "Submissions Queue", href: "/assessor/submissions", icon: "clipboard" },
   { name: "Review History", href: "/assessor/history", icon: "history" },
-  { name: "Analytics", href: "/assessor/analytics", icon: "chart" },
   { name: "Profile", href: "/assessor/profile", icon: "user" },
 ];
 
 export const validatorNavigation: NavItem[] = [
   { name: "Submissions Queue", href: "/validator/submissions", icon: "clipboard" },
   { name: "Validation History", href: "/validator/history", icon: "history" },
+  { name: "Analytics", href: "/validator/analytics", icon: "chart" },
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 

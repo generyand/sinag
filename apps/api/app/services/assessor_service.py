@@ -6,12 +6,13 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import UploadFile
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 logger = logging.getLogger(__name__)
 
 from app.core.year_resolver import get_year_resolver
-from app.db.enums import AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
+from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
 from app.db.models.assessment import (
     MOV as MOVModel,  # SQLAlchemy model - alias to avoid conflict
 )
@@ -2445,6 +2446,332 @@ class AssessorService:
             "rework_comments": assessment.rework_comments,
             "calibration_comments": None,  # Could add if needed
             "indicators": indicators,
+        }
+
+    def get_validator_dashboard(
+        self, db: Session, validator: User, year: int | None = None, include_draft: bool = False
+    ) -> dict[str, Any]:
+        """
+        Get comprehensive validator dashboard data filtered by governance area.
+
+        This method provides validator-specific analytics that mirror the MLGOO
+        municipal overview but filtered by the validator's assigned governance area.
+
+        Args:
+            db: Database session
+            validator: The validator user (must have validator_area_id)
+            year: Optional year filter
+            include_draft: Include draft assessments
+
+        Returns:
+            dict: Dashboard data with all sections filtered by governance area
+        """
+
+        from app.db.models.barangay import Barangay
+        from app.db.models.governance_area import GovernanceArea
+
+        if validator.validator_area_id is None:
+            raise ValueError("Validator must have an assigned governance area")
+
+        # Get governance area name
+        governance_area = (
+            db.query(GovernanceArea)
+            .filter(GovernanceArea.id == validator.validator_area_id)
+            .first()
+        )
+        governance_area_name = governance_area.name if governance_area else "Unknown"
+
+        # Base query for assessments with responses in validator's governance area
+        base_query = (
+            db.query(Assessment)
+            .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
+            .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
+            .filter(Indicator.governance_area_id == validator.validator_area_id)
+        )
+
+        # Apply year filter
+        if year is not None:
+            base_query = base_query.filter(Assessment.assessment_year == year)
+
+        # Get all assessments with responses in this governance area
+        all_assessments = base_query.distinct(Assessment.id).all()
+
+        # =====================================================================
+        # Compliance Summary (for validator's governance area)
+        # =====================================================================
+
+        # Count total barangays (all in municipality)
+        total_barangays = db.query(func.count(Barangay.id)).scalar() or 0
+
+        # Get completed assessments
+        completed_assessments = [
+            a for a in all_assessments if a.status == AssessmentStatus.COMPLETED
+        ]
+
+        # Calculate pass/fail based on responses in validator's area
+        passed_count = 0
+        failed_count = 0
+        for assessment in completed_assessments:
+            area_responses = [
+                r
+                for r in assessment.responses
+                if r.indicator.governance_area_id == validator.validator_area_id
+            ]
+            if area_responses:
+                pass_count = sum(
+                    1 for r in area_responses if r.validation_status == ValidationStatus.PASS
+                )
+                fail_count = sum(
+                    1 for r in area_responses if r.validation_status == ValidationStatus.FAIL
+                )
+                if pass_count > fail_count:
+                    passed_count += 1
+                elif fail_count > 0:
+                    failed_count += 1
+
+        assessed_count = len(completed_assessments)
+        compliance_rate = (passed_count / assessed_count * 100) if assessed_count > 0 else 0.0
+        assessment_rate = (assessed_count / total_barangays * 100) if total_barangays > 0 else 0.0
+
+        # Count pending and in-progress
+        pending_mlgoo = sum(
+            1 for a in all_assessments if a.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL
+        )
+        in_progress_statuses = [
+            AssessmentStatus.DRAFT,
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.IN_REVIEW,
+            AssessmentStatus.REWORK,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+        ]
+        in_progress = sum(1 for a in all_assessments if a.status in in_progress_statuses)
+
+        # Workflow breakdown
+        status_counts = {
+            AssessmentStatus.DRAFT: 0,
+            AssessmentStatus.SUBMITTED: 0,
+            AssessmentStatus.IN_REVIEW: 0,
+            AssessmentStatus.REWORK: 0,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION: 0,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL: 0,
+            AssessmentStatus.COMPLETED: 0,
+        }
+        for assessment in all_assessments:
+            if assessment.status in status_counts:
+                status_counts[assessment.status] += 1
+
+        # Calculate stalled and rework metrics
+        stalled_threshold = datetime.utcnow() - timedelta(days=14)
+        stalled_count = 0
+        rework_count = 0
+        for assessment in all_assessments:
+            last_update = assessment.updated_at or assessment.created_at
+            if last_update and last_update < stalled_threshold:
+                if assessment.status not in [AssessmentStatus.COMPLETED]:
+                    stalled_count += 1
+            if assessment.rework_count > 0:
+                rework_count += 1
+
+        rework_rate = (rework_count / len(all_assessments) * 100) if all_assessments else 0.0
+
+        compliance_summary = {
+            "total_barangays": total_barangays,
+            "assessed_barangays": assessed_count,
+            "passed_barangays": passed_count,
+            "failed_barangays": failed_count,
+            "compliance_rate": compliance_rate,
+            "assessment_rate": assessment_rate,
+            "pending_mlgoo_approval": pending_mlgoo,
+            "in_progress": in_progress,
+            "workflow_breakdown": {
+                "not_started": total_barangays - len(all_assessments),
+                "draft": status_counts[AssessmentStatus.DRAFT],
+                "submitted": status_counts[AssessmentStatus.SUBMITTED],
+                "in_review": status_counts[AssessmentStatus.IN_REVIEW],
+                "rework": status_counts[AssessmentStatus.REWORK],
+                "awaiting_validation": status_counts[AssessmentStatus.AWAITING_FINAL_VALIDATION],
+                "awaiting_approval": status_counts[AssessmentStatus.AWAITING_MLGOO_APPROVAL],
+                "completed": status_counts[AssessmentStatus.COMPLETED],
+            },
+            "stalled_assessments": stalled_count,
+            "rework_rate": rework_rate,
+            "weighted_progress": 0.0,  # Can calculate if needed
+        }
+
+        # =====================================================================
+        # Governance Area Performance (validator's area only)
+        # =====================================================================
+
+        total_indicators = (
+            db.query(func.count(Indicator.id))
+            .filter(Indicator.governance_area_id == validator.validator_area_id)
+            .scalar()
+            or 0
+        )
+
+        governance_area_performance = {
+            "areas": [
+                {
+                    "id": governance_area.id,
+                    "name": governance_area_name,
+                    "area_type": governance_area.area_type.value if governance_area else "CORE",
+                    "total_indicators": total_indicators,
+                    "passed_count": passed_count,
+                    "failed_count": failed_count,
+                    "pass_rate": compliance_rate,
+                    "common_weaknesses": [],  # Can add CapDev analysis if needed
+                }
+            ],
+            "core_areas_pass_rate": compliance_rate
+            if governance_area and governance_area.area_type == AreaType.CORE
+            else 0.0,
+            "essential_areas_pass_rate": compliance_rate
+            if governance_area and governance_area.area_type == AreaType.ESSENTIAL
+            else 0.0,
+        }
+
+        # =====================================================================
+        # Top Failing Indicators (in validator's area)
+        # =====================================================================
+
+        indicator_failures: dict[int, dict[str, Any]] = {}
+        for assessment in all_assessments:
+            for response in assessment.responses:
+                if response.indicator.governance_area_id != validator.validator_area_id:
+                    continue
+                if response.validation_status == ValidationStatus.FAIL:
+                    indicator_id = response.indicator.id
+                    if indicator_id not in indicator_failures:
+                        indicator_failures[indicator_id] = {
+                            "indicator_id": indicator_id,
+                            "indicator_code": response.indicator.indicator_code,
+                            "indicator_name": response.indicator.name,
+                            "governance_area_id": validator.validator_area_id,
+                            "governance_area": governance_area_name,
+                            "fail_count": 0,
+                            "total_assessed": 0,
+                            "fail_rate": 0.0,
+                            "common_issues": [],
+                        }
+                    indicator_failures[indicator_id]["fail_count"] += 1
+                    indicator_failures[indicator_id]["total_assessed"] += 1
+                elif response.validation_status == ValidationStatus.PASS:
+                    indicator_id = response.indicator.id
+                    if indicator_id not in indicator_failures:
+                        indicator_failures[indicator_id] = {
+                            "indicator_id": indicator_id,
+                            "indicator_code": response.indicator.indicator_code,
+                            "indicator_name": response.indicator.name,
+                            "governance_area_id": validator.validator_area_id,
+                            "governance_area": governance_area_name,
+                            "fail_count": 0,
+                            "total_assessed": 0,
+                            "fail_rate": 0.0,
+                            "common_issues": [],
+                        }
+                    indicator_failures[indicator_id]["total_assessed"] += 1
+
+        # Calculate fail rates and sort
+        for data in indicator_failures.values():
+            if data["total_assessed"] > 0:
+                data["fail_rate"] = (data["fail_count"] / data["total_assessed"]) * 100
+
+        top_failing = sorted(
+            indicator_failures.values(), key=lambda x: x["fail_count"], reverse=True
+        )[:10]
+
+        top_failing_indicators = {
+            "indicators": top_failing,
+            "total_indicators_assessed": len(indicator_failures),
+        }
+
+        # =====================================================================
+        # CapDev Summary (minimal for now)
+        # =====================================================================
+
+        capdev_summary = {
+            "total_assessments_with_capdev": 0,
+            "top_recommendations": [],
+            "common_weaknesses_by_area": {},
+            "priority_interventions": [],
+            "skills_gap_analysis": {},
+        }
+
+        # =====================================================================
+        # Barangay Status List (barangays with responses in validator's area)
+        # =====================================================================
+
+        barangay_list = []
+        for assessment in all_assessments:
+            if not include_draft and assessment.status == AssessmentStatus.DRAFT:
+                continue
+
+            barangay = (
+                assessment.blgu_user.barangay
+                if assessment.blgu_user and assessment.blgu_user.barangay
+                else None
+            )
+            barangay_id = barangay.id if barangay else 0
+            barangay_name = barangay.name if barangay else "Unknown"
+
+            # Check if area responses exist
+            area_responses = [
+                r
+                for r in assessment.responses
+                if r.indicator.governance_area_id == validator.validator_area_id
+            ]
+
+            # Calculate compliance for this area
+            area_pass_count = sum(
+                1 for r in area_responses if r.validation_status == ValidationStatus.PASS
+            )
+            area_fail_count = sum(
+                1 for r in area_responses if r.validation_status == ValidationStatus.FAIL
+            )
+            area_compliance = (
+                (
+                    ComplianceStatus.PASSED
+                    if area_pass_count > area_fail_count
+                    else ComplianceStatus.FAILED
+                )
+                if (area_pass_count + area_fail_count > 0)
+                else None
+            )
+
+            barangay_list.append(
+                {
+                    "barangay_id": barangay_id,
+                    "barangay_name": barangay_name,
+                    "assessment_id": assessment.id,
+                    "status": assessment.status.value,
+                    "compliance_status": area_compliance.value if area_compliance else None,
+                    "submitted_at": assessment.submitted_at,
+                    "mlgoo_approved_at": assessment.mlgoo_approved_at,
+                    "overall_score": None,
+                    "has_capdev_insights": False,
+                    "capdev_status": None,
+                    "governance_areas_passed": None,
+                    "total_governance_areas": None,
+                    "pass_count": area_pass_count,
+                    "conditional_count": 0,
+                    "total_responses": len(area_responses),
+                }
+            )
+
+        barangay_statuses = {
+            "barangays": barangay_list,
+            "total_count": len(barangay_list),
+        }
+
+        # Return dashboard data
+        return {
+            "compliance_summary": compliance_summary,
+            "governance_area_performance": governance_area_performance,
+            "top_failing_indicators": top_failing_indicators,
+            "capdev_summary": capdev_summary,
+            "barangay_statuses": barangay_statuses,
+            "generated_at": datetime.utcnow(),
+            "assessment_cycle": f"SGLGB {year}" if year else None,
         }
 
 

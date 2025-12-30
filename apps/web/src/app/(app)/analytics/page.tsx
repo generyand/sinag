@@ -36,7 +36,7 @@ import {
 } from "@sinag/shared";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, BarChart3, Filter, RefreshCw } from "lucide-react";
+import { AlertCircle, BarChart3, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -330,64 +330,70 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Global Filters */}
-          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Filter
-                className="h-5 w-5"
-                style={{ color: "var(--cityscape-yellow)" }}
-                aria-hidden="true"
-              />
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">Global Filters</h2>
-            </div>
-
-            {/* Filters Row */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-              {/* Year Selector */}
-              <div className="w-full sm:w-auto">
-                <YearSelector showLabel showIcon />
+          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-4">
+            {/* Compact Layout: Title + Filters in One Row (Desktop) */}
+            <div className="flex flex-col lg:flex-row lg:items-end gap-3 lg:gap-4">
+              {/* Title Section */}
+              <div className="flex items-center gap-2 lg:pb-2">
+                <SlidersHorizontal
+                  className="h-5 w-5"
+                  style={{ color: "var(--cityscape-yellow)" }}
+                  aria-hidden="true"
+                />
+                <h2 className="text-base lg:text-lg font-semibold text-[var(--foreground)] whitespace-nowrap">
+                  Choose Period
+                </h2>
               </div>
 
-              {/* Phase Selector */}
-              <div className="w-full sm:w-64">
-                <label
-                  htmlFor="phase-select"
-                  className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide"
-                >
-                  Assessment Phase
-                </label>
-                <Select
-                  value={selectedPhase}
-                  onValueChange={(value: "phase1" | "phase2" | "all") => {
-                    setSelectedPhase(value);
-                  }}
-                >
-                  <SelectTrigger
-                    id="phase-select"
-                    className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm"
+              {/* Filters Row */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-end flex-1">
+                {/* Year Selector */}
+                <div className="w-full sm:w-auto">
+                  <YearSelector showLabel showIcon />
+                </div>
+
+                {/* Phase Selector */}
+                <div className="w-full sm:w-64">
+                  <label
+                    htmlFor="phase-select"
+                    className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide"
                   >
-                    <SelectValue placeholder="Select phase" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
-                    <SelectItem
-                      value="all"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                    Assessment Phase
+                  </label>
+                  <Select
+                    value={selectedPhase}
+                    onValueChange={(value: "phase1" | "phase2" | "all") => {
+                      setSelectedPhase(value);
+                    }}
+                  >
+                    <SelectTrigger
+                      id="phase-select"
+                      className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm"
                     >
-                      All Phases
-                    </SelectItem>
-                    <SelectItem
-                      value="phase1"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      Phase 1: Table Assessment (Assessor)
-                    </SelectItem>
-                    <SelectItem
-                      value="phase2"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      Phase 2: Table Validation (Validator)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                      <SelectValue placeholder="Select phase" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
+                      <SelectItem
+                        value="all"
+                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                      >
+                        All Phases
+                      </SelectItem>
+                      <SelectItem
+                        value="phase1"
+                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                      >
+                        Phase 1: Table Assessment (Assessor)
+                      </SelectItem>
+                      <SelectItem
+                        value="phase2"
+                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                      >
+                        Phase 2: Table Validation (Validator)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
@@ -514,19 +520,21 @@ function DashboardSkeleton() {
       </div>
 
       {/* Filters Skeleton */}
-      <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Skeleton className="h-5 w-5 rounded-sm" />
-          <Skeleton className="h-6 w-32" />
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="w-full sm:w-64">
-            <Skeleton className="h-4 w-32 mb-1" />
-            <Skeleton className="h-10 w-full" />
+      <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-4">
+        <div className="flex flex-col lg:flex-row lg:items-end gap-3 lg:gap-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded-sm" />
+            <Skeleton className="h-6 w-32" />
           </div>
-          <div className="w-full sm:w-64">
-            <Skeleton className="h-4 w-32 mb-1" />
-            <Skeleton className="h-10 w-full" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-1">
+            <div className="w-full sm:w-auto">
+              <Skeleton className="h-4 w-32 mb-1" />
+              <Skeleton className="h-10 w-48" />
+            </div>
+            <div className="w-full sm:w-64">
+              <Skeleton className="h-4 w-32 mb-1" />
+              <Skeleton className="h-10 w-full" />
+            </div>
           </div>
         </div>
       </div>

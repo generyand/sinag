@@ -27,12 +27,14 @@ import type {
   AssessorAnalyticsResponse,
   AssessorQueueItem,
   BodyUploadMovFileForAssessorApiV1AssessorAssessmentResponsesResponseIdMovsUploadPost,
+  GetAssessorDashboardParams,
   GetAssessorHistoryParams,
   GetAssessorQueueParams,
   GetAssessorStatsParams,
   HTTPValidationError,
   MOVCreate,
   MOVUploadResponse,
+  MunicipalOverviewDashboard,
   ReviewHistoryDetail,
   ReviewHistoryResponse,
   ValidationRequest,
@@ -865,6 +867,97 @@ export function useGetAssessorAnalytics<TData = Awaited<ReturnType<typeof getAss
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAssessorAnalyticsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Get comprehensive validator dashboard data for their governance area.
+
+This endpoint provides validator-specific analytics that mirror the MLGOO
+municipal overview but filtered by the validator's assigned governance area.
+
+**Access:** VALIDATOR role users only
+
+Returns all dashboard sections in a single request:
+- Compliance summary (pass/fail counts, rates) for their governance area
+- Governance area performance (limited to their area)
+- Top failing indicators in their area
+- Aggregated CapDev summary for their area
+- Barangay status list (barangays with responses in their area)
+
+Args:
+    year: Optional year filter (e.g., 2024, 2025)
+    include_draft: Include draft assessments in barangay list
+    db: Database session
+    current_user: Authenticated validator user
+
+Returns:
+    Validator dashboard with all sections filtered by governance area
+ * @summary Get Validator Dashboard
+ */
+export const getAssessorDashboard = (
+    params?: GetAssessorDashboardParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<MunicipalOverviewDashboard>(
+      {url: `/api/v1/assessor/dashboard`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAssessorDashboardQueryKey = (params?: GetAssessorDashboardParams,) => {
+    return [
+    `/api/v1/assessor/dashboard`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetAssessorDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorDashboard>>, TError = HTTPValidationError>(params?: GetAssessorDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorDashboardQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorDashboard>>> = ({ signal }) => getAssessorDashboard(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorDashboard>>>
+export type GetAssessorDashboardQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Validator Dashboard
+ */
+
+export function useGetAssessorDashboard<TData = Awaited<ReturnType<typeof getAssessorDashboard>>, TError = HTTPValidationError>(
+ params?: GetAssessorDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorDashboardQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

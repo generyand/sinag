@@ -46,6 +46,21 @@ export type AssessorQueueItemSubmissionDate = string | null;
 
 
 /**
+ * GetAssessorDashboardParams
+ */
+export type GetAssessorDashboardParams = {
+/**
+ * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
+/**
+ * Whether to include draft assessments in barangay list
+ */
+include_draft?: boolean;
+};
+
+
+/**
  * GetAssessorHistoryParams
  */
 export type GetAssessorHistoryParams = {

@@ -20,6 +20,7 @@ from app.schemas import (
     ValidationResponse,
 )
 from app.schemas.assessor import ReviewHistoryDetail, ReviewHistoryResponse
+from app.schemas.municipal_insights import MunicipalOverviewDashboard
 from app.services import annotation_service, assessor_service, intelligence_service
 
 router = APIRouter()
@@ -426,6 +427,71 @@ async def get_assessor_analytics(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve analytics: {str(e)}",
+        )
+
+
+@router.get(
+    "/dashboard",
+    response_model=MunicipalOverviewDashboard,
+    tags=["assessor"],
+)
+async def get_validator_dashboard(
+    year: int | None = Query(
+        None,
+        description="Assessment year filter (e.g., 2024, 2025). Defaults to active year.",
+        ge=2020,
+        le=2100,
+    ),
+    include_draft: bool = Query(
+        False, description="Whether to include draft assessments in barangay list"
+    ),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_area_assessor_user),
+):
+    """
+    Get comprehensive validator dashboard data for their governance area.
+
+    This endpoint provides validator-specific analytics that mirror the MLGOO
+    municipal overview but filtered by the validator's assigned governance area.
+
+    **Access:** VALIDATOR role users only
+
+    Returns all dashboard sections in a single request:
+    - Compliance summary (pass/fail counts, rates) for their governance area
+    - Governance area performance (limited to their area)
+    - Top failing indicators in their area
+    - Aggregated CapDev summary for their area
+    - Barangay status list (barangays with responses in their area)
+
+    Args:
+        year: Optional year filter (e.g., 2024, 2025)
+        include_draft: Include draft assessments in barangay list
+        db: Database session
+        current_user: Authenticated validator user
+
+    Returns:
+        Validator dashboard with all sections filtered by governance area
+    """
+    try:
+        # Ensure user has validator_area_id
+        if current_user.validator_area_id is None:
+            raise HTTPException(
+                status_code=403,
+                detail="This endpoint is only available for validators with an assigned governance area",
+            )
+
+        dashboard = assessor_service.get_validator_dashboard(
+            db=db, validator=current_user, year=year, include_draft=include_draft
+        )
+
+        return dashboard
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve validator dashboard: {str(e)}",
         )
 
 

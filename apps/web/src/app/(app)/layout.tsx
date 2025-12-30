@@ -3,6 +3,7 @@
 import { NotificationBell } from "@/components/features/notifications";
 import UserNav from "@/components/shared/UserNav";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
+import { useValidatorGovernanceArea } from "@/hooks/useValidatorGovernanceArea";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
   BarChart3,
@@ -72,6 +73,7 @@ const mlgooNavigation = [
 const blguNavigation = [
   { name: "Dashboard", href: "/blgu/dashboard", icon: "home" },
   { name: "My Assessments", href: "/blgu/assessments", icon: "clipboard" },
+  { name: "Analytics", href: "/blgu/analytics", icon: "chart" },
   { name: "Profile", href: "/blgu/profile", icon: "user" },
 ];
 
@@ -82,7 +84,6 @@ const assessorNavigation = [
     icon: "clipboard",
   },
   { name: "Review History", href: "/assessor/history", icon: "history" },
-  { name: "Analytics", href: "/assessor/analytics", icon: "chart" },
   { name: "Profile", href: "/assessor/profile", icon: "user" },
 ];
 
@@ -93,6 +94,7 @@ const validatorNavigation = [
     icon: "clipboard",
   },
   { name: "Validation History", href: "/validator/history", icon: "history" },
+  { name: "Analytics", href: "/validator/analytics", icon: "chart" },
   { name: "Profile", href: "/validator/profile", icon: "user" },
 ];
 
@@ -112,6 +114,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Get assessor's governance area
   const { governanceAreaName } = useAssessorGovernanceArea();
+
+  // Get validator's governance area
+  const { governanceAreaName: validatorGovernanceAreaName } = useValidatorGovernanceArea();
 
   // Memoize role flags to prevent recalculation on every render
   const { isAdmin, isAssessor, isValidator, isExternalUser } = useMemo(
@@ -466,7 +471,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                               ? "Profile"
                               : navigation.find((item) => pathname === item.href)?.name ||
                                 "Dashboard"
-                        : isExternalUser
+                        : isValidator
+                          ? // Validator-specific titles
+                            pathname === "/validator/submissions"
+                            ? "Validation Queue"
+                            : pathname === "/validator/analytics"
+                              ? `Analytics: ${validatorGovernanceAreaName || "Loading..."}`
+                              : pathname === "/validator/profile"
+                                ? "Profile"
+                                : navigation.find((item) => pathname === item.href)?.name ||
+                                  "Dashboard"
+                          : isExternalUser
                           ? // Katuparan Center titles
                             pathname === "/katuparan/dashboard"
                             ? "Municipal SGLGB Overview"
@@ -481,10 +496,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             ? "SGLGB Dashboard"
                             : pathname === "/blgu/assessments"
                               ? "My Assessments"
-                              : pathname === "/blgu/profile"
-                                ? "Profile"
-                                : navigation.find((item) => pathname === item.href)?.name ||
-                                  "Dashboard"}
+                              : pathname === "/blgu/analytics"
+                                ? "AI Insights & Recommendations"
+                                : pathname === "/blgu/profile"
+                                  ? "Profile"
+                                  : navigation.find((item) => pathname === item.href)?.name ||
+                                    "Dashboard"}
                   </h2>
                   {/* Show context-specific subtitle for all users */}
                   {!isAdmin && pathname.startsWith("/blgu") && (
@@ -493,6 +510,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         "Monitor your SGLGB performance and track assessment progress"}
                       {pathname === "/blgu/assessments" &&
                         "Manage and complete your SGLGB assessments"}
+                      {pathname === "/blgu/analytics" &&
+                        "AI-powered insights and capacity development recommendations for your barangay"}
                       {pathname === "/blgu/profile" &&
                         "Manage your account settings, update your password, and view your profile information."}
                     </p>
@@ -504,6 +523,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       {pathname === "/assessor/analytics" &&
                         "Performance trends for all 25 barangays in your assigned area"}
                       {pathname === "/assessor/profile" &&
+                        "Manage your account settings and profile information"}
+                    </p>
+                  )}
+                  {isValidator && pathname.startsWith("/validator") && (
+                    <p className="mt-1 text-sm text-[var(--text-secondary)] hidden sm:block">
+                      {pathname === "/validator/submissions" &&
+                        `Governance Area: ${validatorGovernanceAreaName || "Loading..."}`}
+                      {pathname === "/validator/analytics" &&
+                        "Performance insights for all barangays in your assigned governance area"}
+                      {pathname === "/validator/profile" &&
                         "Manage your account settings and profile information"}
                     </p>
                   )}

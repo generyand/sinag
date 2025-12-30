@@ -3,22 +3,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const textareaVariants = cva(
-  "border-input placeholder:text-muted selection:bg-primary selection:text-primary-foreground bg-input border flex field-sizing-content min-h-16 w-full px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+  "border-input placeholder:text-muted selection:bg-primary selection:text-primary-foreground bg-input border-2 flex field-sizing-content min-h-24 w-full px-4 py-3 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       shape: {
-        boxy: "rounded-none",
-        rounded: "rounded-md",
-        pill: "rounded-full",
+        boxy: "rounded-sm",
+        rounded: "rounded-lg",
+        pill: "rounded-2xl",
       },
       size: {
-        sm: "min-h-10 text-sm py-1",
-        md: "min-h-16 text-base py-2",
-        lg: "min-h-24 text-lg py-3",
+        sm: "min-h-20 text-sm px-3 py-2",
+        md: "min-h-24 text-base px-4 py-3",
+        lg: "min-h-32 text-lg px-5 py-4",
       },
     },
     defaultVariants: {
-      shape: "boxy",
+      shape: "rounded",
       size: "md",
     },
   }
