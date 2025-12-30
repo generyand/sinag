@@ -125,10 +125,13 @@ export const mutator = async <T = unknown, D = unknown>(
     // Merge config with options
     const mergedConfig = { ...config, ...options };
 
-    // For FormData requests, remove Content-Type header
-    // Axios will automatically set it with the correct boundary
+    // For FormData requests, explicitly unset Content-Type header
+    // This allows axios to automatically set it with the correct boundary
     if (mergedConfig.data instanceof FormData) {
-      delete mergedConfig.headers?.["Content-Type"];
+      mergedConfig.headers = {
+        ...mergedConfig.headers,
+        "Content-Type": undefined,
+      };
     }
 
     const response: AxiosResponse<T> = await axiosInstance(mergedConfig);
