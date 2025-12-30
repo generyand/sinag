@@ -1,6 +1,7 @@
 // 🚀 Modern component using auto-generated React Query hooks
 "use client";
 
+import Image from "next/image";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePostAuthLogout } from "@sinag/shared";
 import { Loader2, LogOut, User } from "lucide-react";
@@ -28,9 +29,6 @@ export default function UserNav() {
 
     return roleMap[role] || role.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
-
-  // Debug: Log the user data
-  console.log("UserNav - User data:", user);
 
   // Auto-generated logout mutation hook
   const logoutMutation = usePostAuthLogout({
@@ -94,8 +92,20 @@ export default function UserNav() {
       {/* User Info Section */}
       <div className="px-4 py-4 border-b border-[var(--border)]">
         <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm shadow-sm">
-            {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+          <div className="relative h-10 w-10 rounded-full overflow-hidden shadow-sm">
+            {user.logo_url ? (
+              <Image
+                src={user.logo_url}
+                alt={`${user.name}'s profile logo`}
+                fill
+                className="object-cover"
+                sizes="40px"
+              />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
+                {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[var(--foreground)] truncate leading-tight">
@@ -131,9 +141,10 @@ export default function UserNav() {
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] rounded-sm transition-all duration-200 group border border-[var(--border)] hover:border-[var(--cityscape-yellow)] cursor-pointer"
+          disabled={logoutMutation.isPending}
+          className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] rounded-sm transition-all duration-200 group border border-[var(--border)] hover:border-[var(--cityscape-yellow)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {false ? (
+          {logoutMutation.isPending ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin text-[var(--cityscape-yellow)]" />
               Signing out...

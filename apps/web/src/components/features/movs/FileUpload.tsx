@@ -1,19 +1,16 @@
 "use client";
 
-import { Upload, X, FileIcon, AlertCircle } from "lucide-react";
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, FileIcon, Upload, X } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
 
 const ALLOWED_FILE_TYPES = {
   "application/pdf": [".pdf"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
   "image/jpeg": [".jpg", ".jpeg"],
   "image/png": [".png"],
-  "video/mp4": [".mp4"],
 };
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -47,7 +44,7 @@ export function FileUpload({
         if (rejection.errors?.[0]?.code === "file-too-large") {
           setValidationError(`File size exceeds 50MB limit. Please select a smaller file.`);
         } else if (rejection.errors?.[0]?.code === "file-invalid-type") {
-          setValidationError(`Invalid file type. Allowed types: PDF, DOCX, XLSX, JPG, PNG, MP4`);
+          setValidationError(`Invalid file type. Only PDF and image files (JPG, PNG) are allowed.`);
         } else {
           setValidationError(`File rejected: ${rejection.errors?.[0]?.message}`);
         }

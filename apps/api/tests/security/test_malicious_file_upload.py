@@ -215,7 +215,7 @@ class TestMaliciousFileUploadSecurity:
 
         assert response.status_code == 400
 
-    def test_reject_zip_bomb_attempt(
+    def test_reject_oversized_pdf(
         self,
         client: TestClient,
         test_blgu_user: User,
@@ -223,27 +223,21 @@ class TestMaliciousFileUploadSecurity:
         test_indicator: Indicator,
     ):
         """
-        Test that excessively large compressed files are rejected.
+        Test that excessively large files are rejected.
 
-        Note: DOCX and XLSX are ZIP files. This tests size limits.
+        Tests size limits with a large PDF file.
         """
         token = create_access_token(data={"sub": str(test_blgu_user.id)})
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Create file > 50MB
-        large_content = b"PK" + b"\x00" * (51 * 1024 * 1024)
+        # Create file > 50MB (using PDF header to pass type check)
+        large_content = b"%PDF-1.4\n" + b"\x00" * (51 * 1024 * 1024)
         file_obj = io.BytesIO(large_content)
 
         response = client.post(
             f"/api/v1/assessments/{test_assessment_draft.id}/indicators/{test_indicator.id}/upload",
             headers=headers,
-            files={
-                "file": (
-                    "zipbomb.docx",
-                    file_obj,
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                )
-            },
+            files={"file": ("large.pdf", file_obj, "application/pdf")},
         )
 
         assert response.status_code == 400
@@ -338,20 +332,31 @@ class TestMaliciousFileUploadSecurity:
         """
         Unit test for FileValidationService security methods.
         """
+        from fastapi import UploadFile
+
         # Test executable detection
         exe_file = io.BytesIO(b"MZ\x90\x00" + b"\x00" * 100)
-        is_valid, error = file_validation_service.validate_file(
-            exe_file, "test.pdf", "application/pdf"
+        upload_file = UploadFile(
+            filename="test.pdf",
+            file=exe_file,
+            headers={"content-type": "application/pdf"},
         )
-        assert not is_valid
-        assert "executable" in error.lower() or "security" in error.lower()
+        result = file_validation_service.validate_file(upload_file)
+        assert not result.success
+        assert (
+            "executable" in result.error_message.lower()
+            or "suspicious" in result.error_message.lower()
+        )
 
         # Test ELF detection
         elf_file = io.BytesIO(b"\x7fELF" + b"\x00" * 100)
-        is_valid, error = file_validation_service.validate_file(
-            elf_file, "test.pdf", "application/pdf"
+        upload_file2 = UploadFile(
+            filename="test.pdf",
+            file=elf_file,
+            headers={"content-type": "application/pdf"},
         )
-        assert not is_valid
+        result2 = file_validation_service.validate_file(upload_file2)
+        assert not result2.success
 
     def test_reject_double_extension(
         self,

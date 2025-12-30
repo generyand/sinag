@@ -726,8 +726,8 @@ export function IndicatorAccordion({
                     </div>
                   </div>
                   <FileUploader
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                    maxSize={10} // 10MB limit
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    maxSize={50} // 50MB limit
                     multiple={true}
                     disabled={isLocked}
                     isLoading={isUploading || isDeleting}

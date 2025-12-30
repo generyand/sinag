@@ -30,41 +30,41 @@ describe("IndicatorForm Error Handling - Toast Integration", () => {
     // These tests verify the validation logic that leads to showError calls
 
     it("should validate allowed file types include PDF", () => {
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "image/jpeg",
-        "image/png",
-      ];
+      // Only PDF and images (JPG, PNG) are allowed
+      const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
       expect(allowedTypes.includes("application/pdf")).toBe(true);
     });
 
     it("should reject executable files", () => {
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "image/jpeg",
-        "image/png",
-      ];
+      // Only PDF and images (JPG, PNG) are allowed
+      const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
       expect(allowedTypes.includes("application/x-msdownload")).toBe(false);
     });
 
-    it("should have 10MB file size limit", () => {
-      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-      expect(MAX_FILE_SIZE).toBe(10485760);
+    it("should reject DOCX files", () => {
+      // DOCX is no longer allowed
+      const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+      expect(
+        allowedTypes.includes(
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+      ).toBe(false);
     });
 
-    it("should reject files larger than 10MB", () => {
-      const MAX_FILE_SIZE = 10 * 1024 * 1024;
-      const largeFileSize = 11 * 1024 * 1024; // 11MB
+    it("should have 50MB file size limit", () => {
+      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+      expect(MAX_FILE_SIZE).toBe(52428800);
+    });
+
+    it("should reject files larger than 50MB", () => {
+      const MAX_FILE_SIZE = 50 * 1024 * 1024;
+      const largeFileSize = 51 * 1024 * 1024; // 51MB
       expect(largeFileSize > MAX_FILE_SIZE).toBe(true);
     });
 
-    it("should accept files under 10MB", () => {
-      const MAX_FILE_SIZE = 10 * 1024 * 1024;
-      const smallFileSize = 5 * 1024 * 1024; // 5MB
+    it("should accept files under 50MB", () => {
+      const MAX_FILE_SIZE = 50 * 1024 * 1024;
+      const smallFileSize = 25 * 1024 * 1024; // 25MB
       expect(smallFileSize <= MAX_FILE_SIZE).toBe(true);
     });
   });
@@ -72,11 +72,10 @@ describe("IndicatorForm Error Handling - Toast Integration", () => {
   describe("Error Message Content Verification", () => {
     it("should have descriptive error message for invalid file type", () => {
       const errorMessage = "Invalid file type";
-      const errorDescription = "Please upload only PDF, DOC, DOCX, JPG, or PNG files.";
+      const errorDescription = "Only PDF and image files (JPG, PNG) are allowed.";
 
       expect(errorMessage).toBe("Invalid file type");
       expect(errorDescription).toContain("PDF");
-      expect(errorDescription).toContain("DOC");
       expect(errorDescription).toContain("JPG");
       expect(errorDescription).toContain("PNG");
     });

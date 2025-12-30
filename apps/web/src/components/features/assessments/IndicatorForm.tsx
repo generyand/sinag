@@ -36,25 +36,19 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
     if (!files || files.length === 0 || isLocked) return;
 
     Array.from(files).forEach((file) => {
-      // Validate file type
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "image/jpeg",
-        "image/png",
-      ];
+      // Validate file type - only PDF and images allowed
+      const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
       if (!allowedTypes.includes(file.type)) {
         showError("Invalid file type", {
-          description: "Please upload only PDF, DOC, DOCX, JPG, or PNG files.",
+          description: "Only PDF and image files (JPG, PNG) are allowed.",
         });
         return;
       }
 
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
         showError("File too large", {
-          description: "File size must be less than 10MB.",
+          description: "File size must be less than 50MB.",
         });
         return;
       }
@@ -188,7 +182,7 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
           <h3 className="font-semibold text-[var(--foreground)]">Means of Verification (MOV)</h3>
           <p className="text-sm text-[var(--text-secondary)]">
             Please upload supporting documents to verify your compliance. Accepted formats: PDF,
-            DOC, DOCX, JPG, PNG (Max 10MB per file)
+            JPG, PNG only (Max 50MB per file)
           </p>
 
           {/* File Upload Area */}
@@ -211,7 +205,7 @@ export function IndicatorForm({ indicator, isLocked }: IndicatorFormProps) {
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              accept=".pdf,.jpg,.jpeg,.png"
               onChange={(e) => handleFileUpload(e.target.files)}
               className="hidden"
               disabled={isLocked}

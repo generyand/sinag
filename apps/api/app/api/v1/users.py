@@ -3,7 +3,7 @@
 
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
@@ -79,6 +79,53 @@ async def update_language_preference(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/me/logo", response_model=UserSchema, tags=["users"])
+def upload_user_logo(
+    file: UploadFile = File(..., description="Profile logo image (JPEG, PNG, or WebP, max 5MB)"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Upload a profile logo for the current user.
+
+    This endpoint allows users to upload their profile picture or organization logo.
+    The image will be stored in Supabase Storage and the URL will be saved to the user's profile.
+
+    **Requirements:**
+    - **Allowed formats**: JPEG, PNG, WebP
+    - **Maximum file size**: 5MB
+    - **Recommended dimensions**: At least 200x200 pixels for best quality
+
+    **Behavior:**
+    - If the user already has a logo, the old one will be deleted and replaced
+    - The logo URL is publicly accessible for display in the application
+
+    Returns:
+        Updated user profile with new logo_url and logo_uploaded_at
+    """
+    return user_service.upload_user_logo(db, current_user.id, file)
+
+
+@router.delete("/me/logo", response_model=UserSchema, tags=["users"])
+def delete_user_logo(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Delete the current user's profile logo.
+
+    This endpoint removes the user's profile logo from both Supabase Storage
+    and clears the logo_url from their profile.
+
+    Returns:
+        Updated user profile with cleared logo fields
+
+    Raises:
+        404: If the user has no logo to delete
+    """
+    return user_service.delete_user_logo(db, current_user.id)
 
 
 @router.get("/", response_model=UserListResponse, tags=["users"])
