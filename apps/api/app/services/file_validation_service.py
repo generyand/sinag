@@ -3,6 +3,8 @@ File Validation Service (Story 4.4)
 
 Provides file validation functionality for the MOV upload system.
 Validates file types, sizes, and performs basic security checks.
+
+Note: MOV uploads are restricted to PDF and image files (JPG, PNG) only.
 """
 
 import mimetypes
@@ -17,7 +19,7 @@ class FileValidationService:
     Service for validating uploaded MOV files.
 
     Validates:
-    - File type (PDF, DOCX, XLSX, JPG, PNG, MP4)
+    - File type (PDF, JPG, PNG only)
     - File size (max 50MB)
     - Basic security checks (file extension matches MIME type, no executable content)
     """
@@ -25,24 +27,18 @@ class FileValidationService:
     # Maximum file size: 50MB in bytes
     MAX_FILE_SIZE = 52_428_800  # 50 * 1024 * 1024
 
-    # Allowed MIME types
+    # Allowed MIME types - restricted to PDF and images only
     ALLOWED_MIME_TYPES = {
         "application/pdf",  # PDF
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # DOCX
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # XLSX
         "image/jpeg",  # JPG
         "image/png",  # PNG
-        "video/mp4",  # MP4
     }
 
     # Mapping of MIME types to expected file extensions
     MIME_TO_EXTENSIONS = {
         "application/pdf": {".pdf"},
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {".docx"},
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {".xlsx"},
         "image/jpeg": {".jpg", ".jpeg"},
         "image/png": {".png"},
-        "video/mp4": {".mp4"},
     }
 
     # Executable file signatures (magic bytes) to reject
@@ -85,7 +81,7 @@ class FileValidationService:
         if content_type not in self.ALLOWED_MIME_TYPES:
             return ValidationResult(
                 success=False,
-                error_message=f"File type '{content_type}' is not allowed. Allowed types: PDF, DOCX, XLSX, JPG, PNG, MP4.",
+                error_message=f"File type '{content_type}' is not allowed. Only PDF and image files (JPG, PNG) are allowed.",
                 error_code="INVALID_FILE_TYPE",
             )
 
@@ -156,14 +152,6 @@ class FileValidationService:
 
         for signature in self.EXECUTABLE_SIGNATURES:
             if header.startswith(signature):
-                # Special case: DOCX and XLSX are ZIP files, allow PK signature for them
-                if signature == b"PK\x03\x04":
-                    if content_type in {
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    }:
-                        continue  # Allow ZIP signature for Office files
-
                 return ValidationResult(
                     success=False,
                     error_message="File contains suspicious or executable content",
