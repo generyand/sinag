@@ -6,8 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
-import { usePostAuthChangePassword, usePostAuthLogout } from "@sinag/shared";
+import {
+  usePostAuthChangePassword,
+  usePostAuthLogout,
+  usePostUsersMeLogo,
+  useDeleteUsersMeLogo,
+  getGetUsersMeQueryKey,
+} from "@sinag/shared";
 import { useUserBarangay } from "@/hooks/useUserBarangay";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,9 +52,11 @@ import {
   Phone,
   Eye,
   EyeOff,
+  ImageIcon,
 } from "lucide-react";
 import { User as UserType } from "@sinag/shared";
 import { classifyError } from "@/lib/error-utils";
+import { AvatarUpload } from "@/components/shared";
 
 // Password change form schema
 const passwordChangeSchema = z
@@ -82,16 +91,52 @@ interface ProfileFormProps {
 
 export function ProfileForm({ user }: ProfileFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { logout } = useAuthStore();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const { barangayName, isLoading: barangayLoading } = useUserBarangay();
   const { governanceAreaName, isLoading: governanceAreaLoading } = useAssessorGovernanceArea();
 
   const changePasswordMutation = usePostAuthChangePassword();
   const logoutMutation = usePostAuthLogout();
+
+  // Logo upload/delete mutations
+  const uploadLogoMutation = usePostUsersMeLogo();
+  const deleteLogoMutation = useDeleteUsersMeLogo();
+
+  const handleLogoUpload = async (file: File) => {
+    setLogoError(null);
+    try {
+      await uploadLogoMutation.mutateAsync({
+        data: { file },
+      });
+      // Invalidate user query to refresh the logo
+      queryClient.invalidateQueries({ queryKey: getGetUsersMeQueryKey() });
+      toast.success("Profile logo updated successfully");
+    } catch (error: unknown) {
+      const errorInfo = classifyError(error);
+      setLogoError(errorInfo.message);
+      toast.error(`Failed to upload logo: ${errorInfo.message}`);
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    setLogoError(null);
+    try {
+      await deleteLogoMutation.mutateAsync();
+      // Invalidate user query to refresh the logo
+      queryClient.invalidateQueries({ queryKey: getGetUsersMeQueryKey() });
+      toast.success("Profile logo removed");
+    } catch (error: unknown) {
+      const errorInfo = classifyError(error);
+      setLogoError(errorInfo.message);
+      toast.error(`Failed to remove logo: ${errorInfo.message}`);
+    }
+  };
 
   const form = useForm<PasswordChangeForm>({
     resolver: zodResolver(passwordChangeSchema),
@@ -174,6 +219,29 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
           <CardContent className="relative z-10 flex flex-col h-full">
             <div className="space-y-6 flex-1">
+              {/* Profile Logo Section */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-[var(--border)]">
+                <AvatarUpload
+                  currentImageUrl={user?.logo_url}
+                  onUpload={handleLogoUpload}
+                  onRemove={user?.logo_url ? handleLogoRemove : undefined}
+                  isUploading={uploadLogoMutation.isPending || deleteLogoMutation.isPending}
+                  error={logoError}
+                  size="lg"
+                  fallbackInitials={user?.name?.slice(0, 2).toUpperCase()}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-[var(--cityscape-yellow)]" />
+                    Profile Logo
+                  </h3>
+                  <p className="text-sm text-[var(--text-secondary)] max-w-xs">
+                    Upload your organization logo or profile picture. This will be displayed in the
+                    navigation header.
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <label className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-2">

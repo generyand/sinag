@@ -45,6 +45,15 @@ export type AuditLogResponseUserName = string | null;
 
 
 /**
+ * BodyUploadUserLogoApiV1UsersMeLogoPost
+ */
+export interface BodyUploadUserLogoApiV1UsersMeLogoPost {
+  /** Profile logo image (JPEG, PNG, or WebP, max 5MB) */
+  file: Blob;
+}
+
+
+/**
  * GetUsersParams
  */
 export type GetUsersParams = {
@@ -131,6 +140,8 @@ export interface User {
   is_superuser: boolean;
   must_change_password: boolean;
   preferred_language?: UserPreferredLanguage;
+  logo_url?: UserLogoUrl;
+  logo_uploaded_at?: UserLogoUploadedAt;
   created_at: string;
   updated_at?: UserUpdatedAt;
 }
@@ -279,6 +290,18 @@ export interface UserListResponse {
   size: number;
   total_pages: number;
 }
+
+
+/**
+ * UserLogoUploadedAt
+ */
+export type UserLogoUploadedAt = string | null;
+
+
+/**
+ * UserLogoUrl
+ */
+export type UserLogoUrl = string | null;
 
 
 /**

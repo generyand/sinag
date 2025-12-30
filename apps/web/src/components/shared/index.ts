@@ -1,5 +1,6 @@
 // 🎯 Shared Components - App-wide reusable components
 export { AssessorAvatars } from "./AssessorAvatars";
+export { AvatarUpload } from "./AvatarUpload";
 export { ConfirmationDialog } from "./ConfirmationDialog";
 export { default as DataTable } from "./DataTable";
 export { ErrorBoundary, ErrorBoundaryWrapper } from "./ErrorBoundary";

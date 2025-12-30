@@ -120,6 +120,8 @@ class User(BaseModel):
     is_superuser: bool
     must_change_password: bool
     preferred_language: LanguageCode = "ceb"
+    logo_url: str | None = None
+    logo_uploaded_at: datetime | None = None
     created_at: datetime
     updated_at: datetime | None = None
 

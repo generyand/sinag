@@ -396,9 +396,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* Official Partner Logos */}
-            <div
-              className="mt-auto px-1 py-5 border-t border-[var(--border)] flex justify-center items-center w-full overflow-visible"
-            >
+            <div className="mt-auto px-1 py-5 border-t border-[var(--border)] flex justify-center items-center w-full overflow-visible">
               <OfficialLogos
                 variant={sidebarCollapsed ? "minimal" : "compact"}
                 stacked={sidebarCollapsed}
@@ -549,8 +547,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     className="flex items-center justify-center space-x-0 sm:space-x-2 p-2 rounded-full text-[var(--icon-default)] hover:text-[var(--cityscape-yellow)] hover:bg-[var(--hover)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--cityscape-yellow)] focus:ring-offset-2 aspect-square sm:aspect-auto"
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   >
-                    <div className="h-8 w-8 rounded-full bg-linear-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
-                      {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    <div className="relative h-8 w-8 rounded-full overflow-hidden">
+                      {user?.logo_url ? (
+                        <Image
+                          src={user.logo_url}
+                          alt={`${user.name}'s profile logo`}
+                          fill
+                          className="object-cover"
+                          sizes="32px"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] flex items-center justify-center text-[var(--cityscape-accent-foreground)] font-semibold text-sm">
+                          {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                        </div>
+                      )}
                     </div>
                     <span className="hidden sm:block text-sm font-medium text-[var(--foreground)]">
                       {user?.name || "User"}

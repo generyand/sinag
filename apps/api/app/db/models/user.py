@@ -69,6 +69,14 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
 
+    # Profile
+    logo_url = Column(
+        String, nullable=True, comment="URL to user's profile logo/avatar in Supabase Storage"
+    )
+    logo_uploaded_at = Column(
+        DateTime(timezone=True), nullable=True, comment="Timestamp when logo was last uploaded"
+    )
+
     # Timestamps
     created_at = Column(
         DateTime(timezone=True),

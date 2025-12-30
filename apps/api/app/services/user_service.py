@@ -1,17 +1,51 @@
 # 👥 User Service
 # Business logic for user management operations
 
+import logging
+import re
+from datetime import UTC, datetime
+from uuid import uuid4
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from supabase import Client, create_client
 
+from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.db.enums import UserRole
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea
 from app.db.models.user import User
 from app.schemas.user import UserAdminCreate, UserAdminUpdate, UserCreate, UserUpdate
+
+# Setup logging
+logger = logging.getLogger(__name__)
+
+# Supabase client for logo storage
+_supabase_logo_client: Client | None = None
+
+
+def _get_supabase_client() -> Client:
+    """Get or initialize the Supabase client for logo storage."""
+    global _supabase_logo_client
+
+    if _supabase_logo_client is None:
+        if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+            raise ValueError(
+                "Supabase storage not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+            )
+
+        try:
+            _supabase_logo_client = create_client(
+                settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY
+            )
+            logger.info("Supabase logo storage client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Supabase logo storage client: {str(e)}")
+            raise
+
+    return _supabase_logo_client
 
 
 class UserService:
@@ -550,6 +584,271 @@ class UserService:
             "users_need_password_change": users_need_password_change,
             "users_by_role": {role: count for role, count in role_stats},
         }
+
+    # ============================================================================
+    # User Logo Upload/Delete Methods
+    # ============================================================================
+
+    # Storage bucket for user logos
+    LOGO_BUCKET = "user-logos"
+
+    # Allowed MIME types for logo uploads
+    ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"]
+
+    # Maximum file size for logos (5MB)
+    MAX_LOGO_SIZE = 5 * 1024 * 1024
+
+    # Magic bytes for image validation
+    IMAGE_MAGIC_BYTES = {
+        b"\xff\xd8\xff": "jpeg",  # JPEG
+        b"\x89PNG\r\n\x1a\n": "png",  # PNG
+        b"RIFF": "webp",  # WebP (starts with RIFF, followed by file size, then WEBP)
+    }
+
+    def _detect_image_type(self, file_contents: bytes) -> str | None:
+        """
+        Detect image type by checking magic bytes.
+
+        Args:
+            file_contents: The file contents as bytes
+
+        Returns:
+            str: Detected image type ('jpeg', 'png', 'webp') or None if not recognized
+        """
+        if len(file_contents) < 12:
+            return None
+
+        # Check JPEG magic bytes
+        if file_contents[:3] == b"\xff\xd8\xff":
+            return "jpeg"
+
+        # Check PNG magic bytes
+        if file_contents[:8] == b"\x89PNG\r\n\x1a\n":
+            return "png"
+
+        # Check WebP magic bytes (RIFF....WEBP)
+        if file_contents[:4] == b"RIFF" and file_contents[8:12] == b"WEBP":
+            return "webp"
+
+        return None
+
+    def _validate_logo_file(self, file: UploadFile, file_contents: bytes) -> None:
+        """
+        Validate logo file type and size.
+
+        Args:
+            file: The uploaded file
+            file_contents: The file contents as bytes
+
+        Raises:
+            HTTPException 400: If file type or size is invalid
+        """
+        # Check file type via content-type header
+        if file.content_type not in self.ALLOWED_LOGO_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file type. Allowed types: JPEG, PNG, WebP.",
+            )
+
+        # SECURITY: Verify actual file content via magic bytes to prevent content-type spoofing
+        detected_type = self._detect_image_type(file_contents)
+        if detected_type is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File content does not match a valid image format.",
+            )
+
+        # Check file size
+        if len(file_contents) > self.MAX_LOGO_SIZE:
+            size_mb = len(file_contents) / (1024 * 1024)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File size exceeds 5MB limit. Your file: {size_mb:.2f}MB",
+            )
+
+    def _generate_logo_filename(self, user_id: int, original_filename: str) -> str:
+        """
+        Generate a unique filename for the logo.
+
+        Args:
+            user_id: The user's ID
+            original_filename: The original file name
+
+        Returns:
+            str: Unique filename in format: user_{user_id}/{uuid}_{sanitized_filename}
+        """
+        # Sanitize filename: remove path separators and special characters
+        sanitized = re.sub(r"[^\w\s.-]", "_", original_filename)
+        sanitized = sanitized.replace("..", "_").replace("/", "_").replace("\\", "_")
+        sanitized = sanitized.strip().strip(".")
+
+        if not sanitized:
+            sanitized = "logo"
+
+        # Generate unique filename with UUID prefix
+        unique_filename = f"{uuid4()}_{sanitized}"
+
+        return f"user_{user_id}/{unique_filename}"
+
+    def upload_user_logo(self, db: Session, user_id: int, file: UploadFile) -> User:
+        """
+        Upload a profile logo for a user.
+
+        This method:
+        1. Validates the uploaded file (type, size)
+        2. Deletes existing logo if present
+        3. Uploads new logo to Supabase Storage
+        4. Updates user record with logo URL
+
+        Args:
+            db: Database session
+            user_id: ID of the user uploading the logo
+            file: The uploaded file (FastAPI UploadFile)
+
+        Returns:
+            User: The updated user with new logo_url
+
+        Raises:
+            HTTPException 400: If file type/size is invalid
+            HTTPException 404: If user not found
+            HTTPException 500: If upload fails
+        """
+        # Get the user
+        user = self.get_user_by_id(db, user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        # Read file contents
+        file_contents = file.file.read()
+
+        # Validate file
+        self._validate_logo_file(file, file_contents)
+
+        # Get Supabase client
+        supabase = _get_supabase_client()
+
+        # Delete existing logo if present
+        if user.logo_url:
+            try:
+                # Extract storage path from URL
+                # URL format: https://[project].supabase.co/storage/v1/object/public/user-logos/{path}
+                if f"/{self.LOGO_BUCKET}/" in user.logo_url:
+                    old_path = user.logo_url.split(f"/{self.LOGO_BUCKET}/")[1]
+                    supabase.storage.from_(self.LOGO_BUCKET).remove([old_path])
+                    logger.info(f"Deleted old logo for user {user_id}: {old_path}")
+            except Exception as e:
+                logger.warning(f"Failed to delete old logo for user {user_id}: {str(e)}")
+                # Continue with upload even if deletion fails
+
+        # Generate unique filename
+        original_filename = file.filename or "logo"
+        storage_path = self._generate_logo_filename(user_id, original_filename)
+
+        # Upload to Supabase Storage
+        try:
+            result = supabase.storage.from_(self.LOGO_BUCKET).upload(
+                path=storage_path,
+                file=file_contents,
+                file_options={
+                    "content-type": file.content_type or "image/jpeg",
+                    "upsert": True,
+                },
+            )
+
+            # Check for errors
+            if isinstance(result, dict) and result.get("error"):
+                raise Exception(f"Supabase upload error: {result['error']}")
+
+            # Get public URL
+            logo_url = supabase.storage.from_(self.LOGO_BUCKET).get_public_url(storage_path)
+
+            logger.info(f"Successfully uploaded logo for user {user_id}: {storage_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to upload logo for user {user_id}: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload logo. Please try again later.",
+            )
+
+        # Update user record
+        user.logo_url = logo_url
+        user.logo_uploaded_at = datetime.now(UTC)
+        db.commit()
+        db.refresh(user)
+
+        return user
+
+    def delete_user_logo(self, db: Session, user_id: int) -> User:
+        """
+        Delete a user's profile logo.
+
+        This method:
+        1. Deletes the logo from Supabase Storage
+        2. Clears the logo_url and logo_uploaded_at fields
+
+        Args:
+            db: Database session
+            user_id: ID of the user whose logo should be deleted
+
+        Returns:
+            User: The updated user with cleared logo fields
+
+        Raises:
+            HTTPException 404: If user not found or has no logo
+            HTTPException 500: If deletion fails
+        """
+        # Get the user
+        user = self.get_user_by_id(db, user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        if not user.logo_url:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User has no logo to delete",
+            )
+
+        # Get Supabase client
+        supabase = _get_supabase_client()
+
+        # Delete from Supabase Storage
+        try:
+            # Extract storage path from URL
+            if f"/{self.LOGO_BUCKET}/" in user.logo_url:
+                storage_path = user.logo_url.split(f"/{self.LOGO_BUCKET}/")[1]
+                result = supabase.storage.from_(self.LOGO_BUCKET).remove([storage_path])
+
+                # Check for errors
+                if isinstance(result, list) and len(result) > 0:
+                    # Check if any item has an error
+                    for item in result:
+                        if isinstance(item, dict) and item.get("error"):
+                            logger.warning(
+                                f"Error deleting logo file {storage_path}: {item['error']}"
+                            )
+
+                logger.info(f"Deleted logo for user {user_id}: {storage_path}")
+            else:
+                logger.warning(f"Could not extract storage path from URL: {user.logo_url}")
+
+        except Exception as e:
+            logger.error(f"Failed to delete logo from storage for user {user_id}: {str(e)}")
+            # Continue to clear database record even if storage deletion fails
+
+        # Clear user logo fields
+        user.logo_url = None
+        user.logo_uploaded_at = None
+        db.commit()
+        db.refresh(user)
+
+        return user
 
 
 # Create service instance
