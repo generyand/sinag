@@ -17,7 +17,11 @@ import {
   BarChart3,
   Target,
 } from "lucide-react";
-import { useGetExternalAnalyticsDashboard } from "@sinag/shared";
+import {
+  useGetExternalAnalyticsDashboard,
+  useGetExternalAnalyticsGeographicHeatmap,
+} from "@sinag/shared";
+import { BBITrendsChart, AnonymizedHeatmap } from "@/components/features/katuparan";
 import {
   BarChart,
   Bar,
@@ -61,11 +65,41 @@ export default function KatuparanDashboardPage() {
     }
   );
 
-  // Check if error is insufficient data
-  const axiosError = error as AxiosError<{ detail: string }>;
+  // Fetch geographic heatmap data separately
+  const { data: heatmapData, isLoading: heatmapLoading } = useGetExternalAnalyticsGeographicHeatmap(
+    undefined,
+    {
+      query: {
+        retry: (failureCount, error) => {
+          const axiosError = error as AxiosError;
+          if (axiosError?.response?.status === 400) {
+            return false;
+          }
+          return failureCount < 3;
+        },
+        enabled: !!data, // Only fetch heatmap after dashboard data loads
+      },
+    }
+  );
+
+  // Check if error is insufficient data (privacy threshold not met)
+  // API returns { error: "message", error_code: "BAD_REQUEST" } format from exception handler
+  const axiosError = error as AxiosError<{ error?: string; detail?: string; error_code?: string }>;
+  const errorMessage =
+    axiosError?.response?.data?.error || axiosError?.response?.data?.detail || "";
+  const errorMessageLower = errorMessage.toLowerCase();
   const isInsufficientData =
     axiosError?.response?.status === 400 &&
-    axiosError?.response?.data?.detail?.includes("Insufficient data");
+    (errorMessageLower.includes("insufficient") ||
+      errorMessageLower.includes("minimum") ||
+      errorMessageLower.includes("barangays required") ||
+      errorMessageLower.includes("anonymization"));
+
+  // Extract the actual numbers from the error message if available
+  // Error format: "Insufficient data for anonymization. Minimum 5 barangays required, only 0 available."
+  const insufficientDataMatch = errorMessage.match(/Minimum (\d+).*only (\d+)/i);
+  const requiredCount = insufficientDataMatch ? parseInt(insufficientDataMatch[1]) : 5;
+  const currentCount = insufficientDataMatch ? parseInt(insufficientDataMatch[2]) : 0;
 
   // Pie chart colors
   const COLORS = ["#22c55e", "#ef4444"];
@@ -104,29 +138,56 @@ export default function KatuparanDashboardPage() {
 
       {/* Insufficient Data State */}
       {isInsufficientData && (
-        <Card className="border-dashed border-2">
+        <Card className="border-dashed border-2 border-amber-300 bg-amber-50/30">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-4 mb-6">
-              <Database className="h-12 w-12 text-muted-foreground" />
+            <div className="rounded-full bg-amber-100 p-4 mb-6">
+              <Database className="h-12 w-12 text-amber-600" />
             </div>
             <h2 className="text-2xl font-semibold mb-3">Analytics Data Not Yet Available</h2>
-            <p className="text-muted-foreground max-w-md mb-6">
+            <p className="text-muted-foreground max-w-md mb-4">
               To protect individual barangay privacy, analytics are only displayed when there are at
-              least <strong>5 barangays</strong> with completed assessments.
+              least <strong>{requiredCount} barangays</strong> with completed assessments.
             </p>
-            <div className="bg-muted/50 rounded-lg p-4 max-w-lg">
+
+            {/* Progress indicator */}
+            <div className="bg-white rounded-lg border p-4 mb-6 w-full max-w-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Completed Assessments</span>
+                <span className="text-sm text-muted-foreground">
+                  {currentCount} / {requiredCount} required
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full transition-all"
+                  style={{ width: `${Math.min((currentCount / requiredCount) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {requiredCount - currentCount > 0
+                  ? `${requiredCount - currentCount} more completed assessment${requiredCount - currentCount > 1 ? "s" : ""} needed`
+                  : "Threshold met - data should be loading..."}
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-lg">
               <div className="flex items-start gap-3">
-                <ShieldCheck className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <ShieldCheck className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-left">
-                  <p className="font-medium mb-1">Why this restriction?</p>
-                  <p className="text-muted-foreground">
-                    This privacy threshold ensures that aggregated data cannot be used to identify
-                    individual barangay performance. Once more assessments are validated,
-                    you&apos;ll see comprehensive analytics here.
+                  <p className="font-medium mb-1 text-blue-800">Why this privacy restriction?</p>
+                  <p className="text-blue-700">
+                    This threshold ensures that aggregated data cannot be used to identify
+                    individual barangay performance. Once more assessments reach{" "}
+                    <strong>COMPLETED</strong> status, comprehensive analytics will appear here.
                   </p>
                 </div>
               </div>
             </div>
+
+            <p className="text-xs text-muted-foreground mt-6">
+              Assessments must complete the full workflow: DRAFT → SUBMITTED → IN_REVIEW →
+              AWAITING_FINAL_VALIDATION → AWAITING_MLGOO_APPROVAL → COMPLETED
+            </p>
           </CardContent>
         </Card>
       )}
@@ -517,6 +578,13 @@ export default function KatuparanDashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* BBI Functionality Trends */}
+          {data.bbi_trends && <BBITrendsChart data={data.bbi_trends} />}
+
+          {/* Geographic Heatmap (Anonymized) */}
+          {heatmapLoading && <Skeleton className="h-[400px] w-full" />}
+          {heatmapData && <AnonymizedHeatmap data={heatmapData} />}
 
           {/* Footer */}
           <div className="text-center text-sm text-muted-foreground pt-4 border-t">
