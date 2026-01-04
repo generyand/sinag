@@ -38,7 +38,7 @@ import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, BarChart3, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -48,6 +48,40 @@ export default function AnalyticsPage() {
   // Get initial tab from URL or default to "overview"
   const initialTab = (searchParams.get("tab") as AnalyticsTabId) || "overview";
   const [activeTab, setActiveTab] = useState<AnalyticsTabId>(initialTab);
+
+  // Pipeline filter state - controls which barangays are shown based on status
+  // Initialize from URL params for shareable links
+  const initialPipelineFilter = searchParams.get("filter") || "all";
+  const [pipelineFilter, setPipelineFilter] = useState<string>(initialPipelineFilter);
+
+  // Ref for Assessment Data section - used for auto-scroll when clicking pipeline status
+  const assessmentDataRef = useRef<HTMLDivElement>(null);
+
+  // Handler for pipeline filter changes - updates URL and scrolls to Assessment Data
+  const handlePipelineFilterChange = useCallback(
+    (filter: string) => {
+      setPipelineFilter(filter);
+      const params = new URLSearchParams(searchParams.toString());
+      if (filter === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", filter);
+      }
+      router.push(`/analytics?${params.toString()}`, { scroll: false });
+
+      // Auto-scroll to Assessment Data section when filtering (not when clearing)
+      if (filter !== "all" && assessmentDataRef.current) {
+        // Small delay to ensure filter is applied before scrolling
+        setTimeout(() => {
+          assessmentDataRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 100);
+      }
+    },
+    [router, searchParams]
+  );
 
   // Use the centralized filter hook (now uses year instead of cycle)
   const {
@@ -94,6 +128,7 @@ export default function AnalyticsPage() {
     error: municipalError,
   } = useGetMunicipalOverviewDashboard({
     year: selectedYear ?? undefined,
+    include_draft: true, // Include draft assessments so they show in barangay list
   });
 
   // BBI Analytics data hook for municipality-wide BBI status matrix
@@ -411,7 +446,11 @@ export default function AnalyticsPage() {
             {activeTab === "overview" && municipalData && (
               <>
                 {/* Compliance Summary - Full Width */}
-                <ComplianceSummaryCard data={municipalData.compliance_summary} />
+                <ComplianceSummaryCard
+                  data={municipalData.compliance_summary}
+                  onFilterChange={handlePipelineFilterChange}
+                  activeFilter={pipelineFilter}
+                />
 
                 {/* Two Column Layout for Analytics */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -436,10 +475,14 @@ export default function AnalyticsPage() {
                 <AggregatedCapDevCard data={municipalData.capdev_summary} />
 
                 {/* Barangay Status Table - Full Width */}
-                <BarangayStatusTable
-                  data={municipalData.barangay_statuses}
-                  onViewCapDev={handleViewCapDev}
-                />
+                <div ref={assessmentDataRef}>
+                  <BarangayStatusTable
+                    data={municipalData.barangay_statuses}
+                    onViewCapDev={handleViewCapDev}
+                    pipelineFilter={pipelineFilter}
+                    onPipelineFilterChange={handlePipelineFilterChange}
+                  />
+                </div>
 
                 {/* Footer with generation timestamp */}
                 <p className="text-xs text-gray-400 text-right">
