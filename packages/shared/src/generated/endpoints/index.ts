@@ -12,6 +12,7 @@ export * from './bbis';
 export * from './blgu-dashboard';
 export * from './capdev';
 export * from './compliance';
+export * from './deadline-windows';
 export * from './default';
 export * from './external-analytics';
 export * from './gar';

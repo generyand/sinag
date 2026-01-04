@@ -987,6 +987,12 @@ export interface AssessmentYearCreate {
   calibration_deadline?: AssessmentYearCreateCalibrationDeadline;
   /** Optional description for this year */
   description?: AssessmentYearCreateDescription;
+  /** Days for initial submission window (~30-60 days recommended) */
+  submission_window_days?: AssessmentYearCreateSubmissionWindowDays;
+  /** Days BLGU has to resubmit after Assessor triggers rework */
+  rework_window_days?: AssessmentYearCreateReworkWindowDays;
+  /** Days BLGU has to resubmit after Validator triggers calibration */
+  calibration_window_days?: AssessmentYearCreateCalibrationWindowDays;
 }
 
 
@@ -994,6 +1000,12 @@ export interface AssessmentYearCreate {
  * AssessmentYearCreateCalibrationDeadline
  */
 export type AssessmentYearCreateCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearCreateCalibrationWindowDays
+ */
+export type AssessmentYearCreateCalibrationWindowDays = number | null;
 
 
 /**
@@ -1018,6 +1030,18 @@ export type AssessmentYearCreatePhase2Deadline = string | null;
  * AssessmentYearCreateReworkDeadline
  */
 export type AssessmentYearCreateReworkDeadline = string | null;
+
+
+/**
+ * AssessmentYearCreateReworkWindowDays
+ */
+export type AssessmentYearCreateReworkWindowDays = number | null;
+
+
+/**
+ * AssessmentYearCreateSubmissionWindowDays
+ */
+export type AssessmentYearCreateSubmissionWindowDays = number | null;
 
 
 /**
@@ -1055,6 +1079,9 @@ export interface AssessmentYearResponse {
   updated_at?: AssessmentYearResponseUpdatedAt;
   activated_at?: AssessmentYearResponseActivatedAt;
   deactivated_at?: AssessmentYearResponseDeactivatedAt;
+  submission_window_days?: AssessmentYearResponseSubmissionWindowDays;
+  rework_window_days?: AssessmentYearResponseReworkWindowDays;
+  calibration_window_days?: AssessmentYearResponseCalibrationWindowDays;
   activated_by?: AssessmentYearResponseActivatedBy;
   deactivated_by?: AssessmentYearResponseDeactivatedBy;
 }
@@ -1076,6 +1103,12 @@ export type AssessmentYearResponseActivatedBy = AppSchemasAssessmentYearUserNest
  * AssessmentYearResponseCalibrationDeadline
  */
 export type AssessmentYearResponseCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearResponseCalibrationWindowDays
+ */
+export type AssessmentYearResponseCalibrationWindowDays = number | null;
 
 
 /**
@@ -1115,6 +1148,18 @@ export type AssessmentYearResponseReworkDeadline = string | null;
 
 
 /**
+ * AssessmentYearResponseReworkWindowDays
+ */
+export type AssessmentYearResponseReworkWindowDays = number | null;
+
+
+/**
+ * AssessmentYearResponseSubmissionWindowDays
+ */
+export type AssessmentYearResponseSubmissionWindowDays = number | null;
+
+
+/**
  * AssessmentYearResponseUpdatedAt
  */
 export type AssessmentYearResponseUpdatedAt = string | null;
@@ -1148,6 +1193,12 @@ export interface AssessmentYearUpdate {
   calibration_deadline?: AssessmentYearUpdateCalibrationDeadline;
   /** New description */
   description?: AssessmentYearUpdateDescription;
+  /** Days for initial submission window */
+  submission_window_days?: AssessmentYearUpdateSubmissionWindowDays;
+  /** Days BLGU has after Assessor triggers rework */
+  rework_window_days?: AssessmentYearUpdateReworkWindowDays;
+  /** Days BLGU has after Validator triggers calibration */
+  calibration_window_days?: AssessmentYearUpdateCalibrationWindowDays;
 }
 
 
@@ -1167,6 +1218,12 @@ export type AssessmentYearUpdateAssessmentPeriodStart = string | null;
  * AssessmentYearUpdateCalibrationDeadline
  */
 export type AssessmentYearUpdateCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearUpdateCalibrationWindowDays
+ */
+export type AssessmentYearUpdateCalibrationWindowDays = number | null;
 
 
 /**
@@ -1191,6 +1248,18 @@ export type AssessmentYearUpdatePhase2Deadline = string | null;
  * AssessmentYearUpdateReworkDeadline
  */
 export type AssessmentYearUpdateReworkDeadline = string | null;
+
+
+/**
+ * AssessmentYearUpdateReworkWindowDays
+ */
+export type AssessmentYearUpdateReworkWindowDays = number | null;
+
+
+/**
+ * AssessmentYearUpdateSubmissionWindowDays
+ */
+export type AssessmentYearUpdateSubmissionWindowDays = number | null;
 
 
 /**

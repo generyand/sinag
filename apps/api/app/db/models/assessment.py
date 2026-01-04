@@ -123,6 +123,15 @@ class Assessment(Base):
     is_locked_for_deadline: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     locked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    # Per-Assessment Calculated Deadlines
+    # Calculated dynamically when rework/calibration is triggered based on year's window config
+    # rework_deadline = rework_requested_at + rework_window_days
+    per_assessment_rework_deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # calibration_deadline = calibration_requested_at + calibration_window_days
+    per_assessment_calibration_deadline: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(
         Enum(ComplianceStatus, name="compliance_status_enum", create_constraint=True),

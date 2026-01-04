@@ -72,6 +72,18 @@ class AssessmentYear(Base):
         DateTime(timezone=True), nullable=True
     )  # Calibration/validation deadline
 
+    # Deadline Window Configuration (duration in days)
+    # These are relative deadlines applied to each assessment when rework/calibration is triggered
+    submission_window_days: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=60
+    )  # Days for initial submission (~2 months)
+    rework_window_days: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=5
+    )  # Days BLGU has after Assessor triggers rework
+    calibration_window_days: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=3
+    )  # Days BLGU has after Validator triggers calibration
+
     # Status flags
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     is_published: Mapped[bool] = mapped_column(

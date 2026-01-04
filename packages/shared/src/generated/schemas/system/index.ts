@@ -30,6 +30,8 @@ import type { StatusDistributionItem } from '../common';
 import type { ReworkStats } from '../common';
 import type { DashboardKPIResponseBbiAnalytics } from '../analytics';
 import type { TopReworkReasons } from '../common';
+import type { DeadlineExtensionResponse } from '../deadlineextension';
+import type { AppSchemasDeadlineExtensionUserNested } from '../users';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
 import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
@@ -567,6 +569,23 @@ export interface DashboardKPIResponse {
  * DashboardKPIResponseTopReworkReasons
  */
 export type DashboardKPIResponseTopReworkReasons = TopReworkReasons | null;
+
+
+/**
+ * DeadlineExtensionListResponse
+ */
+export interface DeadlineExtensionListResponse {
+  /** List of extensions for the assessment */
+  extensions: DeadlineExtensionResponse[];
+  /** Total number of extensions */
+  total: number;
+}
+
+
+/**
+ * DeadlineExtensionResponseExtender
+ */
+export type DeadlineExtensionResponseExtender = AppSchemasDeadlineExtensionUserNested | null;
 
 
 /**

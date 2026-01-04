@@ -18,6 +18,7 @@ from . import (
     blgu_dashboard,
     capdev,
     compliance,
+    deadline_extensions,
     external_analytics,
     gar,
     indicators,
@@ -59,4 +60,7 @@ api_router.include_router(municipal_overview.router)  # Prefix already included 
 api_router.include_router(year_config.router, prefix="/year-config", tags=["year-config"])
 api_router.include_router(
     assessment_years.router, prefix="/assessment-years", tags=["assessment-years"]
+)
+api_router.include_router(
+    deadline_extensions.router, prefix="/deadline-extensions", tags=["deadline-windows"]
 )

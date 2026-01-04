@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
@@ -193,3 +194,61 @@ class DeadlineOverride(Base):
 
     def __repr__(self):
         return f"<DeadlineOverride(id={self.id}, barangay_id={self.barangay_id}, indicator_id={self.indicator_id}, new_deadline='{self.new_deadline}')>"
+
+
+class AssessmentDeadlineExtension(Base):
+    """
+    Assessment-level deadline extensions granted by MLGOO.
+
+    Tracks when MLGOO extends a specific assessment's rework or
+    calibration deadline beyond the calculated window. This is different
+    from DeadlineOverride which is per-indicator. This table provides
+    assessment-wide deadline extensions.
+
+    Each extension includes:
+    - Which assessment and what type of deadline (rework/calibration)
+    - Original deadline (calculated from window) vs new deadline
+    - How many days were added
+    - Required justification reason for audit
+    - Who granted the extension
+    """
+
+    __tablename__ = "assessment_deadline_extensions"
+
+    # Primary key
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+
+    # Foreign keys
+    assessment_id = Column(
+        Integer, ForeignKey("assessments.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    extended_by = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )  # MLGOO user who granted extension
+
+    # Extension details
+    extension_type = Column(String(20), nullable=False)  # 'rework' or 'calibration'
+    original_deadline = Column(DateTime(timezone=True), nullable=False)
+    new_deadline = Column(DateTime(timezone=True), nullable=False)
+    additional_days = Column(Integer, nullable=False)  # How many days added
+
+    # Audit
+    reason = Column(Text, nullable=False)  # Required justification
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    assessment = relationship("Assessment", backref="deadline_extensions")
+    extender = relationship("User", foreign_keys=[extended_by])
+
+    # Indexes and constraints
+    __table_args__ = (
+        Index("ix_assessment_deadline_extensions_assessment", assessment_id),
+        Index("ix_assessment_deadline_extensions_created_at_desc", created_at.desc()),
+        CheckConstraint(
+            "extension_type IN ('rework', 'calibration')",
+            name="ck_extension_type_valid",
+        ),
+    )
+
+    def __repr__(self):
+        return f"<AssessmentDeadlineExtension(id={self.id}, assessment_id={self.assessment_id}, type='{self.extension_type}', days={self.additional_days})>"
