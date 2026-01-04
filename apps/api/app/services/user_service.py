@@ -754,7 +754,7 @@ class UserService:
                 file=file_contents,
                 file_options={
                     "content-type": file.content_type or "image/jpeg",
-                    "upsert": True,
+                    "upsert": "true",  # Must be string, not boolean
                 },
             )
 

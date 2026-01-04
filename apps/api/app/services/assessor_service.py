@@ -26,6 +26,7 @@ from app.db.models.assessment import (
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVCreate  # Pydantic schema
+from app.services.assessment_year_service import assessment_year_service
 from app.services.storage_service import storage_service
 
 
@@ -62,8 +63,6 @@ class AssessorService:
         """
         # Get active year if not specified
         if assessment_year is None:
-            from app.services.assessment_year_service import assessment_year_service
-
             assessment_year = assessment_year_service.get_active_year_number(db)
 
         # Base query with eager loading to prevent N+1 queries
@@ -245,8 +244,6 @@ class AssessorService:
 
         # Get active year if not specified
         if assessment_year is None:
-            from app.services.assessment_year_service import assessment_year_service
-
             assessment_year = assessment_year_service.get_active_year_number(db)
 
         # Query assessments that are either awaiting validation or completed
@@ -1209,6 +1206,22 @@ class AssessorService:
         assessment.rework_requested_by = assessor.id
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
+        # Calculate per-assessment rework deadline based on year's window configuration
+        try:
+            year_config = assessment_year_service.get_year_by_number(db, assessment.assessment_year)
+            if year_config and year_config.rework_window_days:
+                assessment.per_assessment_rework_deadline = (
+                    assessment.rework_requested_at + timedelta(days=year_config.rework_window_days)
+                )
+                # Also set grace_period_expires_at for consistency with existing deadline logic
+                assessment.grace_period_expires_at = assessment.per_assessment_rework_deadline
+                self.logger.info(
+                    f"[SEND REWORK] Set rework deadline: {assessment.per_assessment_rework_deadline} "
+                    f"({year_config.rework_window_days} days from now)"
+                )
+        except Exception as e:
+            self.logger.warning(f"Failed to calculate rework deadline: {e}")
+
         # Get all MOV annotations for this assessment to check for indicator-level feedback
         mov_file_ids = [mf.id for mf in assessment.mov_files]
         annotations_by_indicator = {}
@@ -1467,6 +1480,27 @@ class AssessorService:
             # First calibration request - set initial timestamps
             assessment.rework_requested_at = datetime.utcnow()
             assessment.calibration_requested_at = datetime.utcnow()
+
+            # Calculate per-assessment calibration deadline based on year's window configuration
+            try:
+                year_config = assessment_year_service.get_year_by_number(
+                    db, assessment.assessment_year
+                )
+                if year_config and year_config.calibration_window_days:
+                    assessment.per_assessment_calibration_deadline = (
+                        assessment.calibration_requested_at
+                        + timedelta(days=year_config.calibration_window_days)
+                    )
+                    # Also set grace_period_expires_at for consistency with existing deadline logic
+                    assessment.grace_period_expires_at = (
+                        assessment.per_assessment_calibration_deadline
+                    )
+                    self.logger.info(
+                        f"[CALIBRATION] Set calibration deadline: {assessment.per_assessment_calibration_deadline} "
+                        f"({year_config.calibration_window_days} days from now)"
+                    )
+            except Exception as e:
+                self.logger.warning(f"Failed to calculate calibration deadline: {e}")
         # Note: Don't update rework_requested_at for subsequent calibrations to preserve original timestamp
 
         assessment.rework_requested_by = validator.id
@@ -2151,8 +2185,6 @@ class AssessorService:
 
         # Get active year if not specified
         if assessment_year is None:
-            from app.services.assessment_year_service import assessment_year_service
-
             assessment_year = assessment_year_service.get_active_year_number(db)
 
         # Determine if user is a validator

@@ -16,6 +16,7 @@ import type { ApprovalQueueItemOverallScore } from '../movs';
 import type { BarangayMapPointAssessmentId } from '../assessments';
 import type { BarangayMapPointAssessmentStatus } from '../assessments';
 import type { BarangayAssessmentStatus } from '../assessments';
+import type { DeadlineExtensionResponse } from '../deadlineextension';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
 import type { SectionHeaderField } from '../sectionheaderfield';
 import type { InfoTextField } from '../infotextfield';
@@ -574,6 +575,34 @@ export type DatePickerFieldMaxDate = string | null;
  * DatePickerFieldMinDate
  */
 export type DatePickerFieldMinDate = string | null;
+
+
+/**
+ * DeadlineExtensionCreateExtensionType
+ */
+export type DeadlineExtensionCreateExtensionType = typeof DeadlineExtensionCreateExtensionType[keyof typeof DeadlineExtensionCreateExtensionType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeadlineExtensionCreateExtensionType = {
+  rework: 'rework',
+  calibration: 'calibration',
+} as const;
+
+
+/**
+ * ExtendDeadlineResult
+ */
+export interface ExtendDeadlineResult {
+  /** Whether the extension was successful */
+  success: boolean;
+  /** Human-readable result message */
+  message: string;
+  /** The created extension record */
+  extension: DeadlineExtensionResponse;
+  /** The new deadline after extension */
+  new_deadline: string;
+}
 
 
 /**
