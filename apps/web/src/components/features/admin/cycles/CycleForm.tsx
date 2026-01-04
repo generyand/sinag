@@ -44,6 +44,8 @@ export function CycleForm({
     calibration_deadline: initialValues?.calibration_deadline || null,
     description: initialValues?.description || null,
   });
+  // Note: Deadline fields are kept in form state for backwards compatibility
+  // but are now configured in Deadline Windows tab
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -97,27 +99,7 @@ export function CycleForm({
       }
     }
 
-    // Validate deadline chronological order (if all are set)
-    const deadlines = [
-      { key: "phase1_deadline", value: form.phase1_deadline, label: "Phase 1" },
-      { key: "rework_deadline", value: form.rework_deadline, label: "Rework" },
-      { key: "phase2_deadline", value: form.phase2_deadline, label: "Phase 2" },
-      { key: "calibration_deadline", value: form.calibration_deadline, label: "Calibration" },
-    ];
-
-    let prevDate: Date | null = null;
-    let prevLabel = "";
-
-    for (const deadline of deadlines) {
-      if (deadline.value) {
-        const date = new Date(deadline.value);
-        if (prevDate && date <= prevDate) {
-          newErrors[deadline.key] = `${deadline.label} deadline must be after ${prevLabel}`;
-        }
-        prevDate = date;
-        prevLabel = deadline.label;
-      }
-    }
+    // Note: Deadline validation removed - deadlines are now configured in Deadline Windows tab
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -231,91 +213,6 @@ export function CycleForm({
               </p>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Deadlines Section */}
-      <div className="space-y-4 pt-4 border-t border-[var(--border)]">
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">Submission Deadlines</h3>
-        <p className="text-sm text-[var(--muted-foreground)]">
-          All deadlines must be in chronological order: Phase 1 → Rework → Phase 2 → Calibration
-          (optional)
-        </p>
-
-        {/* Phase 1 Deadline */}
-        <div className="space-y-2">
-          <Label htmlFor="phase1_deadline">Phase 1 Deadline (Initial Submission)</Label>
-          <Input
-            id="phase1_deadline"
-            type="datetime-local"
-            value={form.phase1_deadline || ""}
-            onChange={(e) => handleInputChange("phase1_deadline", e.target.value || null)}
-            disabled={isLoading}
-            className={errors.phase1_deadline ? "border-red-500" : ""}
-          />
-          {errors.phase1_deadline && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" />
-              {errors.phase1_deadline}
-            </p>
-          )}
-        </div>
-
-        {/* Rework Deadline */}
-        <div className="space-y-2">
-          <Label htmlFor="rework_deadline">Rework Deadline</Label>
-          <Input
-            id="rework_deadline"
-            type="datetime-local"
-            value={form.rework_deadline || ""}
-            onChange={(e) => handleInputChange("rework_deadline", e.target.value || null)}
-            disabled={isLoading}
-            className={errors.rework_deadline ? "border-red-500" : ""}
-          />
-          {errors.rework_deadline && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" />
-              {errors.rework_deadline}
-            </p>
-          )}
-        </div>
-
-        {/* Phase 2 Deadline */}
-        <div className="space-y-2">
-          <Label htmlFor="phase2_deadline">Phase 2 Deadline (Final Submission)</Label>
-          <Input
-            id="phase2_deadline"
-            type="datetime-local"
-            value={form.phase2_deadline || ""}
-            onChange={(e) => handleInputChange("phase2_deadline", e.target.value || null)}
-            disabled={isLoading}
-            className={errors.phase2_deadline ? "border-red-500" : ""}
-          />
-          {errors.phase2_deadline && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" />
-              {errors.phase2_deadline}
-            </p>
-          )}
-        </div>
-
-        {/* Calibration Deadline */}
-        <div className="space-y-2">
-          <Label htmlFor="calibration_deadline">Calibration Deadline</Label>
-          <Input
-            id="calibration_deadline"
-            type="datetime-local"
-            value={form.calibration_deadline || ""}
-            onChange={(e) => handleInputChange("calibration_deadline", e.target.value || null)}
-            disabled={isLoading}
-            className={errors.calibration_deadline ? "border-red-500" : ""}
-          />
-          {errors.calibration_deadline && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" />
-              {errors.calibration_deadline}
-            </p>
-          )}
         </div>
       </div>
 

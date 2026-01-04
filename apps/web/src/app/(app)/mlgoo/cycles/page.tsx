@@ -1,7 +1,7 @@
 "use client";
 
 import { CycleForm } from "@/components/features/admin/cycles/CycleForm";
-import { DeadlineStatusDashboard } from "@/components/features/admin/deadlines/DeadlineStatusDashboard";
+import { DeadlineWindowsConfig } from "@/components/features/admin/deadlines/DeadlineWindowsConfig";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AssessmentYearFormData } from "@/hooks/useAssessmentYears";
@@ -25,20 +25,34 @@ import {
   PowerOff,
   Settings,
   Trash2,
-  Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type TabId = "settings" | "monitoring";
+type TabId = "years" | "deadline-windows";
 
 export default function CyclesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuthStore();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>("settings");
   const [editingYear, setEditingYear] = useState<AssessmentYearResponse | null>(null);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
+
+  // Get tab from URL or default to "years"
+  const tabParam = searchParams.get("tab");
+  const activeTab: TabId = tabParam === "deadline-windows" ? "deadline-windows" : "years";
+
+  // Handle tab change with URL update
+  const handleTabChange = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === "years") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    router.push(`/mlgoo/cycles${params.toString() ? `?${params.toString()}` : ""}`);
+  };
 
   // Use the new assessment years hook
   const {
@@ -272,13 +286,26 @@ export default function CyclesPage() {
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
                   <h1 className="text-3xl font-bold text-[var(--foreground)]">
-                    Assessment{" "}
-                    <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
-                      Years
-                    </span>
+                    {activeTab === "years" ? (
+                      <>
+                        Assessment{" "}
+                        <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+                          Years
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        Deadline{" "}
+                        <span className="bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+                          Windows
+                        </span>
+                      </>
+                    )}
                   </h1>
                   <p className="text-[var(--muted-foreground)] mt-2">
-                    Manage assessment years, deadlines, and monitor barangay submissions
+                    {activeTab === "years"
+                      ? "Manage assessment years and monitor barangay submissions"
+                      : "Configure submission deadlines and window durations for rework and calibration"}
                   </p>
                 </div>
 
@@ -312,30 +339,30 @@ export default function CyclesPage() {
             className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-2"
             aria-label="Assessment year tabs"
           >
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
+            <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as TabId)}>
               <TabsList className="w-full grid grid-cols-2 gap-2 bg-transparent h-auto p-0">
                 <TabsTrigger
-                  value="settings"
+                  value="years"
                   className="flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
-                  aria-label="Year Settings tab"
+                  aria-label="Assessment Years tab"
                 >
                   <Settings className="h-4 w-4" aria-hidden="true" />
-                  <span className="truncate">Year Settings</span>
+                  <span className="truncate">Assessment Years</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  value="monitoring"
+                  value="deadline-windows"
                   className="flex items-center justify-center gap-2 px-2 sm:px-6 py-3 rounded-sm data-[state=active]:bg-[var(--cityscape-yellow)] data-[state=active]:text-[var(--foreground)] data-[state=active]:shadow-sm transition-all"
-                  aria-label="Deadline Monitoring tab"
+                  aria-label="Deadline Windows tab"
                 >
-                  <Users className="h-4 w-4" aria-hidden="true" />
-                  <span className="truncate">Deadline Monitoring</span>
+                  <Clock className="h-4 w-4" aria-hidden="true" />
+                  <span className="truncate">Deadline Windows</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           </nav>
 
           {/* Tab Content */}
-          {activeTab === "settings" && (
+          {activeTab === "years" && (
             <div className="space-y-6">
               {/* Loading State */}
               {isLoading ? (
@@ -652,10 +679,10 @@ export default function CyclesPage() {
             </div>
           )}
 
-          {/* Deadline Monitoring Tab */}
-          {activeTab === "monitoring" && (
-            <section aria-label="Deadline monitoring dashboard">
-              <DeadlineStatusDashboard />
+          {/* Deadline Windows Tab */}
+          {activeTab === "deadline-windows" && (
+            <section aria-label="Deadline windows configuration">
+              <DeadlineWindowsConfig />
             </section>
           )}
         </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Calendar, Settings, ExternalLink, Database, Users, Shield, Bell } from "lucide-react";
+import { Calendar, Settings, ExternalLink, Database, Users, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsSkeleton } from "@/components/features/settings/SettingsSkeleton";
 
@@ -48,30 +48,12 @@ export default function AdminSettingsPage() {
       isLink: true,
     },
     {
-      title: "Governance Areas",
-      description: "Configure governance areas and indicators",
-      icon: Database,
-      href: "/mlgoo/governance-areas",
-      color: "#10B981",
+      title: "Deadline Windows",
+      description: "Configure rework and calibration window durations",
+      icon: Clock,
+      href: "/mlgoo/cycles?tab=deadline-windows",
+      color: "#EF4444",
       isLink: true,
-    },
-    {
-      title: "Security",
-      description: "Security settings and audit logs",
-      icon: Shield,
-      href: "#",
-      color: "#8B5CF6",
-      isLink: false,
-      badge: "Coming Soon",
-    },
-    {
-      title: "Notifications",
-      description: "Configure system notifications and alerts",
-      icon: Bell,
-      href: "#",
-      color: "#F59E0B",
-      isLink: false,
-      badge: "Coming Soon",
     },
   ];
 
@@ -128,7 +110,7 @@ export default function AdminSettingsPage() {
               const Icon = section.icon;
               const content = (
                 <Card
-                  className={`bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden transition-all duration-200 ${
+                  className={`h-full bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden transition-all duration-200 ${
                     section.isLink
                       ? "hover:shadow-xl hover:border-[var(--cityscape-yellow)]/50 cursor-pointer"
                       : "opacity-75"
@@ -165,13 +147,17 @@ export default function AdminSettingsPage() {
 
               if (section.isLink) {
                 return (
-                  <Link key={section.title} href={section.href}>
+                  <Link key={section.title} href={section.href} className="h-full">
                     {content}
                   </Link>
                 );
               }
 
-              return <div key={section.title}>{content}</div>;
+              return (
+                <div key={section.title} className="h-full">
+                  {content}
+                </div>
+              );
             })}
           </div>
 
