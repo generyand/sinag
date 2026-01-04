@@ -26,6 +26,7 @@ from app.db.models.assessment import (
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVCreate  # Pydantic schema
+from app.services.assessment_activity_service import assessment_activity_service
 from app.services.assessment_year_service import assessment_year_service
 from app.services.storage_service import storage_service
 
@@ -1286,6 +1287,30 @@ class AssessorService:
         db.commit()
         db.refresh(assessment)
 
+        # Get barangay name for activity logging
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Log activity: Rework requested
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="rework_requested",
+                user_id=assessor.id,
+                from_status=AssessmentStatus.SUBMITTED_FOR_REVIEW.value,
+                to_status=AssessmentStatus.REWORK.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "has_annotations": has_annotations,
+                    "has_manual_rework_flag": has_manual_rework_flag,
+                },
+                description=f"Rework requested by {assessor.name}",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log rework activity: {e}")
+
         # Invalidate dashboard cache immediately so status changes are visible
         try:
             from app.core.cache import cache
@@ -1551,6 +1576,31 @@ class AssessorService:
 
         db.commit()
         db.refresh(assessment)
+
+        # Get barangay name for activity logging
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Log activity: Calibration requested
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="calibration_requested",
+                user_id=validator.id,
+                from_status=AssessmentStatus.AWAITING_FINAL_VALIDATION.value,
+                to_status=AssessmentStatus.REWORK.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "governance_area_id": validator.validator_area_id,
+                    "calibrated_indicator_ids": calibrated_indicator_ids,
+                    "calibrated_count": calibrated_count,
+                },
+                description=f"Calibration requested by {validator.name} for {calibrated_count} indicator(s)",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log calibration activity: {e}")
 
         # Invalidate dashboard cache immediately so calibration status is visible
         try:
@@ -1818,6 +1868,43 @@ class AssessorService:
         db.commit()
         db.refresh(assessment)
         self.logger.info("[FINALIZE DEBUG] DB Commit success")
+
+        # Get barangay name for activity logging
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Log activity: Review completed (assessor) or Validation completed (validator)
+        try:
+            if not is_validator and assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
+                # Assessor completed review
+                assessment_activity_service.log_activity(
+                    db=db,
+                    assessment_id=assessment_id,
+                    action="review_completed",
+                    user_id=assessor.id,
+                    from_status=AssessmentStatus.SUBMITTED_FOR_REVIEW.value,
+                    to_status=AssessmentStatus.AWAITING_FINAL_VALIDATION.value,
+                    extra_data={"barangay_name": barangay_name},
+                    description=f"Review completed by {assessor.name}",
+                )
+            elif is_validator and assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
+                # All validators completed validation
+                assessment_activity_service.log_activity(
+                    db=db,
+                    assessment_id=assessment_id,
+                    action="validation_completed",
+                    user_id=assessor.id,
+                    from_status=AssessmentStatus.AWAITING_FINAL_VALIDATION.value,
+                    to_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
+                    extra_data={
+                        "barangay_name": barangay_name,
+                        "validator_area_id": assessor.validator_area_id,
+                    },
+                    description=f"Validation completed by {assessor.name}",
+                )
+        except Exception as e:
+            self.logger.error(f"Failed to log finalize activity: {e}")
 
         # Notification #4: If assessor finalized (moved to AWAITING_FINAL_VALIDATION),
         # notify validators for all governance areas in the assessment

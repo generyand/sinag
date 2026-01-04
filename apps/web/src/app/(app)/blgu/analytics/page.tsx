@@ -15,6 +15,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import {
   useGetAssessmentsMyAssessment,
   useGetCapdevAssessmentsAssessmentId,
+  useGetBlguDashboardAssessmentId,
 } from "@sinag/shared";
 import { useEffectiveYear, useAccessibleYears } from "@/hooks/useAssessmentYear";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
@@ -91,6 +92,18 @@ export default function BLGUAnalyticsPage() {
   const assessmentStatus = (myAssessment?.assessment as any)?.status;
   const isCompleted = assessmentStatus === "COMPLETED";
 
+  // Fetch dashboard data for progress calculation (only when not completed)
+  const { data: dashboardData, isLoading: isLoadingDashboard } = useGetBlguDashboardAssessmentId(
+    assessmentId!,
+    {},
+    {
+      query: {
+        enabled: !!assessmentId && !isCompleted,
+        staleTime: 30 * 1000,
+      } as any,
+    }
+  );
+
   // Fetch CapDev insights (only if assessment is completed)
   const {
     data: capdevData,
@@ -126,7 +139,11 @@ export default function BLGUAnalyticsPage() {
     return null;
   }, [capdevData, selectedLanguage]);
 
-  const isLoading = isLoadingYears || isLoadingAssessment || (isCompleted && isLoadingCapdev);
+  const isLoading =
+    isLoadingYears ||
+    isLoadingAssessment ||
+    (isCompleted && isLoadingCapdev) ||
+    (!isCompleted && isLoadingDashboard);
   const error = assessmentError || capdevError;
 
   // Non-BLGU users: show redirect message
@@ -210,6 +227,9 @@ export default function BLGUAnalyticsPage() {
           <AnalyticsPendingCard
             status={assessmentStatus}
             statusLabel={STATUS_LABELS[assessmentStatus] || assessmentStatus}
+            completionPercentage={dashboardData?.completion_percentage || 0}
+            isCalibrationRework={dashboardData?.is_calibration_rework || false}
+            isMlgooRecalibration={dashboardData?.is_mlgoo_recalibration || false}
           />
         ) : (
           // Completed State - Show CapDev Insights

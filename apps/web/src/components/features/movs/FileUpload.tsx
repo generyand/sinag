@@ -110,19 +110,14 @@ export function FileUpload({
             strokeWidth={2.5}
           />
           <p className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-            {isDragActive ? (
-              "Drop files here"
-            ) : (
-              <>
-                Click here to upload files
-              </>
-            )}
+            {isDragActive ? "Drop files here" : <>Click here to upload files</>}
           </p>
           <p className="text-base text-blue-600 font-medium mb-3">
             or drag and drop your files here
           </p>
           <p className="text-sm text-[var(--text-secondary)] mt-2 bg-white/80 px-4 py-2 rounded-lg border border-gray-200">
-            Accepted: PDF, Word, Excel, Images (JPG, PNG), Videos (MP4)<br/>
+            Accepted: PDF, Images (JPG, PNG)
+            <br />
             Maximum size: 50MB per file
           </p>
         </div>

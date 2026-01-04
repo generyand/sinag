@@ -22,6 +22,7 @@ import {
   Phase2Section,
   VerdictSection,
   PhaseTimeline,
+  AssessmentProgress,
 } from "@/components/features/blgu-phases";
 import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -36,7 +37,7 @@ import { useTourAutoStart } from "@/hooks/useTourAutoStart";
 export default function BLGUDashboardPage() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const { registerTourSteps, tourLanguage, shouldShowTour, startTour } = useTour();
+  const { registerTourSteps, tourLanguage } = useTour();
 
   // Register dashboard tour steps
   useEffect(() => {
@@ -226,7 +227,21 @@ export default function BLGUDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Timeline Sidebar - Desktop */}
           <div className="hidden lg:block">
-            <div className="sticky top-6">
+            <div className="sticky top-6 space-y-4">
+              {/* Assessment Progress */}
+              <div
+                className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-4"
+                data-tour="assessment-progress"
+              >
+                <AssessmentProgress
+                  currentStatus={dashboardData.status}
+                  isCalibrationRework={dashboardData.is_calibration_rework || false}
+                  isMlgooRecalibration={dashboardData.is_mlgoo_recalibration || false}
+                  completionPercentage={dashboardData.completion_percentage || 0}
+                />
+              </div>
+
+              {/* Phase Timeline */}
               <div
                 className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-4"
                 data-tour="phase-timeline"
@@ -237,7 +252,7 @@ export default function BLGUDashboardPage() {
                   validatedAt={dashboardData.validated_at}
                   currentStatus={dashboardData.status}
                   isCalibrationRework={dashboardData.is_calibration_rework || false}
-                  isMlgooRecalibration={(dashboardData as any).is_mlgoo_recalibration || false}
+                  isMlgooRecalibration={dashboardData.is_mlgoo_recalibration || false}
                   mlgooRecalibrationRequestedAt={
                     (dashboardData as any).mlgoo_recalibration_requested_at
                   }
@@ -249,6 +264,19 @@ export default function BLGUDashboardPage() {
 
           {/* Phase Sections */}
           <div className="lg:col-span-3 space-y-6">
+            {/* Mobile Assessment Progress */}
+            <div
+              className="lg:hidden bg-[var(--card)] rounded-lg border border-[var(--border)] p-4"
+              data-tour="assessment-progress"
+            >
+              <AssessmentProgress
+                currentStatus={dashboardData.status}
+                isCalibrationRework={dashboardData.is_calibration_rework || false}
+                isMlgooRecalibration={dashboardData.is_mlgoo_recalibration || false}
+                completionPercentage={dashboardData.completion_percentage || 0}
+              />
+            </div>
+
             {/* Mobile Timeline - Collapsible */}
             <div className="lg:hidden" data-tour="phase-timeline">
               <details className="bg-[var(--card)] rounded-lg border border-[var(--border)]">
@@ -262,7 +290,7 @@ export default function BLGUDashboardPage() {
                     validatedAt={dashboardData.validated_at}
                     currentStatus={dashboardData.status}
                     isCalibrationRework={dashboardData.is_calibration_rework || false}
-                    isMlgooRecalibration={(dashboardData as any).is_mlgoo_recalibration || false}
+                    isMlgooRecalibration={dashboardData.is_mlgoo_recalibration || false}
                     mlgooRecalibrationRequestedAt={
                       (dashboardData as any).mlgoo_recalibration_requested_at
                     }

@@ -5,28 +5,69 @@ import { Clock, FileCheck, Sparkles } from "lucide-react";
 interface AnalyticsPendingCardProps {
   status: string;
   statusLabel: string;
+  /** Indicator completion percentage (0-100) for dynamic progress within phases */
+  completionPercentage?: number;
+  /** Whether this is a calibration rework (Phase 2 rework) */
+  isCalibrationRework?: boolean;
+  /** Whether this is an MLGOO recalibration */
+  isMlgooRecalibration?: boolean;
+}
+
+/** Helper to check if status is a rework status */
+function isReworkStatus(status: string): boolean {
+  return status === "REWORK" || status === "NEEDS_REWORK";
+}
+
+/**
+ * Calculate progress percentage based on status and completion.
+ * Uses the same logic as AssessmentProgress component for consistency.
+ *
+ * Progress ranges:
+ * - 0–20%: Preparation and Drafting (DRAFT)
+ * - 20–45%: Phase 1 (SUBMITTED, IN_REVIEW)
+ * - 45–55%: Phase 1 Rework
+ * - 55–80%: Phase 2 (AWAITING_FINAL_VALIDATION)
+ * - 80–90%: Phase 2 Calibration
+ * - 90–100%: Final Approval (AWAITING_MLGOO_APPROVAL, COMPLETED)
+ */
+function calculateProgress(
+  status: string,
+  completionPercentage: number,
+  isCalibrationRework: boolean,
+  isMlgooRecalibration: boolean
+): number {
+  if (status === "COMPLETED") return 100;
+  if (status === "AWAITING_MLGOO_APPROVAL") return 95;
+  if (isMlgooRecalibration && isReworkStatus(status)) return 92;
+  if (isCalibrationRework && isReworkStatus(status)) return 85;
+  if (status === "AWAITING_FINAL_VALIDATION") return 65;
+  if (isReworkStatus(status)) return 50;
+  if (status === "IN_REVIEW") return 35;
+  if (status === "SUBMITTED") return 25;
+  if (status === "DRAFT") {
+    // Scale completion percentage to the 0-20% range
+    return Math.round((completionPercentage / 100) * 20);
+  }
+  return 0;
 }
 
 /**
  * Shown when assessment is not yet COMPLETED
  * Explains that CapDev insights are generated after MLGOO approval
  */
-export function AnalyticsPendingCard({ status, statusLabel }: AnalyticsPendingCardProps) {
-  // Map assessment status to progress percentage
-  const getProgressPercent = () => {
-    const statusMap: Record<string, number> = {
-      DRAFT: 10,
-      SUBMITTED: 30,
-      IN_REVIEW: 45,
-      REWORK: 35,
-      AWAITING_FINAL_VALIDATION: 60,
-      AWAITING_MLGOO_APPROVAL: 85,
-      COMPLETED: 100,
-    };
-    return statusMap[status] || 0;
-  };
-
-  const progress = getProgressPercent();
+export function AnalyticsPendingCard({
+  status,
+  statusLabel,
+  completionPercentage = 0,
+  isCalibrationRework = false,
+  isMlgooRecalibration = false,
+}: AnalyticsPendingCardProps) {
+  const progress = calculateProgress(
+    status,
+    completionPercentage,
+    isCalibrationRework,
+    isMlgooRecalibration
+  );
 
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6 sm:p-8">
@@ -45,9 +86,9 @@ export function AnalyticsPendingCard({ status, statusLabel }: AnalyticsPendingCa
 
         {/* Description */}
         <p className="text-[var(--text-secondary)] mb-6 text-base sm:text-lg leading-relaxed">
-          Capacity Development (CapDev) recommendations will be generated automatically
-          once your assessment is approved by MLGOO. These AI-powered insights will help
-          your barangay improve governance performance.
+          Capacity Development (CapDev) recommendations will be generated automatically once your
+          assessment is approved by MLGOO. These AI-powered insights will help your barangay improve
+          governance performance.
         </p>
 
         {/* Current Status Badge */}

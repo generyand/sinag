@@ -12,7 +12,9 @@ from app.api.deps import get_current_external_user, get_db
 from app.db.models.user import User
 from app.schemas.external_analytics import (
     AnonymizedAIInsightsResponse,
+    BBIFunctionalityTrendsResponse,
     ExternalAnalyticsDashboardResponse,
+    GeographicHeatmapResponse,
     GovernanceAreaPerformanceResponse,
     OverallComplianceResponse,
     TopFailingIndicatorsResponse,
@@ -269,6 +271,114 @@ async def get_complete_dashboard(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while retrieving dashboard data",
+        )
+
+
+@router.get(
+    "/bbi-trends",
+    response_model=BBIFunctionalityTrendsResponse,
+    summary="Get BBI Functionality Trends",
+    description="Returns aggregated BBI functionality trends showing the distribution of barangays across functionality tiers for each BBI type.",
+)
+async def get_bbi_trends(
+    assessment_year: int | None = Query(None, description="Assessment year filter"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_external_user),
+):
+    """
+    Get aggregated BBI functionality trends.
+
+    **Access:** KATUPARAN_CENTER_USER
+
+    **Privacy:** Data is aggregated across all barangays. Individual barangay
+    performance cannot be identified.
+
+    Args:
+        assessment_year: Optional year filter
+        db: Database session
+        current_user: Authenticated external user
+
+    Returns:
+        BBIFunctionalityTrendsResponse with per-BBI functionality distribution
+
+    Raises:
+        400: If insufficient data for anonymization (< 5 barangays)
+    """
+    try:
+        logger.info(
+            f"External user {current_user.email} ({current_user.role}) "
+            f"requesting BBI trends (year: {assessment_year or 'all'})"
+        )
+
+        result = external_analytics_service.get_bbi_trends(db, assessment_year)
+
+        return result
+
+    except ValueError as e:
+        # Insufficient data for anonymization
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error getting BBI trends: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving BBI trends",
+        )
+
+
+@router.get(
+    "/geographic/heatmap",
+    response_model=GeographicHeatmapResponse,
+    summary="Get Geographic Performance Heatmap",
+    description="Returns anonymized geographic performance data for heatmap visualization. Barangay names are replaced with anonymous identifiers (Barangay A, B, C, etc.) to protect privacy.",
+)
+async def get_geographic_heatmap(
+    assessment_year: int | None = Query(None, description="Assessment year filter"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_external_user),
+):
+    """
+    Get anonymized geographic performance data for heatmap.
+
+    **Access:** KATUPARAN_CENTER_USER
+
+    **Privacy:** All barangay names are replaced with anonymous identifiers.
+    The map shows color-coded status without revealing actual barangay names.
+
+    Args:
+        assessment_year: Optional year filter
+        db: Database session
+        current_user: Authenticated external user
+
+    Returns:
+        GeographicHeatmapResponse with anonymized barangay statuses
+
+    Raises:
+        400: If insufficient barangays for anonymization
+    """
+    try:
+        logger.info(
+            f"External user {current_user.email} ({current_user.role}) "
+            f"requesting geographic heatmap (year: {assessment_year or 'all'})"
+        )
+
+        result = external_analytics_service.get_geographic_heatmap_data(db, assessment_year)
+
+        return result
+
+    except ValueError as e:
+        # Insufficient data for anonymization
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error(f"Error getting geographic heatmap: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving heatmap data",
         )
 
 

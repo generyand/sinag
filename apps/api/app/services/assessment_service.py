@@ -33,6 +33,7 @@ from app.schemas.assessment import (
     MOVCreate,
     ProgressSummary,
 )
+from app.services.assessment_activity_service import assessment_activity_service
 from app.services.completeness_validation_service import completeness_validation_service
 from app.services.year_config_service import indicator_snapshot_service
 
@@ -2031,6 +2032,44 @@ class AssessmentService:
 
             db.commit()
             db.refresh(assessment)
+
+            # Get barangay name for activity logging
+            barangay_name = "Unknown Barangay"
+            if assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            # Log activity: Submission or resubmission
+            try:
+                # Determine the action type based on resubmission context
+                if is_mlgoo_recalibration_resubmission:
+                    action = "recalibration_submitted"
+                    from_status = AssessmentStatus.REWORK.value
+                    description = "RE-calibration resubmission"
+                elif is_calibration_resubmission:
+                    action = "calibration_submitted"
+                    from_status = AssessmentStatus.REWORK.value
+                    description = "Calibration resubmission"
+                elif is_rework_resubmission:
+                    action = "rework_submitted"
+                    from_status = AssessmentStatus.REWORK.value
+                    description = "Rework resubmission"
+                else:
+                    action = "submitted"
+                    from_status = AssessmentStatus.DRAFT.value
+                    description = "Assessment submitted"
+
+                assessment_activity_service.log_activity(
+                    db=db,
+                    assessment_id=assessment_id,
+                    action=action,
+                    user_id=assessment.blgu_user_id,
+                    from_status=from_status,
+                    to_status=AssessmentStatus.SUBMITTED_FOR_REVIEW.value,
+                    extra_data={"barangay_name": barangay_name},
+                    description=description,
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to log submission activity: {e}")
 
             # Create indicator snapshots on FIRST submission only
             # Snapshots preserve the exact indicator definitions (with resolved year placeholders)

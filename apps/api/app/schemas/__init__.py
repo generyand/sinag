@@ -42,6 +42,18 @@ from .assessment import (
     MOVUpdate,
     ReworkSummaryResponse,
 )
+from .assessment_activity import (
+    ActivityAction,
+    ActivityByActionCount,
+    ActivityCountsResponse,
+    ActivitySummary,
+    AssessmentActivityCreate,
+    AssessmentActivityFilters,
+    AssessmentActivityListResponse,
+    AssessmentActivityResponse,
+    AssessmentTimelineItem,
+    AssessmentTimelineResponse,
+)
 from .assessment_year import (
     AccessibleYearsResponse,
     ActivateYearRequest,
@@ -81,6 +93,20 @@ from .blgu_dashboard import (
     IndicatorItem,
     IndicatorNavigationItem,
     ReworkComment,
+)
+from .municipal_export import (
+    AnalyticsSummaryExport,
+    AssessmentExportRow,
+    AvailableCycle,
+    ExportDataType,
+    ExportGenerateResponse,
+    ExportOptions,
+    ExportOptionsResponse,
+    ExportRequest,
+    ExportSummary,
+    GovernanceAreaExportRow,
+    IndicatorExportRow,
+    UserExportRow,
 )
 from .system import ApiResponse, ErrorResponse, HealthCheck, SuccessResponse
 from .token import AuthToken, LoginRequest, Token, TokenPayload
@@ -175,4 +201,28 @@ __all__ = [
     "IndicatorItem",
     "IndicatorNavigationItem",
     "ReworkComment",
+    # Assessment Activity schemas
+    "ActivityAction",
+    "AssessmentActivityCreate",
+    "AssessmentActivityResponse",
+    "AssessmentActivityListResponse",
+    "AssessmentActivityFilters",
+    "AssessmentTimelineItem",
+    "AssessmentTimelineResponse",
+    "ActivitySummary",
+    "ActivityByActionCount",
+    "ActivityCountsResponse",
+    # Municipal Export schemas
+    "ExportOptions",
+    "ExportRequest",
+    "ExportDataType",
+    "AvailableCycle",
+    "ExportOptionsResponse",
+    "ExportSummary",
+    "ExportGenerateResponse",
+    "AssessmentExportRow",
+    "UserExportRow",
+    "GovernanceAreaExportRow",
+    "IndicatorExportRow",
+    "AnalyticsSummaryExport",
 ]

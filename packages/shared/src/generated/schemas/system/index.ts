@@ -4,6 +4,8 @@
 // 🏷️  Based on FastAPI tag: "system"
 
 import type { ActivateYearResponseAssessmentsCreated } from '../assessments';
+import type { ActivitySummary } from '../common';
+import type { ActivityByActionCount } from '../common';
 import type { PdfRect } from '../common';
 import type { AnonymizedInsight } from '../common';
 import type { ApprovalQueueItem } from '../common';
@@ -33,6 +35,10 @@ import type { TopReworkReasons } from '../common';
 import type { DeadlineExtensionResponse } from '../deadlineextension';
 import type { AppSchemasDeadlineExtensionUserNested } from '../users';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
+import type { ExportSummary } from '../export';
+import type { ExportDataType } from '../common';
+import type { AvailableCycle } from '../common';
+import type { AnonymizedBarangayStatus } from '../common';
 import type { MunicipalOfficeWithGovernanceArea } from '../municipalofficewithgovernancearea';
 import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
@@ -105,6 +111,15 @@ export interface ActivateYearResponse {
  * ActivateYearResponsePreviousActiveYear
  */
 export type ActivateYearResponsePreviousActiveYear = number | null;
+
+
+/**
+ * ActivityCountsResponse
+ */
+export interface ActivityCountsResponse {
+  summary: ActivitySummary;
+  by_action: ActivityByActionCount[];
+}
 
 
 /**
@@ -626,6 +641,45 @@ export interface DeadlineStatusListResponse {
 
 
 /**
+ * ExportGenerateResponse
+ */
+export interface ExportGenerateResponse {
+  success: boolean;
+  message: string;
+  summary?: ExportGenerateResponseSummary;
+  download_url?: ExportGenerateResponseDownloadUrl;
+}
+
+
+/**
+ * ExportGenerateResponseDownloadUrl
+ */
+export type ExportGenerateResponseDownloadUrl = string | null;
+
+
+/**
+ * ExportGenerateResponseSummary
+ */
+export type ExportGenerateResponseSummary = ExportSummary | null;
+
+
+/**
+ * ExportOptionsResponse
+ */
+export interface ExportOptionsResponse {
+  data_types: ExportDataType[];
+  cycles: AvailableCycle[];
+  default_cycle_id?: ExportOptionsResponseDefaultCycleId;
+}
+
+
+/**
+ * ExportOptionsResponseDefaultCycleId
+ */
+export type ExportOptionsResponseDefaultCycleId = number | null;
+
+
+/**
  * FormSchemaMetadataGovernanceAreaName
  */
 export type FormSchemaMetadataGovernanceAreaName = string | null;
@@ -635,6 +689,25 @@ export type FormSchemaMetadataGovernanceAreaName = string | null;
  * FormSchemaResponseFormSchema
  */
 export type FormSchemaResponseFormSchema = { [key: string]: unknown };
+
+
+/**
+ * GeographicHeatmapResponse
+ */
+export interface GeographicHeatmapResponse {
+  /** Anonymized status for each barangay */
+  barangays: AnonymizedBarangayStatus[];
+  /** Summary counts: pass_count, fail_count, in_progress_count, not_started_count */
+  summary: GeographicHeatmapResponseSummary;
+  /** Total number of barangays in the municipality */
+  total_barangays: number;
+}
+
+
+/**
+ * GeographicHeatmapResponseSummary
+ */
+export type GeographicHeatmapResponseSummary = { [key: string]: unknown };
 
 
 /**

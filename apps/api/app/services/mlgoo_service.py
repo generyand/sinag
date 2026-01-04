@@ -18,6 +18,7 @@ from app.db.models.assessment import (
 )
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
+from app.services.assessment_activity_service import assessment_activity_service
 from app.services.bbi_service import bbi_service
 
 
@@ -249,6 +250,24 @@ class MLGOOService:
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
+        # Log activity: Assessment approved and completed
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="approved",
+                user_id=mlgoo_user.id,
+                from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
+                to_status=AssessmentStatus.COMPLETED.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "comments": comments,
+                },
+                description=f"Assessment approved by {mlgoo_user.name}",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log approval activity: {e}")
+
         self.logger.info(
             f"MLGOO {mlgoo_user.name} approved assessment {assessment_id} for {barangay_name}"
         )
@@ -404,6 +423,26 @@ class MLGOOService:
         for response in assessment.responses:
             if response.indicator_id in indicator_ids and response.indicator:
                 indicator_names.append(response.indicator.name)
+
+        # Log activity: Recalibration requested
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="recalibration_requested",
+                user_id=mlgoo_user.id,
+                from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
+                to_status=AssessmentStatus.REWORK.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "indicator_ids": indicator_ids,
+                    "indicator_names": indicator_names,
+                    "comments": comments,
+                },
+                description=f"RE-calibration requested by {mlgoo_user.name} for {len(indicator_ids)} indicator(s)",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log recalibration activity: {e}")
 
         self.logger.info(
             f"MLGOO {mlgoo_user.name} requested RE-calibration for assessment {assessment_id} "
@@ -568,6 +607,27 @@ class MLGOOService:
                         "comment": item.get("comment"),
                     }
                 )
+
+        # Log activity: Recalibration requested (by MOV)
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="recalibration_requested",
+                user_id=mlgoo_user.id,
+                from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
+                to_status=AssessmentStatus.REWORK.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "mov_file_count": len(mov_files),
+                    "indicator_ids": indicator_ids,
+                    "comments": overall_comments,
+                    "type": "mov_file_recalibration",
+                },
+                description=f"RE-calibration requested by {mlgoo_user.name} for {len(mov_files)} MOV file(s)",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log recalibration activity: {e}")
 
         self.logger.info(
             f"MLGOO {mlgoo_user.name} requested MOV file RE-calibration for assessment {assessment_id} "

@@ -107,6 +107,30 @@ export const AISummarySummaryType = {
 
 
 /**
+ * ActivityByActionCount
+ */
+export interface ActivityByActionCount {
+  action: string;
+  count: number;
+  label: string;
+}
+
+
+/**
+ * ActivitySummary
+ */
+export interface ActivitySummary {
+  total_activities: number;
+  submissions_count: number;
+  approvals_count: number;
+  rework_requests_count: number;
+  calibrations_count: number;
+  last_7_days: number;
+  last_30_days: number;
+}
+
+
+/**
  * AffectedBarangay
  */
 export interface AffectedBarangay {
@@ -135,6 +159,17 @@ export type AnnotationCreateRects = PdfRect[] | null;
  * AnnotationUpdateComment
  */
 export type AnnotationUpdateComment = string | null;
+
+
+/**
+ * AnonymizedBarangayStatus
+ */
+export interface AnonymizedBarangayStatus {
+  /** Anonymous identifier (e.g., 'Barangay A', 'Barangay B') */
+  anonymous_id: string;
+  /** Status: 'pass', 'fail', or 'in_progress' */
+  status: string;
+}
 
 
 /**
@@ -253,6 +288,17 @@ export const AreaType = {
   CORE: 'CORE',
   ESSENTIAL: 'ESSENTIAL',
 } as const;
+
+
+/**
+ * AvailableCycle
+ */
+export interface AvailableCycle {
+  id: number;
+  name: string;
+  year: number;
+  is_active: boolean;
+}
 
 
 /**
@@ -589,6 +635,39 @@ export const DeadlineExtensionCreateExtensionType = {
   rework: 'rework',
   calibration: 'calibration',
 } as const;
+
+
+/**
+ * ExportDataType
+ */
+export interface ExportDataType {
+  /** Data type key */
+  key: string;
+  /** Display label */
+  label: string;
+  /** Description of what's included */
+  description: string;
+  /** Whether selected by default */
+  default?: boolean;
+}
+
+
+/**
+ * ExportRequestCycleId
+ */
+export type ExportRequestCycleId = number | null;
+
+
+/**
+ * ExportSummaryCycleName
+ */
+export type ExportSummaryCycleName = string | null;
+
+
+/**
+ * ExportSummaryCycleYear
+ */
+export type ExportSummaryCycleYear = number | null;
 
 
 /**

@@ -3,7 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Building2, Calendar, Clock, Database, ExternalLink, Settings, Users } from "lucide-react";
+import {
+  Building2,
+  Calendar,
+  Clock,
+  Download,
+  ExternalLink,
+  History,
+  Settings,
+  Users,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsSkeleton } from "@/components/features/settings/SettingsSkeleton";
 
@@ -61,6 +70,22 @@ export default function AdminSettingsPage() {
       icon: Building2,
       href: "/mlgoo/municipal-offices",
       color: "#10B981",
+      isLink: true,
+    },
+    {
+      title: "Activity Logs",
+      description: "View assessment workflow activities and history",
+      icon: History,
+      href: "/mlgoo/activity-logs",
+      color: "#8B5CF6",
+      isLink: true,
+    },
+    {
+      title: "Data Export",
+      description: "Export municipal assessment data to Excel",
+      icon: Download,
+      href: "/mlgoo/data-export",
+      color: "#F59E0B",
       isLink: true,
     },
   ];
@@ -168,55 +193,6 @@ export default function AdminSettingsPage() {
               );
             })}
           </div>
-
-          {/* Quick Links */}
-          <Card className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-[var(--foreground)]">
-                Quick Links
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Link
-                  href="/mlgoo/cycles"
-                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
-                >
-                  <Calendar className="h-5 w-5 text-[var(--cityscape-yellow)]" />
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    Manage Assessment Years
-                  </span>
-                </Link>
-                <Link
-                  href="/mlgoo/dashboard"
-                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
-                >
-                  <Database className="h-5 w-5 text-[var(--cityscape-yellow)]" />
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    View Dashboard
-                  </span>
-                </Link>
-                <Link
-                  href="/mlgoo/analytics"
-                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
-                >
-                  <Settings className="h-5 w-5 text-[var(--cityscape-yellow)]" />
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    View Analytics
-                  </span>
-                </Link>
-                <Link
-                  href="/mlgoo/submissions"
-                  className="flex items-center gap-3 p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--cityscape-yellow)]/5 hover:border-[var(--cityscape-yellow)]/30 transition-all"
-                >
-                  <Users className="h-5 w-5 text-[var(--cityscape-yellow)]" />
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    View Submissions
-                  </span>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

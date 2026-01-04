@@ -27,6 +27,23 @@ export const dashboardTourTranslations = {
         "Kini ang imong assessment dashboard. Dinhi makita nimo ang imong pag-uswag sa SGLGB assessment process. Ipakita nako kanimo!",
     },
   },
+  assessmentProgress: {
+    en: {
+      title: "Your Overall Progress",
+      content:
+        "This shows your overall assessment progress as a percentage. The progress bar changes color as you advance through different phases - from drafting to final approval. Hover over the info icon to see what each phase means.",
+    },
+    fil: {
+      title: "Ang Iyong Kabuuang Progreso",
+      content:
+        "Ipinapakita nito ang iyong kabuuang assessment progress bilang percentage. Nagbabago ang kulay ng progress bar habang umuusad ka sa iba't ibang phase - mula sa drafting hanggang final approval. I-hover ang info icon para makita kung ano ang ibig sabihin ng bawat phase.",
+    },
+    ceb: {
+      title: "Ang Imong Kinatibuk-ang Pag-uswag",
+      content:
+        "Gipakita dinhi ang imong kinatibuk-ang assessment progress isip percentage. Mag-usab ang kolor sa progress bar samtang mo-uswag ka sa lain-laing yugto - gikan sa drafting hangtod final approval. I-hover ang info icon para makita unsay buot ipasabot sa matag yugto.",
+    },
+  },
   phaseTimeline: {
     en: {
       title: "Your Assessment Journey",
@@ -78,23 +95,7 @@ export const dashboardTourTranslations = {
         "Gipakita dinhi pila na ang nakompleto nimong indicator. Timan-i nga 100% completion ayha mag-submit!",
     },
   },
-  yearSelector: {
-    en: {
-      title: "Assessment Years",
-      content:
-        "If you have assessments from multiple years, you can switch between them here. Each year has its own set of indicators and requirements.",
-    },
-    fil: {
-      title: "Assessment Years",
-      content:
-        "Kung mayroon kang assessment mula sa iba't ibang taon, maaari kang lumipat dito. Bawat taon ay may sariling set ng indicators at requirements.",
-    },
-    ceb: {
-      title: "Assessment Years",
-      content:
-        "Kon naay assessment ka gikan sa lain-laing tuig, makabalhin ka dinhi. Matag tuig adunay kaugalingong set sa mga indicator ug requirements.",
-    },
-  },
+  // Note: yearSelector translations removed - YearSelector component only renders when multiple years exist
   submitButton: {
     en: {
       title: "Ready to Submit?",

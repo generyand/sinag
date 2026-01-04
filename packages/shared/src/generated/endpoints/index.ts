@@ -4,6 +4,7 @@
 
 export * from './admin';
 export * from './analytics';
+export * from './assessment-activities';
 export * from './assessment-years';
 export * from './assessments';
 export * from './assessor';
@@ -20,6 +21,7 @@ export * from './indicators';
 export * from './lookups';
 export * from './mlgoo';
 export * from './movs';
+export * from './municipal-export';
 export * from './municipal-offices';
 export * from './municipal-overview';
 export * from './notifications';

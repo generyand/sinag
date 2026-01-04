@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from . import (
     admin,
     analytics,
+    assessment_activities,
     assessment_years,
     assessments,
     assessor,
@@ -25,6 +26,7 @@ from . import (
     lookups,
     mlgoo,
     movs,
+    municipal_export,
     municipal_offices,
     municipal_overview,
     notifications,
@@ -67,4 +69,10 @@ api_router.include_router(
 )
 api_router.include_router(
     municipal_offices.router, prefix="/municipal-offices", tags=["municipal-offices"]
+)
+api_router.include_router(
+    assessment_activities.router, prefix="/assessment-activities", tags=["assessment-activities"]
+)
+api_router.include_router(
+    municipal_export.router, prefix="/municipal-export", tags=["municipal-export"]
 )

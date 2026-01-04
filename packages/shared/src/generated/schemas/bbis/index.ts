@@ -7,6 +7,7 @@ import type { AppSchemasBbiBBIComplianceResultIndicatorCode } from '../indicator
 import type { AppSchemasBbiSubIndicatorResult } from '../indicators';
 import type { AppSchemasBlguDashboardSubIndicatorResult } from '../indicators';
 import type { BarangayDistributionItem } from '../common';
+import type { BBIFunctionalityTrendsResponseAssessmentYear } from '../assessments';
 import type { BBIInfoIndicatorCode } from '../indicators';
 import type { BBIResultResponseIndicatorId } from '../indicators';
 import type { BBIResultResponseSubIndicatorResults } from '../indicators';
@@ -253,6 +254,50 @@ export const BBIFunctionalityCheckRuleExpectedStatus = {
   Functional: 'Functional',
   'Non-Functional': 'Non-Functional',
 } as const;
+
+
+/**
+ * BBIFunctionalityDistribution
+ */
+export interface BBIFunctionalityDistribution {
+  /** BBI abbreviation (e.g., 'BDRRMC', 'BADAC') */
+  bbi_abbreviation: string;
+  /** Full BBI name */
+  bbi_name: string;
+  /** Associated governance area code */
+  governance_area_code: string;
+  /** Count of barangays at 75-100% (Highly Functional) */
+  highly_functional_count: number;
+  /** Count of barangays at 50-74% (Moderately Functional) */
+  moderately_functional_count: number;
+  /** Count of barangays at 1-49% (Low Functional) */
+  low_functional_count: number;
+  /** Count of barangays at 0% (Non-Functional) */
+  non_functional_count: number;
+  /** Total number of barangays assessed for this BBI */
+  total_assessed: number;
+  /** Percentage highly functional (0-100) */
+  highly_functional_percentage: number;
+  /** Percentage moderately functional (0-100) */
+  moderately_functional_percentage: number;
+  /** Percentage low functional (0-100) */
+  low_functional_percentage: number;
+  /** Percentage non-functional (0-100) */
+  non_functional_percentage: number;
+}
+
+
+/**
+ * BBIFunctionalityTrendsResponse
+ */
+export interface BBIFunctionalityTrendsResponse {
+  /** Functionality distribution for each BBI type */
+  bbis: BBIFunctionalityDistribution[];
+  /** Total unique barangays with BBI data */
+  total_barangays_assessed: number;
+  /** Assessment year filter (if applied) */
+  assessment_year?: BBIFunctionalityTrendsResponseAssessmentYear;
+}
 
 
 /**

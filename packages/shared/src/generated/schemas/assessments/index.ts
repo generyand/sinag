@@ -60,6 +60,102 @@ export interface ApproveAssessmentResponse {
 
 
 /**
+ * AssessmentActivityListResponse
+ */
+export interface AssessmentActivityListResponse {
+  items: AssessmentActivityResponse[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+
+/**
+ * AssessmentActivityResponse
+ */
+export interface AssessmentActivityResponse {
+  /** Activity action type */
+  action: string;
+  /** Status before action */
+  from_status?: AssessmentActivityResponseFromStatus;
+  /** Status after action */
+  to_status?: AssessmentActivityResponseToStatus;
+  /** Additional context */
+  extra_data?: AssessmentActivityResponseExtraData;
+  /** Human-readable description */
+  description?: AssessmentActivityResponseDescription;
+  id: number;
+  assessment_id: number;
+  user_id: AssessmentActivityResponseUserId;
+  created_at: string;
+  user_email?: AssessmentActivityResponseUserEmail;
+  user_name?: AssessmentActivityResponseUserName;
+  barangay_name?: AssessmentActivityResponseBarangayName;
+  assessment_year?: AssessmentActivityResponseAssessmentYear;
+}
+
+
+/**
+ * AssessmentActivityResponseAssessmentYear
+ */
+export type AssessmentActivityResponseAssessmentYear = number | null;
+
+
+/**
+ * AssessmentActivityResponseBarangayName
+ */
+export type AssessmentActivityResponseBarangayName = string | null;
+
+
+/**
+ * AssessmentActivityResponseDescription
+ */
+export type AssessmentActivityResponseDescription = string | null;
+
+
+/**
+ * AssessmentActivityResponseExtraData
+ */
+export type AssessmentActivityResponseExtraData = AssessmentActivityResponseExtraDataAnyOf | null;
+
+
+/**
+ * AssessmentActivityResponseExtraDataAnyOf
+ */
+export type AssessmentActivityResponseExtraDataAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentActivityResponseFromStatus
+ */
+export type AssessmentActivityResponseFromStatus = string | null;
+
+
+/**
+ * AssessmentActivityResponseToStatus
+ */
+export type AssessmentActivityResponseToStatus = string | null;
+
+
+/**
+ * AssessmentActivityResponseUserEmail
+ */
+export type AssessmentActivityResponseUserEmail = string | null;
+
+
+/**
+ * AssessmentActivityResponseUserId
+ */
+export type AssessmentActivityResponseUserId = number | null;
+
+
+/**
+ * AssessmentActivityResponseUserName
+ */
+export type AssessmentActivityResponseUserName = string | null;
+
+
+/**
  * AssessmentBBIComplianceResponse
  */
 export interface AssessmentBBIComplianceResponse {
@@ -841,6 +937,89 @@ export type AssessmentSubmissionValidationWarningsItem = { [key: string]: unknow
 
 
 /**
+ * AssessmentTimelineItem
+ */
+export interface AssessmentTimelineItem {
+  id: number;
+  action: string;
+  from_status: AssessmentTimelineItemFromStatus;
+  to_status: AssessmentTimelineItemToStatus;
+  description: AssessmentTimelineItemDescription;
+  extra_data: AssessmentTimelineItemExtraData;
+  created_at: string;
+  user_id: AssessmentTimelineItemUserId;
+  user_email: AssessmentTimelineItemUserEmail;
+  user_name: AssessmentTimelineItemUserName;
+  user_role?: AssessmentTimelineItemUserRole;
+}
+
+
+/**
+ * AssessmentTimelineItemDescription
+ */
+export type AssessmentTimelineItemDescription = string | null;
+
+
+/**
+ * AssessmentTimelineItemExtraData
+ */
+export type AssessmentTimelineItemExtraData = AssessmentTimelineItemExtraDataAnyOf | null;
+
+
+/**
+ * AssessmentTimelineItemExtraDataAnyOf
+ */
+export type AssessmentTimelineItemExtraDataAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentTimelineItemFromStatus
+ */
+export type AssessmentTimelineItemFromStatus = string | null;
+
+
+/**
+ * AssessmentTimelineItemToStatus
+ */
+export type AssessmentTimelineItemToStatus = string | null;
+
+
+/**
+ * AssessmentTimelineItemUserEmail
+ */
+export type AssessmentTimelineItemUserEmail = string | null;
+
+
+/**
+ * AssessmentTimelineItemUserId
+ */
+export type AssessmentTimelineItemUserId = number | null;
+
+
+/**
+ * AssessmentTimelineItemUserName
+ */
+export type AssessmentTimelineItemUserName = string | null;
+
+
+/**
+ * AssessmentTimelineItemUserRole
+ */
+export type AssessmentTimelineItemUserRole = string | null;
+
+
+/**
+ * AssessmentTimelineResponse
+ */
+export interface AssessmentTimelineResponse {
+  assessment_id: number;
+  barangay_name: string;
+  current_status: string;
+  timeline: AssessmentTimelineItem[];
+}
+
+
+/**
  * AssessmentYearConfigCreate
  */
 export interface AssessmentYearConfigCreate {
@@ -1269,6 +1448,12 @@ export type AssessorAnalyticsResponseAssessmentPeriod = string | null;
 
 
 /**
+ * BBIFunctionalityTrendsResponseAssessmentYear
+ */
+export type BBIFunctionalityTrendsResponseAssessmentYear = number | null;
+
+
+/**
  * BarangayAssessmentStatus
  */
 export interface BarangayAssessmentStatus {
@@ -1472,6 +1657,98 @@ export interface GARAssessmentListResponse {
   /** Total count of assessments */
   total?: number;
 }
+
+
+/**
+ * GetAssessmentActivitiesExportParams
+ */
+export type GetAssessmentActivitiesExportParams = {
+/**
+ * Filter by assessment ID
+ */
+assessment_id?: number | null;
+/**
+ * Filter by user ID
+ */
+user_id?: number | null;
+/**
+ * Filter by barangay ID
+ */
+barangay_id?: number | null;
+/**
+ * Filter by action type
+ */
+action?: string | null;
+/**
+ * Filter from date
+ */
+start_date?: string | null;
+/**
+ * Filter to date
+ */
+end_date?: string | null;
+};
+
+
+/**
+ * GetAssessmentActivitiesParams
+ */
+export type GetAssessmentActivitiesParams = {
+/**
+ * Number of records to skip
+ * @minimum 0
+ */
+skip?: number;
+/**
+ * Maximum records to return
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+/**
+ * Filter by assessment ID
+ */
+assessment_id?: number | null;
+/**
+ * Filter by user ID
+ */
+user_id?: number | null;
+/**
+ * Filter by barangay ID
+ */
+barangay_id?: number | null;
+/**
+ * Filter by action type
+ */
+action?: string | null;
+/**
+ * Filter from date
+ */
+start_date?: string | null;
+/**
+ * Filter to date
+ */
+end_date?: string | null;
+};
+
+
+/**
+ * GetAssessmentActivitiesSummaryParams
+ */
+export type GetAssessmentActivitiesSummaryParams = {
+/**
+ * Filter by barangay ID
+ */
+barangay_id?: number | null;
+/**
+ * Filter from date
+ */
+start_date?: string | null;
+/**
+ * Filter to date
+ */
+end_date?: string | null;
+};
 
 
 /**
