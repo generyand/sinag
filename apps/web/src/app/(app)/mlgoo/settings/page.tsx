@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Calendar, Settings, ExternalLink, Database, Users, Clock } from "lucide-react";
+import { Building2, Calendar, Clock, Database, ExternalLink, Settings, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsSkeleton } from "@/components/features/settings/SettingsSkeleton";
 
@@ -53,6 +53,14 @@ export default function AdminSettingsPage() {
       icon: Clock,
       href: "/mlgoo/cycles?tab=deadline-windows",
       color: "#EF4444",
+      isLink: true,
+    },
+    {
+      title: "Municipal Offices",
+      description: "Manage municipal offices linked to governance areas",
+      icon: Building2,
+      href: "/mlgoo/municipal-offices",
+      color: "#10B981",
       isLink: true,
     },
   ];

@@ -33,6 +33,7 @@ import type { TopReworkReasons } from '../common';
 import type { DeadlineExtensionResponse } from '../deadlineextension';
 import type { AppSchemasDeadlineExtensionUserNested } from '../users';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
+import type { MunicipalOfficeWithGovernanceArea } from '../municipalofficewithgovernancearea';
 import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
@@ -705,6 +706,42 @@ export type HealthCheckChecks = { [key: string]: unknown };
  * HealthCheckConnections
  */
 export type HealthCheckConnections = { [key: string]: unknown };
+
+
+/**
+ * MunicipalOfficeListResponse
+ */
+export interface MunicipalOfficeListResponse {
+  offices: MunicipalOfficeWithGovernanceArea[];
+  total: number;
+  page: number;
+  size: number;
+  total_pages: number;
+}
+
+
+/**
+ * MunicipalOfficeResponseContactEmail
+ */
+export type MunicipalOfficeResponseContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeResponseContactNumber
+ */
+export type MunicipalOfficeResponseContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeResponseContactPerson
+ */
+export type MunicipalOfficeResponseContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficeResponseDescription
+ */
+export type MunicipalOfficeResponseDescription = string | null;
 
 
 /**

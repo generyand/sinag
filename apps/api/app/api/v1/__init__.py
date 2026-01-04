@@ -25,6 +25,7 @@ from . import (
     lookups,
     mlgoo,
     movs,
+    municipal_offices,
     municipal_overview,
     notifications,
     system,
@@ -63,4 +64,7 @@ api_router.include_router(
 )
 api_router.include_router(
     deadline_extensions.router, prefix="/deadline-extensions", tags=["deadline-windows"]
+)
+api_router.include_router(
+    municipal_offices.router, prefix="/municipal-offices", tags=["municipal-offices"]
 )

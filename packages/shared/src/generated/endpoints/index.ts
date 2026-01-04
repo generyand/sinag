@@ -20,6 +20,7 @@ export * from './indicators';
 export * from './lookups';
 export * from './mlgoo';
 export * from './movs';
+export * from './municipal-offices';
 export * from './municipal-overview';
 export * from './notifications';
 export * from './system';

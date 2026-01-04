@@ -23,6 +23,7 @@ import type { InfoTextField } from '../infotextfield';
 import type { GovernanceAreaIndicator } from '../indicators';
 import type { IndicatorDetailItem } from '../indicators';
 import type { IndicatorItem } from '../indicators';
+import type { MunicipalOfficeResponse } from '../municipaloffice';
 import type { MunicipalComplianceSummary } from '../compliance';
 import type { GovernanceAreaPerformanceList } from '../governanceareaperformance';
 import type { TopFailingIndicatorsList } from '../indicators';
@@ -733,6 +734,43 @@ export type FormSchemaSecondaryNotes = FormNotes | null;
 
 
 /**
+ * GetMunicipalOfficesGroupedParams
+ */
+export type GetMunicipalOfficesGroupedParams = {
+/**
+ * Filter by active status
+ */
+is_active?: boolean | null;
+};
+
+
+/**
+ * GetMunicipalOfficesParams
+ */
+export type GetMunicipalOfficesParams = {
+/**
+ * Page number
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Page size
+ * @minimum 1
+ * @maximum 100
+ */
+size?: number;
+/**
+ * Filter by governance area ID
+ */
+governance_area_id?: number | null;
+/**
+ * Filter by active status
+ */
+is_active?: boolean | null;
+};
+
+
+/**
  * GetMunicipalOverviewBarangayStatusesParams
  */
 export type GetMunicipalOverviewBarangayStatusesParams = {
@@ -877,6 +915,102 @@ export const MatchValueRuleOperator = {
   contains: 'contains',
   not_contains: 'not_contains',
 } as const;
+
+
+/**
+ * MunicipalOfficeCreateContactEmail
+ */
+export type MunicipalOfficeCreateContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeCreateContactNumber
+ */
+export type MunicipalOfficeCreateContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeCreateContactPerson
+ */
+export type MunicipalOfficeCreateContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficeCreateDescription
+ */
+export type MunicipalOfficeCreateDescription = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateAbbreviation
+ */
+export type MunicipalOfficeUpdateAbbreviation = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateContactEmail
+ */
+export type MunicipalOfficeUpdateContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateContactNumber
+ */
+export type MunicipalOfficeUpdateContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateContactPerson
+ */
+export type MunicipalOfficeUpdateContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateDescription
+ */
+export type MunicipalOfficeUpdateDescription = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateIsActive
+ */
+export type MunicipalOfficeUpdateIsActive = boolean | null;
+
+
+/**
+ * MunicipalOfficeUpdateName
+ */
+export type MunicipalOfficeUpdateName = string | null;
+
+
+/**
+ * MunicipalOfficeWithGovernanceAreaContactEmail
+ */
+export type MunicipalOfficeWithGovernanceAreaContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeWithGovernanceAreaContactNumber
+ */
+export type MunicipalOfficeWithGovernanceAreaContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeWithGovernanceAreaContactPerson
+ */
+export type MunicipalOfficeWithGovernanceAreaContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficesByArea
+ */
+export interface MunicipalOfficesByArea {
+  governance_area_id: number;
+  governance_area_name: string;
+  governance_area_code: string;
+  area_type: string;
+  offices: MunicipalOfficeResponse[];
+}
 
 
 /**

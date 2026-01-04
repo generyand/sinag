@@ -10,7 +10,6 @@ import type { BarangayDistributionItem } from '../common';
 import type { BBIInfoIndicatorCode } from '../indicators';
 import type { BBIResultResponseIndicatorId } from '../indicators';
 import type { BBIResultResponseSubIndicatorResults } from '../indicators';
-import type { GovernanceAreaSummary } from '../governancearea';
 import type { AssessmentBBIComplianceResponse } from '../assessments';
 import type { TestBBICalculationRequestIndicatorStatuses } from '../indicators';
 
@@ -73,6 +72,15 @@ export interface AppSchemasBbiBBIComplianceSummary {
   non_functional_count?: number;
   /** Average compliance percentage across all BBIs */
   average_compliance_percentage: number;
+}
+
+
+/**
+ * AppSchemasBbiGovernanceAreaSummary
+ */
+export interface AppSchemasBbiGovernanceAreaSummary {
+  id: number;
+  name: string;
 }
 
 
@@ -430,7 +438,7 @@ export interface BBIWithGovernanceArea {
   mapping_rules?: BBIWithGovernanceAreaMappingRules;
   created_at: string;
   updated_at: string;
-  governance_area: GovernanceAreaSummary;
+  governance_area: AppSchemasBbiGovernanceAreaSummary;
 }
 
 

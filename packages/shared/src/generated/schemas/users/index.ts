@@ -145,6 +145,7 @@ export interface User {
   role: UserRole;
   phone_number?: UserPhoneNumber;
   validator_area_id?: UserValidatorAreaId;
+  municipal_office_id?: UserMunicipalOfficeId;
   barangay_id?: UserBarangayId;
   is_active: boolean;
   is_superuser: boolean;
@@ -167,6 +168,7 @@ export interface UserAdminCreate {
   role?: UserRole;
   phone_number?: UserAdminCreatePhoneNumber;
   validator_area_id?: UserAdminCreateValidatorAreaId;
+  municipal_office_id?: UserAdminCreateMunicipalOfficeId;
   barangay_id?: UserAdminCreateBarangayId;
   is_active?: boolean;
   is_superuser?: boolean;
@@ -179,6 +181,12 @@ export interface UserAdminCreate {
  * UserAdminCreateBarangayId
  */
 export type UserAdminCreateBarangayId = number | null;
+
+
+/**
+ * UserAdminCreateMunicipalOfficeId
+ */
+export type UserAdminCreateMunicipalOfficeId = number | null;
 
 
 /**
@@ -216,6 +224,7 @@ export interface UserAdminUpdate {
   role?: UserAdminUpdateRole;
   phone_number?: UserAdminUpdatePhoneNumber;
   validator_area_id?: UserAdminUpdateValidatorAreaId;
+  municipal_office_id?: UserAdminUpdateMunicipalOfficeId;
   barangay_id?: UserAdminUpdateBarangayId;
   is_active?: UserAdminUpdateIsActive;
   is_superuser?: UserAdminUpdateIsSuperuser;
@@ -246,6 +255,12 @@ export type UserAdminUpdateIsActive = boolean | null;
  * UserAdminUpdateIsSuperuser
  */
 export type UserAdminUpdateIsSuperuser = boolean | null;
+
+
+/**
+ * UserAdminUpdateMunicipalOfficeId
+ */
+export type UserAdminUpdateMunicipalOfficeId = number | null;
 
 
 /**
@@ -312,6 +327,12 @@ export type UserLogoUploadedAt = string | null;
  * UserLogoUrl
  */
 export type UserLogoUrl = string | null;
+
+
+/**
+ * UserMunicipalOfficeId
+ */
+export type UserMunicipalOfficeId = number | null;
 
 
 /**
@@ -397,6 +418,7 @@ export interface UserUpdate {
   role?: UserUpdateRole;
   phone_number?: UserUpdatePhoneNumber;
   validator_area_id?: UserUpdateValidatorAreaId;
+  municipal_office_id?: UserUpdateMunicipalOfficeId;
   barangay_id?: UserUpdateBarangayId;
   is_active?: UserUpdateIsActive;
   preferred_language?: UserUpdatePreferredLanguage;
@@ -419,6 +441,12 @@ export type UserUpdateEmail = string | null;
  * UserUpdateIsActive
  */
 export type UserUpdateIsActive = boolean | null;
+
+
+/**
+ * UserUpdateMunicipalOfficeId
+ */
+export type UserUpdateMunicipalOfficeId = number | null;
 
 
 /**

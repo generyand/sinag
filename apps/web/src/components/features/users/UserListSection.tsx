@@ -78,12 +78,14 @@ export default function UserListSection() {
 
   // Memoize stats calculations to prevent unnecessary recalculations
   const stats = useMemo(() => {
-    if (!data?.users) return { total: 0, active: 0, blgu: 0 };
+    if (!data?.users) return { total: 0, active: 0, blgu: 0, assessor: 0, validator: 0 };
 
     return {
       total: data.total || data.users.length,
       active: data.users.filter((u) => u.is_active).length,
       blgu: data.users.filter((u) => u.role === "BLGU_USER").length,
+      assessor: data.users.filter((u) => u.role === "ASSESSOR").length,
+      validator: data.users.filter((u) => u.role === "VALIDATOR").length,
     };
   }, [data?.users, data?.total]);
 
@@ -149,31 +151,53 @@ export default function UserListSection() {
             </div>
 
             {/* Enhanced Quick Stats */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
-              <div className="flex gap-4 sm:contents">
-                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
-                  <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
-                    {stats.total}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+              {/* Role-based stats - prominent cards */}
+              <div className="flex gap-3 sm:gap-4">
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-3 sm:p-4 text-center shadow-sm border border-[var(--border)] min-w-[80px] sm:min-w-[90px]">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+                    {stats.blgu}
                   </div>
                   <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                    Total
+                    BLGU
                   </div>
                 </div>
-                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
-                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                    {stats.active}
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-3 sm:p-4 text-center shadow-sm border border-[var(--border)] min-w-[80px] sm:min-w-[90px]">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                    {stats.assessor}
                   </div>
                   <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                    Active
+                    Assessor
+                  </div>
+                </div>
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-3 sm:p-4 text-center shadow-sm border border-[var(--border)] min-w-[80px] sm:min-w-[90px]">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                    {stats.validator}
+                  </div>
+                  <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                    Validator
                   </div>
                 </div>
               </div>
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
-                  {stats.blgu}
+
+              {/* Stacked Total/Active stats - compact on the right */}
+              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-2 sm:p-3 shadow-sm border border-[var(--border)] flex flex-row sm:flex-col gap-2 sm:gap-1 justify-center min-w-[70px]">
+                <div className="text-center">
+                  <span className="text-base sm:text-lg font-bold text-[var(--foreground)]">
+                    {stats.total}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-[var(--muted-foreground)] uppercase tracking-wide ml-1 sm:ml-0 sm:block">
+                    Total
+                  </span>
                 </div>
-                <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  BLGU
+                <div className="hidden sm:block w-full h-px bg-[var(--border)]"></div>
+                <div className="text-center">
+                  <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    {stats.active}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-[var(--muted-foreground)] uppercase tracking-wide ml-1 sm:ml-0 sm:block">
+                    Active
+                  </span>
                 </div>
               </div>
             </div>

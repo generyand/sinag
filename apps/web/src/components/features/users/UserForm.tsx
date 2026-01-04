@@ -32,6 +32,8 @@ import {
   usePutUsersUserId,
   getGetUsersQueryKey,
   useGetLookupsRoles,
+  useGetMunicipalOffices,
+  MunicipalOfficeResponse,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { classifyError } from "@/lib/error-utils";
@@ -47,6 +49,7 @@ interface UserFormProps {
     role?: UserRole;
     phone_number?: string;
     validator_area_id?: number;
+    municipal_office_id?: number;
     barangay_id?: number;
     is_active?: boolean;
     is_superuser?: boolean;
@@ -65,6 +68,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   // Only use state for select values and checkboxes that need to control visibility
   const [role, setRole] = useState<UserRole>(UserRole.BLGU_USER);
   const [validatorAreaId, setValidatorAreaId] = useState<number | null>(null);
+  const [municipalOfficeId, setMunicipalOfficeId] = useState<number | null>(null);
   const [barangayId, setBarangayId] = useState<number | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [isSuperuser, setIsSuperuser] = useState(false);
@@ -74,10 +78,15 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
-  // Fetch governance areas, barangays, and roles data
+  // Fetch governance areas, barangays, roles, and municipal offices data
   const { data: governanceAreas, isLoading: isLoadingGovernanceAreas } = useGovernanceAreas();
   const { data: barangays, isLoading: isLoadingBarangays } = useBarangays();
   const { data: roles, isLoading: isLoadingRoles } = useGetLookupsRoles();
+  const { data: municipalOfficesData, isLoading: isLoadingMunicipalOffices } =
+    useGetMunicipalOffices(
+      { governance_area_id: validatorAreaId ?? undefined, is_active: true },
+      { query: { enabled: role === UserRole.VALIDATOR && validatorAreaId !== null } }
+    );
 
   // Type assertions for the data
   const typedGovernanceAreas = governanceAreas as GovernanceArea[] | undefined;
@@ -117,6 +126,18 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     ));
   }, [typedRoles, isLoadingRoles]);
 
+  // Memoize the municipal office options (filtered by selected governance area)
+  const municipalOfficeOptions = useMemo(() => {
+    if (isLoadingMunicipalOffices) return null;
+    const offices = municipalOfficesData?.offices as MunicipalOfficeResponse[] | undefined;
+    if (!offices) return null;
+    return offices.map((office: MunicipalOfficeResponse) => (
+      <SelectItem key={office.id} value={office.id.toString()}>
+        {office.abbreviation} - {office.name}
+      </SelectItem>
+    ));
+  }, [municipalOfficesData, isLoadingMunicipalOffices]);
+
   // Auto-generated mutation hooks
   const queryClient = useQueryClient();
   const createUserMutation = usePostUsers();
@@ -133,6 +154,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         if (phoneRef.current) phoneRef.current.value = initialValues.phone_number || "";
         setRole(initialValues.role || UserRole.BLGU_USER);
         setValidatorAreaId(initialValues.validator_area_id || null);
+        setMunicipalOfficeId(initialValues.municipal_office_id || null);
         setBarangayId(initialValues.barangay_id || null);
         setIsActive(initialValues.is_active ?? true);
         setIsSuperuser(initialValues.is_superuser ?? false);
@@ -145,6 +167,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         if (phoneRef.current) phoneRef.current.value = "";
         setRole(UserRole.BLGU_USER);
         setValidatorAreaId(null);
+        setMunicipalOfficeId(null);
         setBarangayId(null);
         setIsActive(true);
         setIsSuperuser(false);
@@ -157,6 +180,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     initialValues,
     setRole,
     setValidatorAreaId,
+    setMunicipalOfficeId,
     setBarangayId,
     setIsActive,
     setIsSuperuser,
@@ -169,6 +193,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     // Clear area assignments when role changes
     if (typedRole !== UserRole.VALIDATOR) {
       setValidatorAreaId(null);
+      setMunicipalOfficeId(null);
     }
     if (typedRole !== UserRole.BLGU_USER) {
       setBarangayId(null);
@@ -181,6 +206,10 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
       setBarangayId(numValue);
     } else if (name === "validator_area_id") {
       setValidatorAreaId(numValue);
+      // Clear municipal office when governance area changes
+      setMunicipalOfficeId(null);
+    } else if (name === "municipal_office_id") {
+      setMunicipalOfficeId(numValue);
     }
   }, []);
 
@@ -241,6 +270,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           role: role,
           phone_number: phone_number || null,
           validator_area_id: validatorAreaId,
+          municipal_office_id: municipalOfficeId,
           barangay_id: barangayId,
           is_active: isActive,
           is_superuser: isSuperuser,
@@ -277,6 +307,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           role: role,
           phone_number: phone_number || null,
           validator_area_id: validatorAreaId,
+          municipal_office_id: municipalOfficeId,
           barangay_id: barangayId,
           is_active: isActive,
           is_superuser: isSuperuser,
@@ -312,6 +343,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
       initialValues,
       role,
       validatorAreaId,
+      municipalOfficeId,
       barangayId,
       isActive,
       isSuperuser,
@@ -378,8 +410,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {!isEditing && (
+          {/* Password field - only shown when creating */}
+          {!isEditing && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="password" className="text-sm font-medium text-[var(--foreground)]">
                   Password *
@@ -409,8 +442,39 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                   <p className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.password}</p>
                 )}
               </div>
-            )}
 
+              <div>
+                <Label htmlFor="role" className="text-sm font-medium text-[var(--foreground)]">
+                  Role
+                </Label>
+                <Select
+                  value={role}
+                  onValueChange={handleRoleChange}
+                  disabled={isLoading || isLoadingRoles}
+                >
+                  <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
+                    {isLoadingRoles ? (
+                      <SelectItem value="loading" disabled>
+                        Loading...
+                      </SelectItem>
+                    ) : roleOptions ? (
+                      roleOptions
+                    ) : (
+                      <SelectItem value="no-data" disabled>
+                        No roles available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Role field in its own row when editing */}
+          {isEditing && (
             <div>
               <Label htmlFor="role" className="text-sm font-medium text-[var(--foreground)]">
                 Role
@@ -420,7 +484,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                 onValueChange={handleRoleChange}
                 disabled={isLoading || isLoadingRoles}
               >
-                <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 md:w-1/2">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
@@ -438,7 +502,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -499,9 +563,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
               </div>
             )}
 
-            {/* Conditional dropdown for Validator role */}
+            {/* Conditional dropdown for Validator role - Governance Area */}
             {role === UserRole.VALIDATOR && (
-              <div>
+              <div className="min-w-0">
                 <Label
                   htmlFor="validator_area_id"
                   className="text-sm font-medium text-[var(--foreground)]"
@@ -540,6 +604,43 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
               </div>
             )}
           </div>
+
+          {/* Municipal Office dropdown for Validator role - shown when governance area is selected */}
+          {role === UserRole.VALIDATOR && validatorAreaId && (
+            <div className="min-w-0">
+              <Label
+                htmlFor="municipal_office_id"
+                className="text-sm font-medium text-[var(--foreground)]"
+              >
+                Municipal Office
+              </Label>
+              <Select
+                value={municipalOfficeId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange("municipal_office_id", value)}
+                disabled={isLoading || isLoadingMunicipalOffices}
+              >
+                <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                  <SelectValue placeholder="Select a municipal office" />
+                </SelectTrigger>
+                <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
+                  {isLoadingMunicipalOffices ? (
+                    <SelectItem value="loading" disabled>
+                      Loading...
+                    </SelectItem>
+                  ) : municipalOfficeOptions && municipalOfficeOptions.length > 0 ? (
+                    municipalOfficeOptions
+                  ) : (
+                    <SelectItem value="no-data" disabled>
+                      No offices for this governance area
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                Select the municipal office this validator manages
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-[var(--foreground)]">User Settings</h3>

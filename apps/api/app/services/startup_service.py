@@ -24,6 +24,7 @@ from app.db.models.user import User
 from app.indicators.definitions import ALL_INDICATORS
 from app.indicators.seeder import seed_indicators
 from app.services.governance_area_service import governance_area_service
+from app.services.municipal_office_service import municipal_office_service
 
 logger = logging.getLogger(__name__)
 
@@ -349,6 +350,11 @@ class StartupService:
             logger.info("  - Seeding SGLGB governance areas...")
             governance_area_service.seed_governance_areas(db)
             logger.info("  - Governance areas seeding complete.")
+
+            # Seed municipal offices
+            logger.info("  - Seeding municipal offices...")
+            municipal_office_service.seed_municipal_offices(db)
+            logger.info("  - Municipal offices seeding complete.")
 
             # Seed hardcoded SGLGB indicators from Python definitions
             existing_indicators = db.query(Indicator).count()
