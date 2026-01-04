@@ -129,11 +129,13 @@ export function AvatarUpload({
   const [dragActive, setDragActive] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showCropDialog, setShowCropDialog] = useState(false);
+  const [showRemoveConfirmDialog, setShowRemoveConfirmDialog] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedAreaPixels | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const config = sizeConfig[size];
@@ -249,11 +251,22 @@ export function AvatarUpload({
     e.target.value = "";
   };
 
-  // Handle remove
-  const handleRemove = async (e: React.MouseEvent) => {
+  // Handle remove - show confirmation first
+  const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowRemoveConfirmDialog(true);
+  };
+
+  // Confirm remove
+  const handleConfirmRemove = async () => {
     if (onRemove) {
-      await onRemove();
+      setIsRemoving(true);
+      try {
+        await onRemove();
+      } finally {
+        setIsRemoving(false);
+        setShowRemoveConfirmDialog(false);
+      }
     }
   };
 
@@ -330,7 +343,7 @@ export function AvatarUpload({
         {/* Remove Button */}
         {currentImageUrl && onRemove && !disabled && !isUploading && (
           <button
-            onClick={handleRemove}
+            onClick={handleRemoveClick}
             className="absolute -top-1 -right-1 p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors shadow-md"
             aria-label="Remove avatar"
           >
@@ -416,6 +429,37 @@ export function AvatarUpload({
                 </>
               ) : (
                 "Save Logo"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Confirmation Dialog */}
+      <Dialog open={showRemoveConfirmDialog} onOpenChange={setShowRemoveConfirmDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Profile Logo</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove your profile logo? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowRemoveConfirmDialog(false)}
+              disabled={isRemoving}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmRemove} disabled={isRemoving}>
+              {isRemoving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                "Remove"
               )}
             </Button>
           </DialogFooter>

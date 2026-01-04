@@ -7,6 +7,16 @@ import type { TourPreferences } from '../tourpreferences';
 import type { TourPreferencesUpdate } from '../tourpreferences';
 
 /**
+ * AppSchemasDeadlineExtensionUserNested
+ */
+export interface AppSchemasDeadlineExtensionUserNested {
+  id: number;
+  name: string;
+  email: string;
+}
+
+
+/**
  * AppSchemasIndicatorUserNested
  */
 export interface AppSchemasIndicatorUserNested {
