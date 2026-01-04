@@ -39,5 +39,6 @@
       "source.organizeImports": "explicit",
       "source.fixAll": "explicit"
     }
-  }
+  },
+  "liveServer.settings.port": 5501
 }

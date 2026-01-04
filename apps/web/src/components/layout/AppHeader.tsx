@@ -47,7 +47,7 @@ function getPageInfo(
         subtitle: "Review and manage submitted assessments from barangays",
       },
       "/mlgoo/cycles": {
-        title: "Assessment Cycles",
+        title: "Cycle Management",
         subtitle: "Create and manage assessment cycles with submission deadlines",
       },
       "/mlgoo/settings": {

@@ -64,7 +64,7 @@ const mlgooNavigation = [
   { name: "Submission Queue", href: "/mlgoo/submissions", icon: "clipboard" },
 
   { name: "Analytics & Reports", href: "/analytics", icon: "chart" },
-  { name: "Assessment Cycles", href: "/mlgoo/cycles", icon: "calendar" },
+  { name: "Cycle Management", href: "/mlgoo/cycles", icon: "calendar" },
   { name: "User Management", href: "/user-management", icon: "users" },
   { name: "System Settings", href: "/mlgoo/settings", icon: "settings" },
   { name: "Profile", href: "/mlgoo/profile", icon: "user" },
@@ -452,7 +452,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         pathname === "/mlgoo/submissions"
                         ? "Submission Queue"
                         : pathname === "/mlgoo/cycles"
-                          ? "Assessment Cycles"
+                          ? "Cycle Management"
                           : pathname === "/mlgoo/settings"
                             ? "System Settings"
                             : pathname === "/mlgoo/profile"
@@ -480,26 +480,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 : navigation.find((item) => pathname === item.href)?.name ||
                                   "Dashboard"
                           : isExternalUser
-                          ? // Katuparan Center titles
-                            pathname === "/katuparan/dashboard"
-                            ? "Municipal SGLGB Overview"
-                            : pathname === "/katuparan/reports"
-                              ? "Data Export & Trends"
-                              : pathname === "/katuparan/profile"
-                                ? "User Settings"
-                                : navigation.find((item) => pathname === item.href)?.name ||
-                                  "Dashboard"
-                          : // BLGU titles - show specific titles for better UX
-                            pathname === "/blgu/dashboard"
-                            ? "SGLGB Dashboard"
-                            : pathname === "/blgu/assessments"
-                              ? "My Assessments"
-                              : pathname === "/blgu/analytics"
-                                ? "AI Insights & Recommendations"
-                                : pathname === "/blgu/profile"
-                                  ? "Profile"
+                            ? // Katuparan Center titles
+                              pathname === "/katuparan/dashboard"
+                              ? "Municipal SGLGB Overview"
+                              : pathname === "/katuparan/reports"
+                                ? "Data Export & Trends"
+                                : pathname === "/katuparan/profile"
+                                  ? "User Settings"
                                   : navigation.find((item) => pathname === item.href)?.name ||
-                                    "Dashboard"}
+                                    "Dashboard"
+                            : // BLGU titles - show specific titles for better UX
+                              pathname === "/blgu/dashboard"
+                              ? "SGLGB Dashboard"
+                              : pathname === "/blgu/assessments"
+                                ? "My Assessments"
+                                : pathname === "/blgu/analytics"
+                                  ? "AI Insights & Recommendations"
+                                  : pathname === "/blgu/profile"
+                                    ? "Profile"
+                                    : navigation.find((item) => pathname === item.href)?.name ||
+                                      "Dashboard"}
                   </h2>
                   {/* Show context-specific subtitle for all users */}
                   {!isAdmin && pathname.startsWith("/blgu") && (
