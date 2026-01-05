@@ -285,7 +285,7 @@ class NotificationService:
             recipient_id=assessment.blgu_user_id,
             notification_type=NotificationType.SUBMISSION_REMINDER,
             title="Reminder: Complete Your Assessment",
-            message=f"This is a friendly reminder to complete the SGLGB assessment for {barangay_name}. Please log in to continue working on your submission.",
+            message=f"This is a friendly reminder from MLGOO-DILG to complete the SGLGB assessment for {barangay_name}.",
             assessment_id=assessment_id,
             send_email=True,
         )

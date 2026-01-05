@@ -193,7 +193,7 @@ class EmailService:
             NotificationType.SUBMISSION_REMINDER: {
                 "subject": "Reminder: Complete Your SGLGB Assessment Submission",
                 "title": "Assessment Submission Reminder",
-                "message": "This is a friendly reminder from MLGOO-DILG to complete your SGLGB assessment submission. Please log in to the SINAG platform to continue working on your assessment.",
+                "message": "This is a friendly reminder from MLGOO-DILG to complete your SGLGB assessment submission. Click the button below to continue working on your assessment.",
                 "cta_text": "Continue Assessment",
             },
         }
