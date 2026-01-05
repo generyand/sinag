@@ -202,37 +202,42 @@ function ProgressLegend() {
 /** Deadline countdown widget configuration */
 const deadlineConfig: Record<
   DeadlineUrgencyLevel,
-  { bg: string; text: string; border: string; label: string }
+  { bg: string; text: string; textMuted: string; border: string; iconBg: string }
 > = {
   normal: {
-    bg: "bg-gray-50 dark:bg-gray-900/20",
-    text: "text-gray-700 dark:text-gray-300",
-    border: "border-gray-200 dark:border-gray-700",
-    label: "Days Left",
+    bg: "bg-slate-50 dark:bg-slate-900/30",
+    text: "text-slate-700 dark:text-slate-200",
+    textMuted: "text-slate-600 dark:text-slate-400",
+    border: "border-slate-200 dark:border-slate-700",
+    iconBg: "bg-slate-100 dark:bg-slate-800",
   },
   warning: {
-    bg: "bg-yellow-50 dark:bg-yellow-950/20",
-    text: "text-yellow-700 dark:text-yellow-300",
-    border: "border-yellow-200 dark:border-yellow-700",
-    label: "Days Left",
+    bg: "bg-amber-50 dark:bg-amber-950/30",
+    text: "text-amber-700 dark:text-amber-200",
+    textMuted: "text-amber-600 dark:text-amber-400",
+    border: "border-amber-300 dark:border-amber-700",
+    iconBg: "bg-amber-100 dark:bg-amber-900/50",
   },
   urgent: {
-    bg: "bg-orange-50 dark:bg-orange-950/20",
-    text: "text-orange-700 dark:text-orange-300",
-    border: "border-orange-200 dark:border-orange-700",
-    label: "Days Left",
+    bg: "bg-orange-50 dark:bg-orange-950/30",
+    text: "text-orange-700 dark:text-orange-200",
+    textMuted: "text-orange-600 dark:text-orange-400",
+    border: "border-orange-400 dark:border-orange-600",
+    iconBg: "bg-orange-100 dark:bg-orange-900/50",
   },
   critical: {
-    bg: "bg-red-50 dark:bg-red-950/20",
-    text: "text-red-700 dark:text-red-300",
-    border: "border-red-200 dark:border-red-700",
-    label: "Day Left",
+    bg: "bg-red-50 dark:bg-red-950/30",
+    text: "text-red-700 dark:text-red-200",
+    textMuted: "text-red-600 dark:text-red-400",
+    border: "border-red-400 dark:border-red-600",
+    iconBg: "bg-red-100 dark:bg-red-900/50",
   },
   expired: {
-    bg: "bg-red-100 dark:bg-red-950/30",
-    text: "text-red-800 dark:text-red-200",
-    border: "border-red-300 dark:border-red-700",
-    label: "Expired",
+    bg: "bg-red-100 dark:bg-red-950/40",
+    text: "text-red-800 dark:text-red-100",
+    textMuted: "text-red-700 dark:text-red-300",
+    border: "border-red-500 dark:border-red-500",
+    iconBg: "bg-red-200 dark:bg-red-900/60",
   },
 };
 
@@ -320,41 +325,69 @@ export function AssessmentProgress({
         daysUntilDeadline !== undefined && (
           <div
             className={cn(
-              "mt-4 rounded-lg border p-3",
+              "mt-4 rounded-xl border-2 overflow-hidden",
               deadlineConfig[deadlineUrgencyLevel].bg,
               deadlineConfig[deadlineUrgencyLevel].border,
               deadlineUrgencyLevel === "critical" && "animate-pulse"
             )}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            {/* Compact header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-inherit">
+              <div className={cn("p-1 rounded-md", deadlineConfig[deadlineUrgencyLevel].iconBg)}>
                 {deadlineUrgencyLevel === "expired" || deadlineUrgencyLevel === "critical" ? (
                   <AlertTriangle
-                    className={cn("h-4 w-4", deadlineConfig[deadlineUrgencyLevel].text)}
+                    className={cn("h-3.5 w-3.5", deadlineConfig[deadlineUrgencyLevel].text)}
                   />
                 ) : (
-                  <Clock className={cn("h-4 w-4", deadlineConfig[deadlineUrgencyLevel].text)} />
+                  <Clock className={cn("h-3.5 w-3.5", deadlineConfig[deadlineUrgencyLevel].text)} />
                 )}
-                <span
-                  className={cn("text-sm font-medium", deadlineConfig[deadlineUrgencyLevel].text)}
-                >
-                  {isAutoSubmitted
-                    ? "Auto-Submitted"
-                    : deadlineUrgencyLevel === "expired"
-                      ? "Deadline Passed"
-                      : "Submission Deadline"}
-                </span>
               </div>
-              {daysUntilDeadline >= 0 && !isAutoSubmitted && (
-                <div className="text-right">
-                  <span
-                    className={cn("text-xl font-bold", deadlineConfig[deadlineUrgencyLevel].text)}
+              <span
+                className={cn("text-xs font-semibold", deadlineConfig[deadlineUrgencyLevel].text)}
+              >
+                {isAutoSubmitted
+                  ? "Auto-Submitted"
+                  : deadlineUrgencyLevel === "expired"
+                    ? "Deadline Passed"
+                    : "Submission Deadline"}
+              </span>
+            </div>
+
+            {/* Countdown display */}
+            <div className="px-3 py-3 text-center">
+              {daysUntilDeadline >= 0 && !isAutoSubmitted ? (
+                <>
+                  <div
+                    className={cn(
+                      "text-3xl font-black leading-none",
+                      deadlineConfig[deadlineUrgencyLevel].text
+                    )}
                   >
                     {daysUntilDeadline}
-                  </span>
-                  <span className={cn("text-xs ml-1", deadlineConfig[deadlineUrgencyLevel].text)}>
-                    {daysUntilDeadline === 1 ? "day" : "days"}
-                  </span>
+                  </div>
+                  <div
+                    className={cn(
+                      "text-xs font-medium mt-1",
+                      deadlineConfig[deadlineUrgencyLevel].textMuted
+                    )}
+                  >
+                    {daysUntilDeadline === 1 ? "day remaining" : "days remaining"}
+                  </div>
+                </>
+              ) : isAutoSubmitted ? (
+                <div
+                  className={cn("text-sm font-semibold py-1", "text-green-700 dark:text-green-300")}
+                >
+                  Submitted
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    "text-sm font-semibold py-1",
+                    deadlineConfig[deadlineUrgencyLevel].text
+                  )}
+                >
+                  Expired
                 </div>
               )}
             </div>

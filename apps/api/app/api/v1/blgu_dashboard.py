@@ -1011,13 +1011,11 @@ def get_blgu_dashboard(
     return {
         "assessment_id": assessment_id,
         # Phase 1 Deadline tracking fields
-        "phase1_deadline": phase1_deadline.isoformat() + "Z" if phase1_deadline else None,
+        "phase1_deadline": phase1_deadline,
         "days_until_deadline": days_until_deadline,
         "deadline_urgency_level": deadline_urgency_level,
         "is_auto_submitted": assessment.auto_submitted_at is not None,
-        "auto_submitted_at": assessment.auto_submitted_at.isoformat() + "Z"
-        if assessment.auto_submitted_at
-        else None,
+        "auto_submitted_at": assessment.auto_submitted_at,
         "status": assessment.status.value,  # Epic 5.0: Assessment workflow status
         "rework_count": assessment.rework_count,  # Epic 5.0: Rework cycle count (0 or 1)
         "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"
