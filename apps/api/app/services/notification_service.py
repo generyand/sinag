@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.enums import NotificationType, UserRole
 from app.db.models.assessment import Assessment
@@ -244,6 +244,50 @@ class NotificationService:
             title=title,
             message=message,
             assessment_id=assessment_id,
+        )
+
+    def send_submission_reminder(
+        self,
+        db: Session,
+        assessment_id: int,
+    ) -> Notification | None:
+        """
+        Send a submission reminder to the BLGU user associated with an assessment.
+
+        This is used by MLGOO to manually remind BLGUs to complete their submissions.
+
+        Args:
+            db: Database session
+            assessment_id: Assessment ID
+
+        Returns:
+            Created Notification object or None if assessment not found
+        """
+        assessment = (
+            db.query(Assessment)
+            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+        if not assessment:
+            return None
+
+        if not assessment.blgu_user_id:
+            return None
+
+        # Get barangay name for the notification message
+        barangay_name = "your barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        return self.create_notification(
+            db=db,
+            recipient_id=assessment.blgu_user_id,
+            notification_type=NotificationType.SUBMISSION_REMINDER,
+            title="Reminder: Complete Your Assessment",
+            message=f"This is a friendly reminder to complete the SGLGB assessment for {barangay_name}. Please log in to continue working on your submission.",
+            assessment_id=assessment_id,
+            send_email=True,
         )
 
     def notify_specific_validator(

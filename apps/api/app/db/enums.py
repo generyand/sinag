@@ -159,6 +159,7 @@ class NotificationType(str, enum.Enum):
     - ASSESSMENT_APPROVED: MLGOO approves assessment -> BLGU notified
     - DEADLINE_EXPIRED_LOCKED: Grace period expired -> BLGU locked, MLGOO notified
     - GRACE_PERIOD_WARNING: Grace period expiring soon -> BLGU warned
+    - SUBMISSION_REMINDER: MLGOO sends manual reminder -> BLGU notified
     """
 
     NEW_SUBMISSION = "NEW_SUBMISSION"
@@ -174,3 +175,5 @@ class NotificationType(str, enum.Enum):
     ASSESSMENT_APPROVED = "ASSESSMENT_APPROVED"
     DEADLINE_EXPIRED_LOCKED = "DEADLINE_EXPIRED_LOCKED"
     GRACE_PERIOD_WARNING = "GRACE_PERIOD_WARNING"
+    # Manual reminders from MLGOO
+    SUBMISSION_REMINDER = "SUBMISSION_REMINDER"

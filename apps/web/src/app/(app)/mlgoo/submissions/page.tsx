@@ -26,17 +26,20 @@ import {
 } from "@/components/ui/select";
 import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { api } from "@/lib/api";
 import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
   Eye,
   Filter,
+  Loader2,
   Search,
   Send,
   XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -204,6 +207,9 @@ export default function AdminSubmissionsPage() {
     year: effectiveYear ?? undefined,
   });
 
+  // Track which submission is currently being reminded (for loading state)
+  const [remindingId, setRemindingId] = useState<number | null>(null);
+
   // Show loading if not authenticated
   if (!isAuthenticated) {
     return (
@@ -261,8 +267,30 @@ export default function AdminSubmissionsPage() {
     router.push(`/mlgoo/submissions/${submission.id}`);
   };
 
-  const handleSendReminder = (submission: SubmissionUIModel) => {
-    toast.success(`Reminder sent to ${submission.barangayName}`);
+  const handleSendReminder = async (submission: SubmissionUIModel) => {
+    if (remindingId) return; // Prevent multiple concurrent reminders
+
+    setRemindingId(submission.id);
+    try {
+      const response = await api.post(`/api/v1/mlgoo/assessments/${submission.id}/remind`);
+      const data = response.data as { success: boolean; message: string; email_sent: boolean };
+
+      if (data.success) {
+        toast.success(data.message, {
+          description: data.email_sent
+            ? "An email notification has also been sent."
+            : "In-app notification sent (email not configured).",
+        });
+      }
+    } catch (err) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      const errorMessage = error.response?.data?.detail || "Failed to send reminder";
+      toast.error("Failed to send reminder", {
+        description: errorMessage,
+      });
+    } finally {
+      setRemindingId(null);
+    }
   };
 
   // Get sort icon for a column
@@ -434,6 +462,7 @@ export default function AdminSubmissionsPage() {
                     submissions={filteredSubmissions}
                     onView={handleViewDetails}
                     onRemind={handleSendReminder}
+                    remindingId={remindingId}
                   />
                 </div>
 
@@ -578,12 +607,20 @@ export default function AdminSubmissionsPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleSendReminder(submission)}
+                                  disabled={remindingId === submission.id}
                                   aria-label={`Send reminder to ${submission.barangayName}`}
                                   title="Send a reminder email to the barangay to complete their submission"
-                                  className="bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium transition-all duration-200"
+                                  className="bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium transition-all duration-200 disabled:opacity-50"
                                 >
-                                  <Send className="h-4 w-4 mr-1" aria-hidden="true" />
-                                  Remind
+                                  {remindingId === submission.id ? (
+                                    <Loader2
+                                      className="h-4 w-4 mr-1 animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <Send className="h-4 w-4 mr-1" aria-hidden="true" />
+                                  )}
+                                  {remindingId === submission.id ? "Sending..." : "Remind"}
                                 </Button>
                               </div>
                             </td>

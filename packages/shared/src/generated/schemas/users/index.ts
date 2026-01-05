@@ -136,6 +136,12 @@ export type PostUsersUserIdResetPassword200 = { [key: string]: unknown };
 
 
 /**
+ * SendReminderResponseBlguUserEmail
+ */
+export type SendReminderResponseBlguUserEmail = string | null;
+
+
+/**
  * User
  */
 export interface User {

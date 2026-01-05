@@ -348,3 +348,16 @@ class OverrideValidationStatusResponse(BaseModel):
     remarks: str | None
     updated_by: str
     updated_at: str
+
+
+class SendReminderResponse(BaseModel):
+    """Response for sending a submission reminder."""
+
+    success: bool
+    message: str
+    assessment_id: int
+    barangay_name: str
+    blgu_user_email: str | None
+    sent_by: str
+    sent_at: str
+    email_sent: bool

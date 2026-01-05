@@ -45,6 +45,7 @@ import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
 import type { ReviewHistoryItem } from '../common';
+import type { SendReminderResponseBlguUserEmail } from '../users';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
 import type { ValidationStatus } from '../error';
@@ -1000,6 +1001,21 @@ export type ReworkSummaryResponseEstimatedTime = string | null;
  * ReworkSummaryResponseLanguage
  */
 export type ReworkSummaryResponseLanguage = string | null;
+
+
+/**
+ * SendReminderResponse
+ */
+export interface SendReminderResponse {
+  success: boolean;
+  message: string;
+  assessment_id: number;
+  barangay_name: string;
+  blgu_user_email: SendReminderResponseBlguUserEmail;
+  sent_by: string;
+  sent_at: string;
+  email_sent: boolean;
+}
 
 
 /**

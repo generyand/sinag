@@ -20,12 +20,14 @@ from app.schemas.mlgoo import (
     RecalibrationByMovResponse,
     RecalibrationRequest,
     RecalibrationResponse,
+    SendReminderResponse,
     UnlockAssessmentRequest,
     UnlockAssessmentResponse,
     UpdateRecalibrationValidationRequest,
     UpdateRecalibrationValidationResponse,
 )
 from app.services.mlgoo_service import mlgoo_service
+from app.services.notification_service import notification_service
 
 router = APIRouter()
 
@@ -363,6 +365,87 @@ async def unlock_assessment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
         )
+
+
+# ==================== Send Reminder ====================
+
+
+@router.post(
+    "/assessments/{assessment_id}/remind",
+    response_model=SendReminderResponse,
+    summary="Send Reminder to BLGU",
+    description=(
+        "Send a reminder notification to the BLGU to complete their assessment.\n\n"
+        "**Access:** Requires MLGOO_DILG role.\n\n"
+        "This sends both an in-app notification and email to the BLGU user "
+        "associated with the assessment, reminding them to complete their submission."
+    ),
+    tags=["mlgoo"],
+    responses={
+        200: {"description": "Reminder sent successfully"},
+        404: {"description": "Assessment not found"},
+        403: {"description": "Not enough permissions (MLGOO_DILG role required)"},
+    },
+)
+async def send_reminder(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+):
+    """
+    Send a reminder notification to BLGU to complete their assessment.
+    """
+    from datetime import datetime
+
+    from sqlalchemy.orm import joinedload
+
+    from app.db.models.assessment import Assessment
+
+    # Get the assessment with eager-loaded relationships
+    assessment = (
+        db.query(Assessment)
+        .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+        .filter(Assessment.id == assessment_id)
+        .first()
+    )
+    if not assessment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assessment not found",
+        )
+
+    # Get barangay name
+    barangay_name = "Unknown Barangay"
+    blgu_email = None
+    if assessment.blgu_user:
+        if assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+        blgu_email = assessment.blgu_user.email
+
+    # Send the reminder notification
+    notification = notification_service.send_submission_reminder(
+        db=db,
+        assessment_id=assessment_id,
+    )
+
+    if not notification:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assessment or BLGU user not found",
+        )
+
+    db.commit()
+
+    return SendReminderResponse(
+        success=True,
+        message=f"Reminder sent to {barangay_name}",
+        assessment_id=assessment_id,
+        barangay_name=barangay_name,
+        blgu_user_email=blgu_email,
+        sent_by=current_user.name,
+        sent_at=datetime.utcnow().isoformat(),
+        email_sent=notification.email_sent,
+    )
 
 
 # ==================== Update Recalibration Validation Status ====================

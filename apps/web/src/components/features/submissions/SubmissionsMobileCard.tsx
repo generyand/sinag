@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Send } from "lucide-react";
+import { Eye, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getStatusConfig, getProgressBarColor } from "./utils/statusConfig";
 import type { SubmissionUIModel } from "./utils/dataTransformers";
@@ -9,6 +9,7 @@ interface SubmissionsMobileCardProps {
   submission: SubmissionUIModel;
   onView: (submission: SubmissionUIModel) => void;
   onRemind: (submission: SubmissionUIModel) => void;
+  remindingId?: number | null;
 }
 
 /**
@@ -19,6 +20,7 @@ export function SubmissionsMobileCard({
   submission,
   onView,
   onRemind,
+  remindingId,
 }: SubmissionsMobileCardProps) {
   const statusConfig = getStatusConfig(submission.currentStatus);
   const StatusIcon = statusConfig.icon;
@@ -110,12 +112,17 @@ export function SubmissionsMobileCard({
           variant="outline"
           size="sm"
           onClick={() => onRemind(submission)}
+          disabled={remindingId === submission.id}
           aria-label={`Send reminder to ${submission.barangayName}`}
           title="Send a reminder email to the barangay to complete their submission"
-          className="flex-1 bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium"
+          className="flex-1 bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium disabled:opacity-50"
         >
-          <Send className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          Remind
+          {remindingId === submission.id ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <Send className="h-4 w-4 mr-1.5" aria-hidden="true" />
+          )}
+          {remindingId === submission.id ? "Sending..." : "Remind"}
         </Button>
       </div>
     </div>
@@ -126,6 +133,7 @@ interface SubmissionsMobileListProps {
   submissions: SubmissionUIModel[];
   onView: (submission: SubmissionUIModel) => void;
   onRemind: (submission: SubmissionUIModel) => void;
+  remindingId?: number | null;
 }
 
 /**
@@ -135,6 +143,7 @@ export function SubmissionsMobileList({
   submissions,
   onView,
   onRemind,
+  remindingId,
 }: SubmissionsMobileListProps) {
   return (
     <div className="space-y-3 p-4 lg:hidden">
@@ -144,6 +153,7 @@ export function SubmissionsMobileList({
           submission={submission}
           onView={onView}
           onRemind={onRemind}
+          remindingId={remindingId}
         />
       ))}
     </div>

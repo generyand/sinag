@@ -190,6 +190,12 @@ class EmailService:
                 "message": "Barangay {barangay_name} has resubmitted their assessment after calibration. Please review the updated indicators.",
                 "cta_text": "Review Calibration",
             },
+            NotificationType.SUBMISSION_REMINDER: {
+                "subject": "Reminder: Complete Your SGLGB Assessment Submission",
+                "title": "Assessment Submission Reminder",
+                "message": "This is a friendly reminder from MLGOO-DILG to complete your SGLGB assessment submission. Please log in to the SINAG platform to continue working on your assessment.",
+                "cta_text": "Continue Assessment",
+            },
         }
 
     def _build_html_email(

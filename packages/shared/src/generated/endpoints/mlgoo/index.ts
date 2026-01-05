@@ -33,6 +33,7 @@ import type {
   RecalibrationByMovResponse,
   RecalibrationRequest,
   RecalibrationResponse,
+  SendReminderResponse,
   UnlockAssessmentResponse,
   UpdateRecalibrationValidationRequest,
   UpdateRecalibrationValidationResponse
@@ -494,6 +495,73 @@ export const usePostMlgooAssessmentsAssessmentIdUnlock = <TError = void | HTTPVa
       > => {
 
       const mutationOptions = getPostMlgooAssessmentsAssessmentIdUnlockMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Send a reminder notification to the BLGU to complete their assessment.
+
+**Access:** Requires MLGOO_DILG role.
+
+This sends both an in-app notification and email to the BLGU user associated with the assessment, reminding them to complete their submission.
+ * @summary Send Reminder to BLGU
+ */
+export const postMlgooAssessments$AssessmentIdRemind = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<SendReminderResponse>(
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/remind`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostMlgooAssessmentsAssessmentIdRemindMutationOptions = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRemind>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRemind>>, TError,{assessmentId: number}, TContext> => {
+
+const mutationKey = ['postMlgooAssessmentsAssessmentIdRemind'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRemind>>, {assessmentId: number}> = (props) => {
+          const {assessmentId} = props ?? {};
+
+          return  postMlgooAssessments$AssessmentIdRemind(assessmentId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostMlgooAssessmentsAssessmentIdRemindMutationResult = NonNullable<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRemind>>>
+    
+    export type PostMlgooAssessmentsAssessmentIdRemindMutationError = void | HTTPValidationError
+
+    /**
+ * @summary Send Reminder to BLGU
+ */
+export const usePostMlgooAssessmentsAssessmentIdRemind = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRemind>>, TError,{assessmentId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdRemind>>,
+        TError,
+        {assessmentId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostMlgooAssessmentsAssessmentIdRemindMutationOptions(options);
 
       return useMutation(mutationOptions);
     }
