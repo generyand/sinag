@@ -471,7 +471,7 @@ export type IndicatorCreateTechnicalNotesText = string | null;
  * IndicatorDetailItem
  */
 export interface IndicatorDetailItem {
-  response_id: number;
+  response_id: IndicatorDetailItemResponseId;
   indicator_id: number;
   indicator_name: string;
   indicator_code: IndicatorDetailItemIndicatorCode;
@@ -486,6 +486,12 @@ export interface IndicatorDetailItem {
  * IndicatorDetailItemIndicatorCode
  */
 export type IndicatorDetailItemIndicatorCode = string | null;
+
+
+/**
+ * IndicatorDetailItemResponseId
+ */
+export type IndicatorDetailItemResponseId = number | null;
 
 
 /**
