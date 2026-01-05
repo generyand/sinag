@@ -238,6 +238,9 @@ export default function BLGUDashboardPage() {
                   isCalibrationRework={dashboardData.is_calibration_rework || false}
                   isMlgooRecalibration={dashboardData.is_mlgoo_recalibration || false}
                   completionPercentage={dashboardData.completion_percentage || 0}
+                  daysUntilDeadline={dashboardData.days_until_deadline ?? null}
+                  deadlineUrgencyLevel={dashboardData.deadline_urgency_level ?? null}
+                  isAutoSubmitted={dashboardData.is_auto_submitted ?? false}
                 />
               </div>
 
@@ -274,6 +277,9 @@ export default function BLGUDashboardPage() {
                 isCalibrationRework={dashboardData.is_calibration_rework || false}
                 isMlgooRecalibration={dashboardData.is_mlgoo_recalibration || false}
                 completionPercentage={dashboardData.completion_percentage || 0}
+                daysUntilDeadline={dashboardData.days_until_deadline ?? null}
+                deadlineUrgencyLevel={dashboardData.deadline_urgency_level ?? null}
+                isAutoSubmitted={dashboardData.is_auto_submitted ?? false}
               />
             </div>
 

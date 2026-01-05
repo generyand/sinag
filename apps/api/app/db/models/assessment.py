@@ -132,6 +132,14 @@ class Assessment(Base):
         DateTime, nullable=True
     )
 
+    # Phase 1 Deadline Reminder Tracking
+    # Tracks when automated deadline reminders were sent to avoid duplicates
+    phase1_reminder_7d_sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    phase1_reminder_3d_sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    phase1_reminder_1d_sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Auto-submit tracking - when assessment was automatically submitted at deadline
+    auto_submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(
         Enum(ComplianceStatus, name="compliance_status_enum", create_constraint=True),
@@ -285,6 +293,7 @@ class Assessment(Base):
         - COMPLETED: Final validation complete
 
         OR when is_locked_for_deadline is True (grace period expired).
+        OR when auto_submitted_at is set (assessment was auto-submitted at deadline).
 
         Locked assessments cannot be edited by BLGU users.
 
@@ -293,6 +302,9 @@ class Assessment(Base):
         """
         # Check if locked due to deadline expiration
         if self.is_locked_for_deadline:
+            return True
+        # Check if auto-submitted at deadline
+        if self.auto_submitted_at is not None:
             return True
         return self.status in [
             AssessmentStatus.SUBMITTED,

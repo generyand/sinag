@@ -229,6 +229,16 @@ export type AuditLogResponseIpAddress = string | null;
 export interface BLGUDashboardResponse {
   /** Assessment ID */
   assessment_id: number;
+  /** Phase 1 submission deadline (from active assessment year) */
+  phase1_deadline?: BLGUDashboardResponsePhase1Deadline;
+  /** Days remaining until Phase 1 deadline (negative if past). Only populated for DRAFT assessments. */
+  days_until_deadline?: BLGUDashboardResponseDaysUntilDeadline;
+  /** Urgency level based on days remaining: normal (>7 days), warning (4-7 days), urgent (2-3 days), critical (<=1 day), expired (deadline passed). Only populated for DRAFT assessments. */
+  deadline_urgency_level?: BLGUDashboardResponseDeadlineUrgencyLevel;
+  /** True if assessment was automatically submitted at deadline */
+  is_auto_submitted?: boolean;
+  /** Timestamp when assessment was auto-submitted (if applicable) */
+  auto_submitted_at?: BLGUDashboardResponseAutoSubmittedAt;
   /** Assessment status (DRAFT, SUBMITTED, IN_REVIEW, REWORK, COMPLETED) */
   status: string;
   /** Number of times rework has been requested (0 or 1) */
@@ -347,6 +357,12 @@ export type BLGUDashboardResponseAreaResultsAnyOfItem = { [key: string]: unknown
 
 
 /**
+ * BLGUDashboardResponseAutoSubmittedAt
+ */
+export type BLGUDashboardResponseAutoSubmittedAt = string | null;
+
+
+/**
  * BLGUDashboardResponseCalibrationGovernanceAreaId
  */
 export type BLGUDashboardResponseCalibrationGovernanceAreaId = number | null;
@@ -380,6 +396,24 @@ export type BLGUDashboardResponseCalibrationSubmittedAt = string | null;
  * BLGUDashboardResponseCalibrationValidatorId
  */
 export type BLGUDashboardResponseCalibrationValidatorId = number | null;
+
+
+/**
+ * BLGUDashboardResponseDaysUntilDeadline
+ */
+export type BLGUDashboardResponseDaysUntilDeadline = number | null;
+
+
+/**
+ * BLGUDashboardResponseDeadlineUrgencyLevel
+ */
+export type BLGUDashboardResponseDeadlineUrgencyLevel = 'normal' | 'warning' | 'urgent' | 'critical' | 'expired' | null;
+
+
+/**
+ * BLGUDashboardResponsePhase1Deadline
+ */
+export type BLGUDashboardResponsePhase1Deadline = string | null;
 
 
 /**

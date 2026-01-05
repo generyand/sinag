@@ -160,6 +160,10 @@ class NotificationType(str, enum.Enum):
     - DEADLINE_EXPIRED_LOCKED: Grace period expired -> BLGU locked, MLGOO notified
     - GRACE_PERIOD_WARNING: Grace period expiring soon -> BLGU warned
     - SUBMISSION_REMINDER: MLGOO sends manual reminder -> BLGU notified
+    - DEADLINE_REMINDER_7_DAYS: Automated reminder 7 days before deadline -> BLGU notified
+    - DEADLINE_REMINDER_3_DAYS: Automated reminder 3 days before deadline -> BLGU notified
+    - DEADLINE_REMINDER_1_DAY: Automated reminder 1 day before deadline -> BLGU notified
+    - AUTO_SUBMITTED: Assessment auto-submitted at deadline -> BLGU notified
     """
 
     NEW_SUBMISSION = "NEW_SUBMISSION"
@@ -177,3 +181,8 @@ class NotificationType(str, enum.Enum):
     GRACE_PERIOD_WARNING = "GRACE_PERIOD_WARNING"
     # Manual reminders from MLGOO
     SUBMISSION_REMINDER = "SUBMISSION_REMINDER"
+    # Automated Phase 1 deadline reminders
+    DEADLINE_REMINDER_7_DAYS = "DEADLINE_REMINDER_7_DAYS"
+    DEADLINE_REMINDER_3_DAYS = "DEADLINE_REMINDER_3_DAYS"
+    DEADLINE_REMINDER_1_DAY = "DEADLINE_REMINDER_1_DAY"
+    AUTO_SUBMITTED = "AUTO_SUBMITTED"

@@ -15,7 +15,7 @@
  */
 
 import { useMemo } from "react";
-import { Info } from "lucide-react";
+import { Info, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -30,6 +30,8 @@ type AssessmentStatus =
   | "AWAITING_MLGOO_APPROVAL"
   | "COMPLETED";
 
+type DeadlineUrgencyLevel = "normal" | "warning" | "urgent" | "critical" | "expired";
+
 interface AssessmentProgressProps {
   /** Current assessment status */
   currentStatus: AssessmentStatus | string;
@@ -39,6 +41,12 @@ interface AssessmentProgressProps {
   isMlgooRecalibration?: boolean;
   /** Completion percentage for DRAFT status (0-100) */
   completionPercentage?: number;
+  /** Days remaining until Phase 1 deadline (null if not applicable) */
+  daysUntilDeadline?: number | null;
+  /** Urgency level based on days remaining */
+  deadlineUrgencyLevel?: DeadlineUrgencyLevel | null;
+  /** Whether the assessment was auto-submitted */
+  isAutoSubmitted?: boolean;
   className?: string;
 }
 
@@ -191,11 +199,51 @@ function ProgressLegend() {
   );
 }
 
+/** Deadline countdown widget configuration */
+const deadlineConfig: Record<
+  DeadlineUrgencyLevel,
+  { bg: string; text: string; border: string; label: string }
+> = {
+  normal: {
+    bg: "bg-gray-50 dark:bg-gray-900/20",
+    text: "text-gray-700 dark:text-gray-300",
+    border: "border-gray-200 dark:border-gray-700",
+    label: "Days Left",
+  },
+  warning: {
+    bg: "bg-yellow-50 dark:bg-yellow-950/20",
+    text: "text-yellow-700 dark:text-yellow-300",
+    border: "border-yellow-200 dark:border-yellow-700",
+    label: "Days Left",
+  },
+  urgent: {
+    bg: "bg-orange-50 dark:bg-orange-950/20",
+    text: "text-orange-700 dark:text-orange-300",
+    border: "border-orange-200 dark:border-orange-700",
+    label: "Days Left",
+  },
+  critical: {
+    bg: "bg-red-50 dark:bg-red-950/20",
+    text: "text-red-700 dark:text-red-300",
+    border: "border-red-200 dark:border-red-700",
+    label: "Day Left",
+  },
+  expired: {
+    bg: "bg-red-100 dark:bg-red-950/30",
+    text: "text-red-800 dark:text-red-200",
+    border: "border-red-300 dark:border-red-700",
+    label: "Expired",
+  },
+};
+
 export function AssessmentProgress({
   currentStatus,
   isCalibrationRework,
   isMlgooRecalibration = false,
   completionPercentage = 0,
+  daysUntilDeadline,
+  deadlineUrgencyLevel,
+  isAutoSubmitted = false,
   className,
 }: AssessmentProgressProps) {
   const progressInfo = useMemo(
@@ -263,6 +311,55 @@ export function AssessmentProgress({
 
       {/* Phase description */}
       <p className="text-sm text-[var(--text-secondary)]">{progressInfo.description}</p>
+
+      {/* Deadline Countdown Widget - Only show for DRAFT status with deadline approaching */}
+      {currentStatus === "DRAFT" &&
+        deadlineUrgencyLevel &&
+        deadlineUrgencyLevel !== "normal" &&
+        daysUntilDeadline !== null &&
+        daysUntilDeadline !== undefined && (
+          <div
+            className={cn(
+              "mt-4 rounded-lg border p-3",
+              deadlineConfig[deadlineUrgencyLevel].bg,
+              deadlineConfig[deadlineUrgencyLevel].border,
+              deadlineUrgencyLevel === "critical" && "animate-pulse"
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {deadlineUrgencyLevel === "expired" || deadlineUrgencyLevel === "critical" ? (
+                  <AlertTriangle
+                    className={cn("h-4 w-4", deadlineConfig[deadlineUrgencyLevel].text)}
+                  />
+                ) : (
+                  <Clock className={cn("h-4 w-4", deadlineConfig[deadlineUrgencyLevel].text)} />
+                )}
+                <span
+                  className={cn("text-sm font-medium", deadlineConfig[deadlineUrgencyLevel].text)}
+                >
+                  {isAutoSubmitted
+                    ? "Auto-Submitted"
+                    : deadlineUrgencyLevel === "expired"
+                      ? "Deadline Passed"
+                      : "Submission Deadline"}
+                </span>
+              </div>
+              {daysUntilDeadline >= 0 && !isAutoSubmitted && (
+                <div className="text-right">
+                  <span
+                    className={cn("text-xl font-bold", deadlineConfig[deadlineUrgencyLevel].text)}
+                  >
+                    {daysUntilDeadline}
+                  </span>
+                  <span className={cn("text-xs ml-1", deadlineConfig[deadlineUrgencyLevel].text)}>
+                    {daysUntilDeadline === 1 ? "day" : "days"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
     </div>
   );
 }

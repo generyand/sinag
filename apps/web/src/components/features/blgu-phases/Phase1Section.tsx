@@ -14,6 +14,7 @@
  */
 
 import { PhaseCard, PhaseStatus } from "./PhaseCard";
+import { DeadlineBanner } from "./DeadlineBanner";
 import { CompletionMetricsCard, IndicatorNavigationList } from "@/components/features/dashboard";
 import {
   SubmitAssessmentButton,
@@ -155,6 +156,15 @@ export function Phase1Section({
       data-tour="phase-1-section"
     >
       <div className="space-y-6">
+        {/* Deadline Banner - Shows urgency when deadline is approaching */}
+        <DeadlineBanner
+          phase1Deadline={dashboardData.phase1_deadline ?? null}
+          daysRemaining={dashboardData.days_until_deadline ?? null}
+          urgencyLevel={dashboardData.deadline_urgency_level ?? null}
+          assessmentStatus={dashboardData.status}
+          isAutoSubmitted={dashboardData.is_auto_submitted ?? false}
+        />
+
         {/* AI Summary Panel - Shows AI-generated guidance for rework */}
         {showReworkFeedback && dashboardData.ai_summary && (
           <div data-tour="ai-summary-panel">

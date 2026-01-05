@@ -5,6 +5,7 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import Any
 
 from app.core.config import settings
 from app.db.enums import NotificationType
@@ -53,7 +54,7 @@ class EmailService:
         subject: str,
         body_html: str,
         body_text: str | None = None,
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Send email via SMTP.
 
@@ -114,7 +115,7 @@ class EmailService:
         self,
         notification_type: NotificationType,
         recipient_name: str,
-        context: dict[str, any],
+        context: dict[str, Any],
     ) -> tuple[str, str, str]:
         """
         Build email content for a notification.
@@ -195,6 +196,31 @@ class EmailService:
                 "title": "Assessment Submission Reminder",
                 "message": "This is a friendly reminder from MLGOO-DILG to complete your SGLGB assessment submission. Click the button below to continue working on your assessment.",
                 "cta_text": "Continue Assessment",
+            },
+            # Automated Phase 1 deadline reminders
+            NotificationType.DEADLINE_REMINDER_7_DAYS: {
+                "subject": "7 Days Remaining: Complete Your SGLGB Assessment",
+                "title": "Deadline Reminder - 7 Days",
+                "message": "You have 7 days remaining to submit your SGLGB assessment for {barangay_name}. Please ensure all indicators are complete and supporting documents (MOVs) are uploaded before the deadline.",
+                "cta_text": "Continue Assessment",
+            },
+            NotificationType.DEADLINE_REMINDER_3_DAYS: {
+                "subject": "URGENT: 3 Days Remaining for SGLGB Assessment",
+                "title": "Deadline Reminder - 3 Days",
+                "message": "Only 3 days remaining to submit your SGLGB assessment for {barangay_name}. Please prioritize completing your assessment to avoid missing the deadline.",
+                "cta_text": "Continue Assessment",
+            },
+            NotificationType.DEADLINE_REMINDER_1_DAY: {
+                "subject": "FINAL WARNING: 1 Day Remaining for SGLGB Assessment",
+                "title": "Deadline Reminder - Final Day",
+                "message": "This is your final reminder. You have less than 1 day to submit your SGLGB assessment for {barangay_name}. If not submitted by the deadline, your assessment will be automatically submitted in its current state.",
+                "cta_text": "Submit Now",
+            },
+            NotificationType.AUTO_SUBMITTED: {
+                "subject": "Your SGLGB Assessment Has Been Auto-Submitted",
+                "title": "Assessment Auto-Submitted",
+                "message": "The submission deadline has passed and your SGLGB assessment for {barangay_name} has been automatically submitted. You can no longer make changes to this assessment. It is now queued for review by the assessor.",
+                "cta_text": "View Assessment",
             },
         }
 

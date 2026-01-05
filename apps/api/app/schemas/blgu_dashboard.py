@@ -236,6 +236,32 @@ class BLGUDashboardResponse(BaseModel):
 
     assessment_id: int = Field(..., description="Assessment ID")
 
+    # Phase 1 Deadline tracking fields
+    phase1_deadline: datetime | None = Field(
+        None, description="Phase 1 submission deadline (from active assessment year)"
+    )
+    days_until_deadline: int | None = Field(
+        None,
+        description="Days remaining until Phase 1 deadline (negative if past). "
+        "Only populated for DRAFT assessments.",
+    )
+    deadline_urgency_level: Literal["normal", "warning", "urgent", "critical", "expired"] | None = (
+        Field(
+            None,
+            description="Urgency level based on days remaining: "
+            "normal (>7 days), warning (4-7 days), urgent (2-3 days), "
+            "critical (<=1 day), expired (deadline passed). "
+            "Only populated for DRAFT assessments.",
+        )
+    )
+    is_auto_submitted: bool = Field(
+        default=False,
+        description="True if assessment was automatically submitted at deadline",
+    )
+    auto_submitted_at: datetime | None = Field(
+        None, description="Timestamp when assessment was auto-submitted (if applicable)"
+    )
+
     # Epic 5.0: Assessment status and rework tracking
     status: str = Field(
         ...,
