@@ -778,29 +778,57 @@ class MLGOOService:
                 }
             )
 
-        # Group responses by governance area
-        areas_data = {}
+        # Build a mapping of indicator_id -> response for existing responses
+        response_by_indicator: dict[int, AssessmentResponse] = {}
         for response in assessment.responses:
-            if not response.indicator:
+            if response.indicator_id:
+                response_by_indicator[response.indicator_id] = response
+
+        # Get ALL active child indicators applicable to this assessment year
+        # Only child indicators (parent_id IS NOT NULL) are actual assessment items
+        # Parent indicators are just category groupings
+        assessment_year = assessment.assessment_year
+        all_indicators_query = (
+            db.query(Indicator)
+            .options(joinedload(Indicator.governance_area))
+            .filter(
+                Indicator.is_active == True,
+                Indicator.parent_id.isnot(None),  # Only child indicators (actual assessment items)
+                # Year-based filtering: indicator must be effective for this assessment year
+                (Indicator.effective_from_year.is_(None))
+                | (Indicator.effective_from_year <= assessment_year),
+                (Indicator.effective_to_year.is_(None))
+                | (Indicator.effective_to_year >= assessment_year),
+            )
+            .all()
+        )
+
+        # Group ALL indicators by governance area
+        areas_data = {}
+        for indicator in all_indicators_query:
+            area = indicator.governance_area
+            if not area:
                 continue
 
-            area = response.indicator.governance_area
-            area_id = area.id if area else 0
-            area_name = area.name if area else "Unknown Area"
+            area_id = area.id
+            area_name = area.name
 
             if area_id not in areas_data:
                 areas_data[area_id] = {
                     "id": area_id,
                     "name": area_name,
-                    "area_type": area.area_type.value if area and area.area_type else None,
+                    "area_type": area.area_type.value if area.area_type else None,
                     "pass_count": 0,
                     "fail_count": 0,
                     "conditional_count": 0,
                     "indicators": [],
                 }
 
-            # Count statuses
-            if response.validation_status:
+            # Check if there's an existing response for this indicator
+            response = response_by_indicator.get(indicator.id)
+
+            # Count statuses (only for indicators with responses and validation status)
+            if response and response.validation_status:
                 status_val = (
                     response.validation_status.value
                     if hasattr(response.validation_status, "value")
@@ -815,23 +843,23 @@ class MLGOOService:
                 elif status_upper == "CONDITIONAL":
                     areas_data[area_id]["conditional_count"] += 1
 
-            areas_data[area_id]["indicators"].append(
-                {
-                    "response_id": response.id,
-                    "indicator_id": response.indicator_id,
-                    "indicator_name": response.indicator.name,
-                    "indicator_code": response.indicator.indicator_code,
-                    "validation_status": response.validation_status.value
-                    if response.validation_status
-                    else None,
-                    "assessor_remarks": response.assessor_remarks,
-                    "is_recalibration_target": bool(
-                        assessment.mlgoo_recalibration_indicator_ids
-                        and response.indicator_id in assessment.mlgoo_recalibration_indicator_ids
-                    ),
-                    "mov_files": mov_files_by_indicator.get(response.indicator_id, []),
-                }
-            )
+            # Build indicator data (with or without response)
+            indicator_data = {
+                "response_id": response.id if response else None,
+                "indicator_id": indicator.id,
+                "indicator_name": indicator.name,
+                "indicator_code": indicator.indicator_code,
+                "validation_status": response.validation_status.value
+                if response and response.validation_status
+                else None,
+                "assessor_remarks": response.assessor_remarks if response else None,
+                "is_recalibration_target": bool(
+                    assessment.mlgoo_recalibration_indicator_ids
+                    and indicator.id in assessment.mlgoo_recalibration_indicator_ids
+                ),
+                "mov_files": mov_files_by_indicator.get(indicator.id, []),
+            }
+            areas_data[area_id]["indicators"].append(indicator_data)
 
         # Sort indicators in each governance area by indicator_code
         for area_id in areas_data:

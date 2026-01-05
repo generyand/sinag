@@ -62,12 +62,14 @@ import {
   ChevronUp,
   Clock,
   Eye,
+  FileCheck,
   FileText,
   LayoutDashboard,
   ListChecks,
   Loader2,
   RotateCcw,
   TrendingUp,
+  Upload,
   X,
   XCircle,
 } from "lucide-react";
@@ -119,6 +121,125 @@ function VerdictResultCard({ isPassed }: { isPassed: boolean }) {
               {isPassed ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               {isPassed ? "PASSED" : "FAILED"}
             </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Completion Progress Card for DRAFT assessments
+function CompletionProgressCard({
+  indicatorsWithMov,
+  totalIndicators,
+  totalMovFiles,
+}: {
+  indicatorsWithMov: number;
+  totalIndicators: number;
+  totalMovFiles: number;
+}) {
+  const percentage =
+    totalIndicators > 0 ? Math.round((indicatorsWithMov / totalIndicators) * 100) : 0;
+
+  // Determine color based on percentage
+  const getProgressColor = () => {
+    if (percentage >= 80) return "bg-green-500";
+    if (percentage >= 50) return "bg-amber-500";
+    if (percentage >= 25) return "bg-orange-500";
+    return "bg-gray-400";
+  };
+
+  const getTextColor = () => {
+    if (percentage >= 80) return "text-green-700";
+    if (percentage >= 50) return "text-amber-700";
+    if (percentage >= 25) return "text-orange-700";
+    return "text-gray-600";
+  };
+
+  const getBgColor = () => {
+    if (percentage >= 80) return "bg-green-50 border-green-200";
+    if (percentage >= 50) return "bg-amber-50 border-amber-200";
+    if (percentage >= 25) return "bg-orange-50 border-orange-200";
+    return "bg-gray-50 border-gray-200";
+  };
+
+  const getStatusMessage = () => {
+    if (percentage === 100) return "All indicators have MOV uploads";
+    if (percentage >= 80) return "Almost complete - just a few more to go";
+    if (percentage >= 50) return "Good progress - over halfway there";
+    if (percentage >= 25) return "Getting started - keep uploading";
+    if (percentage > 0) return "Early stage - many indicators need MOVs";
+    return "No MOVs uploaded yet";
+  };
+
+  return (
+    <Card className={`rounded-sm border shadow-sm ${getBgColor()}`}>
+      <CardContent className="py-4">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+          {/* Left: Icon and Title */}
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                percentage >= 80
+                  ? "bg-green-100"
+                  : percentage >= 50
+                    ? "bg-amber-100"
+                    : percentage >= 25
+                      ? "bg-orange-100"
+                      : "bg-gray-100"
+              }`}
+            >
+              <Upload className={`w-6 h-6 ${getTextColor()}`} />
+            </div>
+            <div>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>MOV Upload Progress</h3>
+              <p className="text-xs text-gray-500">{getStatusMessage()}</p>
+            </div>
+          </div>
+
+          {/* Center: Progress Bar */}
+          <div className="flex-1 lg:max-w-md">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-gray-600">
+                {indicatorsWithMov} of {totalIndicators} indicators
+              </span>
+              <span className={`text-sm font-bold ${getTextColor()}`}>{percentage}%</span>
+            </div>
+            <div
+              className="relative w-full h-2.5 bg-gray-200 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuenow={percentage}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`MOV upload progress: ${percentage}% complete, ${indicatorsWithMov} of ${totalIndicators} indicators have uploads`}
+            >
+              <div
+                className={`absolute inset-y-0 left-0 ${getProgressColor()} rounded-full transition-all duration-500 ease-out`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Right: Stats */}
+          <div className="flex items-center gap-6 lg:pl-4 lg:border-l border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                <FileCheck className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{indicatorsWithMov}</p>
+                <p className="text-xs text-gray-500">With MOVs</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{totalMovFiles}</p>
+                <p className="text-xs text-gray-500">Total Files</p>
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -523,6 +644,24 @@ export default function SubmissionDetailsPage() {
     assessment.overall_score ??
     (totalIndicators > 0 ? Math.round((totalPass / totalIndicators) * 100) : 0);
 
+  // Calculate MOV completion progress (for DRAFT assessments)
+  // Note: This runs after data is loaded, so no useMemo needed - calculation is fast
+  const isDraft = assessment.status === "DRAFT";
+  let indicatorsWithMov = 0;
+  let totalMovFiles = 0;
+  let allIndicatorsCount = 0;
+
+  for (const ga of governanceAreas) {
+    for (const ind of ga.indicators || []) {
+      allIndicatorsCount++;
+      const movCount = (ind.mov_files || []).length;
+      totalMovFiles += movCount;
+      if (movCount > 0) {
+        indicatorsWithMov++;
+      }
+    }
+  }
+
   // Get all failed/conditional indicators for recalibration selection
   // Note: validation_status from backend is uppercase (PASS, FAIL, CONDITIONAL)
   const failedIndicators: {
@@ -727,6 +866,15 @@ export default function SubmissionDetailsPage() {
               )}
             </div>
           </div>
+
+          {/* Completion Progress Card - Only for DRAFT assessments */}
+          {isDraft && (
+            <CompletionProgressCard
+              indicatorsWithMov={indicatorsWithMov}
+              totalIndicators={allIndicatorsCount}
+              totalMovFiles={totalMovFiles}
+            />
+          )}
 
           {/* Recalibration Mode Panel - MOV File Level Selection */}
           {isRecalibrationMode && (
@@ -1574,7 +1722,7 @@ export default function SubmissionDetailsPage() {
                           const isExpanded = expandedIndicators.has(indicator.indicator_id);
                           return (
                             <div
-                              key={indicator.response_id}
+                              key={indicator.indicator_id}
                               className={`${isRecalibrationTarget ? "bg-purple-50/30" : ""}`}
                             >
                               {/* Indicator Header */}

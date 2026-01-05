@@ -1948,11 +1948,25 @@ class AssessmentService:
         # Run preliminary compliance check (for additional MOV checks)
         validation_result = self._run_preliminary_compliance_check(assessment)
 
-        # CRITICAL: Create empty AssessmentResponse records for ALL indicators without responses
+        # CRITICAL: Create empty AssessmentResponse records for ALL child indicators without responses
         # This ensures Assessors can review and mark ALL indicators for rework, even those
         # where BLGU didn't upload any files
+        # Only child indicators (parent_id IS NOT NULL) are actual assessment items
         existing_indicator_ids = {r.indicator_id for r in assessment.responses}
-        all_indicators = db.query(Indicator).filter(Indicator.is_active == True).all()
+        assessment_year = assessment.assessment_year
+        all_indicators = (
+            db.query(Indicator)
+            .filter(
+                Indicator.is_active == True,
+                Indicator.parent_id.isnot(None),  # Only child indicators (actual assessment items)
+                # Year-based filtering: indicator must be effective for this assessment year
+                (Indicator.effective_from_year.is_(None))
+                | (Indicator.effective_from_year <= assessment_year),
+                (Indicator.effective_to_year.is_(None))
+                | (Indicator.effective_to_year >= assessment_year),
+            )
+            .all()
+        )
 
         created_empty_responses = 0
         for indicator in all_indicators:

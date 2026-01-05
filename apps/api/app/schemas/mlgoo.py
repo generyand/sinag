@@ -169,7 +169,7 @@ class MOVFileItem(BaseModel):
 class IndicatorDetailItem(BaseModel):
     """Indicator details within a governance area."""
 
-    response_id: int
+    response_id: int | None  # None for indicators without uploaded MOVs (no response yet)
     indicator_id: int
     indicator_name: str
     indicator_code: str | None
