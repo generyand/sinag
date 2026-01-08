@@ -344,4 +344,74 @@ export const useDeleteMovsFilesFileId = <TError = HTTPValidationError,
 
       return useMutation(mutationOptions);
     }
+    /**
+ * Rotate an image file permanently by 90 degrees clockwise.
+
+    - **Permission check**: Only the uploader (BLGU user) can rotate their own files
+    - **Status restriction**: Only allowed for DRAFT or NEEDS_REWORK assessments
+    - **File type**: Only supports image files (JPEG, PNG)
+    - **Permanent**: Replaces the original file in storage with the rotated version
+
+    Returns the updated file metadata with new file size.
+ * @summary Rotate an image file 90 degrees clockwise
+ */
+export const postMovsFiles$FileIdRotate = (
+    fileId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<MOVFileResponse>(
+      {url: `/api/v1/movs/files/${fileId}/rotate`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostMovsFilesFileIdRotateMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMovsFiles$FileIdRotate>>, TError,{fileId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postMovsFiles$FileIdRotate>>, TError,{fileId: number}, TContext> => {
+
+const mutationKey = ['postMovsFilesFileIdRotate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postMovsFiles$FileIdRotate>>, {fileId: number}> = (props) => {
+          const {fileId} = props ?? {};
+
+          return  postMovsFiles$FileIdRotate(fileId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostMovsFilesFileIdRotateMutationResult = NonNullable<Awaited<ReturnType<typeof postMovsFiles$FileIdRotate>>>
+    
+    export type PostMovsFilesFileIdRotateMutationError = HTTPValidationError
+
+    /**
+ * @summary Rotate an image file 90 degrees clockwise
+ */
+export const usePostMovsFilesFileIdRotate = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMovsFiles$FileIdRotate>>, TError,{fileId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postMovsFiles$FileIdRotate>>,
+        TError,
+        {fileId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostMovsFilesFileIdRotateMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
     

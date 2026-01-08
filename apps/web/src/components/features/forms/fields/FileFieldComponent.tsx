@@ -683,9 +683,10 @@ export function FileFieldComponent({
 
   // Get MLGOO flagged file IDs for this field
   // Use props if available, otherwise fall back to assessment data
-  const effectiveMlgooFlaggedFileIds = mlgooFlaggedFileIds?.length > 0
-    ? mlgooFlaggedFileIds
-    : (assessmentData as any)?.assessment?.mlgoo_recalibration_mov_file_ids || [];
+  const effectiveMlgooFlaggedFileIds =
+    mlgooFlaggedFileIds?.length > 0
+      ? mlgooFlaggedFileIds
+      : (assessmentData as any)?.assessment?.mlgoo_recalibration_mov_file_ids || [];
 
   const mlgooFlaggedFileIdsSet = new Set(
     (effectiveMlgooFlaggedFileIds || []).map((item: any) => String(item.mov_file_id))
@@ -727,11 +728,15 @@ export function FileFieldComponent({
 
       // Separate files into flagged (by MLGOO) and non-flagged
       const flaggedFiles = oldFiles.filter((f: any) => mlgooFlaggedFileIdsSet.has(String(f.id)));
-      const nonFlaggedFiles = oldFiles.filter((f: any) => !mlgooFlaggedFileIdsSet.has(String(f.id)));
+      const nonFlaggedFiles = oldFiles.filter(
+        (f: any) => !mlgooFlaggedFileIdsSet.has(String(f.id))
+      );
 
       // Check if BLGU has uploaded replacement files (files uploaded after recalibration request)
       // These replacement files should NOT be flagged files
-      const replacementFiles = recentFiles.filter((f: any) => !mlgooFlaggedFileIdsSet.has(String(f.id)));
+      const replacementFiles = recentFiles.filter(
+        (f: any) => !mlgooFlaggedFileIdsSet.has(String(f.id))
+      );
 
       if (replacementFiles.length > 0) {
         // BLGU has uploaded replacement files
@@ -880,6 +885,14 @@ export function FileFieldComponent({
 
   // Can delete: Only BLGU users, only for DRAFT or REWORK/NEEDS_REWORK status, and not disabled
   const canDelete =
+    !disabled &&
+    isBLGU &&
+    (normalizedStatus === "DRAFT" ||
+      normalizedStatus === "REWORK" ||
+      normalizedStatus === "NEEDS_REWORK");
+
+  // Can rotate: Same rules as delete - only BLGU users during DRAFT or REWORK status
+  const canRotate =
     !disabled &&
     isBLGU &&
     (normalizedStatus === "DRAFT" ||
@@ -1128,6 +1141,7 @@ export function FileFieldComponent({
             onPreview={handlePreview}
             onDownload={handleDownload}
             canDelete={canDelete}
+            canRotate={canRotate}
             loading={isLoadingFiles}
             onDeleteSuccess={handleDeleteSuccess}
             movAnnotations={movAnnotations}

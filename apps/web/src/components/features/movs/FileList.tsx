@@ -22,6 +22,7 @@ import {
   Image,
   Loader2,
   MessageSquare,
+  RotateCw,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,9 @@ interface FileListProps {
   onDelete?: (fileId: number) => void;
   onPreview?: (file: MOVFileResponse) => void;
   onDownload?: (file: MOVFileResponse) => void;
+  onRotate?: (fileId: number) => void;
   canDelete?: boolean;
+  canRotate?: boolean;
   loading?: boolean;
   emptyMessage?: string;
   movAnnotations?: any[];
@@ -193,7 +196,9 @@ export function FileList({
   onDelete,
   onPreview,
   onDownload,
+  onRotate,
   canDelete = false,
+  canRotate = false,
   loading = false,
   emptyMessage = "No files uploaded yet",
   movAnnotations = [],
@@ -218,7 +223,9 @@ export function FileList({
   // Helper function to check if file is flagged by MLGOO and get comment
   const getMlgooFlaggedInfo = (fileId: number) => {
     const flagged = mlgooFlaggedFileIds.find((f) => f.mov_file_id === fileId);
-    return flagged ? { isFlagged: true, comment: flagged.comment } : { isFlagged: false, comment: null };
+    return flagged
+      ? { isFlagged: true, comment: flagged.comment }
+      : { isFlagged: false, comment: null };
   };
 
   // Handler to open annotation viewer
@@ -385,7 +392,10 @@ export function FileList({
                       {/* MLGOO flagged comment */}
                       {mlgooFlagged.isFlagged && mlgooFlagged.comment && (
                         <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300 mt-1 bg-red-50 dark:bg-red-950/30 p-2 rounded border border-red-200 dark:border-red-800">
-                          <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                          <MessageSquare
+                            className="h-3.5 w-3.5 mt-0.5 flex-shrink-0"
+                            aria-hidden="true"
+                          />
                           <span className="italic">&quot;{mlgooFlagged.comment}&quot;</span>
                         </div>
                       )}
@@ -451,10 +461,34 @@ export function FileList({
                       size="sm"
                       onClick={() => handlePreviewClick(file)}
                       title="Preview file"
-                      className={mlgooFlagged.isFlagged ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100" : hasAnnotations ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100" : ""}
+                      className={
+                        mlgooFlagged.isFlagged
+                          ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
+                          : hasAnnotations
+                            ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
+                            : ""
+                      }
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    {canRotate && onRotate && file.file_type.startsWith("image/") && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRotate(file.id)}
+                        title="Rotate image 90° clockwise"
+                        className={
+                          mlgooFlagged.isFlagged
+                            ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
+                            : hasAnnotations
+                              ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
+                              : ""
+                        }
+                      >
+                        <RotateCw className="h-4 w-4" />
+                      </Button>
+                    )}
                     {onDownload && (
                       <Button
                         type="button"
@@ -462,7 +496,13 @@ export function FileList({
                         size="sm"
                         onClick={() => onDownload(file)}
                         title="Download file"
-                        className={mlgooFlagged.isFlagged ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100" : hasAnnotations ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100" : ""}
+                        className={
+                          mlgooFlagged.isFlagged
+                            ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
+                            : hasAnnotations
+                              ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
+                              : ""
+                        }
                       >
                         <Download className="h-4 w-4" />
                       </Button>

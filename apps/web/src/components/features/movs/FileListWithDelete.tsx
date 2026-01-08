@@ -16,6 +16,7 @@ import {
   MOVFileResponse,
   getGetAssessmentsMyAssessmentQueryKey,
   useDeleteMovsFilesFileId,
+  usePostMovsFilesFileIdRotate,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -27,9 +28,11 @@ interface FileListWithDeleteProps {
   onPreview?: (file: MOVFileResponse) => void;
   onDownload?: (file: MOVFileResponse) => void;
   canDelete?: boolean;
+  canRotate?: boolean;
   loading?: boolean;
   emptyMessage?: string;
   onDeleteSuccess?: (fileId: number) => void;
+  onRotateSuccess?: (fileId: number) => void;
   movAnnotations?: any[];
   hideHeader?: boolean;
   /** Assessment ID for optimistic cache updates */
@@ -57,9 +60,11 @@ export function FileListWithDelete({
   onPreview,
   onDownload,
   canDelete = false,
+  canRotate = false,
   loading = false,
   emptyMessage = "No files uploaded yet",
   onDeleteSuccess,
+  onRotateSuccess,
   movAnnotations = [],
   hideHeader = false,
   assessmentId,
@@ -69,6 +74,7 @@ export function FileListWithDelete({
 }: FileListWithDeleteProps) {
   const [fileToDelete, setFileToDelete] = useState<number | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+  const [rotatingFileId, setRotatingFileId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   // Delete mutation hook
@@ -200,6 +206,55 @@ export function FileListWithDelete({
     },
   });
 
+  // Rotation mutation hook
+  const rotateMutation = usePostMovsFilesFileIdRotate({
+    mutation: {
+      onMutate: (variables) => {
+        setRotatingFileId(variables.fileId);
+      },
+      onSuccess: (data, variables) => {
+        toast.success("Image rotated successfully");
+        setRotatingFileId(null);
+
+        // Invalidate signed URL cache to get fresh image
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return (
+              Array.isArray(key) &&
+              key.some(
+                (k) =>
+                  typeof k === "string" && k.includes("/movs/files/") && k.includes("signed-url")
+              )
+            );
+          },
+        });
+
+        // Invalidate MOV files queries
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return (
+              Array.isArray(key) &&
+              key.some((k) => typeof k === "string" && k.includes("/movs/") && k.includes("/files"))
+            );
+          },
+        });
+
+        onRotateSuccess?.(variables.fileId);
+      },
+      onError: (error: any) => {
+        const errorInfo = classifyError(error);
+        toast.error(`${errorInfo.title}: ${errorInfo.message}`);
+        setRotatingFileId(null);
+      },
+    },
+  });
+
+  const handleRotateClick = (fileId: number) => {
+    rotateMutation.mutate({ fileId });
+  };
+
   const handleDeleteClick = (fileId: number) => {
     setFileToDelete(fileId);
   };
@@ -228,8 +283,10 @@ export function FileListWithDelete({
         onDelete={canDelete ? handleDeleteClick : undefined}
         onPreview={onPreview}
         onDownload={onDownload}
+        onRotate={canRotate ? handleRotateClick : undefined}
         canDelete={canDelete}
-        loading={loading}
+        canRotate={canRotate && !rotateMutation.isPending}
+        loading={loading || rotatingFileId !== null}
         emptyMessage={emptyMessage}
         movAnnotations={movAnnotations}
         hideHeader={hideHeader}
