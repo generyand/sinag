@@ -481,7 +481,7 @@ def validator_user(db_session: Session, mock_governance_area):
         role=UserRole.VALIDATOR,
         is_active=True,
         must_change_password=False,
-        validator_area_id=mock_governance_area.id,
+        assessor_area_id=mock_governance_area.id,
     )
     db_session.add(user)
     db_session.commit()

@@ -318,39 +318,39 @@ class TestTypeCoercion:
         )
         assert user.barangay_id is None
 
-    def test_validator_area_id_string_to_int_coercion(self):
-        """Test validator_area_id coercion in UserAdminUpdate."""
+    def test_assessor_area_id_string_to_int_coercion(self):
+        """Test assessor_area_id coercion in UserAdminUpdate."""
         # String number should be coerced to int
         update = UserAdminUpdate(
-            validator_area_id="5",  # String instead of int
+            assessor_area_id="5",  # String instead of int
         )
-        assert update.validator_area_id == 5
-        assert isinstance(update.validator_area_id, int)
+        assert update.assessor_area_id == 5
+        assert isinstance(update.assessor_area_id, int)
 
     def test_multiple_id_coercion_in_admin_create(self):
-        """Test both validator_area_id and barangay_id coercion in UserAdminCreate."""
+        """Test both assessor_area_id and barangay_id coercion in UserAdminCreate."""
         # Both string numbers should be coerced
         user = UserAdminCreate(
             email="test@example.com",
             name="Test User",
             password="ValidPass123!@",
             role=UserRole.VALIDATOR,
-            validator_area_id="3",  # String
+            assessor_area_id="3",  # String
             barangay_id="7",  # String (will be cleared for VALIDATOR role)
         )
-        assert user.validator_area_id == 3
-        assert isinstance(user.validator_area_id, int)
+        assert user.assessor_area_id == 3
+        assert isinstance(user.assessor_area_id, int)
         # Note: barangay_id will be coerced but then cleared by service layer
 
     def test_invalid_string_for_id_coercion_rejected(self):
         """Test that invalid strings for ID fields are rejected."""
         with pytest.raises(ValidationError) as exc_info:
             UserAdminUpdate(
-                validator_area_id="not-a-number",
+                assessor_area_id="not-a-number",
             )
 
         error = exc_info.value.errors()[0]
-        assert "validator_area_id" in error["loc"]
+        assert "assessor_area_id" in error["loc"]
 
 
 # ====================================================================
@@ -380,11 +380,11 @@ class TestCombinedValidation:
             name="Admin User",
             password="StrongPass456!@",  # Valid password
             role=UserRole.VALIDATOR,
-            validator_area_id="3",  # String coerced to int
+            assessor_area_id="3",  # String coerced to int
         )
         assert user.email == "admin@dilg.gov.ph"
         assert user.password == "StrongPass456!@"
-        assert user.validator_area_id == 3
+        assert user.assessor_area_id == 3
 
     def test_invalid_email_and_password_both_rejected(self):
         """Test that both email and password validation errors are caught."""

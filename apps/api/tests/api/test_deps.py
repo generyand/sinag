@@ -81,7 +81,7 @@ def validator_user(db_session: Session):
         name="Validator User",
         hashed_password=pwd_context.hash("password123"),
         role=UserRole.VALIDATOR,
-        validator_area_id=governance_area.id,
+        assessor_area_id=governance_area.id,
         is_active=True,
     )
     db_session.add(user)

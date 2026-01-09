@@ -1,8 +1,10 @@
 """
-Seed script to create initial users for SINAG:
+Seed script to create initial users for SINAG.
+
+After workflow restructuring:
 - 25 BLGU Users (one per barangay)
-- 3 Assessors
-- 6 Validators (one per governance area)
+- 6 Assessors (one per governance area - area-specific)
+- 3 Validators (system-wide - no area assignment)
 - 1 MLGOO Admin
 
 Run with: cd apps/api && python seed_users.py
@@ -109,46 +111,11 @@ def create_blgu_users(db):
 
 
 def create_assessors(db):
-    """Create 3 Assessor users."""
-    print("\n📋 Creating Assessors...")
-    created = 0
-    skipped = 0
+    """Create 6 Assessor users, one for each governance area.
 
-    assessors = [
-        ("assessor1@dilg.gov.ph", "Assessor One"),
-        ("assessor2@dilg.gov.ph", "Assessor Two"),
-        ("assessor3@dilg.gov.ph", "Assessor Three"),
-    ]
-
-    for email, name in assessors:
-        # Check if user already exists
-        existing = db.query(User).filter(User.email == email).first()
-        if existing:
-            print(f"  ⏭️  Assessor '{name}' already exists. Skipping.")
-            skipped += 1
-            continue
-
-        # Create Assessor user
-        user = User(
-            email=email,
-            name=name,
-            role=UserRole.ASSESSOR,
-            hashed_password=get_password_hash(DEFAULT_PASSWORD),
-            is_active=True,
-            must_change_password=True,
-        )
-        db.add(user)
-        created += 1
-        print(f"  ✅ Created: {email} ({name})")
-
-    db.commit()
-    print(f"\n  📊 Assessors - Created: {created}, Skipped: {skipped}")
-    return created
-
-
-def create_validators(db):
-    """Create 6 Validator users, one for each governance area."""
-    print("\n📋 Creating Validators...")
+    After workflow restructuring: ASSESSORs are area-specific.
+    """
+    print("\n📋 Creating Assessors (one per governance area)...")
     created = 0
     skipped = 0
 
@@ -161,21 +128,21 @@ def create_validators(db):
             continue
 
         # Generate email
-        email = f"validator.area{area_id}@dilg.gov.ph"
+        email = f"assessor.area{area_id}@dilg.gov.ph"
 
         # Check if user already exists
         existing = db.query(User).filter(User.email == email).first()
         if existing:
-            print(f"  ⏭️  Validator for Area {area_id} already exists. Skipping.")
+            print(f"  ⏭️  Assessor for Area {area_id} already exists. Skipping.")
             skipped += 1
             continue
 
-        # Create Validator user
+        # Create Assessor user with area assignment
         user = User(
             email=email,
-            name=f"Validator Area {area_id}",
-            role=UserRole.VALIDATOR,
-            validator_area_id=area_id,
+            name=f"Assessor Area {area_id}",
+            role=UserRole.ASSESSOR,
+            assessor_area_id=area_id,
             hashed_password=get_password_hash(DEFAULT_PASSWORD),
             is_active=True,
             must_change_password=True,
@@ -183,6 +150,47 @@ def create_validators(db):
         db.add(user)
         created += 1
         print(f"  ✅ Created: {email} (Area: {area_name})")
+
+    db.commit()
+    print(f"\n  📊 Assessors - Created: {created}, Skipped: {skipped}")
+    return created
+
+
+def create_validators(db):
+    """Create 3 Validator users (system-wide).
+
+    After workflow restructuring: VALIDATORs are system-wide, no area assignment.
+    """
+    print("\n📋 Creating Validators (system-wide)...")
+    created = 0
+    skipped = 0
+
+    validators = [
+        ("validator1@dilg.gov.ph", "Validator One"),
+        ("validator2@dilg.gov.ph", "Validator Two"),
+        ("validator3@dilg.gov.ph", "Validator Three"),
+    ]
+
+    for email, name in validators:
+        # Check if user already exists
+        existing = db.query(User).filter(User.email == email).first()
+        if existing:
+            print(f"  ⏭️  Validator '{name}' already exists. Skipping.")
+            skipped += 1
+            continue
+
+        # Create Validator user (no area assignment - system-wide)
+        user = User(
+            email=email,
+            name=name,
+            role=UserRole.VALIDATOR,
+            hashed_password=get_password_hash(DEFAULT_PASSWORD),
+            is_active=True,
+            must_change_password=True,
+        )
+        db.add(user)
+        created += 1
+        print(f"  ✅ Created: {email} ({name})")
 
     db.commit()
     print(f"\n  📊 Validators - Created: {created}, Skipped: {skipped}")

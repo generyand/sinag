@@ -83,7 +83,7 @@ def validator_user(db_session: Session, governance_area: GovernanceArea):
         name="Validator User",
         hashed_password=get_password_hash("password123"),
         role=UserRole.VALIDATOR,
-        validator_area_id=governance_area.id,
+        assessor_area_id=governance_area.id,
         is_active=True,
     )
     db_session.add(user)
@@ -274,7 +274,7 @@ def test_notify_validators_excludes_other_areas(db_session: Session, assessment:
         name="Validator 1",
         hashed_password=get_password_hash("password123"),
         role=UserRole.VALIDATOR,
-        validator_area_id=ga1.id,
+        assessor_area_id=ga1.id,
         is_active=True,
     )
     validator2 = User(
@@ -282,7 +282,7 @@ def test_notify_validators_excludes_other_areas(db_session: Session, assessment:
         name="Validator 2",
         hashed_password=get_password_hash("password123"),
         role=UserRole.VALIDATOR,
-        validator_area_id=ga2.id,
+        assessor_area_id=ga2.id,
         is_active=True,
     )
     db_session.add_all([validator1, validator2])

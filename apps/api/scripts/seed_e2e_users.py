@@ -22,6 +22,9 @@ from app.db.models.governance_area import GovernanceArea
 from app.db.models.user import User
 
 # E2E Test users matching authentication.spec.ts
+# After workflow restructuring:
+# - ASSESSOR is area-specific (needs assessor_area_id)
+# - VALIDATOR is system-wide (no area assignment needed)
 E2E_TEST_USERS = [
     {
         "email": "admin@sinag-test.local",
@@ -35,13 +38,14 @@ E2E_TEST_USERS = [
         "password": "TestAssessor123!",
         "name": "E2E Assessor User",
         "role": UserRole.ASSESSOR,
+        "needs_assessor_area": True,  # ASSESSOR is now area-specific
     },
     {
         "email": "validator@sinag-test.local",
         "password": "TestValidator123!",
         "name": "E2E Validator User",
         "role": UserRole.VALIDATOR,
-        "needs_validator_area": True,
+        # VALIDATOR is now system-wide (no area assignment needed)
     },
     {
         "email": "blgu@sinag-test.local",
@@ -101,7 +105,7 @@ def create_e2e_users(db):
 
     # Get IDs for foreign keys
     barangay_id = None
-    validator_area_id = None
+    assessor_area_id = None
 
     for user_config in E2E_TEST_USERS:
         email = user_config["email"]
@@ -118,10 +122,10 @@ def create_e2e_users(db):
             if barangay_id is None:
                 barangay_id = ensure_test_barangay(db)
 
-        # Get validator_area_id if needed
-        if user_config.get("needs_validator_area"):
-            if validator_area_id is None:
-                validator_area_id = ensure_test_governance_area(db)
+        # Get assessor_area_id if needed (for area-specific ASSESSORs)
+        if user_config.get("needs_assessor_area"):
+            if assessor_area_id is None:
+                assessor_area_id = ensure_test_governance_area(db)
 
         # Create user
         user = User(
@@ -133,9 +137,7 @@ def create_e2e_users(db):
             is_superuser=user_config.get("is_superuser", False),
             must_change_password=False,  # Don't force password change for test users
             barangay_id=barangay_id if user_config.get("needs_barangay") else None,
-            validator_area_id=validator_area_id
-            if user_config.get("needs_validator_area")
-            else None,
+            assessor_area_id=assessor_area_id if user_config.get("needs_assessor_area") else None,
         )
         db.add(user)
         created += 1

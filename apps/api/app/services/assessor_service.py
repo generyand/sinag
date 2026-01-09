@@ -646,22 +646,23 @@ class AssessorService:
                 "assessment_id": assessment_id,
             }
 
-        # Verify the assessor has permission to view this assessment
-        # - If assessor has assessor_area_id: Check if indicators belong to that area
-        # - If assessor has no assessor_area_id: Grant access (system-wide)
+        # Verify the user has permission to view this assessment
+        # After workflow restructuring:
+        # - VALIDATOR (system-wide): Has no assessor_area_id, can view all assessments
+        # - ASSESSOR (area-specific): Has assessor_area_id, can only view assessments with indicators in their area
         has_permission = False
 
         if assessor.assessor_area_id is None:
-            # Assessor with no assessor_area_id has system-wide access
+            # VALIDATOR: No area assignment means system-wide access
             has_permission = True
         elif assessment.responses:
-            # Check if any response's indicator belongs to the assessor's governance area
+            # ASSESSOR: Check if any response's indicator belongs to their governance area
             for response in assessment.responses:
                 if response.indicator.governance_area_id == assessor.assessor_area_id:
                     has_permission = True
                     break
         else:
-            # For assessments with no responses, allow access if assessor has area assigned
+            # For assessments with no responses, allow access if user has area assigned
             has_permission = True
 
         if not has_permission:
@@ -779,8 +780,11 @@ class AssessorService:
             )
 
         # Determine filtering based on user role
-        is_validator_role = assessor.role == UserRole.VALIDATOR
-        should_filter = is_validator_role and assessor.assessor_area_id is not None
+        # After workflow restructuring: ASSESSORs are area-specific, VALIDATORs are system-wide
+        # - ASSESSOR: Filter to only show their assigned governance area
+        # - VALIDATOR: Show all governance areas (system-wide)
+        is_assessor_role = assessor.role == UserRole.ASSESSOR
+        should_filter = is_assessor_role and assessor.assessor_area_id is not None
 
         self.logger.info(
             f"[ASSESSOR DEBUG] User {assessor.id} ({assessor.email}): "
@@ -791,7 +795,7 @@ class AssessorService:
 
         # Process ALL indicators (not just responses)
         for indicator in all_indicators:
-            # Only filter by governance area for VALIDATOR role users
+            # Filter by governance area for ASSESSOR role users (area-specific)
             if should_filter:
                 if indicator.governance_area_id != assessor.assessor_area_id:
                     continue

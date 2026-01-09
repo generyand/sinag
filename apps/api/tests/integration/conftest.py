@@ -90,7 +90,7 @@ def test_validator_user(db_session: Session, governance_area: GovernanceArea) ->
         name="Integration Test Validator",
         hashed_password=pwd_context.hash("testpassword123"),
         role=UserRole.VALIDATOR,
-        validator_area_id=governance_area.id,
+        assessor_area_id=governance_area.id,
         is_active=True,
     )
     db_session.add(user)

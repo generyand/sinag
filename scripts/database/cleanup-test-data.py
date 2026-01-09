@@ -163,7 +163,7 @@ def cleanup_test_data(dry_run: bool = True, storage_only: bool = False):
 
             test_users = conn.execute(
                 text(f"""
-                    SELECT id, email, name, role, barangay_id, validator_area_id
+                    SELECT id, email, name, role, barangay_id, assessor_area_id
                     FROM users
                     WHERE email IN ({placeholders})
                 """),

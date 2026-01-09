@@ -1,5 +1,12 @@
 """
-Create validator accounts for governance areas 2-6
+Create validator accounts (system-wide after workflow restructuring).
+
+After workflow restructuring:
+- VALIDATORs are system-wide (no area assignment)
+- ASSESSORs are area-specific (with assessor_area_id)
+
+This script is kept for backward compatibility.
+For new deployments, use startup_service.py seeding instead.
 """
 
 from sqlalchemy import create_engine, text
@@ -26,19 +33,18 @@ def main():
         trans = conn.begin()
 
         try:
-            print("Creating validator accounts for governance areas 2-6...")
+            print("Creating system-wide validator accounts...")
 
+            # After workflow restructuring: Validators are system-wide (no area assignment)
             validators_to_create = [
-                ("validator.area2@dilg.gov.ph", "Validator Area 2", 2),
-                ("validator.area3@dilg.gov.ph", "Validator Area 3", 3),
-                ("validator.area4@dilg.gov.ph", "Validator Area 4", 4),
-                ("validator.area5@dilg.gov.ph", "Validator Area 5", 5),
-                ("validator.area6@dilg.gov.ph", "Validator Area 6", 6),
+                ("validator1@dilg.gov.ph", "Validator One"),
+                ("validator2@dilg.gov.ph", "Validator Two"),
+                ("validator3@dilg.gov.ph", "Validator Three"),
             ]
 
             hashed_pw = hash_password("validator123")
 
-            for email, name, area_id in validators_to_create:
+            for email, name in validators_to_create:
                 # Check if user already exists
                 existing = conn.execute(
                     text("SELECT id FROM users WHERE email = :email"),
@@ -46,17 +52,18 @@ def main():
                 ).fetchone()
 
                 if existing:
-                    print(f"✅ {email} already exists (Area {area_id})")
+                    print(f"✅ {email} already exists")
                 else:
+                    # Create validator without area assignment (system-wide)
                     conn.execute(
                         text("""
                             INSERT INTO users (
-                                email, name, role, validator_area_id,
+                                email, name, role,
                                 hashed_password, must_change_password,
                                 is_superuser, is_active
                             )
                             VALUES (
-                                :email, :name, :role, :validator_area_id,
+                                :email, :name, :role,
                                 :hashed_password, :must_change_password,
                                 :is_superuser, :is_active
                             )
@@ -65,24 +72,23 @@ def main():
                             "email": email,
                             "name": name,
                             "role": "VALIDATOR",
-                            "validator_area_id": area_id,
                             "hashed_password": hashed_pw,
                             "must_change_password": False,
                             "is_superuser": False,
                             "is_active": True
                         }
                     )
-                    print(f"✅ Created {email} (Area {area_id})")
+                    print(f"✅ Created {email} (system-wide)")
 
             trans.commit()
 
             print("\n" + "="*60)
-            print("VALIDATOR CREDENTIALS FOR AREAS 2-6")
+            print("VALIDATOR CREDENTIALS (SYSTEM-WIDE)")
             print("="*60)
-            for email, _, area_id in validators_to_create:
+            for email, name in validators_to_create:
                 print(f"Email:    {email}")
                 print(f"Password: validator123")
-                print(f"Area:     Governance Area {area_id}")
+                print(f"Access:   System-wide (all governance areas)")
                 print("-" * 60)
 
         except Exception as e:
