@@ -1569,6 +1569,18 @@ export type BarangayMapPointAssessmentStatus = AssessmentStatusDetail | null;
 
 
 /**
+ * BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost
+ */
+export interface BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  comments: string;
+}
+
+
+/**
  * BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData
  */
 export type BodyTestCalculationApiV1IndicatorsTestCalculationPostAssessmentData = { [key: string]: unknown };

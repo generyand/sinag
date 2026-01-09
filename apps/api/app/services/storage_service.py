@@ -1064,16 +1064,17 @@ class StorageService:
                         status_code=403, detail="You don't have permission to access this file"
                     )
 
-        # VALIDATORs can only access files within their assigned governance area
-        if user.role == UserRole.VALIDATOR and user.validator_area_id:
+        # ASSESSORs can only access files within their assigned governance area
+        # After workflow restructuring: ASSESSORs are area-specific, VALIDATORs are system-wide
+        if user.role == UserRole.ASSESSOR and user.assessor_area_id:
             indicator = db.query(Indicator).filter(Indicator.id == mov_file.indicator_id).first()
-            if indicator and indicator.governance_area_id != user.validator_area_id:
+            if indicator and indicator.governance_area_id != user.assessor_area_id:
                 raise HTTPException(
                     status_code=403,
                     detail="You can only access files within your assigned governance area",
                 )
 
-        # ASSESSOR and MLGOO_DILG have access to all files (no additional restrictions)
+        # VALIDATOR and MLGOO_DILG have access to all files (no additional restrictions)
 
         # Generate and return signed URL
         try:

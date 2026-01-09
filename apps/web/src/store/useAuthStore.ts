@@ -181,9 +181,11 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
         mustChangePassword: state.mustChangePassword,
       }),
-      // Version 3: Force reset for role redefinition (MLGOO_DILG, ASSESSOR, VALIDATOR)
-      // and validator_area_id field rename (was governance_area_id)
-      version: 3, // Increment version to force reset after role structure changes
+      // Version 4: Force reset for workflow restructuring
+      // - ASSESSOR is now area-specific (with assessor_area_id)
+      // - VALIDATOR is now system-wide (no area required)
+      // - Field renamed from validator_area_id to assessor_area_id
+      version: 4, // Increment version to force reset after workflow restructuring
     }
   )
 );

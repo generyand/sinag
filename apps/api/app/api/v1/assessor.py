@@ -62,18 +62,18 @@ async def get_assessor_stats(
     """
     Get statistics for the assessor/validator.
 
-    For validators, returns:
-    - validated_count: Number of assessments where the validator has completed their governance area
+    For area-specific assessors (after workflow restructuring), returns:
+    - validated_count: Number of assessments where the assessor has completed their governance area
 
-    For assessors, returns:
+    For system-wide validators, returns:
     - validated_count: 0 (not applicable)
     """
     validated_count = 0
 
-    # For validators, count completed assessments
-    if current_assessor.validator_area_id is not None:
-        validated_count = assessor_service.get_validator_completed_count(
-            db=db, validator=current_assessor, assessment_year=year
+    # For area-specific assessors, count completed assessments
+    if current_assessor.assessor_area_id is not None:
+        validated_count = assessor_service.get_assessor_completed_count(
+            db=db, assessor=current_assessor, assessment_year=year
         )
 
     return {
@@ -288,16 +288,17 @@ async def submit_for_calibration(
     """
     Submit assessment for calibration (Validators only).
 
-    Calibration sends ONLY the validator's governance area indicators back to
-    BLGU for corrections. Unlike Rework (which affects all indicators),
-    Calibration only affects indicators in the validator's assigned governance area.
+    After workflow restructuring: Validators are system-wide.
+    Calibration sends the assessment back to BLGU for corrections on flagged indicators.
+    Only 1 calibration round is allowed per assessment.
 
     Requirements:
-    - User must be a Validator (have validator_area_id assigned)
+    - User must be a Validator (system-wide role after restructuring)
     - Assessment must be in AWAITING_FINAL_VALIDATION status
-    - At least one indicator in the validator's area must have feedback (comments or MOV annotations)
+    - At least one indicator must have feedback (comments or MOV annotations)
+    - Calibration round must not have been used already
 
-    The validator must have permission to review assessments in their governance area.
+    The validator must have permission to review assessments (system-wide access).
     """
     try:
         result = assessor_service.submit_for_calibration(
@@ -449,12 +450,13 @@ async def get_validator_dashboard(
     current_user: User = Depends(deps.get_current_area_assessor_user),
 ):
     """
-    Get comprehensive validator dashboard data for their governance area.
+    Get comprehensive assessor dashboard data for their governance area.
 
-    This endpoint provides validator-specific analytics that mirror the MLGOO
-    municipal overview but filtered by the validator's assigned governance area.
+    After workflow restructuring: ASSESSORs are area-specific.
+    This endpoint provides assessor-specific analytics that mirror the MLGOO
+    municipal overview but filtered by the assessor's assigned governance area.
 
-    **Access:** VALIDATOR role users only
+    **Access:** ASSESSOR role users with area assignment only
 
     Returns all dashboard sections in a single request:
     - Compliance summary (pass/fail counts, rates) for their governance area
@@ -467,17 +469,17 @@ async def get_validator_dashboard(
         year: Optional year filter (e.g., 2024, 2025)
         include_draft: Include draft assessments in barangay list
         db: Database session
-        current_user: Authenticated validator user
+        current_user: Authenticated assessor user
 
     Returns:
-        Validator dashboard with all sections filtered by governance area
+        Assessor dashboard with all sections filtered by governance area
     """
     try:
-        # Ensure user has validator_area_id
-        if current_user.validator_area_id is None:
+        # Ensure user has assessor_area_id (area-specific after workflow restructuring)
+        if current_user.assessor_area_id is None:
             raise HTTPException(
                 status_code=403,
-                detail="This endpoint is only available for validators with an assigned governance area",
+                detail="This endpoint is only available for assessors with an assigned governance area",
             )
 
         dashboard = assessor_service.get_validator_dashboard(
@@ -770,3 +772,106 @@ async def delete_annotation(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete annotation: {str(e)}")
+
+
+# =============================================================================
+# Per-Area Approval and Rework Endpoints (Workflow Restructuring)
+# =============================================================================
+
+
+@router.post(
+    "/assessments/{assessment_id}/areas/{governance_area_id}/approve",
+    tags=["assessor"],
+    summary="Approve governance area",
+)
+async def approve_governance_area(
+    assessment_id: int,
+    governance_area_id: int,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_assessor_user),
+):
+    """
+    Assessor approves their assigned governance area.
+
+    After workflow restructuring, assessors are area-specific (6 users for 6 areas).
+    Each assessor can only approve their assigned governance area.
+
+    When all 6 areas are approved, the assessment moves to AWAITING_FINAL_VALIDATION.
+
+    **Path Parameters:**
+    - assessment_id: ID of the assessment
+    - governance_area_id: ID of the governance area (1-6)
+
+    **Returns:** Success status, new area status, and whether all areas are approved
+
+    **Raises:**
+    - 403: User not authorized for this governance area
+    - 404: Assessment not found
+    - 400: Area cannot be approved (wrong status)
+    """
+    try:
+        result = assessor_service.approve_area(
+            db=db,
+            assessment_id=assessment_id,
+            governance_area_id=governance_area_id,
+            assessor=current_assessor,
+        )
+        return result
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to approve area: {str(e)}")
+
+
+@router.post(
+    "/assessments/{assessment_id}/areas/{governance_area_id}/rework",
+    tags=["assessor"],
+    summary="Send governance area for rework",
+)
+async def send_area_for_rework(
+    assessment_id: int,
+    governance_area_id: int,
+    comments: str = Form(..., min_length=1, max_length=2000),
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_assessor_user),
+):
+    """
+    Assessor sends their assigned governance area back for rework.
+
+    After workflow restructuring, assessors are area-specific (6 users for 6 areas).
+    Each assessor can only request rework for their assigned governance area.
+
+    All 6 assessors' rework requests are compiled into a single rework round.
+    The BLGU sees all rework requests together and fixes everything in one pass.
+
+    **Path Parameters:**
+    - assessment_id: ID of the assessment
+    - governance_area_id: ID of the governance area (1-6)
+
+    **Form Data:**
+    - comments: Rework comments explaining what needs to be fixed
+
+    **Returns:** Success status and new area status
+
+    **Raises:**
+    - 403: User not authorized for this governance area
+    - 404: Assessment not found
+    - 400: Rework not allowed (wrong status or rework round already used)
+    """
+    try:
+        result = assessor_service.send_area_for_rework(
+            db=db,
+            assessment_id=assessment_id,
+            governance_area_id=governance_area_id,
+            assessor=current_assessor,
+            comments=comments,
+        )
+        return result
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send area for rework: {str(e)}")

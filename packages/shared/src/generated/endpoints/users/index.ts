@@ -489,10 +489,10 @@ export function useGetUsers<TData = Awaited<ReturnType<typeof getUsers>>, TError
 
 Requires admin privileges (MLGOO_DILG role).
 
-Role-based assignment rules:
-- VALIDATOR: Requires validator_area_id (governance area assignment)
+Role-based assignment rules (after workflow restructuring):
+- ASSESSOR: Requires assessor_area_id (governance area assignment, area-specific)
 - BLGU_USER: Requires barangay_id (barangay assignment)
-- ASSESSOR: No assignments (arbitrary barangay selection in workflow)
+- VALIDATOR: No assignments (system-wide access)
 - MLGOO_DILG: No assignments (system-wide access)
 
 The service layer enforces these rules and returns 400 Bad Request for invalid combinations.
@@ -635,10 +635,10 @@ export function useGetUsersUserId<TData = Awaited<ReturnType<typeof getUsers$Use
 
 Requires admin privileges (MLGOO_DILG role).
 
-Role-based assignment rules:
-- VALIDATOR: Requires validator_area_id (governance area assignment)
+Role-based assignment rules (after workflow restructuring):
+- ASSESSOR: Requires assessor_area_id (governance area assignment, area-specific)
 - BLGU_USER: Requires barangay_id (barangay assignment)
-- ASSESSOR: No assignments (arbitrary barangay selection in workflow)
+- VALIDATOR: No assignments (system-wide access)
 - MLGOO_DILG: No assignments (system-wide access)
 
 When changing a user's role, the service layer automatically clears incompatible assignments.

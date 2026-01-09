@@ -55,14 +55,14 @@ class UserService:
     RBAC model with five distinct roles: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER,
     and KATUPARAN_CENTER_USER.
 
-    **Role-Based Field Requirements**:
-    - VALIDATOR: Requires validator_area_id (governance area assignment)
+    **Role-Based Field Requirements** (after workflow restructuring):
+    - ASSESSOR: Requires assessor_area_id (governance area assignment)
     - BLGU_USER: Requires barangay_id (barangay assignment)
-    - ASSESSOR/MLGOO_DILG/KATUPARAN_CENTER_USER: No assignments required (system-wide or aggregated access)
+    - VALIDATOR/MLGOO_DILG/KATUPARAN_CENTER_USER: No assignments required (system-wide access)
 
     **Business Rules**:
     - Email addresses must be unique across all users
-    - Validators can only be assigned to one governance area
+    - Assessors can only be assigned to one governance area
     - BLGU users can only be assigned to one barangay
     - Password changes clear the must_change_password flag
     - Admin functions require elevated privileges
@@ -223,44 +223,44 @@ class UserService:
         This endpoint allows MLGOO_DILG admins to create users with any role and
         enforces role-specific field requirements automatically.
 
-        **Role-Based Field Logic** (auto-enforced):
-        - **VALIDATOR**: Requires validator_area_id, clears barangay_id
-        - **BLGU_USER**: Requires barangay_id, clears validator_area_id
-        - **ASSESSOR/MLGOO_DILG/KATUPARAN_CENTER_USER**: Clears both validator_area_id and barangay_id
+        **Role-Based Field Logic** (auto-enforced, after workflow restructuring):
+        - **ASSESSOR**: Requires assessor_area_id (area-specific), clears barangay_id
+        - **BLGU_USER**: Requires barangay_id, clears assessor_area_id
+        - **VALIDATOR/MLGOO_DILG/KATUPARAN_CENTER_USER**: Clears both assessor_area_id and barangay_id (system-wide)
 
         **Business Rules**:
         - Email must be unique across all users
-        - Validator must have governance area assignment
+        - Assessor must have governance area assignment
         - BLGU user must have barangay assignment
         - Password is securely hashed before storage
-        - System-wide roles (ASSESSOR, MLGOO_DILG) have no area restrictions
+        - System-wide roles (VALIDATOR, MLGOO_DILG) have no area restrictions
 
         Args:
             db: Active database session for the transaction
-            user_create: Admin creation schema with role, validator_area_id, barangay_id, password
+            user_create: Admin creation schema with role, assessor_area_id, barangay_id, password
 
         Returns:
             Created User instance with role-appropriate field assignments
 
         Raises:
             HTTPException 400: If email already exists
-            HTTPException 400: If VALIDATOR role without validator_area_id
+            HTTPException 400: If ASSESSOR role without assessor_area_id
             HTTPException 400: If BLGU_USER role without barangay_id
 
         Example:
-            >>> # Create a VALIDATOR assigned to governance area 3
+            >>> # Create an ASSESSOR assigned to governance area 3
             >>> from app.schemas.user import UserAdminCreate
             >>> from app.db.enums import UserRole
-            >>> validator_data = UserAdminCreate(
-            ...     email="validator@dilg.gov.ph",
+            >>> assessor_data = UserAdminCreate(
+            ...     email="assessor@dilg.gov.ph",
             ...     name="Maria Santos",
-            ...     role=UserRole.VALIDATOR,
-            ...     validator_area_id=3,  # Safety, Peace and Order
+            ...     role=UserRole.ASSESSOR,
+            ...     assessor_area_id=3,  # Safety, Peace and Order
             ...     password="SecurePassword123!"
             ... )
-            >>> validator = user_service.create_user_admin(db, validator_data)
-            >>> print(f"{validator.role}: Area {validator.validator_area_id}")
-            VALIDATOR: Area 3
+            >>> assessor = user_service.create_user_admin(db, assessor_data)
+            >>> print(f"{assessor.role}: Area {assessor.assessor_area_id}")
+            ASSESSOR: Area 3
 
         See Also:
             - update_user_admin(): Admin endpoint for updating user role assignments
@@ -272,26 +272,26 @@ class UserService:
                 detail="Email already registered",
             )
 
-        # Business logic for role-specific fields
-        if user_create.role == UserRole.VALIDATOR:
-            # VALIDATOR role requires validator_area_id
-            if not user_create.validator_area_id:
+        # Business logic for role-specific fields (after workflow restructuring)
+        if user_create.role == UserRole.ASSESSOR:
+            # ASSESSOR role requires assessor_area_id (area-specific after restructuring)
+            if not user_create.assessor_area_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Governance area is required for Validator role.",
+                    detail="Governance area is required for Assessor role.",
                 )
             # Verify governance area exists
             governance_area = (
                 db.query(GovernanceArea)
-                .filter(GovernanceArea.id == user_create.validator_area_id)
+                .filter(GovernanceArea.id == user_create.assessor_area_id)
                 .first()
             )
             if not governance_area:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Governance area with ID {user_create.validator_area_id} does not exist.",
+                    detail=f"Governance area with ID {user_create.assessor_area_id} does not exist.",
                 )
-            # Ensure barangay_id is null for validators
+            # Ensure barangay_id is null for assessors
             user_create.barangay_id = None
         elif user_create.role == UserRole.BLGU_USER:
             # BLGU_USER role requires barangay_id
@@ -307,15 +307,15 @@ class UserService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Barangay with ID {user_create.barangay_id} does not exist.",
                 )
-            # Ensure validator_area_id is null for BLGU users
-            user_create.validator_area_id = None
+            # Ensure assessor_area_id is null for BLGU users
+            user_create.assessor_area_id = None
         elif user_create.role in (
-            UserRole.ASSESSOR,
+            UserRole.VALIDATOR,
             UserRole.MLGOO_DILG,
             UserRole.KATUPARAN_CENTER_USER,
         ):
-            # ASSESSOR, MLGOO_DILG, and external user roles should not have any assignments
-            user_create.validator_area_id = None
+            # VALIDATOR (now system-wide), MLGOO_DILG, and external user roles should not have any assignments
+            user_create.assessor_area_id = None
             user_create.barangay_id = None
 
         db_user = User(
@@ -361,30 +361,30 @@ class UserService:
 
         update_data = user_update.model_dump(exclude_unset=True)
 
-        # Business logic for role-specific fields
+        # Business logic for role-specific fields (after workflow restructuring)
         role = update_data.get("role", db_user.role)
 
-        if role == UserRole.VALIDATOR:
-            # VALIDATOR role requires validator_area_id
-            validator_area_id = update_data.get("validator_area_id", db_user.validator_area_id)
-            if not validator_area_id:
+        if role == UserRole.ASSESSOR:
+            # ASSESSOR role requires assessor_area_id (area-specific after restructuring)
+            assessor_area_id = update_data.get("assessor_area_id", db_user.assessor_area_id)
+            if not assessor_area_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Governance area is required for Validator role.",
+                    detail="Governance area is required for Assessor role.",
                 )
             # Verify governance area exists if it's being updated
-            if "validator_area_id" in update_data and update_data["validator_area_id"]:
+            if "assessor_area_id" in update_data and update_data["assessor_area_id"]:
                 governance_area = (
                     db.query(GovernanceArea)
-                    .filter(GovernanceArea.id == update_data["validator_area_id"])
+                    .filter(GovernanceArea.id == update_data["assessor_area_id"])
                     .first()
                 )
                 if not governance_area:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Governance area with ID {update_data['validator_area_id']} does not exist.",
+                        detail=f"Governance area with ID {update_data['assessor_area_id']} does not exist.",
                     )
-            # Ensure barangay_id is set to null if role is changed to Validator
+            # Ensure barangay_id is set to null if role is changed to Assessor
             update_data["barangay_id"] = None
         elif role == UserRole.BLGU_USER:
             # BLGU_USER role requires barangay_id
@@ -404,15 +404,15 @@ class UserService:
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"Barangay with ID {update_data['barangay_id']} does not exist.",
                     )
-            # Ensure validator_area_id is set to null for BLGU users
-            update_data["validator_area_id"] = None
+            # Ensure assessor_area_id is set to null for BLGU users
+            update_data["assessor_area_id"] = None
         elif role in (
-            UserRole.ASSESSOR,
+            UserRole.VALIDATOR,
             UserRole.MLGOO_DILG,
             UserRole.KATUPARAN_CENTER_USER,
         ):
-            # ASSESSOR, MLGOO_DILG, and external user roles should not have any assignments
-            update_data["validator_area_id"] = None
+            # VALIDATOR (now system-wide), MLGOO_DILG, and external user roles should not have any assignments
+            update_data["assessor_area_id"] = None
             update_data["barangay_id"] = None
 
         # Check email uniqueness if email is being updated

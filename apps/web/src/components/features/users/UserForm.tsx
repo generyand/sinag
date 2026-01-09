@@ -48,7 +48,7 @@ interface UserFormProps {
     password?: string;
     role?: UserRole;
     phone_number?: string;
-    validator_area_id?: number;
+    assessor_area_id?: number;
     municipal_office_id?: number;
     barangay_id?: number;
     is_active?: boolean;
@@ -67,7 +67,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
 
   // Only use state for select values and checkboxes that need to control visibility
   const [role, setRole] = useState<UserRole>(UserRole.BLGU_USER);
-  const [validatorAreaId, setValidatorAreaId] = useState<number | null>(null);
+  const [assessorAreaId, setAssessorAreaId] = useState<number | null>(null);
   const [municipalOfficeId, setMunicipalOfficeId] = useState<number | null>(null);
   const [barangayId, setBarangayId] = useState<number | null>(null);
   const [isActive, setIsActive] = useState(true);
@@ -82,10 +82,11 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   const { data: governanceAreas, isLoading: isLoadingGovernanceAreas } = useGovernanceAreas();
   const { data: barangays, isLoading: isLoadingBarangays } = useBarangays();
   const { data: roles, isLoading: isLoadingRoles } = useGetLookupsRoles();
+  // After workflow restructuring: Municipal offices are linked to ASSESSOR (area-specific)
   const { data: municipalOfficesData, isLoading: isLoadingMunicipalOffices } =
     useGetMunicipalOffices(
-      { governance_area_id: validatorAreaId ?? undefined, is_active: true },
-      { query: { enabled: role === UserRole.VALIDATOR && validatorAreaId !== null } }
+      { governance_area_id: assessorAreaId ?? undefined, is_active: true },
+      { query: { enabled: role === UserRole.ASSESSOR && assessorAreaId !== null } }
     );
 
   // Type assertions for the data
@@ -153,7 +154,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         if (passwordRef.current) passwordRef.current.value = "";
         if (phoneRef.current) phoneRef.current.value = initialValues.phone_number || "";
         setRole(initialValues.role || UserRole.BLGU_USER);
-        setValidatorAreaId(initialValues.validator_area_id || null);
+        setAssessorAreaId(initialValues.assessor_area_id || null);
         setMunicipalOfficeId(initialValues.municipal_office_id || null);
         setBarangayId(initialValues.barangay_id || null);
         setIsActive(initialValues.is_active ?? true);
@@ -166,7 +167,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         if (passwordRef.current) passwordRef.current.value = "";
         if (phoneRef.current) phoneRef.current.value = "";
         setRole(UserRole.BLGU_USER);
-        setValidatorAreaId(null);
+        setAssessorAreaId(null);
         setMunicipalOfficeId(null);
         setBarangayId(null);
         setIsActive(true);
@@ -179,7 +180,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     open,
     initialValues,
     setRole,
-    setValidatorAreaId,
+    setAssessorAreaId,
     setMunicipalOfficeId,
     setBarangayId,
     setIsActive,
@@ -191,8 +192,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     const typedRole = newRole as UserRole;
     setRole(typedRole);
     // Clear area assignments when role changes
-    if (typedRole !== UserRole.VALIDATOR) {
-      setValidatorAreaId(null);
+    // After workflow restructuring: ASSESSOR is area-specific (needs governance area)
+    if (typedRole !== UserRole.ASSESSOR) {
+      setAssessorAreaId(null);
       setMunicipalOfficeId(null);
     }
     if (typedRole !== UserRole.BLGU_USER) {
@@ -204,8 +206,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     const numValue = value === "" ? null : parseInt(value, 10);
     if (name === "barangay_id") {
       setBarangayId(numValue);
-    } else if (name === "validator_area_id") {
-      setValidatorAreaId(numValue);
+    } else if (name === "assessor_area_id") {
+      setAssessorAreaId(numValue);
       // Clear municipal office when governance area changes
       setMunicipalOfficeId(null);
     } else if (name === "municipal_office_id") {
@@ -237,8 +239,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     }
 
     // Role-based validation
-    if (role === UserRole.VALIDATOR && !validatorAreaId) {
-      newErrors.validator_area_id = "Governance area is required for Validator role";
+    // After workflow restructuring: ASSESSOR is area-specific (needs governance area)
+    if (role === UserRole.ASSESSOR && !assessorAreaId) {
+      newErrors.assessor_area_id = "Governance area is required for Assessor role";
     }
 
     if (role === UserRole.BLGU_USER && !barangayId) {
@@ -247,7 +250,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [isEditing, role, validatorAreaId, barangayId]);
+  }, [isEditing, role, assessorAreaId, barangayId]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -269,7 +272,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           email: email || null,
           role: role,
           phone_number: phone_number || null,
-          validator_area_id: validatorAreaId,
+          assessor_area_id: assessorAreaId,
           municipal_office_id: municipalOfficeId,
           barangay_id: barangayId,
           is_active: isActive,
@@ -306,7 +309,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           password: password,
           role: role,
           phone_number: phone_number || null,
-          validator_area_id: validatorAreaId,
+          assessor_area_id: assessorAreaId,
           municipal_office_id: municipalOfficeId,
           barangay_id: barangayId,
           is_active: isActive,
@@ -342,7 +345,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
       isEditing,
       initialValues,
       role,
-      validatorAreaId,
+      assessorAreaId,
       municipalOfficeId,
       barangayId,
       isActive,
@@ -563,22 +566,23 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
               </div>
             )}
 
-            {/* Conditional dropdown for Validator role - Governance Area */}
-            {role === UserRole.VALIDATOR && (
+            {/* Conditional dropdown for Assessor role - Governance Area */}
+            {/* After workflow restructuring: ASSESSOR is area-specific (needs governance area) */}
+            {role === UserRole.ASSESSOR && (
               <div className="min-w-0">
                 <Label
-                  htmlFor="validator_area_id"
+                  htmlFor="assessor_area_id"
                   className="text-sm font-medium text-[var(--foreground)]"
                 >
                   Assigned Governance Area *
                 </Label>
                 <Select
-                  value={validatorAreaId?.toString() || ""}
-                  onValueChange={(value) => handleSelectChange("validator_area_id", value)}
+                  value={assessorAreaId?.toString() || ""}
+                  onValueChange={(value) => handleSelectChange("assessor_area_id", value)}
                   disabled={isLoading}
                 >
                   <SelectTrigger
-                    className={`mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 ${errors.validator_area_id ? "border-red-500 dark:border-red-700" : ""}`}
+                    className={`mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 ${errors.assessor_area_id ? "border-red-500 dark:border-red-700" : ""}`}
                   >
                     <SelectValue placeholder="Select a governance area" />
                   </SelectTrigger>
@@ -596,17 +600,17 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                     )}
                   </SelectContent>
                 </Select>
-                {errors.validator_area_id && (
+                {errors.assessor_area_id && (
                   <p className="text-red-600 dark:text-red-400 text-xs mt-1">
-                    {errors.validator_area_id}
+                    {errors.assessor_area_id}
                   </p>
                 )}
               </div>
             )}
           </div>
 
-          {/* Municipal Office dropdown for Validator role - shown when governance area is selected */}
-          {role === UserRole.VALIDATOR && validatorAreaId && (
+          {/* Municipal Office dropdown for Assessor role - shown when governance area is selected */}
+          {role === UserRole.ASSESSOR && assessorAreaId && (
             <div className="min-w-0">
               <Label
                 htmlFor="municipal_office_id"
@@ -637,7 +641,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                 </SelectContent>
               </Select>
               <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                Select the municipal office this validator manages
+                Select the municipal office this assessor manages
               </p>
             </div>
           )}

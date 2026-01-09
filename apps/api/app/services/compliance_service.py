@@ -474,7 +474,7 @@ class ComplianceService:
         self,
         db: Session,
         assessment_id: int,
-        validator: User | None = None,
+        assessor: User | None = None,
     ) -> ComplianceOverviewResponse:
         """
         Get compliance overview for an assessment.
@@ -485,7 +485,7 @@ class ComplianceService:
         Args:
             db: Database session
             assessment_id: ID of the assessment
-            validator: Optional validator user (to filter by governance area)
+            assessor: Optional assessor user (to filter by governance area)
 
         Returns:
             ComplianceOverviewResponse with all compliance data
@@ -512,10 +512,11 @@ class ComplianceService:
         # Get all governance areas
         governance_areas_query = db.query(GovernanceArea).order_by(GovernanceArea.id)
 
-        # If validator is provided, filter to their assigned area
-        if validator and validator.validator_area_id:
+        # If assessor is provided, filter to their assigned area
+        # After workflow restructuring: ASSESSORs are area-specific
+        if assessor and assessor.assessor_area_id:
             governance_areas_query = governance_areas_query.filter(
-                GovernanceArea.id == validator.validator_area_id
+                GovernanceArea.id == assessor.assessor_area_id
             )
 
         governance_areas = governance_areas_query.all()

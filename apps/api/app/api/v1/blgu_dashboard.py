@@ -477,19 +477,23 @@ def get_blgu_dashboard(
             )
 
         # Legacy single calibration info (for backward compatibility)
+        # After workflow restructuring: Validators are system-wide and don't have area assignments
         if assessment.calibration_validator_id:
             calibration_validator = (
                 db.query(User).filter(User.id == assessment.calibration_validator_id).first()
             )
-            if calibration_validator and calibration_validator.validator_area_id:
-                cal_area = (
-                    db.query(GovernanceArea)
-                    .filter(GovernanceArea.id == calibration_validator.validator_area_id)
-                    .first()
-                )
-                if cal_area:
-                    calibration_governance_area_id = cal_area.id
-                    calibration_governance_area_name = cal_area.name
+            # Note: After restructuring, validators are system-wide (no validator_area_id)
+            # This block is for backward compatibility with legacy data only
+            if calibration_validator:
+                # Check for legacy validator_area_id (should be None after restructuring)
+                legacy_area_id = getattr(calibration_validator, "assessor_area_id", None)
+                if legacy_area_id:
+                    cal_area = (
+                        db.query(GovernanceArea).filter(GovernanceArea.id == legacy_area_id).first()
+                    )
+                    if cal_area:
+                        calibration_governance_area_id = cal_area.id
+                        calibration_governance_area_name = cal_area.name
 
     # AI Summary: Include rework or calibration summary if available
     # PARALLEL CALIBRATION: Combine summaries from all governance areas

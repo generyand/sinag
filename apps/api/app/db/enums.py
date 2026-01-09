@@ -6,16 +6,18 @@ import enum
 
 class UserRole(str, enum.Enum):
     """
-    Enum for user roles.
+    User roles in the SINAG system.
 
     Using a string-based enum improves readability and maintainability.
 
     Roles:
-    - MLGOO_DILG: Admin/Chairman role with system-wide access (enum value 0 in DB)
-    - ASSESSOR: Assessor role with arbitrary barangay selection (enum value 1 in DB)
-    - VALIDATOR: Validator role with governance area specialization (enum value 2 in DB)
-    - BLGU_USER: BLGU user role with specific barangay assignment (enum value 3 in DB)
-    - KATUPARAN_CENTER_USER: External user from Katuparan Center with read-only access to aggregated data for research purposes (enum value 4 in DB)
+    - MLGOO_DILG: Admin/Chairman role with system-wide access
+    - ASSESSOR: Area-specific (6 users for 6 governance areas) - uses assessor_area_id
+                Reviews ASSIGNED governance area, can request REWORK
+    - VALIDATOR: System-wide (3 DILG team members) - no area restriction
+                 Reviews ALL governance areas, can request CALIBRATION
+    - BLGU_USER: BLGU user role with specific barangay assignment
+    - KATUPARAN_CENTER_USER: External user with read-only access
     """
 
     MLGOO_DILG = "MLGOO_DILG"

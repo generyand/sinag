@@ -44,7 +44,7 @@ class GovernanceArea(Base):
     )
 
     # Relationships
-    validators = relationship("User", back_populates="validator_area")
+    assessors = relationship("User", back_populates="assessor_area")
     indicators = relationship("Indicator", back_populates="governance_area")
     bbis = relationship("BBI", back_populates="governance_area")
     municipal_offices = relationship("MunicipalOffice", back_populates="governance_area")

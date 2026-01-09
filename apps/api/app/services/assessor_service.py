@@ -42,18 +42,20 @@ class AssessorService:
         """
         Return submissions filtered by user role, governance area, and assessment year.
 
-        **Validators** (users with validator_area_id):
-        - See assessments in AWAITING_FINAL_VALIDATION status (ready for validation)
-        - ALSO see assessments in REWORK status if they haven't calibrated their area yet
-          (parallel calibration support - other validators may have requested calibration
-          but this validator can still validate or request calibration for their area)
-        - Filtered by their assigned governance area
-        - These are assessments where assessor clicked "Finalize Validation"
+        After workflow restructuring:
 
-        **Assessors** (users without validator_area_id):
-        - See assessments in SUBMITTED, IN_REVIEW, REWORK statuses
+        **Assessors** (users with assessor_area_id - area-specific, 6 users):
+        - See assessments where their governance area is submitted/in_review
+        - Filtered by their assigned governance area
+        - Can request REWORK for their area
+        - These are assessments ready for area-specific review
+
+        **Validators** (users without assessor_area_id - system-wide, 3 users):
+        - See assessments in AWAITING_FINAL_VALIDATION status (all 6 areas approved)
         - System-wide access (all governance areas)
-        - These are assessments ready for initial review
+        - Can request CALIBRATION
+        - ALSO see assessments in REWORK status if they haven't calibrated yet
+          (parallel calibration support)
 
         Args:
             db: Database session
@@ -86,27 +88,17 @@ class AssessorService:
         if assessment_year:
             query = query.filter(Assessment.assessment_year == assessment_year)
 
-        # Validators: Filter by governance area AND show assessments they can work on
-        # - AWAITING_FINAL_VALIDATION: Ready for validation
-        # - REWORK with is_calibration_rework=True: Parallel calibration in progress,
-        #   validator can still validate their area if they haven't calibrated it yet
-        # IMPORTANT: Check role explicitly - assessors should NOT be filtered by governance area
-        is_validator = (
-            assessor.role == UserRole.VALIDATOR and assessor.validator_area_id is not None
-        )
-        if is_validator:
+        # After workflow restructuring:
+        # - ASSESSOR: Area-specific (has assessor_area_id), reviews their assigned area
+        # - VALIDATOR: System-wide, reviews assessments where ALL 6 areas are approved
+        is_assessor = assessor.role == UserRole.ASSESSOR and assessor.assessor_area_id is not None
+        is_validator = assessor.role == UserRole.VALIDATOR
+
+        if is_assessor:
+            # Assessors: Filter by their governance area
+            # Show assessments where their area is submitted/in_review
             query = query.filter(
-                Indicator.governance_area_id == assessor.validator_area_id,
-                Assessment.status.in_(
-                    [
-                        AssessmentStatus.AWAITING_FINAL_VALIDATION,
-                        AssessmentStatus.REWORK,  # Include for parallel calibration
-                    ]
-                ),
-            )
-        # Assessors: Show assessments ready for initial review
-        else:
-            query = query.filter(
+                Indicator.governance_area_id == assessor.assessor_area_id,
                 Assessment.status.in_(
                     [
                         AssessmentStatus.SUBMITTED,
@@ -114,6 +106,29 @@ class AssessorService:
                         AssessmentStatus.REWORK,
                         AssessmentStatus.SUBMITTED_FOR_REVIEW,  # Legacy status support
                         AssessmentStatus.NEEDS_REWORK,  # Legacy status support
+                    ]
+                ),
+            )
+        elif is_validator:
+            # Validators: System-wide access
+            # Show assessments in AWAITING_FINAL_VALIDATION (all 6 areas approved)
+            # ALSO show REWORK for parallel calibration
+            query = query.filter(
+                Assessment.status.in_(
+                    [
+                        AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                        AssessmentStatus.REWORK,  # Include for parallel calibration
+                    ]
+                ),
+            )
+        else:
+            # Fallback: Show submitted assessments (shouldn't reach here normally)
+            query = query.filter(
+                Assessment.status.in_(
+                    [
+                        AssessmentStatus.SUBMITTED,
+                        AssessmentStatus.IN_REVIEW,
+                        AssessmentStatus.REWORK,
                     ]
                 )
             )
@@ -131,47 +146,21 @@ class AssessorService:
 
         items = []
         for a in assessments:
-            # For validators: Skip assessments where they've already completed their governance area
-            # or where they have a pending calibration request (waiting for BLGU)
+            # For assessors: Skip assessments where their area is already approved/in_review by them
+            if is_assessor:
+                # Check area status - if already approved, skip
+                area_status = a.get_area_status(assessor.assessor_area_id)
+                if area_status == "approved":
+                    continue  # Skip - assessor already approved their area
+                if area_status == "draft":
+                    continue  # Skip - BLGU hasn't submitted this area yet
+
+            # For validators: Check calibration status
             if is_validator:
                 # PARALLEL CALIBRATION: Check if validator has pending calibration for this assessment
                 # If they already requested calibration, don't show until BLGU resubmits
-                pending_calibrations = a.pending_calibrations or []
-                has_pending_calibration = any(
-                    pc.get("governance_area_id") == assessor.validator_area_id
-                    and not pc.get("approved", False)
-                    for pc in pending_calibrations
-                )
-                if has_pending_calibration:
-                    continue  # Skip - validator waiting for BLGU to fix and resubmit
-
-                # For REWORK status: Only show if is_calibration_rework AND validator hasn't calibrated their area
-                # This handles parallel calibration - validator can still validate/calibrate their area
-                if a.status == AssessmentStatus.REWORK:
-                    if not a.is_calibration_rework:
-                        # Regular assessor rework - validators shouldn't see this
-                        continue
-
-                    # Check if this validator's area has already been calibrated
-                    calibrated_areas = a.calibrated_area_ids or []
-                    if assessor.validator_area_id in calibrated_areas:
-                        continue  # Skip - validator already used their calibration for this area
-
-                # Get all responses in the validator's governance area for this assessment
-                validator_area_responses = [
-                    r
-                    for r in a.responses
-                    if r.indicator and r.indicator.governance_area_id == assessor.validator_area_id
-                ]
-
-                # If all responses in their area have validation_status, skip this assessment
-                # (the validator has already completed their work on this assessment)
-                if validator_area_responses:
-                    all_validated = all(
-                        r.validation_status is not None for r in validator_area_responses
-                    )
-                    if all_validated:
-                        continue  # Skip this assessment - validator already done
+                # (Validators are now system-wide, so check across all areas)
+                pass  # Validators see all assessments in AWAITING_FINAL_VALIDATION status
 
             barangay_name = getattr(getattr(a.blgu_user, "barangay", None), "name", "-")
 
@@ -179,23 +168,23 @@ class AssessorService:
             pending_count = len(a.pending_calibrations or []) if a.is_calibration_rework else 0
 
             # Calculate area progress based on reviewed indicators
-            if is_validator:
-                # Validator: progress based on their governance area
+            if is_assessor:
+                # Assessor: progress based on their governance area
                 area_responses = [
                     r
                     for r in a.responses
-                    if r.indicator and r.indicator.governance_area_id == assessor.validator_area_id
+                    if r.indicator and r.indicator.governance_area_id == assessor.assessor_area_id
                 ]
-                reviewed_count = sum(1 for r in area_responses if r.validation_status is not None)
-                total_count = len(area_responses)
-            else:
-                # Assessor: progress based on all indicators with response_data filled
-                area_responses = a.responses
                 reviewed_count = sum(
                     1
                     for r in area_responses
                     if r.response_data is not None and r.response_data != {}
                 )
+                total_count = len(area_responses)
+            else:
+                # Validator: progress based on all indicators (system-wide)
+                area_responses = a.responses
+                reviewed_count = sum(1 for r in area_responses if r.validation_status is not None)
                 total_count = len(area_responses)
 
             area_progress = round((reviewed_count / total_count * 100) if total_count > 0 else 0)
@@ -222,75 +211,54 @@ class AssessorService:
 
         return items
 
-    def get_validator_completed_count(
-        self, db: Session, validator: User, assessment_year: int | None = None
+    def get_assessor_completed_count(
+        self, db: Session, assessor: User, assessment_year: int | None = None
     ) -> int:
         """
-        Count assessments where the validator has completed their governance area validation.
+        Count assessments where the assessor has approved their governance area.
 
-        This includes:
-        - Assessments still in AWAITING_FINAL_VALIDATION (waiting for other validators)
-        - Assessments in COMPLETED status
+        After workflow restructuring, assessors are area-specific (6 users for 6 areas).
+        This counts assessments where the assessor's assigned area is approved.
 
         Args:
             db: Database session
-            validator: Validator user
+            assessor: Assessor user (must have assessor_area_id)
             assessment_year: Optional year filter. Defaults to active year.
 
-        Returns the count of assessments where all indicators in the validator's
-        governance area have validation_status set.
+        Returns the count of assessments where the assessor's area is approved.
         """
-        if validator.validator_area_id is None:
+        if assessor.assessor_area_id is None:
             return 0
 
         # Get active year if not specified
         if assessment_year is None:
             assessment_year = assessment_year_service.get_active_year_number(db)
 
-        # Query assessments that are either awaiting validation or completed
-        # PERFORMANCE FIX: Add governance_area eager loading
-        query = (
-            db.query(Assessment)
-            .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
-            .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
-            .options(
-                selectinload(Assessment.responses)
-                .joinedload(AssessmentResponse.indicator)
-                .joinedload(Indicator.governance_area)
-            )
-            .filter(
-                Indicator.governance_area_id == validator.validator_area_id,
-                Assessment.status.in_(
-                    [
-                        AssessmentStatus.AWAITING_FINAL_VALIDATION,
-                        AssessmentStatus.COMPLETED,
-                    ]
-                ),
-                Assessment.submitted_at.isnot(None),
-            )
+        # Query all submitted assessments
+        query = db.query(Assessment).filter(
+            Assessment.status.in_(
+                [
+                    AssessmentStatus.SUBMITTED,
+                    AssessmentStatus.IN_REVIEW,
+                    AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                    AssessmentStatus.COMPLETED,
+                ]
+            ),
+            Assessment.submitted_at.isnot(None),
         )
 
         # Filter by assessment year
         if assessment_year:
             query = query.filter(Assessment.assessment_year == assessment_year)
 
-        assessments = query.distinct(Assessment.id).all()
+        assessments = query.all()
 
-        # Count assessments where all responses in validator's area are validated
+        # Count assessments where the assessor's area is approved
         completed_count = 0
         for assessment in assessments:
-            validator_area_responses = [
-                r
-                for r in assessment.responses
-                if r.indicator and r.indicator.governance_area_id == validator.validator_area_id
-            ]
-
-            if validator_area_responses:
-                all_validated = all(
-                    r.validation_status is not None for r in validator_area_responses
-                )
-                if all_validated:
-                    completed_count += 1
+            area_status = assessment.get_area_status(assessor.assessor_area_id)
+            if area_status == "approved":
+                completed_count += 1
 
         return completed_count
 
@@ -453,9 +421,9 @@ class AssessorService:
                 "mov_id": None,
             }
 
-        # Verify the assessor has permission to upload MOVs for this response
-        # - If assessor has validator_area_id: Check if indicator belongs to that area
-        # - If assessor has no validator_area_id: Grant access (system-wide)
+        # Verify the user has permission to upload MOVs for this response
+        # - If ASSESSOR (has assessor_area_id): Check if indicator belongs to that area
+        # - If VALIDATOR (no assessor_area_id): Grant access (system-wide)
         indicator = db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
 
         if not indicator:
@@ -465,9 +433,9 @@ class AssessorService:
                 "mov_id": None,
             }
 
-        # Check governance area permission only if assessor has validator_area_id
-        if assessor.validator_area_id is not None:
-            if indicator.governance_area_id != assessor.validator_area_id:
+        # Check governance area permission only for Assessors (area-specific)
+        if assessor.role == UserRole.ASSESSOR and assessor.assessor_area_id is not None:
+            if indicator.governance_area_id != assessor.assessor_area_id:
                 return {
                     "success": False,
                     "message": "Access denied. You can only upload MOVs for responses in your governance area",
@@ -533,9 +501,9 @@ class AssessorService:
                 "mov": None,
             }
 
-        # Verify the assessor has permission to upload MOVs for this response
-        # - If assessor has validator_area_id: Check if indicator belongs to that area
-        # - If assessor has no validator_area_id: Grant access (system-wide)
+        # Verify the user has permission to upload MOVs for this response
+        # - If ASSESSOR (has assessor_area_id): Check if indicator belongs to that area
+        # - If VALIDATOR (no assessor_area_id): Grant access (system-wide)
         indicator = db.query(Indicator).filter(Indicator.id == response.indicator_id).first()
 
         if not indicator:
@@ -547,9 +515,9 @@ class AssessorService:
                 "mov": None,
             }
 
-        # Check governance area permission only if assessor has validator_area_id
-        if assessor.validator_area_id is not None:
-            if indicator.governance_area_id != assessor.validator_area_id:
+        # Check governance area permission only for Assessors (area-specific)
+        if assessor.role == UserRole.ASSESSOR and assessor.assessor_area_id is not None:
+            if indicator.governance_area_id != assessor.assessor_area_id:
                 return {
                     "success": False,
                     "message": "Access denied. You can only upload MOVs for responses in your governance area",
@@ -679,17 +647,17 @@ class AssessorService:
             }
 
         # Verify the assessor has permission to view this assessment
-        # - If assessor has validator_area_id: Check if indicators belong to that area
-        # - If assessor has no validator_area_id: Grant access (system-wide)
+        # - If assessor has assessor_area_id: Check if indicators belong to that area
+        # - If assessor has no assessor_area_id: Grant access (system-wide)
         has_permission = False
 
-        if assessor.validator_area_id is None:
-            # Assessor with no validator_area_id has system-wide access
+        if assessor.assessor_area_id is None:
+            # Assessor with no assessor_area_id has system-wide access
             has_permission = True
         elif assessment.responses:
             # Check if any response's indicator belongs to the assessor's governance area
             for response in assessment.responses:
-                if response.indicator.governance_area_id == assessor.validator_area_id:
+                if response.indicator.governance_area_id == assessor.assessor_area_id:
                     has_permission = True
                     break
         else:
@@ -812,11 +780,11 @@ class AssessorService:
 
         # Determine filtering based on user role
         is_validator_role = assessor.role == UserRole.VALIDATOR
-        should_filter = is_validator_role and assessor.validator_area_id is not None
+        should_filter = is_validator_role and assessor.assessor_area_id is not None
 
         self.logger.info(
             f"[ASSESSOR DEBUG] User {assessor.id} ({assessor.email}): "
-            f"role={assessor.role}, validator_area_id={assessor.validator_area_id}, "
+            f"role={assessor.role}, assessor_area_id={assessor.assessor_area_id}, "
             f"total_responses_in_assessment={len(assessment.responses)}, "
             f"total_indicators={len(all_indicators)}, should_filter={should_filter}"
         )
@@ -825,7 +793,7 @@ class AssessorService:
         for indicator in all_indicators:
             # Only filter by governance area for VALIDATOR role users
             if should_filter:
-                if indicator.governance_area_id != assessor.validator_area_id:
+                if indicator.governance_area_id != assessor.assessor_area_id:
                     continue
 
             # Get existing response for this indicator (may be None if BLGU hasn't filled it yet)
@@ -1123,6 +1091,222 @@ class AssessorService:
 
         return assessment_data
 
+    # ==========================================================================
+    # Per-Area Approval and Rework Methods (Workflow Restructuring)
+    # ==========================================================================
+
+    def approve_area(
+        self,
+        db: Session,
+        assessment_id: int,
+        governance_area_id: int,
+        assessor: User,
+    ) -> dict:
+        """
+        Assessor approves their assigned governance area.
+
+        After workflow restructuring, assessors are area-specific (6 users for 6 areas).
+        Each assessor can only approve their assigned governance area.
+
+        When all 6 areas are approved, the assessment moves to AWAITING_FINAL_VALIDATION.
+
+        Args:
+            db: Database session
+            assessment_id: Assessment ID
+            governance_area_id: Governance area ID to approve
+            assessor: Assessor user (must have matching assessor_area_id)
+
+        Returns:
+            Response dict with success status and area info
+
+        Raises:
+            ValueError: If assessment not found or area cannot be approved
+            PermissionError: If assessor doesn't have permission for this area
+        """
+        from sqlalchemy.orm.attributes import flag_modified
+
+        # Validate assessor has the correct area assignment
+        if assessor.assessor_area_id != governance_area_id:
+            raise PermissionError(
+                f"You can only approve your assigned governance area (ID: {assessor.assessor_area_id})"
+            )
+
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        # Check current area status
+        area_status = assessment.get_area_status(governance_area_id)
+        if area_status == "approved":
+            return {
+                "success": True,
+                "message": "Area is already approved",
+                "assessment_id": assessment_id,
+                "governance_area_id": governance_area_id,
+                "new_status": "approved",
+                "all_areas_approved": assessment.all_areas_approved(),
+                "assessment_status": assessment.status.value,
+            }
+
+        if area_status not in ("submitted", "in_review"):
+            raise ValueError(
+                f"Area is in '{area_status}' status. Can only approve areas in 'submitted' or 'in_review' status."
+            )
+
+        # Get governance area name
+        governance_area = (
+            db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
+        )
+        governance_area_name = governance_area.name if governance_area else "Unknown"
+
+        # Update area status to approved
+        area_key = str(governance_area_id)
+        if assessment.area_submission_status is None:
+            assessment.area_submission_status = {}
+        if assessment.area_assessor_approved is None:
+            assessment.area_assessor_approved = {}
+
+        now = datetime.utcnow()
+        assessment.area_submission_status[area_key] = {
+            "status": "approved",
+            "approved_at": now.isoformat(),
+            "assessor_id": assessor.id,
+        }
+        assessment.area_assessor_approved[area_key] = True
+        flag_modified(assessment, "area_submission_status")
+        flag_modified(assessment, "area_assessor_approved")
+
+        # Check if all 6 areas are now approved
+        if assessment.all_areas_approved():
+            # Move assessment to AWAITING_FINAL_VALIDATION
+            assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+            self.logger.info(
+                f"All 6 areas approved for assessment {assessment_id}. "
+                f"Moving to AWAITING_FINAL_VALIDATION."
+            )
+
+        db.commit()
+
+        self.logger.info(
+            f"Assessor {assessor.id} approved area {governance_area_id} ({governance_area_name}) "
+            f"for assessment {assessment_id}"
+        )
+
+        return {
+            "success": True,
+            "message": f"Area '{governance_area_name}' approved",
+            "assessment_id": assessment_id,
+            "governance_area_id": governance_area_id,
+            "new_status": "approved",
+            "all_areas_approved": assessment.all_areas_approved(),
+            "assessment_status": assessment.status.value,
+        }
+
+    def send_area_for_rework(
+        self,
+        db: Session,
+        assessment_id: int,
+        governance_area_id: int,
+        assessor: User,
+        comments: str,
+    ) -> dict:
+        """
+        Assessor sends their assigned governance area back for rework.
+
+        After workflow restructuring, assessors are area-specific (6 users for 6 areas).
+        Each assessor can only send their assigned governance area for rework.
+
+        All 6 assessors' rework requests are compiled into a single rework round.
+        The BLGU sees all rework requests together and fixes everything in one pass.
+
+        Args:
+            db: Database session
+            assessment_id: Assessment ID
+            governance_area_id: Governance area ID to send for rework
+            assessor: Assessor user (must have matching assessor_area_id)
+            comments: Rework comments explaining what needs to be fixed
+
+        Returns:
+            Response dict with success status and area info
+
+        Raises:
+            ValueError: If assessment not found or rework not allowed
+            PermissionError: If assessor doesn't have permission for this area
+        """
+        from sqlalchemy.orm.attributes import flag_modified
+
+        # Validate assessor has the correct area assignment
+        if assessor.assessor_area_id != governance_area_id:
+            raise PermissionError(
+                f"You can only request rework for your assigned governance area (ID: {assessor.assessor_area_id})"
+            )
+
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        # Check if rework round has already been used
+        if assessment.rework_round_used:
+            raise ValueError(
+                "Rework round has already been used for this assessment. "
+                "Only one rework round is allowed."
+            )
+
+        # Check current area status
+        area_status = assessment.get_area_status(governance_area_id)
+        if area_status == "rework":
+            raise ValueError("Area is already in rework status")
+
+        if area_status not in ("submitted", "in_review"):
+            raise ValueError(
+                f"Area is in '{area_status}' status. Can only request rework for areas in 'submitted' or 'in_review' status."
+            )
+
+        # Get governance area name
+        governance_area = (
+            db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
+        )
+        governance_area_name = governance_area.name if governance_area else "Unknown"
+
+        # Update area status to rework
+        area_key = str(governance_area_id)
+        if assessment.area_submission_status is None:
+            assessment.area_submission_status = {}
+
+        now = datetime.utcnow()
+        assessment.area_submission_status[area_key] = {
+            "status": "rework",
+            "rework_requested_at": now.isoformat(),
+            "rework_comments": comments,
+            "assessor_id": assessor.id,
+        }
+        flag_modified(assessment, "area_submission_status")
+
+        # Update overall assessment status to REWORK if needed
+        if assessment.status != AssessmentStatus.REWORK:
+            assessment.status = AssessmentStatus.REWORK
+            assessment.rework_requested_at = now
+            assessment.rework_requested_by = assessor.id
+
+        db.commit()
+
+        self.logger.info(
+            f"Assessor {assessor.id} requested rework for area {governance_area_id} ({governance_area_name}) "
+            f"for assessment {assessment_id}"
+        )
+
+        return {
+            "success": True,
+            "message": f"Area '{governance_area_name}' sent for rework",
+            "assessment_id": assessment_id,
+            "governance_area_id": governance_area_id,
+            "new_status": "rework",
+            "all_areas_approved": assessment.all_areas_approved(),
+            "assessment_status": assessment.status.value,
+        }
+
     def send_assessment_for_rework(self, db: Session, assessment_id: int, assessor: User) -> dict:
         """
         Phase 1 (Table Assessment): Send assessment back to BLGU user for rework.
@@ -1153,11 +1337,13 @@ class AssessorService:
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
 
-        # CRITICAL: Validators (Phase 2) should NOT use this endpoint - they use Calibration
-        is_validator = assessor.validator_area_id is not None
-        if is_validator:
+        # After workflow restructuring:
+        # - ASSESSOR (area-specific with assessor_area_id): Can request REWORK for their area
+        # - VALIDATOR (system-wide, no area): Should NOT use this - they use Calibration
+        is_assessor = assessor.role == UserRole.ASSESSOR and assessor.assessor_area_id is not None
+        if not is_assessor:
             raise ValueError(
-                "Validators cannot send for Rework. Use Calibration for minor corrections in Phase 2."
+                "Only Assessors can send for Rework. Validators use Calibration for quality review."
             )
 
         # Check if rework is allowed (rework_count must be 0 - only ONE rework cycle)
@@ -1372,21 +1558,18 @@ class AssessorService:
         """
         Phase 2 (Table Validation): Submit assessment for calibration.
 
-        PARALLEL CALIBRATION SUPPORT:
-        Multiple validators from different governance areas can request calibration
-        simultaneously. The BLGU sees a combined summary of all calibration requests
-        and fixes everything before submitting once. Each validator's calibration
-        request is tracked independently in pending_calibrations.
+        After workflow restructuring:
+        - VALIDATOR is system-wide (3 users, no area assignment)
+        - CALIBRATION is limited to 1 round per assessment (tracked by calibration_round_used)
+        - Validators review ALL governance areas and can flag indicators for calibration
 
-        Calibration is used by Validators to send ONLY their governance area
-        indicators back to BLGU for corrections. Unlike Rework (which affects
-        all indicators), Calibration only affects indicators in the validator's
-        assigned governance area.
+        Calibration is used by Validators to send flagged indicators back to BLGU
+        for corrections. This affects ALL governance areas (not just one).
 
         Args:
             db: Database session
             assessment_id: ID of the assessment to calibrate
-            validator: The validator performing the action (must have validator_area_id)
+            validator: The validator performing the action (system-wide, no area required)
 
         Returns:
             dict: Result of the calibration operation
@@ -1409,170 +1592,96 @@ class AssessorService:
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
 
-        # CRITICAL: Only Validators can submit for calibration
-        is_validator = validator.validator_area_id is not None
+        # CRITICAL: Only Validators (system-wide) can submit for calibration
+        is_validator = validator.role == UserRole.VALIDATOR
         if not is_validator:
             raise PermissionError(
                 "Only Validators can submit for calibration. Assessors should use 'Send for Rework' instead."
             )
 
-        # Must be in AWAITING_FINAL_VALIDATION or REWORK status (REWORK allows parallel calibration)
-        # REWORK status means another validator already requested calibration - we can add ours
-        if assessment.status not in [
-            AssessmentStatus.AWAITING_FINAL_VALIDATION,
-            AssessmentStatus.REWORK,
-        ]:
+        # Must be in AWAITING_FINAL_VALIDATION status (all 6 areas approved by assessors)
+        if assessment.status != AssessmentStatus.AWAITING_FINAL_VALIDATION:
             raise ValueError(
-                "Calibration is only allowed when assessment is in AWAITING_FINAL_VALIDATION or REWORK status"
+                "Calibration is only allowed when assessment is in AWAITING_FINAL_VALIDATION status "
+                "(after all 6 governance areas are approved by assessors)"
             )
 
-        # Get responses in validator's governance area
-        validator_area_responses = [
-            response
-            for response in assessment.responses
-            if response.indicator
-            and response.indicator.governance_area_id == validator.validator_area_id
-        ]
-
-        if not validator_area_responses:
+        # Check if calibration round has already been used (1 round limit)
+        if assessment.calibration_round_used:
             raise ValueError(
-                f"No indicators found in your assigned governance area (ID: {validator.validator_area_id})"
-            )
-
-        # Check if THIS governance area has already been calibrated (max 1 per area)
-        calibrated_areas = assessment.calibrated_area_ids or []
-        if validator.validator_area_id in calibrated_areas:
-            raise ValueError(
-                "Calibration has already been used for your governance area. "
-                "Only one calibration is allowed per governance area."
-            )
-
-        # Check if this validator already has a pending calibration for this area
-        pending_calibrations = assessment.pending_calibrations or []
-        existing_pending = [
-            pc
-            for pc in pending_calibrations
-            if pc.get("governance_area_id") == validator.validator_area_id
-        ]
-        if existing_pending:
-            raise ValueError(
-                "You already have a pending calibration request for this governance area. "
-                "Wait for BLGU to resubmit before requesting another calibration."
+                "Calibration has already been used for this assessment. "
+                "Only one calibration round is allowed."
             )
 
         # Validator must have at least one indicator flagged for calibration
-        # Check for flagged indicators in validator's area responses
-        flagged_responses = [r for r in validator_area_responses if r.flagged_for_calibration]
+        flagged_responses = [r for r in assessment.responses if r.flagged_for_calibration]
 
         if not flagged_responses:
             raise ValueError(
-                "At least one indicator in your governance area must be flagged for calibration. "
+                "At least one indicator must be flagged for calibration. "
                 "Use the 'Flag for Calibration' toggle on indicators that need corrections."
             )
 
-        # Get governance area name for the response
-        governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == validator.validator_area_id)
-            .first()
-        )
-        governance_area_name = governance_area.name if governance_area else "Unknown"
-
-        # PARALLEL CALIBRATION: Add to pending_calibrations list
-        calibration_request = {
-            "validator_id": validator.id,
-            "validator_name": validator.name,
-            "governance_area_id": validator.validator_area_id,
-            "governance_area_name": governance_area_name,
-            "requested_at": datetime.utcnow().isoformat(),
-            "approved": False,  # Will be set to True when BLGU resubmits
-        }
-
-        if assessment.pending_calibrations is None:
-            assessment.pending_calibrations = []
-        assessment.pending_calibrations = assessment.pending_calibrations + [calibration_request]
         # CRITICAL: Flag the JSON column as modified so SQLAlchemy detects the change
-        from sqlalchemy.orm.attributes import flag_modified
 
-        flag_modified(assessment, "pending_calibrations")
-
-        # Update assessment status to REWORK if not already
-        # First calibration request changes status, subsequent ones keep it in REWORK
-        is_first_calibration = assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION
+        # Update assessment status to REWORK
         assessment.status = AssessmentStatus.REWORK
+        assessment.rework_requested_at = datetime.utcnow()
+        assessment.calibration_requested_at = datetime.utcnow()
 
-        if is_first_calibration:
-            # First calibration request - set initial timestamps
-            assessment.rework_requested_at = datetime.utcnow()
-            assessment.calibration_requested_at = datetime.utcnow()
-
-            # Calculate per-assessment calibration deadline based on year's window configuration
-            try:
-                year_config = assessment_year_service.get_year_by_number(
-                    db, assessment.assessment_year
+        # Calculate per-assessment calibration deadline based on year's window configuration
+        try:
+            year_config = assessment_year_service.get_year_by_number(db, assessment.assessment_year)
+            if year_config and year_config.calibration_window_days:
+                assessment.per_assessment_calibration_deadline = (
+                    assessment.calibration_requested_at
+                    + timedelta(days=year_config.calibration_window_days)
                 )
-                if year_config and year_config.calibration_window_days:
-                    assessment.per_assessment_calibration_deadline = (
-                        assessment.calibration_requested_at
-                        + timedelta(days=year_config.calibration_window_days)
-                    )
-                    # Also set grace_period_expires_at for consistency with existing deadline logic
-                    assessment.grace_period_expires_at = (
-                        assessment.per_assessment_calibration_deadline
-                    )
-                    self.logger.info(
-                        f"[CALIBRATION] Set calibration deadline: {assessment.per_assessment_calibration_deadline} "
-                        f"({year_config.calibration_window_days} days from now)"
-                    )
-            except Exception as e:
-                self.logger.warning(f"Failed to calculate calibration deadline: {e}")
-        # Note: Don't update rework_requested_at for subsequent calibrations to preserve original timestamp
+                # Also set grace_period_expires_at for consistency with existing deadline logic
+                assessment.grace_period_expires_at = assessment.per_assessment_calibration_deadline
+                self.logger.info(
+                    f"[CALIBRATION] Set calibration deadline: {assessment.per_assessment_calibration_deadline} "
+                    f"({year_config.calibration_window_days} days from now)"
+                )
+        except Exception as e:
+            self.logger.warning(f"Failed to calculate calibration deadline: {e}")
 
         assessment.rework_requested_by = validator.id
         # Note: Do NOT increment rework_count for calibration - it's a separate mechanism
 
         # Set calibration flags so BLGU knows to submit back to Validator (not Assessor)
         assessment.is_calibration_rework = True
-        # Legacy field - keep for backward compatibility but parallel calibration uses pending_calibrations
         assessment.calibration_validator_id = validator.id
         assessment.calibration_count += 1  # Legacy: still increment for backwards compatibility
+        assessment.calibration_round_used = True  # Mark calibration round as used
 
-        # Track which governance area has been calibrated (per-area limit)
-        if assessment.calibrated_area_ids is None:
-            assessment.calibrated_area_ids = []
-        assessment.calibrated_area_ids = assessment.calibrated_area_ids + [
-            validator.validator_area_id
-        ]
-
-        # Mark ONLY indicators flagged for calibration for rework
+        # Mark flagged indicators for rework
         # These are the indicators the BLGU needs to correct and re-upload
         calibrated_count = 0
         calibrated_indicator_ids = []
-        for response in validator_area_responses:
-            # Only mark indicators that are flagged for calibration
-            if response.flagged_for_calibration:
-                response.requires_rework = True
-                response.is_completed = False
+        for response in flagged_responses:
+            response.requires_rework = True
+            response.is_completed = False
 
-                # Clear validation_status for this indicator so validator can re-validate after BLGU fixes it
-                response.validation_status = None
+            # Clear validation_status for this indicator so validator can re-validate after BLGU fixes it
+            response.validation_status = None
 
-                # Reset the flag after processing
-                response.flagged_for_calibration = False
+            # Reset the flag after processing
+            response.flagged_for_calibration = False
 
-                # Clear validator checklist data (assessor_val_ and validator_val_ prefixes)
-                if response.response_data:
-                    response.response_data = {
-                        k: v
-                        for k, v in response.response_data.items()
-                        if not k.startswith("assessor_val_") and not k.startswith("validator_val_")
-                    }
+            # Clear validator checklist data (assessor_val_ and validator_val_ prefixes)
+            if response.response_data:
+                response.response_data = {
+                    k: v
+                    for k, v in response.response_data.items()
+                    if not k.startswith("assessor_val_") and not k.startswith("validator_val_")
+                }
 
-                calibrated_count += 1
-                calibrated_indicator_ids.append(response.indicator_id)
-                self.logger.info(
-                    f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was flagged"
-                )
+            calibrated_count += 1
+            calibrated_indicator_ids.append(response.indicator_id)
+            self.logger.info(
+                f"[CALIBRATION] Marked response {response.id} (indicator {response.indicator_id}) for calibration - was flagged"
+            )
 
         db.commit()
         db.refresh(assessment)
@@ -1593,7 +1702,6 @@ class AssessorService:
                 to_status=AssessmentStatus.REWORK.value,
                 extra_data={
                     "barangay_name": barangay_name,
-                    "governance_area_id": validator.validator_area_id,
                     "calibrated_indicator_ids": calibrated_indicator_ids,
                     "calibrated_count": calibrated_count,
                 },
@@ -1630,15 +1738,16 @@ class AssessorService:
             notification_result = {"success": False, "error": str(e)}
 
         # Trigger AI calibration summary generation asynchronously using Celery
-        # Summary is stored per governance area in calibration_summaries_by_area
         summary_result = {"success": False, "skipped": True}
         try:
             from app.workers.intelligence_worker import (
                 generate_calibration_summary_task,
             )
 
+            # Validators are system-wide, so generate summary for all calibrated indicators
             summary_task = generate_calibration_summary_task.delay(
-                assessment_id, validator.validator_area_id
+                assessment_id,
+                None,  # No governance_area_id since validators are system-wide
             )
             summary_result = {
                 "success": True,
@@ -1652,20 +1761,13 @@ class AssessorService:
             )
             summary_result = {"success": False, "error": str(e)}
 
-        # Calculate total pending calibrations for response
-        total_pending = len(assessment.pending_calibrations)
-
         return {
             "success": True,
-            "message": f"Assessment submitted for calibration. {calibrated_count} indicator(s) in {governance_area_name} marked for correction.",
+            "message": f"Assessment submitted for calibration. {calibrated_count} indicator(s) marked for correction.",
             "assessment_id": assessment_id,
             "new_status": assessment.status.value,
-            "governance_area": governance_area_name,
-            "governance_area_id": validator.validator_area_id,
             "calibrated_indicators_count": calibrated_count,
             "calibrated_indicator_ids": calibrated_indicator_ids,
-            "total_pending_calibrations": total_pending,
-            "is_parallel_calibration": total_pending > 1,
             "notification_result": notification_result,
             "summary_result": summary_result,
         }
@@ -1710,15 +1812,20 @@ class AssessorService:
         if assessment.status == AssessmentStatus.DRAFT:
             raise ValueError("Cannot finalize a draft assessment")
 
-        # Determine if this is Phase 1 (Assessor) or Phase 2 (Validator)
-        is_validator = assessor.validator_area_id is not None
+        # After workflow restructuring:
+        # - ASSESSOR (Phase 1): Area-specific (has assessor_area_id)
+        # - VALIDATOR (Phase 2): System-wide (no area required)
+        is_assessor = assessor.role == UserRole.ASSESSOR
+        is_validator = assessor.role == UserRole.VALIDATOR
 
         # [DEBUG] Start
         self.logger.info(f"[FINALIZE DEBUG] Starting finalize for {assessment_id}")
 
         if is_validator:
             # ===== PHASE 2: VALIDATORS (Table Validation) =====
-            self.logger.info("[FINALIZE DEBUG] Phase 2: Validator check")
+            # After workflow restructuring: Validators are SYSTEM-WIDE (review all areas)
+            self.logger.info("[FINALIZE DEBUG] Phase 2: Validator check (system-wide)")
+
             # Handle cases where finalization is called on an already-processed assessment
             if assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
                 # Assessment already fully validated - return success (idempotent)
@@ -1730,70 +1837,31 @@ class AssessorService:
                     "already_finalized": True,
                 }
 
-            # Must be in AWAITING_FINAL_VALIDATION or REWORK status
-            # REWORK status is allowed for parallel calibration: another validator may have
-            # requested calibration for their area, but this validator can still finalize their area
-            if assessment.status not in [
-                AssessmentStatus.AWAITING_FINAL_VALIDATION,
-                AssessmentStatus.REWORK,
-            ]:
+            # Must be in AWAITING_FINAL_VALIDATION status (all 6 areas approved by assessors)
+            if assessment.status != AssessmentStatus.AWAITING_FINAL_VALIDATION:
                 raise ValueError(
-                    "Validators can only finalize assessments in AWAITING_FINAL_VALIDATION or REWORK status"
+                    "Validators can only finalize assessments in AWAITING_FINAL_VALIDATION status"
                 )
 
-            # Validators only review indicators in their assigned governance area
-            # Filter responses to only those in validator's governance area
-            validator_area_responses = [
-                response
-                for response in assessment.responses
-                if response.indicator
-                and response.indicator.governance_area_id == assessor.validator_area_id
-            ]
-
-            if not validator_area_responses:
-                raise ValueError(
-                    f"No indicators found in validator's assigned governance area (ID: {assessor.validator_area_id})"
-                )
-
-            # Check if all responses in validator's area have validation_status set
+            # Validators review ALL indicators (system-wide)
+            # Check if all responses have validation_status set
             unreviewed_responses = [
                 response.id
-                for response in validator_area_responses
+                for response in assessment.responses
                 if response.validation_status is None
             ]
 
             if unreviewed_responses:
                 raise ValueError(
-                    f"Cannot finalize. Unreviewed response IDs in your governance area: {unreviewed_responses}"
+                    f"Cannot finalize. Unreviewed response IDs: {unreviewed_responses}"
                 )
 
-            # Check if ALL governance areas have been validated
-            # (All responses across all areas should have validation_status)
-            # IMPORTANT: Query the database directly to avoid stale data from eager loading.
-            # This prevents a race condition where two validators finalize concurrently
-            # and the last one doesn't see the other's committed validation_status values.
-            unvalidated_count = (
-                db.query(AssessmentResponse)
-                .filter(
-                    AssessmentResponse.assessment_id == assessment_id,
-                    AssessmentResponse.validation_status.is_(None),
-                )
-                .count()
-            )
-            all_responses_validated = unvalidated_count == 0
+            # All responses validated - move to AWAITING_MLGOO_APPROVAL
+            # Validators CAN finalize even with FAIL indicators (that's the final result)
+            # MLGOO Chairman will review and approve this final result
+            assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
 
-            if all_responses_validated:
-                # All governance areas validated - move to AWAITING_MLGOO_APPROVAL
-                # Validators CAN finalize even with FAIL indicators (that's the final result)
-                # MLGOO Chairman will review and approve this final result
-                assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
-            else:
-                # This validator's area is done, but other areas still pending
-                # Keep status as AWAITING_FINAL_VALIDATION
-                # Note: The validation_status is already saved per indicator
-                pass
-
-        else:
+        elif is_assessor:
             # ===== PHASE 1: ASSESSORS (Table Assessment) =====
             # Can finalize from SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK, or SUBMITTED statuses
             # SUBMITTED status occurs when BLGU resubmits after rework
@@ -1899,7 +1967,7 @@ class AssessorService:
                     to_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
                     extra_data={
                         "barangay_name": barangay_name,
-                        "validator_area_id": assessor.validator_area_id,
+                        "assessor_area_id": assessor.assessor_area_id,
                     },
                     description=f"Validation completed by {assessor.name}",
                 )
@@ -2016,17 +2084,17 @@ class AssessorService:
         """
         # Get governance area name
         governance_area_name = "All Areas"  # Default for assessors without area assignment
-        if assessor.validator_area_id is not None:
+        if assessor.assessor_area_id is not None:
             governance_area = (
                 db.query(GovernanceArea)
-                .filter(GovernanceArea.id == assessor.validator_area_id)
+                .filter(GovernanceArea.id == assessor.assessor_area_id)
                 .first()
             )
             governance_area_name = governance_area.name if governance_area else "Unknown"
 
         # Get assessments based on assessor's governance area assignment
-        # - If assessor has validator_area_id: Filter by that governance area
-        # - If assessor has no validator_area_id: Show all assessments (system-wide)
+        # - If assessor has assessor_area_id: Filter by that governance area
+        # - If assessor has no assessor_area_id: Show all assessments (system-wide)
         query = (
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
@@ -2037,9 +2105,9 @@ class AssessorService:
             )
         )
 
-        # Filter by governance area only if assessor has validator_area_id
-        if assessor.validator_area_id is not None:
-            query = query.filter(Indicator.governance_area_id == assessor.validator_area_id)
+        # Filter by governance area only if assessor has assessor_area_id
+        if assessor.assessor_area_id is not None:
+            query = query.filter(Indicator.governance_area_id == assessor.assessor_area_id)
 
         # Filter assessments by the current assessor (those reviewed by them)
         assessments = (
@@ -2116,9 +2184,9 @@ class AssessorService:
                 getattr(assessment.blgu_user, "barangay", None), "name", "Unknown"
             )
             for response in assessment.responses:
-                # Filter by governance area only if assessor has validator_area_id
-                if assessor.validator_area_id is not None:
-                    if response.indicator.governance_area_id != assessor.validator_area_id:
+                # Filter by governance area only if assessor has assessor_area_id
+                if assessor.assessor_area_id is not None:
+                    if response.indicator.governance_area_id != assessor.assessor_area_id:
                         continue
 
                 if response.validation_status == ValidationStatus.FAIL:
@@ -2275,7 +2343,7 @@ class AssessorService:
             assessment_year = assessment_year_service.get_active_year_number(db)
 
         # Determine if user is a validator
-        is_validator = user.role == UserRole.VALIDATOR and user.validator_area_id is not None
+        is_validator = user.role == UserRole.VALIDATOR and user.assessor_area_id is not None
 
         # Base query for COMPLETED assessments
         if is_validator:
@@ -2287,7 +2355,7 @@ class AssessorService:
                 .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
                 .filter(
                     Assessment.status == AssessmentStatus.COMPLETED,
-                    Indicator.governance_area_id == user.validator_area_id,
+                    Indicator.governance_area_id == user.assessor_area_id,
                 )
                 .distinct()
                 .subquery()
@@ -2340,7 +2408,7 @@ class AssessorService:
         governance_area_name = None
         if is_validator:
             area = (
-                db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+                db.query(GovernanceArea).filter(GovernanceArea.id == user.assessor_area_id).first()
             )
             if area:
                 governance_area_name = area.name
@@ -2364,7 +2432,7 @@ class AssessorService:
             for response in assessment.responses:
                 # For validators, filter by governance area
                 if is_validator and response.indicator:
-                    if response.indicator.governance_area_id != user.validator_area_id:
+                    if response.indicator.governance_area_id != user.assessor_area_id:
                         continue
 
                 indicator_count += 1
@@ -2447,12 +2515,12 @@ class AssessorService:
             return {"success": False, "message": "Assessment not found"}
 
         # Verify access
-        is_validator = user.role == UserRole.VALIDATOR and user.validator_area_id is not None
+        is_validator = user.role == UserRole.VALIDATOR and user.assessor_area_id is not None
 
         if is_validator:
             # Validators must have responses in their governance area
             has_access = any(
-                r.indicator and r.indicator.governance_area_id == user.validator_area_id
+                r.indicator and r.indicator.governance_area_id == user.assessor_area_id
                 for r in assessment.responses
             )
         else:
@@ -2472,7 +2540,7 @@ class AssessorService:
         governance_area_name = None
         if is_validator:
             area = (
-                db.query(GovernanceArea).filter(GovernanceArea.id == user.validator_area_id).first()
+                db.query(GovernanceArea).filter(GovernanceArea.id == user.assessor_area_id).first()
             )
             if area:
                 governance_area_name = area.name
@@ -2482,7 +2550,7 @@ class AssessorService:
         for response in assessment.responses:
             # For validators, filter by governance area
             if is_validator and response.indicator:
-                if response.indicator.governance_area_id != user.validator_area_id:
+                if response.indicator.governance_area_id != user.assessor_area_id:
                     continue
 
             indicator = response.indicator
@@ -2578,7 +2646,7 @@ class AssessorService:
 
         Args:
             db: Database session
-            validator: The validator user (must have validator_area_id)
+            validator: The validator user (must have assessor_area_id)
             year: Optional year filter
             include_draft: Include draft assessments
 
@@ -2589,14 +2657,12 @@ class AssessorService:
         from app.db.models.barangay import Barangay
         from app.db.models.governance_area import GovernanceArea
 
-        if validator.validator_area_id is None:
+        if validator.assessor_area_id is None:
             raise ValueError("Validator must have an assigned governance area")
 
         # Get governance area name
         governance_area = (
-            db.query(GovernanceArea)
-            .filter(GovernanceArea.id == validator.validator_area_id)
-            .first()
+            db.query(GovernanceArea).filter(GovernanceArea.id == validator.assessor_area_id).first()
         )
         governance_area_name = governance_area.name if governance_area else "Unknown"
 
@@ -2605,7 +2671,7 @@ class AssessorService:
             db.query(Assessment)
             .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
             .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
-            .filter(Indicator.governance_area_id == validator.validator_area_id)
+            .filter(Indicator.governance_area_id == validator.assessor_area_id)
         )
 
         # Apply year filter
@@ -2634,7 +2700,7 @@ class AssessorService:
             area_responses = [
                 r
                 for r in assessment.responses
-                if r.indicator.governance_area_id == validator.validator_area_id
+                if r.indicator.governance_area_id == validator.assessor_area_id
             ]
             if area_responses:
                 pass_count = sum(
@@ -2723,7 +2789,7 @@ class AssessorService:
 
         total_indicators = (
             db.query(func.count(Indicator.id))
-            .filter(Indicator.governance_area_id == validator.validator_area_id)
+            .filter(Indicator.governance_area_id == validator.assessor_area_id)
             .scalar()
             or 0
         )
@@ -2756,7 +2822,7 @@ class AssessorService:
         indicator_failures: dict[int, dict[str, Any]] = {}
         for assessment in all_assessments:
             for response in assessment.responses:
-                if response.indicator.governance_area_id != validator.validator_area_id:
+                if response.indicator.governance_area_id != validator.assessor_area_id:
                     continue
                 if response.validation_status == ValidationStatus.FAIL:
                     indicator_id = response.indicator.id
@@ -2765,7 +2831,7 @@ class AssessorService:
                             "indicator_id": indicator_id,
                             "indicator_code": response.indicator.indicator_code,
                             "indicator_name": response.indicator.name,
-                            "governance_area_id": validator.validator_area_id,
+                            "governance_area_id": validator.assessor_area_id,
                             "governance_area": governance_area_name,
                             "fail_count": 0,
                             "total_assessed": 0,
@@ -2781,7 +2847,7 @@ class AssessorService:
                             "indicator_id": indicator_id,
                             "indicator_code": response.indicator.indicator_code,
                             "indicator_name": response.indicator.name,
-                            "governance_area_id": validator.validator_area_id,
+                            "governance_area_id": validator.assessor_area_id,
                             "governance_area": governance_area_name,
                             "fail_count": 0,
                             "total_assessed": 0,
@@ -2837,7 +2903,7 @@ class AssessorService:
             area_responses = [
                 r
                 for r in assessment.responses
-                if r.indicator.governance_area_id == validator.validator_area_id
+                if r.indicator.governance_area_id == validator.assessor_area_id
             ]
 
             # Calculate compliance for this area

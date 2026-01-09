@@ -140,6 +140,26 @@ class Assessment(Base):
     # Auto-submit tracking - when assessment was automatically submitted at deadline
     auto_submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    # ==========================================================================
+    # Per-Area Submission Tracking (Workflow Restructuring)
+    # ==========================================================================
+    # Per-area submission status tracking
+    # Format: {"1": {"status": "approved", "submitted_at": "...", "assessor_id": "..."}, ...}
+    # Status values: draft, submitted, in_review, rework, approved
+    area_submission_status: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+
+    # Per-area approval tracking (quick lookup)
+    # Format: {"1": true, "2": false, ...}
+    area_assessor_approved: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+
+    # Rework round flag - True after first rework cycle
+    # All 6 assessors' rework requests count as 1 round
+    rework_round_used: Mapped[bool] = mapped_column(default=False, nullable=False)
+
+    # Calibration round flag - True after first calibration cycle
+    # Validator can only request calibration once
+    calibration_round_used: Mapped[bool] = mapped_column(default=False, nullable=False)
+
     # Intelligence layer fields
     final_compliance_status: Mapped[ComplianceStatus | None] = mapped_column(
         Enum(ComplianceStatus, name="compliance_status_enum", create_constraint=True),
@@ -330,6 +350,89 @@ class Assessment(Base):
             self.status in [AssessmentStatus.AWAITING_MLGOO_APPROVAL, AssessmentStatus.COMPLETED]
             and self.mlgoo_recalibration_count < 1
         )
+
+    # ==========================================================================
+    # Per-Area Submission Helper Methods
+    # ==========================================================================
+    def all_areas_approved(self) -> bool:
+        """
+        Check if all 6 governance areas are approved by assessors.
+
+        Returns:
+            True if all 6 areas are approved, False otherwise
+        """
+        if not self.area_assessor_approved:
+            return False
+        return all(self.area_assessor_approved.get(str(i), False) for i in range(1, 7))
+
+    def get_area_status(self, governance_area_id: int) -> str:
+        """
+        Get the status of a specific governance area.
+
+        Args:
+            governance_area_id: The governance area ID (1-6)
+
+        Returns:
+            Status string: draft, submitted, in_review, rework, or approved
+        """
+        if not self.area_submission_status:
+            return "draft"
+        area_data = self.area_submission_status.get(str(governance_area_id), {})
+        return area_data.get("status", "draft")
+
+    def can_assessor_request_rework(self) -> bool:
+        """
+        Check if assessors can still request rework for this assessment.
+
+        Rework can only be requested once. After the rework round is used,
+        assessors can only approve.
+
+        Returns:
+            True if rework can be requested, False otherwise
+        """
+        return not self.rework_round_used
+
+    def can_validator_request_calibration(self) -> bool:
+        """
+        Check if the validator can still request calibration for this assessment.
+
+        Calibration can only be requested once per assessment.
+        After the calibration round is used, validator can only approve.
+
+        Returns:
+            True if calibration can be requested, False otherwise
+        """
+        return not self.calibration_round_used
+
+    def get_areas_in_rework(self) -> list[int]:
+        """
+        Get list of governance area IDs that are currently in rework status.
+
+        Returns:
+            List of governance area IDs (1-6) that need rework
+        """
+        if not self.area_submission_status:
+            return []
+        return [
+            int(area_id)
+            for area_id, data in self.area_submission_status.items()
+            if isinstance(data, dict) and data.get("status") == "rework"
+        ]
+
+    def get_areas_pending_review(self) -> list[int]:
+        """
+        Get list of governance area IDs waiting for assessor review.
+
+        Returns:
+            List of governance area IDs (1-6) that are submitted but not yet approved
+        """
+        if not self.area_submission_status:
+            return []
+        return [
+            int(area_id)
+            for area_id, data in self.area_submission_status.items()
+            if isinstance(data, dict) and data.get("status") in ("submitted", "in_review")
+        ]
 
 
 class AssessmentResponse(Base):

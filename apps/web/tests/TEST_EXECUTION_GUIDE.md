@@ -45,13 +45,13 @@ credentials:
 INSERT INTO users (email, password_hash, role, first_name, last_name, is_active)
 VALUES ('admin@sinag-test.local', '[hash]', 'MLGOO_DILG', 'Test', 'Admin', true);
 
--- ASSESSOR
-INSERT INTO users (email, password_hash, role, first_name, last_name, is_active)
-VALUES ('assessor@sinag-test.local', '[hash]', 'ASSESSOR', 'Test', 'Assessor', true);
+-- ASSESSOR (area-specific after workflow restructuring)
+INSERT INTO users (email, password_hash, role, first_name, last_name, is_active, assessor_area_id)
+VALUES ('assessor@sinag-test.local', '[hash]', 'ASSESSOR', 'Test', 'Assessor', true, 1);
 
--- VALIDATOR
-INSERT INTO users (email, password_hash, role, first_name, last_name, is_active, validator_area_id)
-VALUES ('validator@sinag-test.local', '[hash]', 'VALIDATOR', 'Test', 'Validator', true, 1);
+-- VALIDATOR (system-wide after workflow restructuring, no area assignment)
+INSERT INTO users (email, password_hash, role, first_name, last_name, is_active)
+VALUES ('validator@sinag-test.local', '[hash]', 'VALIDATOR', 'Test', 'Validator', true);
 
 -- BLGU_USER
 INSERT INTO users (email, password_hash, role, first_name, last_name, is_active, barangay_id)

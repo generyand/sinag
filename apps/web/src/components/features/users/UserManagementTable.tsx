@@ -143,7 +143,8 @@ const UserCard = React.memo(
                 </div>
               )}
 
-              {user.role === "VALIDATOR" && user.validator_area_id && (
+              {/* After workflow restructuring: ASSESSOR is area-specific */}
+              {user.role === "ASSESSOR" && user.assessor_area_id && (
                 <div
                   className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm"
                   style={{ backgroundColor: "var(--analytics-warning-bg)" }}
@@ -157,8 +158,8 @@ const UserCard = React.memo(
                     className="text-xs font-medium"
                     style={{ color: "var(--analytics-warning-text)" }}
                   >
-                    {governanceAreaMap.get(user.validator_area_id) ||
-                      `Area #${user.validator_area_id}`}
+                    {governanceAreaMap.get(user.assessor_area_id) ||
+                      `Area #${user.assessor_area_id}`}
                   </span>
                 </div>
               )}

@@ -530,12 +530,13 @@ class StartupService:
                 logger.info("    - BLGU users already exist. Skipping.")
 
             # ─────────────────────────────────────────────────────────────
-            # 2. Seed Assessors (3 assessors, no area assignment)
+            # 2. Seed Validators (3 validators, system-wide - no area assignment)
+            # After workflow restructuring: VALIDATORs are system-wide
             # ─────────────────────────────────────────────────────────────
-            logger.info("  - Seeding Assessor users...")
+            logger.info("  - Seeding Validator users (system-wide)...")
 
-            for i in range(1, 4):  # 3 assessors
-                email = f"assessor{i}@sinag.dev"
+            for i in range(1, 4):  # 3 validators
+                email = f"validator{i}@sinag.dev"
 
                 # Check if user already exists
                 existing = db.query(User).filter(User.email == email).first()
@@ -544,53 +545,9 @@ class StartupService:
 
                 user = User(
                     email=email,
-                    name=f"Assessor {i}",
-                    hashed_password=get_password_hash(DEFAULT_PASSWORD),
-                    role=UserRole.ASSESSOR,
-                    is_active=True,
-                    is_superuser=False,
-                    must_change_password=True,
-                )
-                db.add(user)
-                created_assessors += 1
-
-            if created_assessors > 0:
-                db.flush()
-                logger.info(f"    ✓ Created {created_assessors} Assessor user(s)")
-            else:
-                logger.info("    - Assessors already exist. Skipping.")
-
-            # ─────────────────────────────────────────────────────────────
-            # 3. Seed Validators (6 validators, one per governance area)
-            # ─────────────────────────────────────────────────────────────
-            logger.info("  - Seeding Validator users...")
-            governance_areas = db.query(GovernanceArea).order_by(GovernanceArea.id).all()
-
-            for area in governance_areas:
-                email = f"validator_area{area.id}@sinag.dev"
-
-                # Check if user already exists
-                existing = db.query(User).filter(User.email == email).first()
-                if existing:
-                    continue
-
-                # Create a short name for the validator based on area
-                area_short_names = {
-                    1: "Financial Admin",
-                    2: "Disaster Prep",
-                    3: "Peace & Order",
-                    4: "Social Protection",
-                    5: "Business-Friendly",
-                    6: "Environmental Mgmt",
-                }
-                short_name = area_short_names.get(area.id, f"Area {area.id}")
-
-                user = User(
-                    email=email,
-                    name=f"Validator - {short_name}",
+                    name=f"Validator {i}",
                     hashed_password=get_password_hash(DEFAULT_PASSWORD),
                     role=UserRole.VALIDATOR,
-                    validator_area_id=area.id,
                     is_active=True,
                     is_superuser=False,
                     must_change_password=True,
@@ -603,6 +560,51 @@ class StartupService:
                 logger.info(f"    ✓ Created {created_validators} Validator user(s)")
             else:
                 logger.info("    - Validators already exist. Skipping.")
+
+            # ─────────────────────────────────────────────────────────────
+            # 3. Seed Assessors (6 assessors, one per governance area)
+            # After workflow restructuring: ASSESSORs are area-specific
+            # ─────────────────────────────────────────────────────────────
+            logger.info("  - Seeding Assessor users (area-specific)...")
+            governance_areas = db.query(GovernanceArea).order_by(GovernanceArea.id).all()
+
+            for area in governance_areas:
+                email = f"assessor_area{area.id}@sinag.dev"
+
+                # Check if user already exists
+                existing = db.query(User).filter(User.email == email).first()
+                if existing:
+                    continue
+
+                # Create a short name for the assessor based on area
+                area_short_names = {
+                    1: "Financial Admin",
+                    2: "Disaster Prep",
+                    3: "Peace & Order",
+                    4: "Social Protection",
+                    5: "Business-Friendly",
+                    6: "Environmental Mgmt",
+                }
+                short_name = area_short_names.get(area.id, f"Area {area.id}")
+
+                user = User(
+                    email=email,
+                    name=f"Assessor - {short_name}",
+                    hashed_password=get_password_hash(DEFAULT_PASSWORD),
+                    role=UserRole.ASSESSOR,
+                    assessor_area_id=area.id,
+                    is_active=True,
+                    is_superuser=False,
+                    must_change_password=True,
+                )
+                db.add(user)
+                created_assessors += 1
+
+            if created_assessors > 0:
+                db.flush()
+                logger.info(f"    ✓ Created {created_assessors} Assessor user(s)")
+            else:
+                logger.info("    - Assessors already exist. Skipping.")
 
             # ─────────────────────────────────────────────────────────────
             # Commit all changes

@@ -41,7 +41,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
     - **Non-BBI indicators**: Parent is MET only if ALL sub-indicators have PASS status
     - **BBI indicators**: Uses count-based thresholds to determine functionality level
 
-    **Permissions**: Validator only (shows only their assigned governance area)
+    **Permissions**: Assessor only (shows only their assigned governance area)
  * @summary Get compliance overview for an assessment
  */
 export const getComplianceAssessments$AssessmentIdComplianceOverview = (

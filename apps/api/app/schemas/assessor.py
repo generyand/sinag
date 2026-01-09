@@ -17,6 +17,16 @@ class AssessorQueueItem(BaseModel):
     updated_at: datetime
     area_progress: int = 0  # Progress percentage (0-100) of indicators reviewed
 
+    # Per-area fields (for area-specific assessors)
+    governance_area_id: int | None = None
+    governance_area_name: str | None = None
+    area_status: str | None = None  # draft, submitted, in_review, rework, approved
+    is_resubmission: bool = False
+
+    # Compiled rework info (for BLGU visibility)
+    areas_in_rework: list[int] | None = None
+    rework_round_used: bool = False
+
     class Config:
         from_attributes = True
 

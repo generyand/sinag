@@ -42,12 +42,12 @@ class User(Base):
         nullable=False,
         default=UserRole.BLGU_USER,
     )
-    validator_area_id = Column(
+    assessor_area_id = Column(
         SmallInteger, ForeignKey("governance_areas.id"), nullable=True
-    )  # Reference to governance_areas.id - Only used when role is VALIDATOR
+    )  # Reference to governance_areas.id - Only used when role is ASSESSOR
     municipal_office_id = Column(
         Integer, ForeignKey("municipal_offices.id"), nullable=True
-    )  # Reference to municipal_offices.id - Only used when role is VALIDATOR
+    )  # Reference to municipal_offices.id - Used for municipal office assignment
     barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=True)
 
     # User preferences
@@ -94,7 +94,7 @@ class User(Base):
 
     # Relationships
     barangay = relationship("Barangay", back_populates="users")
-    validator_area = relationship("GovernanceArea", back_populates="validators")
+    assessor_area = relationship("GovernanceArea", back_populates="assessors")
     municipal_office = relationship(
         "MunicipalOffice",
         foreign_keys=[municipal_office_id],

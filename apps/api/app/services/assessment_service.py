@@ -3353,29 +3353,29 @@ class AssessmentService:
                 )
                 validated_area_ids = [area_id for (area_id,) in validated_area_ids]
 
-                # Find validators assigned to these validated areas
+                # Find assessors assigned to these validated areas (area-specific after restructuring)
                 if validated_area_ids:
-                    area_validators = (
+                    area_assessors = (
                         db.query(User)
                         .filter(
-                            User.role == UserRole.VALIDATOR,
-                            User.validator_area_id.in_(validated_area_ids),
+                            User.role == UserRole.ASSESSOR,
+                            User.assessor_area_id.in_(validated_area_ids),
                         )
                         .all()
                     )
-                    for validator in area_validators:
-                        if validator.id not in validators_dict:
-                            validators_dict[validator.id] = {
-                                "id": validator.id,
-                                "name": validator.name,
-                                "email": validator.email,
+                    for assessor in area_assessors:
+                        if assessor.id not in validators_dict:
+                            validators_dict[assessor.id] = {
+                                "id": assessor.id,
+                                "name": assessor.name,
+                                "email": assessor.email,
                                 "initials": "".join(
-                                    [word[0].upper() for word in validator.name.split()[:2]]
+                                    [word[0].upper() for word in assessor.name.split()[:2]]
                                 )
-                                if validator.name
-                                else "V",
-                                "role": "validator",
-                                "governance_area_id": validator.validator_area_id,
+                                if assessor.name
+                                else "A",
+                                "role": "assessor",
+                                "governance_area_id": assessor.assessor_area_id,
                             }
 
                 # 3. Add the calibration validator (legacy - for backward compatibility)
@@ -3392,7 +3392,7 @@ class AssessmentService:
                             if validator.name
                             else "V",
                             "role": "validator",
-                            "governance_area_id": validator.validator_area_id,
+                            "governance_area_id": None,  # Validators are now system-wide
                         }
 
                 # 4. Add users who left feedback comments

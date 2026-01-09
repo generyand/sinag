@@ -278,12 +278,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
   const statusText: string = core?.status ?? core?.assessment_status ?? "";
 
-  // Check if THIS validator's area has already been calibrated (per-area limit)
-  const validatorAreaId = currentUser?.validator_area_id;
-  const calibratedAreaIds: number[] = (core?.calibrated_area_ids ?? []) as number[];
-  const calibrationAlreadyUsed = validatorAreaId
-    ? calibratedAreaIds.includes(validatorAreaId)
-    : false;
+  // Check if calibration has already been used for this assessment (1 round limit)
+  // After workflow restructuring: validators are system-wide, calibration is per-assessment
+  const calibrationAlreadyUsed: boolean = (core?.calibration_round_used ?? false) as boolean;
 
   // Get timestamps for MOV file separation (new vs old files)
   // These are passed to MiddleMovFilesPanel which determines per-indicator which timestamp to use
@@ -1121,7 +1118,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               }}
               title={
                 calibrationAlreadyUsed
-                  ? "Calibration has already been used for your governance area (max 1 per area)"
+                  ? "Calibration has already been used for this assessment (max 1 per assessment)"
                   : !Object.values(calibrationFlags).some((v) => v === true)
                     ? "Flag at least one indicator for calibration using the toggle"
                     : undefined

@@ -150,7 +150,7 @@ export interface User {
   name: string;
   role: UserRole;
   phone_number?: UserPhoneNumber;
-  validator_area_id?: UserValidatorAreaId;
+  assessor_area_id?: UserAssessorAreaId;
   municipal_office_id?: UserMunicipalOfficeId;
   barangay_id?: UserBarangayId;
   is_active: boolean;
@@ -173,7 +173,7 @@ export interface UserAdminCreate {
   password: string;
   role?: UserRole;
   phone_number?: UserAdminCreatePhoneNumber;
-  validator_area_id?: UserAdminCreateValidatorAreaId;
+  assessor_area_id?: UserAdminCreateAssessorAreaId;
   municipal_office_id?: UserAdminCreateMunicipalOfficeId;
   barangay_id?: UserAdminCreateBarangayId;
   is_active?: boolean;
@@ -181,6 +181,12 @@ export interface UserAdminCreate {
   must_change_password?: boolean;
   preferred_language?: UserAdminCreatePreferredLanguage;
 }
+
+
+/**
+ * UserAdminCreateAssessorAreaId
+ */
+export type UserAdminCreateAssessorAreaId = number | null;
 
 
 /**
@@ -216,12 +222,6 @@ export const UserAdminCreatePreferredLanguage = {
 
 
 /**
- * UserAdminCreateValidatorAreaId
- */
-export type UserAdminCreateValidatorAreaId = number | null;
-
-
-/**
  * UserAdminUpdate
  */
 export interface UserAdminUpdate {
@@ -229,7 +229,7 @@ export interface UserAdminUpdate {
   name?: UserAdminUpdateName;
   role?: UserAdminUpdateRole;
   phone_number?: UserAdminUpdatePhoneNumber;
-  validator_area_id?: UserAdminUpdateValidatorAreaId;
+  assessor_area_id?: UserAdminUpdateAssessorAreaId;
   municipal_office_id?: UserAdminUpdateMunicipalOfficeId;
   barangay_id?: UserAdminUpdateBarangayId;
   is_active?: UserAdminUpdateIsActive;
@@ -237,6 +237,12 @@ export interface UserAdminUpdate {
   must_change_password?: UserAdminUpdateMustChangePassword;
   preferred_language?: UserAdminUpdatePreferredLanguage;
 }
+
+
+/**
+ * UserAdminUpdateAssessorAreaId
+ */
+export type UserAdminUpdateAssessorAreaId = number | null;
 
 
 /**
@@ -300,9 +306,9 @@ export type UserAdminUpdateRole = UserRole | null;
 
 
 /**
- * UserAdminUpdateValidatorAreaId
+ * UserAssessorAreaId
  */
-export type UserAdminUpdateValidatorAreaId = number | null;
+export type UserAssessorAreaId = number | null;
 
 
 /**
@@ -423,12 +429,18 @@ export interface UserUpdate {
   name?: UserUpdateName;
   role?: UserUpdateRole;
   phone_number?: UserUpdatePhoneNumber;
-  validator_area_id?: UserUpdateValidatorAreaId;
+  assessor_area_id?: UserUpdateAssessorAreaId;
   municipal_office_id?: UserUpdateMunicipalOfficeId;
   barangay_id?: UserUpdateBarangayId;
   is_active?: UserUpdateIsActive;
   preferred_language?: UserUpdatePreferredLanguage;
 }
+
+
+/**
+ * UserUpdateAssessorAreaId
+ */
+export type UserUpdateAssessorAreaId = number | null;
 
 
 /**
@@ -480,18 +492,6 @@ export type UserUpdateRole = UserRole | null;
 
 
 /**
- * UserUpdateValidatorAreaId
- */
-export type UserUpdateValidatorAreaId = number | null;
-
-
-/**
  * UserUpdatedAt
  */
 export type UserUpdatedAt = string | null;
-
-
-/**
- * UserValidatorAreaId
- */
-export type UserValidatorAreaId = number | null;

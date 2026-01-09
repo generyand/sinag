@@ -377,12 +377,13 @@ def send_ready_for_validation_notification(
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
-        # Create notifications for validators in this governance area
-        notifications = notification_service.notify_validators_for_governance_area(
+        # Create notifications for assessors in this governance area
+        # After workflow restructuring: ASSESSORs are area-specific, VALIDATORs are system-wide
+        notifications = notification_service.notify_assessors_for_governance_area(
             db=db,
             notification_type=NotificationType.READY_FOR_VALIDATION,
-            title=f"Ready for Validation: {barangay_name}",
-            message="An assessment is ready for final validation in your governance area.",
+            title=f"Ready for Review: {barangay_name}",
+            message="An assessment is ready for review in your governance area.",
             governance_area_id=governance_area_id,
             assessment_id=assessment_id,
         )
@@ -390,7 +391,7 @@ def send_ready_for_validation_notification(
         db.commit()
 
         logger.info(
-            "READY_FOR_VALIDATION notification: Assessment %s, Area %s - %d validators notified",
+            "READY_FOR_VALIDATION notification: Assessment %s, Area %s - %d assessors notified",
             assessment_id,
             governance_area_name,
             len(notifications),
@@ -398,7 +399,7 @@ def send_ready_for_validation_notification(
 
         return {
             "success": True,
-            "message": f"Ready for validation notification sent to {len(notifications)} validator(s)",
+            "message": f"Ready for review notification sent to {len(notifications)} assessor(s)",
             "assessment_id": assessment_id,
             "governance_area_id": governance_area_id,
             "governance_area_name": governance_area_name,
@@ -597,8 +598,10 @@ def send_calibration_resubmission_notification(
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
-        # Get governance area ID
-        governance_area_id = validator.validator_area_id
+        # Get governance area ID from assessment context (validators are now system-wide)
+        governance_area_id = (
+            None  # Validators don't have area assignments after workflow restructuring
+        )
 
         # Create notification for the specific validator
         notification = notification_service.notify_specific_validator(

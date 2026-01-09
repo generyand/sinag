@@ -17,12 +17,12 @@ export function useAssessorGovernanceArea() {
       return null;
     }
 
-    if (!user.validator_area_id || !governanceAreasData) {
+    if (!user.assessor_area_id || !governanceAreasData) {
       return null;
     }
 
     const governanceArea = (governanceAreasData as GovernanceArea[]).find(
-      (ga: GovernanceArea) => ga.id === user.validator_area_id
+      (ga: GovernanceArea) => ga.id === user.assessor_area_id
     );
 
     return governanceArea?.name || null;
@@ -32,6 +32,6 @@ export function useAssessorGovernanceArea() {
     governanceAreaName,
     isLoading,
     error,
-    governanceAreaId: user?.validator_area_id,
+    governanceAreaId: user?.assessor_area_id,
   };
 }
