@@ -1,42 +1,53 @@
-import * as React from "react";
-import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Eye, EyeOff } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
-import { useGovernanceAreas } from "@/hooks/useGovernanceAreas";
-import { useBarangays } from "@/hooks/useBarangays";
 import { useToast } from "@/hooks/use-toast";
+import { useBarangays } from "@/hooks/useBarangays";
+import { useGovernanceAreas } from "@/hooks/useGovernanceAreas";
+import { classifyError } from "@/lib/error-utils";
 import {
-  UserRole,
-  UserAdminCreate,
-  UserAdminUpdate,
-  Barangay,
-  GovernanceArea,
-  UserRoleOption,
-  usePostUsers,
-  usePutUsersUserId,
-  getGetUsersQueryKey,
-  useGetLookupsRoles,
-  useGetMunicipalOffices,
-  MunicipalOfficeResponse,
+    Barangay,
+    GovernanceArea,
+    MunicipalOfficeResponse,
+    UserAdminCreate,
+    UserAdminUpdate,
+    UserRole,
+    UserRoleOption,
+    getGetUsersQueryKey,
+    useGetLookupsRoles,
+    useGetMunicipalOffices,
+    usePostUsers,
+    usePostUsersUserIdResetPassword,
+    usePutUsersUserId,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { classifyError } from "@/lib/error-utils";
+import { Eye, EyeOff, RotateCcw } from "lucide-react";
+import * as React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface UserFormProps {
   open: boolean;
@@ -76,6 +87,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const { toast } = useToast();
 
   // Fetch governance areas, barangays, roles, and municipal offices data
@@ -143,6 +155,10 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   const queryClient = useQueryClient();
   const createUserMutation = usePostUsers();
   const updateUserMutation = usePutUsersUserId();
+  const resetPasswordMutation = usePostUsersUserIdResetPassword();
+
+  // Default password for BLGU users
+  const DEFAULT_PASSWORD = "DILG@Sinag@2025";
 
   // Reset form when dialog opens/closes or initialValues change
   useEffect(() => {
@@ -359,7 +375,37 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     ]
   );
 
-  const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
+  // Handle reset password to default
+  const handleResetPassword = useCallback(() => {
+    if (!initialValues?.id) return;
+
+    const userName = nameRef.current?.value || "this user";
+
+    resetPasswordMutation.mutate(
+      { userId: initialValues.id, data: { new_password: DEFAULT_PASSWORD } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetUsersQueryKey() });
+          toast({
+            title: "Password Reset",
+            description: `Password has been reset to the default for ${userName}. They will be required to change it on next login.`,
+          });
+          setShowResetPasswordDialog(false);
+        },
+        onError: (error) => {
+          const errorInfo = classifyError(error);
+          toast({
+            title: errorInfo.title,
+            description: errorInfo.message,
+            variant: "destructive",
+          });
+          setShowResetPasswordDialog(false);
+        },
+      }
+    );
+  }, [initialValues?.id, resetPasswordMutation, queryClient, toast, DEFAULT_PASSWORD]);
+
+  const isLoading = createUserMutation.isPending || updateUserMutation.isPending || resetPasswordMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -697,25 +743,67 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           </div>
 
           <DialogFooter className="flex gap-3 pt-4">
+            {/* Reset Password Button - Only shown when editing */}
+            {isEditing && initialValues?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowResetPasswordDialog(true)}
+                disabled={isLoading}
+                className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset Password
+              </Button>
+            )}
+            <div className="flex-1" />
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
-              className="flex-1 border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--hover)]"
+              className="border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--hover)]"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-[var(--cityscape-accent-foreground)]"
+              className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-[var(--cityscape-accent-foreground)]"
             >
               {isLoading ? "Saving..." : isEditing ? "Update User" : "Create User"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Reset Password Confirmation Dialog */}
+      <AlertDialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+        <AlertDialogContent className="bg-[var(--card)] border border-[var(--border)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[var(--foreground)]">
+              Reset Password to Default?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--muted-foreground)]">
+              This will reset the password for <strong>{nameRef.current?.value || "this user"}</strong> to the default password: <code className="bg-[var(--muted)] px-2 py-1 rounded text-sm font-mono">{DEFAULT_PASSWORD}</code>
+              <br /><br />
+              The user will be required to change their password on the next login.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--hover)]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPassword}
+              disabled={resetPasswordMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
