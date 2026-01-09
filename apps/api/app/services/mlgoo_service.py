@@ -34,6 +34,24 @@ class MLGOOService:
         """Initialize the MLGOO service."""
         self.logger = logging.getLogger(__name__)
 
+    def _format_utc_datetime(self, dt: datetime | None) -> str | None:
+        """
+        Format a datetime as ISO 8601 string with 'Z' suffix indicating UTC.
+
+        JavaScript's Date constructor interprets timestamps without timezone info
+        as local time, but with 'Z' suffix as UTC. Since our backend stores all
+        times in UTC using datetime.utcnow(), we append 'Z' for correct parsing.
+
+        Args:
+            dt: The datetime to format, or None
+
+        Returns:
+            ISO 8601 string with 'Z' suffix (e.g., '2025-01-05T02:33:12Z'), or None
+        """
+        if dt is None:
+            return None
+        return dt.isoformat() + "Z"
+
     def _parse_indicator_code(self, code: str) -> tuple:
         """
         Parse indicator code for natural sorting.
@@ -154,12 +172,8 @@ class MLGOOService:
                     "barangay_name": barangay_name,
                     "blgu_user_id": assessment.blgu_user_id,
                     "status": assessment.status.value,
-                    "submitted_at": assessment.submitted_at.isoformat()
-                    if assessment.submitted_at
-                    else None,
-                    "validated_at": assessment.validated_at.isoformat()
-                    if assessment.validated_at
-                    else None,
+                    "submitted_at": self._format_utc_datetime(assessment.submitted_at),
+                    "validated_at": self._format_utc_datetime(assessment.validated_at),
                     "compliance_status": assessment.final_compliance_status.value
                     if assessment.final_compliance_status
                     else None,
@@ -887,12 +901,8 @@ class MLGOOService:
             "blgu_user_id": assessment.blgu_user_id,
             "blgu_user_name": assessment.blgu_user.name if assessment.blgu_user else None,
             "status": assessment.status.value,
-            "submitted_at": assessment.submitted_at.isoformat()
-            if assessment.submitted_at
-            else None,
-            "validated_at": assessment.validated_at.isoformat()
-            if assessment.validated_at
-            else None,
+            "submitted_at": self._format_utc_datetime(assessment.submitted_at),
+            "validated_at": self._format_utc_datetime(assessment.validated_at),
             "compliance_status": assessment.final_compliance_status.value
             if assessment.final_compliance_status
             else None,
@@ -902,41 +912,27 @@ class MLGOOService:
             "can_approve": assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL,
             "can_recalibrate": assessment.can_request_mlgoo_recalibration,
             # Rework tracking (Assessor stage)
-            "rework_requested_at": assessment.rework_requested_at.isoformat()
-            if assessment.rework_requested_at
-            else None,
-            "rework_submitted_at": assessment.rework_submitted_at.isoformat()
-            if assessment.rework_submitted_at
-            else None,
+            "rework_requested_at": self._format_utc_datetime(assessment.rework_requested_at),
+            "rework_submitted_at": self._format_utc_datetime(assessment.rework_submitted_at),
             "rework_count": assessment.rework_count,
             # Calibration tracking (Validator stage)
-            "calibration_requested_at": assessment.calibration_requested_at.isoformat()
-            if assessment.calibration_requested_at
-            else None,
-            "calibration_submitted_at": assessment.calibration_submitted_at.isoformat()
-            if assessment.calibration_submitted_at
-            else None,
+            "calibration_requested_at": self._format_utc_datetime(assessment.calibration_requested_at),
+            "calibration_submitted_at": self._format_utc_datetime(assessment.calibration_submitted_at),
             # MLGOO RE-calibration tracking
             "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
             "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
-            "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat()
-            if assessment.mlgoo_recalibration_requested_at
-            else None,
-            "mlgoo_recalibration_submitted_at": assessment.mlgoo_recalibration_submitted_at.isoformat()
-            if assessment.mlgoo_recalibration_submitted_at
-            else None,
+            "mlgoo_recalibration_requested_at": self._format_utc_datetime(
+                assessment.mlgoo_recalibration_requested_at
+            ),
+            "mlgoo_recalibration_submitted_at": self._format_utc_datetime(
+                assessment.mlgoo_recalibration_submitted_at
+            ),
             "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,
             "mlgoo_recalibration_mov_file_ids": assessment.mlgoo_recalibration_mov_file_ids,
             "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
             # MLGOO approval
-            "mlgoo_approved_at": assessment.mlgoo_approved_at.isoformat()
-            if assessment.mlgoo_approved_at
-            else None,
-            "grace_period_expires_at": (
-                assessment.grace_period_expires_at.isoformat()
-                if assessment.grace_period_expires_at
-                else None
-            ),
+            "mlgoo_approved_at": self._format_utc_datetime(assessment.mlgoo_approved_at),
+            "grace_period_expires_at": self._format_utc_datetime(assessment.grace_period_expires_at),
             "is_locked_for_deadline": assessment.is_locked_for_deadline,
         }
 
