@@ -98,6 +98,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   const { data: municipalOfficesData, isLoading: isLoadingMunicipalOffices } =
     useGetMunicipalOffices(
       { governance_area_id: assessorAreaId ?? undefined, is_active: true },
+        // @ts-expect-error - Query key is generated internally by the hook
       { query: { enabled: role === UserRole.ASSESSOR && assessorAreaId !== null } }
     );
 
