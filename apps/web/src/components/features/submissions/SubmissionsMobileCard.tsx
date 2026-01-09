@@ -1,9 +1,9 @@
 "use client";
 
-import { Eye, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getStatusConfig, getProgressBarColor } from "./utils/statusConfig";
+import { Eye, Loader2, Send } from "lucide-react";
 import type { SubmissionUIModel } from "./utils/dataTransformers";
+import { getProgressBarColor, getStatusConfig } from "./utils/statusConfig";
 
 interface SubmissionsMobileCardProps {
   submission: SubmissionUIModel;
@@ -31,7 +31,7 @@ export function SubmissionsMobileCard({
       {/* Header: Barangay name and status */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <h3 className="font-semibold text-[var(--foreground)] text-base">
-          {submission.barangayName}
+          Brgy. {submission.barangayName}
         </h3>
         <div
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium shrink-0"

@@ -95,10 +95,12 @@ class AssessorService:
         is_validator = assessor.role == UserRole.VALIDATOR
 
         if is_assessor:
-            # Assessors: Filter by their governance area
-            # Show assessments where their area is submitted/in_review
+            # Assessors: Show all submitted assessments, then filter by area status in Python loop
+            # NOTE: We removed Indicator.governance_area_id filter here because:
+            # 1. Assessments with no responses would have NULL indicator_id, excluding them
+            # 2. Assessments with responses only in other areas would be excluded
+            # 3. The proper filtering by area status happens below in the Python loop (lines 150-156)
             query = query.filter(
-                Indicator.governance_area_id == assessor.assessor_area_id,
                 Assessment.status.in_(
                     [
                         AssessmentStatus.SUBMITTED,
@@ -152,7 +154,18 @@ class AssessorService:
                 area_status = a.get_area_status(assessor.assessor_area_id)
                 if area_status == "approved":
                     continue  # Skip - assessor already approved their area
-                if area_status == "draft":
+                # Only skip "draft" areas if the overall assessment is NOT in a submitted/rework status
+                # This handles:
+                # 1. Legacy workflow where BLGUs submit the entire assessment at once
+                # 2. Reverted assessments where area_submission_status was reset to "draft"
+                # (area_submission_status might not be populated, defaulting to "draft")
+                if area_status == "draft" and a.status not in (
+                    AssessmentStatus.SUBMITTED,
+                    AssessmentStatus.SUBMITTED_FOR_REVIEW,
+                    AssessmentStatus.IN_REVIEW,
+                    AssessmentStatus.REWORK,  # Include REWORK - reverted assessments
+                    AssessmentStatus.NEEDS_REWORK,  # Legacy rework status
+                ):
                     continue  # Skip - BLGU hasn't submitted this area yet
 
             # For validators: Check calibration status
