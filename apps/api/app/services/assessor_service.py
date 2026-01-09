@@ -1501,7 +1501,7 @@ class AssessorService:
                 db=db,
                 assessment_id=assessment_id,
                 action="rework_requested",
-                user_id=assessor.id,
+                user_id=assessor.id,  # type: ignore
                 from_status=AssessmentStatus.SUBMITTED_FOR_REVIEW.value,
                 to_status=AssessmentStatus.REWORK.value,
                 extra_data={
@@ -1714,7 +1714,7 @@ class AssessorService:
                 db=db,
                 assessment_id=assessment_id,
                 action="calibration_requested",
-                user_id=validator.id,
+                user_id=validator.id,  # type: ignore
                 from_status=AssessmentStatus.AWAITING_FINAL_VALIDATION.value,
                 to_status=AssessmentStatus.REWORK.value,
                 extra_data={
@@ -1945,8 +1945,9 @@ class AssessorService:
         self.logger.info("[FINALIZE DEBUG] Validation checks passed. Committing to DB...")
 
         # Set validated_at timestamp
+        current_db_assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         assessment.validated_at = (
-            db.query(Assessment).filter(Assessment.id == assessment_id).first().updated_at
+            current_db_assessment.updated_at if current_db_assessment else datetime.utcnow()
         )
         # Note: updated_at is automatically handled by SQLAlchemy's onupdate
 
@@ -1967,7 +1968,7 @@ class AssessorService:
                     db=db,
                     assessment_id=assessment_id,
                     action="review_completed",
-                    user_id=assessor.id,
+                    user_id=assessor.id,  # type: ignore
                     from_status=AssessmentStatus.SUBMITTED_FOR_REVIEW.value,
                     to_status=AssessmentStatus.AWAITING_FINAL_VALIDATION.value,
                     extra_data={"barangay_name": barangay_name},
@@ -1979,7 +1980,7 @@ class AssessorService:
                     db=db,
                     assessment_id=assessment_id,
                     action="validation_completed",
-                    user_id=assessor.id,
+                    user_id=assessor.id,  # type: ignore
                     from_status=AssessmentStatus.AWAITING_FINAL_VALIDATION.value,
                     to_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
                     extra_data={
