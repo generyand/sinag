@@ -916,8 +916,12 @@ class MLGOOService:
             "rework_submitted_at": self._format_utc_datetime(assessment.rework_submitted_at),
             "rework_count": assessment.rework_count,
             # Calibration tracking (Validator stage)
-            "calibration_requested_at": self._format_utc_datetime(assessment.calibration_requested_at),
-            "calibration_submitted_at": self._format_utc_datetime(assessment.calibration_submitted_at),
+            "calibration_requested_at": self._format_utc_datetime(
+                assessment.calibration_requested_at
+            ),
+            "calibration_submitted_at": self._format_utc_datetime(
+                assessment.calibration_submitted_at
+            ),
             # MLGOO RE-calibration tracking
             "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
             "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
@@ -932,7 +936,9 @@ class MLGOOService:
             "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
             # MLGOO approval
             "mlgoo_approved_at": self._format_utc_datetime(assessment.mlgoo_approved_at),
-            "grace_period_expires_at": self._format_utc_datetime(assessment.grace_period_expires_at),
+            "grace_period_expires_at": self._format_utc_datetime(
+                assessment.grace_period_expires_at
+            ),
             "is_locked_for_deadline": assessment.is_locked_for_deadline,
         }
 
