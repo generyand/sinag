@@ -31,47 +31,50 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
-  getGetCapdevAssessmentsAssessmentIdQueryKey,
-  useGetCapdevAssessmentsAssessmentId,
-  useGetMlgooAssessmentsAssessmentId,
-  usePatchMlgooAssessmentResponsesResponseIdOverrideStatus,
-  usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
-  usePostCapdevAssessmentsAssessmentIdRegenerate,
-  usePostMlgooAssessmentsAssessmentIdApprove,
-  usePostMlgooAssessmentsAssessmentIdRecalibrateByMov,
+    getGetCapdevAssessmentsAssessmentIdQueryKey,
+    useGetAssessmentsList,
+    useGetCapdevAssessmentsAssessmentId,
+    useGetMlgooAssessmentsAssessmentId,
+    usePatchMlgooAssessmentResponsesResponseIdOverrideStatus,
+    usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
+    usePostCapdevAssessmentsAssessmentIdRegenerate,
+    usePostMlgooAssessmentsAssessmentIdApprove,
+    usePostMlgooAssessmentsAssessmentIdRecalibrateByMov
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  AlertCircle,
-  AlertTriangle,
-  ArrowLeft,
-  Award,
-  Calendar,
-  CheckCircle,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  Eye,
-  FileCheck,
-  FileText,
-  LayoutDashboard,
-  ListChecks,
-  Loader2,
-  RotateCcw,
-  TrendingUp,
-  Upload,
-  X,
-  XCircle,
+    AlertCircle,
+    AlertTriangle,
+    ArrowLeft,
+    Award,
+    Calendar,
+    CheckCircle,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronUp,
+    Clock,
+    Eye,
+    FileCheck,
+    FileText,
+    LayoutDashboard,
+    ListChecks,
+    Loader2,
+    RotateCcw,
+    TrendingUp,
+    Upload,
+    X,
+    XCircle
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -278,6 +281,32 @@ export default function SubmissionDetailsPage() {
 
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
+
+  // Fetch all submissions for prev/next navigation
+  const { data: allSubmissions } = useGetAssessmentsList({});
+
+  // Compute previous and next submission IDs
+  const { prevSubmissionId, nextSubmissionId, currentIndex, totalSubmissions } = React.useMemo(() => {
+    if (!allSubmissions || !Array.isArray(allSubmissions)) {
+      return { prevSubmissionId: null, nextSubmissionId: null, currentIndex: -1, totalSubmissions: 0 };
+    }
+
+    const sortedSubmissions = [...allSubmissions].sort((a: any, b: any) => {
+      // Sort by barangay name alphabetically for consistent navigation
+      const nameA = a.barangay_name || "";
+      const nameB = b.barangay_name || "";
+      return nameA.localeCompare(nameB);
+    });
+
+    const currentIdx = sortedSubmissions.findIndex((s: any) => s.id === assessmentId);
+    
+    return {
+      prevSubmissionId: currentIdx > 0 ? sortedSubmissions[currentIdx - 1].id : null,
+      nextSubmissionId: currentIdx < sortedSubmissions.length - 1 ? sortedSubmissions[currentIdx + 1].id : null,
+      currentIndex: currentIdx,
+      totalSubmissions: sortedSubmissions.length,
+    };
+  }, [allSubmissions, assessmentId]);
 
   // Track previous CapDev status for notifications
   const prevCapDevStatusRef = React.useRef<string | null>(null);
@@ -772,8 +801,8 @@ export default function SubmissionDetailsPage() {
     <div className="min-h-screen bg-[var(--background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
-          {/* Back Button */}
-          <div>
+          {/* Navigation Bar */}
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               onClick={() => router.push("/mlgoo/submissions")}
@@ -782,6 +811,37 @@ export default function SubmissionDetailsPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Submissions
             </Button>
+
+            {/* Prev/Next Navigation */}
+            <div className="flex items-center gap-2">
+              {totalSubmissions > 0 && (
+                <span className="text-sm text-[var(--muted-foreground)] mr-2">
+                  {currentIndex + 1} of {totalSubmissions}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => prevSubmissionId && router.push(`/mlgoo/submissions/${prevSubmissionId}`)}
+                disabled={!prevSubmissionId}
+                className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
+                title="Previous submission"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => nextSubmissionId && router.push(`/mlgoo/submissions/${nextSubmissionId}`)}
+                disabled={!nextSubmissionId}
+                className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
+                title="Next submission"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
           </div>
 
           {/* Header with Status and Action Buttons */}
