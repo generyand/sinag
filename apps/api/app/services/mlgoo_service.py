@@ -270,7 +270,7 @@ class MLGOOService:
                 db=db,
                 assessment_id=assessment_id,
                 action="approved",
-                user_id=mlgoo_user.id,
+                user_id=mlgoo_user.id,  # type: ignore
                 from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
                 to_status=AssessmentStatus.COMPLETED.value,
                 extra_data={
@@ -444,7 +444,7 @@ class MLGOOService:
                 db=db,
                 assessment_id=assessment_id,
                 action="recalibration_requested",
-                user_id=mlgoo_user.id,
+                user_id=mlgoo_user.id,  # type: ignore
                 from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
                 to_status=AssessmentStatus.REWORK.value,
                 extra_data={
@@ -628,7 +628,7 @@ class MLGOOService:
                 db=db,
                 assessment_id=assessment_id,
                 action="recalibration_requested",
-                user_id=mlgoo_user.id,
+                user_id=mlgoo_user.id,  # type: ignore
                 from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
                 to_status=AssessmentStatus.REWORK.value,
                 extra_data={
