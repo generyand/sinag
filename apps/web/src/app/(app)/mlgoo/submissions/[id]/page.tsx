@@ -802,45 +802,47 @@ export default function SubmissionDetailsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Navigation Bar */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <Button
               variant="ghost"
               onClick={() => router.push("/mlgoo/submissions")}
               className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] rounded-sm transition-colors duration-200"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Submissions
+              <span className="hidden xs:inline">Back to</span> Submissions
             </Button>
 
             {/* Prev/Next Navigation */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
               {totalSubmissions > 0 && (
-                <span className="text-sm text-[var(--muted-foreground)] mr-2">
+                <span className="text-sm text-[var(--muted-foreground)] mr-0 sm:mr-2">
                   {currentIndex + 1} of {totalSubmissions}
                 </span>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => prevSubmissionId && router.push(`/mlgoo/submissions/${prevSubmissionId}`)}
-                disabled={!prevSubmissionId}
-                className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
-                title="Previous submission"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => nextSubmissionId && router.push(`/mlgoo/submissions/${nextSubmissionId}`)}
-                disabled={!nextSubmissionId}
-                className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
-                title="Next submission"
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => prevSubmissionId && router.push(`/mlgoo/submissions/${prevSubmissionId}`)}
+                  disabled={!prevSubmissionId}
+                  className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
+                  title="Previous submission"
+                >
+                  <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Previous</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => nextSubmissionId && router.push(`/mlgoo/submissions/${nextSubmissionId}`)}
+                  disabled={!nextSubmissionId}
+                  className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
+                  title="Next submission"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-4 w-4 sm:ml-1" />
+                </Button>
+              </div>
             </div>
           </div>
 
