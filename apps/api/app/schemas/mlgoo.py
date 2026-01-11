@@ -175,6 +175,7 @@ class IndicatorDetailItem(BaseModel):
     indicator_code: str | None
     validation_status: str | None
     assessor_remarks: str | None
+    is_completed: bool  # Completion status (form filled + required MOVs uploaded)
     is_recalibration_target: bool
     mov_files: list[MOVFileItem] = Field(default_factory=list)
 

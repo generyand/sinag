@@ -190,10 +190,13 @@ class AssessorService:
                     for r in a.responses
                     if r.indicator and r.indicator.governance_area_id == assessor.assessor_area_id
                 ]
+                # Only count responses with actual assessor validation data (assessor_val_* keys)
+                # Not just any non-empty response_data (e.g., assessor_manual_rework_flag alone doesn't count)
                 reviewed_count = sum(
                     1
                     for r in area_responses
-                    if r.response_data is not None and r.response_data != {}
+                    if r.response_data
+                    and any(k.startswith("assessor_val_") for k in r.response_data.keys())
                 )
                 total_count = len(area_responses)
             else:

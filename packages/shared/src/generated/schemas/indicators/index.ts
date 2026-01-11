@@ -477,6 +477,7 @@ export interface IndicatorDetailItem {
   indicator_code: IndicatorDetailItemIndicatorCode;
   validation_status: IndicatorDetailItemValidationStatus;
   assessor_remarks: IndicatorDetailItemAssessorRemarks;
+  is_completed: boolean;
   is_recalibration_target: boolean;
   mov_files?: MOVFileItem[];
 }

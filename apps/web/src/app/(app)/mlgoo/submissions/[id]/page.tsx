@@ -874,10 +874,10 @@ export default function SubmissionDetailsPage() {
               <span
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium ${
                   isAwaitingApproval
-                    ? "bg-yellow-100 text-yellow-800"
+                    ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                     : assessment.status === "COMPLETED"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300"
                 }`}
               >
                 {isAwaitingApproval ? (
@@ -892,7 +892,7 @@ export default function SubmissionDetailsPage() {
 
               {/* Show recalibration count badge if already recalibrated */}
               {assessment.mlgoo_recalibration_count > 0 && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-sm text-xs font-medium bg-purple-100 text-purple-800">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-sm text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
                   <RotateCcw className="h-3 w-3" />
                   Recalibrated {assessment.mlgoo_recalibration_count}x
                 </span>
@@ -954,53 +954,55 @@ export default function SubmissionDetailsPage() {
 
           {/* Recalibration Mode Panel - MOV File Level Selection */}
           {isRecalibrationMode && (
-            <Card className="bg-orange-50 border-orange-200">
+            <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-800">
+                <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-300">
                   <RotateCcw className="h-5 w-5" />
                   Request Recalibration
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-orange-700">
+                <p className="text-sm text-orange-700 dark:text-orange-400">
                   Select the specific MOV files that need to be resubmitted. The BLGU will be given
                   a 3-day grace period to provide replacement documentation for only the selected
                   files.
                 </p>
 
-                <div className="bg-white rounded-sm border border-orange-200 p-4 max-h-[500px] overflow-y-auto">
-                  <p className="text-sm font-medium text-gray-700 mb-3">
+                <div className="bg-white dark:bg-slate-800 rounded-sm border border-orange-200 dark:border-orange-800/50 p-4 max-h-[500px] overflow-y-auto">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Failed/Conditional Indicators ({failedIndicators.length})
                   </p>
                   <div className="space-y-3">
                     {failedIndicators.map((ind) => (
                       <div
                         key={ind.id}
-                        className="border border-gray-200 rounded-lg overflow-hidden"
+                        className="border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden"
                       >
                         {/* Indicator header (non-selectable, just for grouping) */}
                         <div
-                          className="flex items-start gap-3 p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                          className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700"
                           onClick={() => toggleIndicatorExpanded(ind.id)}
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {ind.code} - {formatIndicatorName(ind.name, assessment.cycle_year)}
                             </p>
-                            <p className="text-xs text-gray-500">{ind.areaName}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {ind.areaName}
+                            </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-xs px-2 py-0.5 rounded ${
                                 ind.status?.toUpperCase() === "FAIL"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-yellow-100 text-yellow-700"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                  : "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
                               }`}
                             >
                               {ind.status}
                             </span>
                             {ind.mov_files.length > 0 ? (
-                              <div className="flex items-center text-gray-500">
+                              <div className="flex items-center text-gray-500 dark:text-gray-400">
                                 <FileText className="h-4 w-4 mr-1" />
                                 <span className="text-xs">{ind.mov_files.length}</span>
                                 {expandedIndicators.has(ind.id) ? (
@@ -1010,7 +1012,7 @@ export default function SubmissionDetailsPage() {
                                 )}
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                              <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
                                 <AlertCircle className="h-3 w-3" />
                                 No MOV
                               </span>
@@ -1020,8 +1022,8 @@ export default function SubmissionDetailsPage() {
 
                         {/* Expandable MOV files section with checkboxes */}
                         {expandedIndicators.has(ind.id) && ind.mov_files.length > 0 && (
-                          <div className="p-3 bg-white border-t border-gray-200 space-y-2">
-                            <p className="text-xs font-medium text-gray-600 mb-2">
+                          <div className="p-3 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 space-y-2">
+                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                               Select files to flag for resubmission:
                             </p>
                             {ind.mov_files.map((file: MovFile) => (
@@ -1029,8 +1031,8 @@ export default function SubmissionDetailsPage() {
                                 key={file.id}
                                 className={`flex items-center justify-between p-2 rounded-lg border transition-colors ${
                                   selectedMovFiles.includes(file.id)
-                                    ? "bg-orange-50 border-orange-300"
-                                    : "bg-slate-50 border-slate-100 hover:border-slate-200"
+                                    ? "bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700"
+                                    : "bg-slate-50 dark:bg-slate-700/50 border-slate-100 dark:border-slate-600 hover:border-slate-200 dark:hover:border-slate-500"
                                 }`}
                               >
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1528,9 +1530,9 @@ export default function SubmissionDetailsPage() {
 
           {/* Cannot Recalibrate Notice */}
           {isAwaitingApproval && !canRecalibrate && assessment.mlgoo_recalibration_count > 0 && (
-            <Card className="bg-purple-50 border-purple-200">
+            <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-3 text-purple-700">
+                <div className="flex items-center gap-3 text-purple-700 dark:text-purple-300">
                   <AlertCircle className="h-5 w-5" />
                   <p className="text-sm">
                     Recalibration has already been requested once for this assessment. Each
@@ -1543,17 +1545,17 @@ export default function SubmissionDetailsPage() {
 
           <Tabs defaultValue="overview" className="w-full">
             <div className="flex justify-center mb-8">
-              <TabsList className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 h-auto p-1.5 bg-gray-100/80 rounded-3xl sm:rounded-full border border-gray-200/50 gap-2 sm:gap-0">
+              <TabsList className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 h-auto p-1.5 bg-gray-100/80 dark:bg-slate-800 rounded-3xl sm:rounded-full border border-gray-200/50 dark:border-slate-700 gap-2 sm:gap-0">
                 <TabsTrigger
                   value="overview"
-                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 data-[state=active]:hover:text-white"
+                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 text-gray-600 dark:text-gray-400 data-[state=active]:bg-orange-600 dark:data-[state=active]:bg-orange-600 data-[state=active]:text-white dark:data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 dark:hover:text-orange-400 data-[state=active]:hover:text-white"
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Executive Overview
                 </TabsTrigger>
                 <TabsTrigger
                   value="detailed"
-                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 data-[state=active]:hover:text-white"
+                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 text-gray-600 dark:text-gray-400 data-[state=active]:bg-orange-600 dark:data-[state=active]:bg-orange-600 data-[state=active]:text-white dark:data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 dark:hover:text-orange-400 data-[state=active]:hover:text-white"
                 >
                   <ListChecks className="h-4 w-4" />
                   Detailed Assessment
@@ -1564,35 +1566,45 @@ export default function SubmissionDetailsPage() {
             <TabsContent value="overview" className="space-y-6">
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-600">{overallScore}%</p>
-                      <p className="text-sm text-gray-500 mt-1">Compliance Rate</p>
+                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                        {overallScore}%
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Compliance Rate
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-green-600">{totalPass}</p>
-                      <p className="text-sm text-gray-500 mt-1">Pass</p>
+                      <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                        {totalPass}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pass</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-red-600">{totalFail}</p>
-                      <p className="text-sm text-gray-500 mt-1">Fail</p>
+                      <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+                        {totalFail}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Fail</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-yellow-600">{totalConditional}</p>
-                      <p className="text-sm text-gray-500 mt-1">Conditional</p>
+                      <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                        {totalConditional}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Conditional</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1629,35 +1641,37 @@ export default function SubmissionDetailsPage() {
                     {governanceAreas.map((ga: any) => (
                       <div
                         key={ga.id}
-                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-50 rounded-sm border border-gray-200 gap-4 md:gap-0"
+                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-sm border border-gray-200 dark:border-slate-700 gap-4 md:gap-0"
                       >
                         <div className="flex-1 w-full md:w-auto">
-                          <h4 className="font-medium text-gray-900">{ga.name}</h4>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                            {ga.name}
+                          </h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                             {ga.indicators?.length || 0} indicators
                           </p>
                         </div>
-                        <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto border-t md:border-t-0 border-gray-200/50 pt-3 md:pt-0">
+                        <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto border-t md:border-t-0 border-gray-200/50 dark:border-slate-700/50 pt-3 md:pt-0">
                           <div className="text-center">
-                            <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
                               <CheckCircle className="h-4 w-4" />
                               {ga.pass_count || 0}
                             </span>
-                            <p className="text-xs text-gray-500">Pass</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Pass</p>
                           </div>
                           <div className="text-center">
-                            <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                            <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
                               <XCircle className="h-4 w-4" />
                               {ga.fail_count || 0}
                             </span>
-                            <p className="text-xs text-gray-500">Fail</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Fail</p>
                           </div>
                           <div className="text-center">
-                            <span className="inline-flex items-center gap-1 text-yellow-600 font-medium">
+                            <span className="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium">
                               <AlertCircle className="h-4 w-4" />
                               {ga.conditional_count || 0}
                             </span>
-                            <p className="text-xs text-gray-500">Conditional</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Conditional</p>
                           </div>
                         </div>
                       </div>
@@ -1730,9 +1744,9 @@ export default function SubmissionDetailsPage() {
 
               {/* Recalibration Info (if applicable) */}
               {assessment.is_mlgoo_recalibration && assessment.mlgoo_recalibration_comments && (
-                <Card className="bg-purple-50 border-purple-200">
+                <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-purple-800">
+                    <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-300">
                       <RotateCcw className="h-5 w-5" />
                       Recalibration Details
                     </CardTitle>
@@ -1740,17 +1754,19 @@ export default function SubmissionDetailsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm font-medium text-purple-700">MLGOO Comments:</p>
-                        <p className="text-sm text-purple-900 mt-1">
+                        <p className="text-sm font-medium text-purple-700 dark:text-purple-400">
+                          MLGOO Comments:
+                        </p>
+                        <p className="text-sm text-purple-900 dark:text-purple-200 mt-1">
                           {assessment.mlgoo_recalibration_comments}
                         </p>
                       </div>
                       {assessment.grace_period_expires_at && (
                         <div>
-                          <p className="text-sm font-medium text-purple-700">
+                          <p className="text-sm font-medium text-purple-700 dark:text-purple-400">
                             Grace Period Expires:
                           </p>
-                          <p className="text-sm text-purple-900 mt-1">
+                          <p className="text-sm text-purple-900 dark:text-purple-200 mt-1">
                             {new Date(assessment.grace_period_expires_at).toLocaleString()}
                           </p>
                         </div>
@@ -1766,11 +1782,11 @@ export default function SubmissionDetailsPage() {
                 return (
                   <Card
                     key={`detail-${ga.id}`}
-                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 transition-all duration-300 hover:shadow-md py-0 gap-0"
+                    className="bg-white dark:bg-slate-800/80 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden mb-6 transition-all duration-300 hover:shadow-md py-0 gap-0"
                   >
-                    <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50/30 border-b border-amber-100/50 p-4">
+                    <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50/30 dark:from-slate-700/80 dark:to-slate-800/50 border-b border-amber-100/50 dark:border-slate-600 p-4">
                       <div className="flex items-center gap-4">
-                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-amber-100 p-1">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white dark:bg-slate-600 shadow-sm ring-1 ring-amber-100 dark:ring-slate-500 p-1">
                           <Image
                             src={logoSrc}
                             alt={ga.name}
@@ -1780,17 +1796,17 @@ export default function SubmissionDetailsPage() {
                           />
                         </div>
                         <div>
-                          <CardTitle className="text-lg font-bold text-gray-800">
+                          <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-100">
                             {ga.name}
                           </CardTitle>
-                          <p className="text-sm text-gray-500 font-medium mt-0.5">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-0.5">
                             Performance Indicators
                           </p>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <div className="divide-y divide-gray-100">
+                      <div className="divide-y divide-gray-100 dark:divide-slate-700">
                         {(ga.indicators || []).map((indicator: any) => {
                           const isRecalibrationTarget = indicator.is_recalibration_target;
                           const status = indicator.validation_status?.toUpperCase();
@@ -1799,24 +1815,24 @@ export default function SubmissionDetailsPage() {
                           return (
                             <div
                               key={indicator.indicator_id}
-                              className={`${isRecalibrationTarget ? "bg-purple-50/30" : ""}`}
+                              className={`${isRecalibrationTarget ? "bg-purple-50/30 dark:bg-purple-900/20" : ""}`}
                             >
                               {/* Indicator Header */}
-                              <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                              <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition-colors">
                                 <div className="flex-1 space-y-2">
                                   <div className="flex items-start gap-3">
-                                    <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 text-gray-600 font-mono text-xs font-bold border border-gray-200">
+                                    <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-mono text-xs font-bold border border-gray-200 dark:border-slate-600">
                                       {indicator.indicator_code}
                                     </span>
                                     <div>
-                                      <p className="font-medium text-gray-900 leading-snug">
+                                      <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug">
                                         {formatIndicatorName(
                                           indicator.indicator_name,
                                           assessment.cycle_year
                                         )}
                                       </p>
                                       {isRecalibrationTarget && (
-                                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
+                                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
                                           <RotateCcw className="h-3.5 w-3.5" />
                                           Recalibration Target
                                         </div>
@@ -1824,8 +1840,8 @@ export default function SubmissionDetailsPage() {
                                     </div>
                                   </div>
                                   {indicator.assessor_remarks && (
-                                    <div className="ml-12 mt-1 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border border-gray-100 italic">
-                                      <span className="font-semibold text-gray-700 not-italic mr-1">
+                                    <div className="ml-12 mt-1 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-xs text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-slate-600 italic">
+                                      <span className="font-semibold text-gray-700 dark:text-gray-200 not-italic mr-1">
                                         Remarks:
                                       </span>
                                       {indicator.assessor_remarks}
@@ -1842,7 +1858,7 @@ export default function SubmissionDetailsPage() {
                                       onClick={() =>
                                         toggleIndicatorExpanded(indicator.indicator_id)
                                       }
-                                      className="h-8 px-2 text-gray-500 hover:text-gray-700"
+                                      className="h-8 px-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                     >
                                       <FileText className="h-4 w-4 mr-1" />
                                       <span className="text-xs">{movFiles.length} MOV</span>
@@ -1854,7 +1870,7 @@ export default function SubmissionDetailsPage() {
                                     </Button>
                                   )}
                                   {movFiles.length === 0 && (
-                                    <span className="text-xs text-gray-400 flex items-center gap-1 mr-2">
+                                    <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mr-2">
                                       <AlertCircle className="h-3 w-3" />
                                       No MOV
                                     </span>
@@ -1875,12 +1891,12 @@ export default function SubmissionDetailsPage() {
                                       <SelectTrigger
                                         className={`h-8 w-[130px] text-xs font-bold border shadow-sm ${
                                           status === "PASS"
-                                            ? "bg-green-100 text-green-700 border-green-200"
+                                            ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
                                             : status === "FAIL"
-                                              ? "bg-red-100 text-red-700 border-red-200"
+                                              ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"
                                               : status === "CONDITIONAL"
-                                                ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                                : "bg-gray-100 text-gray-700 border-gray-200"
+                                                ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+                                                : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700"
                                         }`}
                                       >
                                         <SelectValue />
@@ -1910,12 +1926,12 @@ export default function SubmissionDetailsPage() {
                                     <span
                                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm border ${
                                         status === "PASS"
-                                          ? "bg-green-100 text-green-700 border-green-200"
+                                          ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
                                           : status === "FAIL"
-                                            ? "bg-red-100 text-red-700 border-red-200"
+                                            ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"
                                             : status === "CONDITIONAL"
-                                              ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                              : "bg-gray-100 text-gray-700 border-gray-200"
+                                              ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+                                              : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700"
                                       }`}
                                     >
                                       {status === "PASS" && <CheckCircle className="h-3.5 w-3.5" />}
@@ -1932,25 +1948,25 @@ export default function SubmissionDetailsPage() {
                               {/* Expandable MOV Files Section */}
                               {isExpanded && movFiles.length > 0 && (
                                 <div className="px-4 pb-4 pt-0">
-                                  <div className="ml-12 bg-slate-50 rounded-lg border border-slate-200 p-3">
-                                    <p className="text-xs font-medium text-slate-600 mb-2">
+                                  <div className="ml-12 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
                                       Uploaded MOV Files:
                                     </p>
                                     <div className="space-y-2">
                                       {movFiles.map((file: MovFile) => (
                                         <div
                                           key={file.id}
-                                          className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100 hover:border-slate-200 transition-colors"
+                                          className="flex items-center justify-between p-2 bg-white dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-600 hover:border-slate-200 dark:hover:border-slate-500 transition-colors"
                                         >
                                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center flex-shrink-0">
-                                              <FileText className="h-4 w-4 text-slate-600" />
+                                            <div className="w-8 h-8 rounded bg-slate-200 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
+                                              <FileText className="h-4 w-4 text-slate-600 dark:text-slate-300" />
                                             </div>
                                             <div className="min-w-0">
-                                              <p className="text-xs font-medium text-gray-900 truncate">
+                                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                                                 {file.file_name}
                                               </p>
-                                              <p className="text-xs text-gray-500">
+                                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 {Math.round(file.file_size / 1024)} KB
                                               </p>
                                             </div>
@@ -1965,7 +1981,7 @@ export default function SubmissionDetailsPage() {
                                                 file_type: file.file_type,
                                               })
                                             }
-                                            className="h-7 px-2 text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
+                                            className="h-7 px-2 text-xs border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
                                           >
                                             <Eye className="h-3 w-3 mr-1" />
                                             View
@@ -1992,11 +2008,13 @@ export default function SubmissionDetailsPage() {
       {/* File Preview Modal */}
       {previewFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-[80vw] h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-[80vw] h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
               <div>
-                <h2 className="text-lg font-semibold">{previewFile.file_name}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {previewFile.file_name}
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   {previewFile.file_type === "application/pdf" ? "PDF Document" : "Image File"}
                 </p>
@@ -2009,7 +2027,7 @@ export default function SubmissionDetailsPage() {
             </div>
 
             {/* Content - Use SecureFileViewer for secure file access */}
-            <div className="flex-1 overflow-auto bg-white">
+            <div className="flex-1 overflow-auto bg-white dark:bg-slate-900">
               <SecureFileViewer
                 file={{
                   id: previewFile.id,
