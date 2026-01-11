@@ -73,14 +73,14 @@ export function SubmissionsMobileCard({
           <span
             className={
               submission.areasApprovedCount === 6
-                ? "text-green-600 font-medium"
+                ? "text-green-600 dark:text-green-400 font-medium"
                 : "text-[var(--foreground)]"
             }
           >
             {submission.areasApprovedCount}/6
           </span>
           {submission.areasApprovedCount === 6 ? (
-            <span className="inline-flex items-center gap-1 text-green-600">
+            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
               <Check className="h-3.5 w-3.5" />
               Complete
             </span>

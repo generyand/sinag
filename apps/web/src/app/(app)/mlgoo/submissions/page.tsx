@@ -67,12 +67,16 @@ function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel
             <div className="flex items-center gap-2 text-sm cursor-pointer">
               <span className="font-semibold text-[var(--foreground)]">Assessors:</span>
               <span
-                className={isComplete ? "text-green-600 font-medium" : "text-[var(--foreground)]"}
+                className={
+                  isComplete
+                    ? "text-green-600 dark:text-green-400 font-medium"
+                    : "text-[var(--foreground)]"
+                }
               >
                 {areasApprovedCount}/6
               </span>
               {isComplete ? (
-                <span className="inline-flex items-center gap-1 text-green-600">
+                <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
                   <Check className="h-3.5 w-3.5" />
                   Complete
                 </span>
@@ -89,13 +93,15 @@ function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel
             <div className="space-y-2 text-xs">
               {approved.length > 0 && (
                 <div>
-                  <span className="font-semibold text-green-600">Reviewed:</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">
+                    Reviewed:
+                  </span>
                   <span className="ml-1 text-[var(--foreground)]">{approved.join(", ")}</span>
                 </div>
               )}
               {missing.length > 0 && (
                 <div>
-                  <span className="font-semibold text-amber-600">Missing:</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">Missing:</span>
                   <span className="ml-1 text-[var(--foreground)]">{missing.join(", ")}</span>
                 </div>
               )}
@@ -142,10 +148,10 @@ export default function AdminSubmissionsPage() {
   // Show loading if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
+          <p className="text-[var(--muted-foreground)]">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -174,9 +180,9 @@ export default function AdminSubmissionsPage() {
         <div className="max-w-md w-full bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg p-8">
           <div className="text-center">
             {isForbidden ? (
-              <AlertTriangle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <AlertTriangle className="h-12 w-12 text-yellow-600 dark:text-yellow-500 mx-auto mb-4" />
             ) : (
-              <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+              <XCircle className="h-12 w-12 text-red-600 dark:text-red-500 mx-auto mb-4" />
             )}
             <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">{errorTitle}</h2>
             <p className="text-[var(--muted-foreground)] mb-4">{errorMessage}</p>
@@ -252,8 +258,8 @@ export default function AdminSubmissionsPage() {
           {/* Header Section */}
           <div className="relative overflow-hidden bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6 sm:p-8">
             {/* Decorative background elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/20 to-indigo-100/10 rounded-full -translate-y-20 translate-x-20"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/15 to-pink-100/10 rounded-full translate-y-16 -translate-x-16"></div>
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-100/20 to-indigo-100/10 dark:from-blue-900/20 dark:to-indigo-900/10 rounded-full -translate-y-20 translate-x-20"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-100/15 to-pink-100/10 dark:from-purple-900/15 dark:to-pink-900/10 rounded-full translate-y-16 -translate-x-16"></div>
 
             <div className="relative z-10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -281,7 +287,7 @@ export default function AdminSubmissionsPage() {
                       </div>
                     </div>
                     <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
-                      <div className="text-2xl sm:text-3xl font-bold text-green-600">
+                      <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
                         {completedCount}
                       </div>
                       <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">

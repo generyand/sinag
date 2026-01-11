@@ -341,22 +341,22 @@ export function getValidatorDisplayStatus(submission: SubmissionUIModel): Valida
 
   // Final completed states
   if (currentStatus === "Completed" || currentStatus === "Validated") {
-    return { text: "Complete", className: "text-green-600" };
+    return { text: "Complete", className: "text-green-600 dark:text-green-400" };
   }
 
   // MLGOO approval stage
   if (currentStatus === "Awaiting MLGOO Approval") {
-    return { text: "Awaiting MLGOO", className: "text-purple-600" };
+    return { text: "Awaiting MLGOO", className: "text-purple-600 dark:text-purple-400" };
   }
 
   // MLGOO RE-Calibration (special rework from MLGOO)
   if (currentStatus === "MLGOO RE-Calibration") {
-    return { text: "RE-Calibration", className: "text-purple-600" };
+    return { text: "RE-Calibration", className: "text-purple-600 dark:text-purple-400" };
   }
 
   // Awaiting Final Validation (all 6 assessors done)
   if (currentStatus === "Awaiting Final Validation") {
-    return { text: "Awaiting Validation", className: "text-blue-600" };
+    return { text: "Awaiting Validation", className: "text-blue-600 dark:text-blue-400" };
   }
 
   // Still in assessor phase (In Review, Needs Rework, Submitted for Review)
@@ -365,7 +365,7 @@ export function getValidatorDisplayStatus(submission: SubmissionUIModel): Valida
   }
 
   // Fallback for any edge cases with 6/6 areas approved
-  return { text: "Awaiting Validation", className: "text-blue-600" };
+  return { text: "Awaiting Validation", className: "text-blue-600 dark:text-blue-400" };
 }
 
 /**
