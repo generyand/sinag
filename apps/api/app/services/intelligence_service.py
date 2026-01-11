@@ -3017,9 +3017,10 @@ NOW GENERATE the CapDev analysis based on the ACTUAL assessment data provided ab
             (graceful degradation - allows fallback to raw comments).
 
         Note:
-            - Output uses 3rd person POV (e.g., "Barangay lacks X" not "You need to provide X")
+            - Output NEVER includes specific barangay names (anonymized/generalized)
+            - Uses 3rd person POV (e.g., "Annual Budget missing" not "You need to provide X")
+            - Similar comments are compiled/merged into single generalized reasons
             - Reasons are specific and mention actual documents/indicators
-            - Duplicates and similar comments are merged into single reasons
             - Language is hardcoded to English for MLGOO dashboard consistency
         """
         if not raw_comments:
@@ -3051,33 +3052,41 @@ RAW FEEDBACK COMMENTS:
 {comments_list}
 
 REQUIREMENTS:
-1. Use 3rd PERSON POV - These are shown on a dashboard where MLGOO officials
-   view data ABOUT multiple barangays
-   - CORRECT: "Barangay lacks Annual Budget documentation"
+1. NEVER include specific barangay names - Use generic terms instead
+   - WRONG: "Ang Barangay Talas walay pirma sa treasurer"
+   - WRONG: "Barangay San Jose lacks Annual Budget documentation"
+   - CORRECT: "Annual Budget documentation missing treasurer's signature"
+   - CORRECT: "Appropriation Ordinance incomplete or lacking signatures"
+
+2. Use 3rd PERSON POV - These are shown on a dashboard where MLGOO officials
+   view aggregated data across ALL barangays
    - WRONG: "You need to provide Annual Budget documentation"
-   - CORRECT: "Disaster Preparedness Plan not uploaded"
-   - WRONG: "Please upload your Disaster Preparedness Plan"
+   - CORRECT: "Annual Budget documentation incomplete or missing"
 
-2. Be SPECIFIC - Always mention the actual document, indicator, or requirement
-   - CORRECT: "Annual Investment Plan 2024 missing project timelines"
+3. Be SPECIFIC - Always mention the actual document, indicator, or requirement
    - WRONG: "Missing documentation"
+   - CORRECT: "Annual Investment Plan missing project timelines"
 
-3. MERGE similar comments into single reasons - combine related issues
+4. MERGE and COMPILE similar comments into single generalized reasons
+   - If multiple comments mention missing signatures on different docs, combine them
+   - If multiple comments mention the same type of issue, create ONE generalized reason
+   - Example: "Certification walay pirma" + "AIP walay pirma" = "Required documents missing signatures"
+   - Example: "MOV wala" + "Attachment wala" = "Required MOV attachments not uploaded"
 
-4. Keep language SIMPLE and clear - Avoid bureaucratic jargon
+5. Keep language SIMPLE and clear - Avoid bureaucratic jargon
 
-5. Generate at most {max_reasons} distinct reasons, prioritizing common issues
+6. Generate at most {max_reasons} distinct reasons, prioritizing the MOST COMMON issues
 
 OUTPUT FORMAT:
 Return a JSON array of strings, each being a well-formulated reason.
 
 EXAMPLE OUTPUT:
 [
-  "Barangay Annual Budget documentation incomplete or missing",
+  "Annual Budget documentation incomplete or missing required signatures",
   "Disaster Preparedness Plan lacks required evacuation routes",
-  "BDRRMC training records not properly documented",
+  "Required MOV attachments not uploaded or incomplete",
   "Financial statements missing quarterly breakdown",
-  "Social Protection programs lack beneficiary lists"
+  "Certifications lacking proper signatures or authentication"
 ]
 
 Generate the formulated reasons based on the raw feedback above.
