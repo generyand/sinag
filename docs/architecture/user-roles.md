@@ -2,6 +2,8 @@
 
 The SINAG system implements role-based access control (RBAC) with five distinct user roles.
 
+**Last Updated:** 2026-01-11
+
 ## Role Definitions
 
 ### 1. MLGOO_DILG (Admin Role)
@@ -11,23 +13,25 @@ The SINAG system implements role-based access control (RBAC) with five distinct 
 - No barangay or governance area assignments (system-wide access)
 - Replaces the legacy SUPERADMIN role
 
-### 2. VALIDATOR
+### 2. ASSESSOR (Area-Specific)
 
-- DILG validators assigned to specific governance areas
-- Validates assessments for barangays within their assigned governance area
-- **Required field**: `validator_area_id` (governance area assignment)
-- Can determine Pass/Fail/Conditional status for indicators
-- Can request calibration (routes back to same Validator)
+- DILG assessors assigned to one of 6 governance areas
+- **Required field**: `assessor_area_id` (governance area assignment)
+- Can only review indicators within their assigned governance area
+- Can review MOVs and leave comments for their area
+- Cannot set Pass/Fail status (only Validators can)
+- Can request rework for their area (one rework round shared across all 6 assessors)
+- Can approve their area (triggers status transition when all 6 areas approved)
+
+### 3. VALIDATOR (System-Wide)
+
+- DILG validators with system-wide access to all governance areas
+- No governance area restriction (reviews entire assessment after all 6 assessors approve)
+- Validates assessments in `AWAITING_FINAL_VALIDATION` status
+- Can determine Pass/Fail/Conditional status for all indicators
+- Can request calibration (routes back to BLGU, then returns to Validator)
 - Has access to Analytics page (shared with MLGOO_DILG) to view BBI compliance and municipal
   overview
-
-### 3. ASSESSOR
-
-- DILG assessors who can work with any barangay
-- No pre-assigned governance areas (flexible assignment)
-- Can review MOVs and leave comments
-- Cannot set Pass/Fail status (only Validators can)
-- Can request rework (one cycle allowed)
 
 ### 4. BLGU_USER
 
@@ -49,17 +53,17 @@ The system enforces strict role-based field validation:
 
 ```python
 # Enforced by user_service.py
-VALIDATOR role → Requires validator_area_id
+ASSESSOR role  → Requires assessor_area_id (governance area assignment)
                  Clears barangay_id automatically
 
-BLGU_USER role → Requires barangay_id
-                 Clears validator_area_id automatically
+VALIDATOR role → No area assignment required (system-wide access)
+                 Clears barangay_id and assessor_area_id automatically
 
-ASSESSOR role  → No assignments required
-                 Clears both validator_area_id and barangay_id
+BLGU_USER role → Requires barangay_id
+                 Clears assessor_area_id automatically
 
 MLGOO_DILG role → No assignments required
-                  Clears both validator_area_id and barangay_id
+                  Clears both assessor_area_id and barangay_id
 
 KATUPARAN_CENTER_USER → No assignments required
                         External read-only access
@@ -69,13 +73,14 @@ KATUPARAN_CENTER_USER → No assignments required
 
 The User model includes these role-related fields:
 
-| Field               | Type               | Description                                                       |
-| ------------------- | ------------------ | ----------------------------------------------------------------- |
-| `role`              | String enum        | MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER |
-| `validator_area_id` | Integer (nullable) | FK to governance_areas table                                      |
-| `barangay_id`       | Integer (nullable) | FK to barangays table                                             |
+| Field              | Type               | Description                                                       |
+| ------------------ | ------------------ | ----------------------------------------------------------------- |
+| `role`             | String enum        | MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER |
+| `assessor_area_id` | Integer (nullable) | FK to governance_areas table (for ASSESSOR role only)             |
+| `barangay_id`      | Integer (nullable) | FK to barangays table (for BLGU_USER role only)                   |
 
-**Note**: The field `governance_area_id` was renamed to `validator_area_id` in November 2025.
+**Note**: The field `validator_area_id` was renamed to `assessor_area_id` in January 2026 as part of
+the workflow restructuring where Assessors became area-specific and Validators became system-wide.
 
 ## Admin Endpoints
 

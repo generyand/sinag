@@ -114,29 +114,33 @@ FastAPI → /openapi.json → Orval → packages/shared/src/generated/
 ## Assessment Workflow
 
 ```
-DRAFT → SUBMITTED → IN_REVIEW → AWAITING_FINAL_VALIDATION → AWAITING_MLGOO_APPROVAL → COMPLETED
-                ↓                        ↓                            ↓
-              REWORK ←──────────── (Calibration) ←─────────── (RE-calibration)
+DRAFT → SUBMITTED → [6 Assessors Review Per-Area] → AWAITING_FINAL_VALIDATION → AWAITING_MLGOO_APPROVAL → COMPLETED
+                ↓                                            ↓                            ↓
+              REWORK ←────────────────────────────── (Calibration) ←─────────── (RE-calibration)
 ```
 
-| Role       | Responsibility                                  |
-| ---------- | ----------------------------------------------- |
-| BLGU_USER  | Submit assessments with MOVs                    |
-| ASSESSOR   | Review, provide feedback, request rework (once) |
-| VALIDATOR  | Determine Pass/Fail, request calibration        |
-| MLGOO_DILG | Final approval, request RE-calibration          |
+| Role       | Responsibility                                                 |
+| ---------- | -------------------------------------------------------------- |
+| BLGU_USER  | Submit assessments with MOVs                                   |
+| ASSESSOR   | Review assigned governance area, approve/rework (per-area)     |
+| VALIDATOR  | Final validation (all areas), determine Pass/Fail, calibration |
+| MLGOO_DILG | Final approval, request RE-calibration                         |
+
+**Per-Area Workflow (January 2026):** Each of the 6 governance areas has a dedicated assessor. When
+all 6 assessors approve their areas, the assessment moves to `AWAITING_FINAL_VALIDATION` for the
+system-wide Validator to review.
 
 See `docs/workflows/assessor-validation.md` for detailed workflow.
 
 ## User Roles
 
-| Role                  | Access                      | Required Field      |
-| --------------------- | --------------------------- | ------------------- |
-| MLGOO_DILG            | System-wide admin           | None                |
-| VALIDATOR             | Assigned governance area    | `validator_area_id` |
-| ASSESSOR              | All barangays (review only) | None                |
-| BLGU_USER             | Own barangay only           | `barangay_id`       |
-| KATUPARAN_CENTER_USER | Read-only analytics         | None                |
+| Role                  | Access                   | Required Field     |
+| --------------------- | ------------------------ | ------------------ |
+| MLGOO_DILG            | System-wide admin        | None               |
+| ASSESSOR              | Assigned governance area | `assessor_area_id` |
+| VALIDATOR             | System-wide (all areas)  | None               |
+| BLGU_USER             | Own barangay only        | `barangay_id`      |
+| KATUPARAN_CENTER_USER | Read-only analytics      | None               |
 
 See `docs/architecture/user-roles.md` for details.
 
