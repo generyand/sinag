@@ -1181,9 +1181,12 @@ class AssessorService:
                 "assessment_status": assessment.status.value,
             }
 
-        if area_status not in ("submitted", "in_review"):
+        # Allow "draft" status because area_submission_status may not be initialized yet
+        # When assessment is SUBMITTED but area hasn't been explicitly tracked,
+        # get_area_status() returns "draft" - this is valid for approval
+        if area_status not in ("draft", "submitted", "in_review"):
             raise ValueError(
-                f"Area is in '{area_status}' status. Can only approve areas in 'submitted' or 'in_review' status."
+                f"Area is in '{area_status}' status. Can only approve areas in 'draft', 'submitted', or 'in_review' status."
             )
 
         # Get governance area name
@@ -1306,9 +1309,12 @@ class AssessorService:
         if area_status == "rework":
             raise ValueError("Area is already in rework status")
 
-        if area_status not in ("submitted", "in_review"):
+        # Allow "draft" status because area_submission_status may not be initialized yet
+        # When assessment is SUBMITTED but area hasn't been explicitly tracked,
+        # get_area_status() returns "draft" - this is valid for rework request
+        if area_status not in ("draft", "submitted", "in_review"):
             raise ValueError(
-                f"Area is in '{area_status}' status. Can only request rework for areas in 'submitted' or 'in_review' status."
+                f"Area is in '{area_status}' status. Can only request rework for areas in 'draft', 'submitted', or 'in_review' status."
             )
 
         # Get governance area name
