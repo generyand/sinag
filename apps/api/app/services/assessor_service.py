@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import UploadFile
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 logger = logging.getLogger(__name__)
@@ -114,13 +114,15 @@ class AssessorService:
         elif is_validator:
             # Validators: System-wide access
             # Show assessments in AWAITING_FINAL_VALIDATION (all 6 areas approved)
-            # ALSO show REWORK for parallel calibration
+            # ALSO show REWORK ONLY if it's a calibration rework (validator-initiated)
+            # Do NOT show assessor-initiated rework (is_calibration_rework = False)
             query = query.filter(
-                Assessment.status.in_(
-                    [
-                        AssessmentStatus.AWAITING_FINAL_VALIDATION,
-                        AssessmentStatus.REWORK,  # Include for parallel calibration
-                    ]
+                or_(
+                    Assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                    and_(
+                        Assessment.status == AssessmentStatus.REWORK,
+                        Assessment.is_calibration_rework == True,  # noqa: E712 - SQLAlchemy requires ==
+                    ),
                 ),
             )
         else:
