@@ -1,41 +1,27 @@
 import { useAuthStore } from "@/store/useAuthStore";
-import { GovernanceArea } from "@sinag/shared";
-import { useGovernanceAreas } from "./useGovernanceAreas";
 
 /**
- * Custom hook to get the assigned governance area for Validators.
- * This is similar to useAssessorGovernanceArea but for validators.
+ * Custom hook for Validators.
+ *
+ * After the workflow restructuring, VALIDATOR is now a system-wide role.
+ * Validators review assessments after all 6 governance areas are approved by assessors.
+ * They do not have a specific governance area assignment.
+ *
+ * This hook is kept for backward compatibility but now returns "All Governance Areas"
+ * to indicate the system-wide nature of the validator role.
  */
 export function useValidatorGovernanceArea() {
   const { user } = useAuthStore();
-  const { data: governanceAreasData, isLoading, error } = useGovernanceAreas();
 
-  const getValidatorGovernanceArea = (): { name: string | null; code: string | null } => {
-    if (!user || user.role !== "VALIDATOR") {
-      return { name: null, code: null };
-    }
-
-    if (!user.validator_area_id || !governanceAreasData) {
-      return { name: "Unknown Governance Area", code: null };
-    }
-
-    const governanceArea = (governanceAreasData as GovernanceArea[]).find(
-      (ga: GovernanceArea) => ga.id === user.validator_area_id
-    );
-
-    return {
-      name: governanceArea?.name || "Unknown Governance Area",
-      code: governanceArea?.code || null,
-    };
-  };
-
-  const areaData = getValidatorGovernanceArea();
+  const isValidator = user?.role === "VALIDATOR";
 
   return {
-    governanceAreaName: areaData.name,
-    governanceAreaCode: areaData.code,
-    isLoading,
-    error,
-    governanceAreaId: user?.validator_area_id,
+    // Validators are now system-wide - they handle all governance areas
+    governanceAreaName: isValidator ? "All Governance Areas" : null,
+    governanceAreaCode: null, // No specific area code for system-wide validators
+    isLoading: false, // No data fetching needed since validators are system-wide
+    error: null,
+    governanceAreaId: null, // Validators no longer have area assignments
+    isSystemWide: isValidator, // New flag to indicate system-wide scope
   };
 }

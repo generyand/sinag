@@ -17,17 +17,14 @@ const LOGOS = [
   {
     src: "/officialLogo/DILG.webp",
     alt: "Department of the Interior and Local Government (DILG)",
-    href: "https://dilg.gov.ph",
   },
   {
     src: "/officialLogo/MLGRC.webp",
     alt: "Municipal Local Government Resource Center (MLGRC)",
-    href: "https://www.mlgrc.ph",
   },
   {
     src: "/officialLogo/Municipality.webp",
     alt: "Municipality of Sulop Official Seal",
-    href: "https://sulop.gov.ph",
   },
 ];
 
@@ -69,16 +66,9 @@ export function OfficialLogos({
         )}
       >
         {LOGOS.map((logo) => (
-          <a
+          <div
             key={logo.src}
-            href={logo.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "relative flex-shrink-0 transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-400 rounded-lg",
-              sizeClasses[variant]
-            )}
-            aria-label={`${logo.alt} (opens in new tab)`}
+            className={cn("relative flex-shrink-0 rounded-lg", sizeClasses[variant])}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -87,7 +77,7 @@ export function OfficialLogos({
               className="w-full h-full object-contain"
               loading="eager"
             />
-          </a>
+          </div>
         ))}
       </div>
 

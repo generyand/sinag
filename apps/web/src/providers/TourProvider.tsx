@@ -260,15 +260,23 @@ export function TourProvider({ children }: TourProviderProps) {
     }
   }, [currentStepIndex]);
 
-  // Skip tour (mark as seen but not completed)
+  // Skip tour (mark as complete so it doesn't show again)
+  // User can manually restart tour via TourHelpButton if needed
   const skipTour = useCallback(async () => {
+    const tourToMark = currentTour;
     stopTour();
     try {
-      await markTourSeenMutation.mutateAsync();
+      if (tourToMark) {
+        // Mark the specific tour as complete to prevent it from showing again
+        await markTourCompleteMutation.mutateAsync({ tourName: tourToMark });
+      } else {
+        // Fallback: at least mark as seen
+        await markTourSeenMutation.mutateAsync();
+      }
     } catch (error) {
-      console.error("Failed to mark tour as seen:", error);
+      console.error("Failed to mark tour as skipped:", error);
     }
-  }, [stopTour, markTourSeenMutation]);
+  }, [stopTour, currentTour, markTourCompleteMutation, markTourSeenMutation]);
 
   // Mark a specific tour as complete
   const markTourComplete = useCallback(

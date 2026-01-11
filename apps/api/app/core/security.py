@@ -228,8 +228,8 @@ def is_token_blacklisted(token: str) -> bool:
 # ============================================================================
 
 # Configuration
-MAX_FAILED_ATTEMPTS = 5  # Lock after 5 failed attempts
-LOCKOUT_WINDOW_SECONDS = 900  # 15 minute lockout window
+MAX_FAILED_ATTEMPTS = 10  # Lock after 10 failed attempts (testing)
+LOCKOUT_WINDOW_SECONDS = 60  # 1 minute lockout window (testing)
 
 
 def record_failed_login(email: str, ip_address: str | None = None) -> int:

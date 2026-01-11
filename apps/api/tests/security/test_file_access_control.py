@@ -163,10 +163,10 @@ class TestCrossUserFileAccess:
 
         Verifies:
         - Validators have access to their assigned governance areas
-        - Authorization respects validator_area_id
+        - Authorization respects assessor_area_id
         """
         # Ensure validator is assigned to the governance area
-        test_validator_user.validator_area_id = mock_governance_area.id
+        test_validator_user.assessor_area_id = mock_governance_area.id
         db_session.commit()
 
         # BLGU uploads a file

@@ -7,6 +7,7 @@ import type { OverallComplianceResponse } from '../compliance';
 import type { GovernanceAreaPerformanceResponse } from '../governanceareaperformance';
 import type { TopFailingIndicatorsResponse } from '../indicators';
 import type { AnonymizedAIInsightsResponse } from '../system';
+import type { BBIFunctionalityTrendsResponse } from '../bbis';
 import type { BBIInfo } from '../bbis';
 import type { BarangayBBIStatus } from '../bbis';
 import type { BBIDistribution } from '../bbis';
@@ -147,9 +148,17 @@ export interface ExternalAnalyticsDashboardResponse {
   governance_area_performance: GovernanceAreaPerformanceResponse;
   top_failing_indicators: TopFailingIndicatorsResponse;
   ai_insights: AnonymizedAIInsightsResponse;
+  /** BBI functionality trends (optional, may be null if no BBI data) */
+  bbi_trends?: ExternalAnalyticsDashboardResponseBbiTrends;
   /** Privacy disclaimer */
   data_disclaimer?: string;
 }
+
+
+/**
+ * ExternalAnalyticsDashboardResponseBbiTrends
+ */
+export type ExternalAnalyticsDashboardResponseBbiTrends = BBIFunctionalityTrendsResponse | null;
 
 
 /**
@@ -232,6 +241,17 @@ assessment_cycle?: string | null;
 
 
 /**
+ * GetExternalAnalyticsBbiTrendsParams
+ */
+export type GetExternalAnalyticsBbiTrendsParams = {
+/**
+ * Assessment year filter
+ */
+assessment_year?: number | null;
+};
+
+
+/**
  * GetExternalAnalyticsDashboardParams
  */
 export type GetExternalAnalyticsDashboardParams = {
@@ -261,6 +281,17 @@ export type GetExternalAnalyticsExportPdfParams = {
  * Assessment cycle filter
  */
 assessment_cycle?: string | null;
+};
+
+
+/**
+ * GetExternalAnalyticsGeographicHeatmapParams
+ */
+export type GetExternalAnalyticsGeographicHeatmapParams = {
+/**
+ * Assessment year filter
+ */
+assessment_year?: number | null;
 };
 
 

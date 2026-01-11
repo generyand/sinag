@@ -29,12 +29,38 @@ interface ExtendedBarangayAssessmentStatus extends BarangayAssessmentStatus {
 type SortField = "barangay_name" | "status" | "governance_areas" | "indicators";
 type SortDirection = "asc" | "desc";
 
+/**
+ * Maps pipeline filter values (from ComplianceSummaryCard) to actual status values.
+ * Pipeline uses lowercase_underscored, status uses UPPERCASE.
+ */
+export const PIPELINE_TO_STATUS_MAP: Record<string, string | string[]> = {
+  all: "all",
+  not_started: "NO_ASSESSMENT",
+  draft: "DRAFT",
+  submitted: "SUBMITTED",
+  in_review: "IN_REVIEW",
+  awaiting_validation: "AWAITING_FINAL_VALIDATION",
+  awaiting_approval: "AWAITING_MLGOO_APPROVAL",
+  completed: "COMPLETED",
+  rework: "REWORK",
+  passed: "PASSED", // Special: filters by compliance_status
+  failed: "FAILED", // Special: filters by compliance_status
+  in_progress: ["DRAFT", "SUBMITTED", "IN_REVIEW", "REWORK", "AWAITING_FINAL_VALIDATION"], // Multiple statuses
+};
+
+/** Stalled threshold in days - assessments inactive for longer are considered stalled */
+const STALLED_THRESHOLD_DAYS = 14;
+
 interface BarangayStatusTableProps {
   data: BarangayStatusList | null | undefined;
   /** Callback when View CapDev is clicked. Receives assessment_id. */
   onViewCapDev?: (assessmentId: number) => void;
   /** Callback when View Details is clicked. Receives assessment_id. */
   onViewDetails?: (assessmentId: number) => void;
+  /** External filter from pipeline (e.g., "not_started", "draft", etc.) */
+  pipelineFilter?: string;
+  /** Callback when status filter changes */
+  onPipelineFilterChange?: (filter: string) => void;
 }
 
 /**
@@ -151,13 +177,30 @@ export function BarangayStatusTable({
   data,
   onViewCapDev,
   onViewDetails,
+  pipelineFilter,
+  onPipelineFilterChange,
 }: BarangayStatusTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [internalStatusFilter, setInternalStatusFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("barangay_name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+
+  // Use external pipeline filter if provided, otherwise use internal state
+  const effectiveFilter = pipelineFilter ?? internalStatusFilter;
+
+  // Handler for filter changes - uses external callback if provided
+  const handleFilterChange = useCallback(
+    (filter: string) => {
+      if (onPipelineFilterChange) {
+        onPipelineFilterChange(filter);
+      } else {
+        setInternalStatusFilter(filter);
+      }
+    },
+    [onPipelineFilterChange]
+  );
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -180,13 +223,45 @@ export function BarangayStatusTable({
   const filteredBarangays = useMemo(() => {
     if (!data?.barangays) return [];
 
+    // Map pipeline filter to actual status value(s)
+    const mappedFilter = PIPELINE_TO_STATUS_MAP[effectiveFilter] ?? effectiveFilter;
+
     let result = data.barangays
       .map((b) => b as ExtendedBarangayAssessmentStatus)
       .filter((barangay) => {
         const matchesSearch = barangay.barangay_name
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === "all" || barangay.status === statusFilter;
+
+        // Handle different filter types
+        let matchesStatus = false;
+        if (effectiveFilter === "all" || mappedFilter === "all") {
+          matchesStatus = true;
+        } else if (effectiveFilter === "passed") {
+          // Filter by compliance_status for passed
+          matchesStatus = barangay.compliance_status === "PASSED";
+        } else if (effectiveFilter === "failed") {
+          // Filter by compliance_status for failed
+          matchesStatus = barangay.compliance_status === "FAILED";
+        } else if (effectiveFilter === "stalled") {
+          // Stalled: assessments submitted > 14 days ago that aren't completed
+          if (barangay.submitted_at && barangay.status !== "COMPLETED") {
+            const submittedDate = new Date(barangay.submitted_at);
+            const daysSinceSubmission = Math.floor(
+              (Date.now() - submittedDate.getTime()) / (1000 * 60 * 60 * 24)
+            );
+            matchesStatus = daysSinceSubmission > STALLED_THRESHOLD_DAYS;
+          } else {
+            matchesStatus = false;
+          }
+        } else if (Array.isArray(mappedFilter)) {
+          // Multiple status values (e.g., in_progress)
+          matchesStatus = mappedFilter.includes(barangay.status);
+        } else {
+          // Single status value
+          matchesStatus = barangay.status === mappedFilter;
+        }
+
         return matchesSearch && matchesStatus;
       });
 
@@ -215,7 +290,7 @@ export function BarangayStatusTable({
     });
 
     return result;
-  }, [data?.barangays, searchTerm, statusFilter, sortField, sortDirection]);
+  }, [data?.barangays, searchTerm, effectiveFilter, sortField, sortDirection]);
 
   const getUnifiedStatusBadge = (barangay: ExtendedBarangayAssessmentStatus) => {
     // Backend now only sets compliance_status when status === COMPLETED
@@ -292,11 +367,11 @@ export function BarangayStatusTable({
               </div>
               <div className="flex gap-2" role="group" aria-label="Status filter">
                 <Button
-                  variant={statusFilter === "all" ? "default" : "outline"}
+                  variant={effectiveFilter === "all" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setStatusFilter("all")}
+                  onClick={() => handleFilterChange("all")}
                   className={`rounded-sm ${
-                    statusFilter === "all"
+                    effectiveFilter === "all"
                       ? "bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]"
                       : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
@@ -304,11 +379,11 @@ export function BarangayStatusTable({
                   All
                 </Button>
                 <Button
-                  variant={statusFilter === "COMPLETED" ? "default" : "outline"}
+                  variant={effectiveFilter === "completed" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setStatusFilter("COMPLETED")}
+                  onClick={() => handleFilterChange("completed")}
                   className={`rounded-sm ${
-                    statusFilter === "COMPLETED"
+                    effectiveFilter === "completed"
                       ? "bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]"
                       : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
@@ -316,11 +391,11 @@ export function BarangayStatusTable({
                   Completed
                 </Button>
                 <Button
-                  variant={statusFilter === "AWAITING_MLGOO_APPROVAL" ? "default" : "outline"}
+                  variant={effectiveFilter === "awaiting_approval" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setStatusFilter("AWAITING_MLGOO_APPROVAL")}
+                  onClick={() => handleFilterChange("awaiting_approval")}
                   className={`rounded-sm ${
-                    statusFilter === "AWAITING_MLGOO_APPROVAL"
+                    effectiveFilter === "awaiting_approval"
                       ? "bg-[var(--cityscape-yellow)] text-[var(--foreground)] hover:bg-[var(--cityscape-yellow-dark)]"
                       : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
@@ -436,7 +511,7 @@ export function BarangayStatusTable({
                             variant="no-barangays"
                             compact
                             description={
-                              searchTerm || statusFilter !== "all"
+                              searchTerm || effectiveFilter !== "all"
                                 ? "No barangays match your search or filter criteria."
                                 : undefined
                             }
@@ -459,7 +534,7 @@ export function BarangayStatusTable({
 
             {/* Live region for screen readers */}
             <div aria-live="polite" aria-atomic="true" className="sr-only">
-              {searchTerm || statusFilter !== "all"
+              {searchTerm || effectiveFilter !== "all"
                 ? `Filtered to ${filteredBarangays.length} of ${data?.barangays?.length ?? 0} barangays`
                 : `${filteredBarangays.length} barangays displayed`}
             </div>

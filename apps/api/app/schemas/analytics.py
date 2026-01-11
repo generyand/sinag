@@ -351,6 +351,7 @@ class BarangayMapPoint(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     barangay_id: int = Field(..., description="Unique identifier for the barangay")
+    assessment_id: int | None = Field(None, description="Assessment ID for linking to GAR report")
     name: str = Field(..., description="Barangay name")
     lat: float | None = Field(None, description="Latitude coordinate")
     lng: float | None = Field(None, description="Longitude coordinate")
@@ -389,6 +390,16 @@ class AssessmentRow(BaseModel):
         None, description="Number of governance areas passed"
     )
     total_governance_areas: int | None = Field(None, description="Total number of governance areas")
+    core_areas_passed: int | None = Field(
+        None, description="Number of core governance areas passed (FAS, DP, SPO)"
+    )
+    total_core_areas: int = Field(default=3, description="Total number of core areas (always 3)")
+    essential_areas_passed: int | None = Field(
+        None, description="Number of essential governance areas passed (SPS, BFC, EM)"
+    )
+    total_essential_areas: int = Field(
+        default=3, description="Total number of essential areas (always 3)"
+    )
     indicators_passed: int | None = Field(
         None, description="Number of indicators passed (Pass/Conditional)"
     )

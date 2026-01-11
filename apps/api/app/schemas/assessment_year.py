@@ -42,6 +42,26 @@ class AssessmentYearBase(BaseModel):
         None, max_length=500, description="Optional description for this year"
     )
 
+    # Deadline Window Configuration (duration in days)
+    submission_window_days: int | None = Field(
+        60,
+        ge=1,
+        le=365,
+        description="Days for initial submission window (~30-60 days recommended)",
+    )
+    rework_window_days: int | None = Field(
+        5,
+        ge=1,
+        le=30,
+        description="Days BLGU has to resubmit after Assessor triggers rework",
+    )
+    calibration_window_days: int | None = Field(
+        3,
+        ge=1,
+        le=30,
+        description="Days BLGU has to resubmit after Validator triggers calibration",
+    )
+
 
 class AssessmentYearCreate(AssessmentYearBase):
     """Schema for creating a new assessment year."""
@@ -66,6 +86,17 @@ class AssessmentYearUpdate(BaseModel):
     )
     description: str | None = Field(None, max_length=500, description="New description")
 
+    # Deadline Window Configuration (duration in days)
+    submission_window_days: int | None = Field(
+        None, ge=1, le=365, description="Days for initial submission window"
+    )
+    rework_window_days: int | None = Field(
+        None, ge=1, le=30, description="Days BLGU has after Assessor triggers rework"
+    )
+    calibration_window_days: int | None = Field(
+        None, ge=1, le=30, description="Days BLGU has after Validator triggers calibration"
+    )
+
 
 class AssessmentYearResponse(BaseModel):
     """Response schema for assessment year."""
@@ -87,6 +118,11 @@ class AssessmentYearResponse(BaseModel):
     updated_at: datetime | None = None
     activated_at: datetime | None = None
     deactivated_at: datetime | None = None
+
+    # Deadline Window Configuration (duration in days)
+    submission_window_days: int | None = None
+    rework_window_days: int | None = None
+    calibration_window_days: int | None = None
 
     # Nested user relationships
     activated_by: UserNested | None = None

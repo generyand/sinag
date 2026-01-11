@@ -26,13 +26,16 @@ import type {
   AssessmentDetailsResponse,
   AssessorAnalyticsResponse,
   AssessorQueueItem,
+  BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost,
   BodyUploadMovFileForAssessorApiV1AssessorAssessmentResponsesResponseIdMovsUploadPost,
+  GetAssessorDashboardParams,
   GetAssessorHistoryParams,
   GetAssessorQueueParams,
   GetAssessorStatsParams,
   HTTPValidationError,
   MOVCreate,
   MOVUploadResponse,
+  MunicipalOverviewDashboard,
   ReviewHistoryDetail,
   ReviewHistoryResponse,
   ValidationRequest,
@@ -126,10 +129,10 @@ export function useGetAssessorQueue<TData = Awaited<ReturnType<typeof getAssesso
 /**
  * Get statistics for the assessor/validator.
 
-For validators, returns:
-- validated_count: Number of assessments where the validator has completed their governance area
+For area-specific assessors (after workflow restructuring), returns:
+- validated_count: Number of assessments where the assessor has completed their governance area
 
-For assessors, returns:
+For system-wide validators, returns:
 - validated_count: 0 (not applicable)
  * @summary Get Assessor Stats
  */
@@ -589,16 +592,17 @@ export const usePostAssessorAssessmentsAssessmentIdRework = <TError = HTTPValida
     /**
  * Submit assessment for calibration (Validators only).
 
-Calibration sends ONLY the validator's governance area indicators back to
-BLGU for corrections. Unlike Rework (which affects all indicators),
-Calibration only affects indicators in the validator's assigned governance area.
+After workflow restructuring: Validators are system-wide.
+Calibration sends the assessment back to BLGU for corrections on flagged indicators.
+Only 1 calibration round is allowed per assessment.
 
 Requirements:
-- User must be a Validator (have validator_area_id assigned)
+- User must be a Validator (system-wide role after restructuring)
 - Assessment must be in AWAITING_FINAL_VALIDATION status
-- At least one indicator in the validator's area must have feedback (comments or MOV annotations)
+- At least one indicator must have feedback (comments or MOV annotations)
+- Calibration round must not have been used already
 
-The validator must have permission to review assessments in their governance area.
+The validator must have permission to review assessments (system-wide access).
  * @summary Submit For Calibration
  */
 export const postAssessorAssessments$AssessmentIdCalibrate = (
@@ -865,6 +869,98 @@ export function useGetAssessorAnalytics<TData = Awaited<ReturnType<typeof getAss
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAssessorAnalyticsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Get comprehensive assessor dashboard data for their governance area.
+
+After workflow restructuring: ASSESSORs are area-specific.
+This endpoint provides assessor-specific analytics that mirror the MLGOO
+municipal overview but filtered by the assessor's assigned governance area.
+
+**Access:** ASSESSOR role users with area assignment only
+
+Returns all dashboard sections in a single request:
+- Compliance summary (pass/fail counts, rates) for their governance area
+- Governance area performance (limited to their area)
+- Top failing indicators in their area
+- Aggregated CapDev summary for their area
+- Barangay status list (barangays with responses in their area)
+
+Args:
+    year: Optional year filter (e.g., 2024, 2025)
+    include_draft: Include draft assessments in barangay list
+    db: Database session
+    current_user: Authenticated assessor user
+
+Returns:
+    Assessor dashboard with all sections filtered by governance area
+ * @summary Get Validator Dashboard
+ */
+export const getAssessorDashboard = (
+    params?: GetAssessorDashboardParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<MunicipalOverviewDashboard>(
+      {url: `/api/v1/assessor/dashboard`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAssessorDashboardQueryKey = (params?: GetAssessorDashboardParams,) => {
+    return [
+    `/api/v1/assessor/dashboard`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetAssessorDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorDashboard>>, TError = HTTPValidationError>(params?: GetAssessorDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorDashboardQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorDashboard>>> = ({ signal }) => getAssessorDashboard(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorDashboard>>>
+export type GetAssessorDashboardQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Validator Dashboard
+ */
+
+export function useGetAssessorDashboard<TData = Awaited<ReturnType<typeof getAssessorDashboard>>, TError = HTTPValidationError>(
+ params?: GetAssessorDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorDashboard>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorDashboardQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1376,6 +1472,175 @@ export const useDeleteAssessorAnnotationsAnnotationId = <TError = HTTPValidation
       > => {
 
       const mutationOptions = getDeleteAssessorAnnotationsAnnotationIdMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Assessor approves their assigned governance area.
+
+After workflow restructuring, assessors are area-specific (6 users for 6 areas).
+Each assessor can only approve their assigned governance area.
+
+When all 6 areas are approved, the assessment moves to AWAITING_FINAL_VALIDATION.
+
+**Path Parameters:**
+- assessment_id: ID of the assessment
+- governance_area_id: ID of the governance area (1-6)
+
+**Returns:** Success status, new area status, and whether all areas are approved
+
+**Raises:**
+- 403: User not authorized for this governance area
+- 404: Assessment not found
+- 400: Area cannot be approved (wrong status)
+ * @summary Approve governance area
+ */
+export const postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove = (
+    assessmentId: number,
+    governanceAreaId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `/api/v1/assessor/assessments/${assessmentId}/areas/${governanceAreaId}/approve`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApproveMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove>>, TError,{assessmentId: number;governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove>>, TError,{assessmentId: number;governanceAreaId: number}, TContext> => {
+
+const mutationKey = ['postAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApprove'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove>>, {assessmentId: number;governanceAreaId: number}> = (props) => {
+          const {assessmentId,governanceAreaId} = props ?? {};
+
+          return  postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove(assessmentId,governanceAreaId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApproveMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove>>>
+    
+    export type PostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApproveMutationError = HTTPValidationError
+
+    /**
+ * @summary Approve governance area
+ */
+export const usePostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApprove = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove>>, TError,{assessmentId: number;governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdApprove>>,
+        TError,
+        {assessmentId: number;governanceAreaId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApproveMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Assessor sends their assigned governance area back for rework.
+
+After workflow restructuring, assessors are area-specific (6 users for 6 areas).
+Each assessor can only request rework for their assigned governance area.
+
+All 6 assessors' rework requests are compiled into a single rework round.
+The BLGU sees all rework requests together and fixes everything in one pass.
+
+**Path Parameters:**
+- assessment_id: ID of the assessment
+- governance_area_id: ID of the governance area (1-6)
+
+**Form Data:**
+- comments: Rework comments explaining what needs to be fixed
+
+**Returns:** Success status and new area status
+
+**Raises:**
+- 403: User not authorized for this governance area
+- 404: Assessment not found
+- 400: Rework not allowed (wrong status or rework round already used)
+ * @summary Send governance area for rework
+ */
+export const postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework = (
+    assessmentId: number,
+    governanceAreaId: number,
+    bodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost: BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      const formUrlEncoded = new URLSearchParams();
+formUrlEncoded.append(`comments`, bodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost.comments)
+
+      return mutator<unknown>(
+      {url: `/api/v1/assessor/assessments/${assessmentId}/areas/${governanceAreaId}/rework`, method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded', },
+       data: formUrlEncoded, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework>>, TError,{assessmentId: number;governanceAreaId: number;data: BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework>>, TError,{assessmentId: number;governanceAreaId: number;data: BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost}, TContext> => {
+
+const mutationKey = ['postAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdRework'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework>>, {assessmentId: number;governanceAreaId: number;data: BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost}> = (props) => {
+          const {assessmentId,governanceAreaId,data} = props ?? {};
+
+          return  postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework(assessmentId,governanceAreaId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework>>>
+    export type PostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkMutationBody = BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost
+    export type PostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkMutationError = HTTPValidationError
+
+    /**
+ * @summary Send governance area for rework
+ */
+export const usePostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdRework = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework>>, TError,{assessmentId: number;governanceAreaId: number;data: BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessorAssessments$AssessmentIdAreas$GovernanceAreaIdRework>>,
+        TError,
+        {assessmentId: number;governanceAreaId: number;data: BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkMutationOptions(options);
 
       return useMutation(mutationOptions);
     }

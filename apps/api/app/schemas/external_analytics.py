@@ -118,6 +118,85 @@ class AnonymizedAIInsightsResponse(BaseModel):
     )
 
 
+class BBIFunctionalityDistribution(BaseModel):
+    """
+    Aggregated functionality distribution for a single BBI type.
+
+    Shows the count and percentage of barangays at each functionality tier
+    without revealing individual barangay identities.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    bbi_abbreviation: str = Field(description="BBI abbreviation (e.g., 'BDRRMC', 'BADAC')")
+    bbi_name: str = Field(description="Full BBI name")
+    governance_area_code: str = Field(description="Associated governance area code")
+    highly_functional_count: int = Field(
+        description="Count of barangays at 75-100% (Highly Functional)"
+    )
+    moderately_functional_count: int = Field(
+        description="Count of barangays at 50-74% (Moderately Functional)"
+    )
+    low_functional_count: int = Field(description="Count of barangays at 1-49% (Low Functional)")
+    non_functional_count: int = Field(description="Count of barangays at 0% (Non-Functional)")
+    total_assessed: int = Field(description="Total number of barangays assessed for this BBI")
+    highly_functional_percentage: float = Field(description="Percentage highly functional (0-100)")
+    moderately_functional_percentage: float = Field(
+        description="Percentage moderately functional (0-100)"
+    )
+    low_functional_percentage: float = Field(description="Percentage low functional (0-100)")
+    non_functional_percentage: float = Field(description="Percentage non-functional (0-100)")
+
+
+class BBIFunctionalityTrendsResponse(BaseModel):
+    """
+    Aggregated BBI functionality trends for Katuparan Center research.
+
+    Shows functionality distribution across all BBI types, adhering to privacy
+    constraints (minimum 5 barangays required).
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    bbis: list[BBIFunctionalityDistribution] = Field(
+        description="Functionality distribution for each BBI type"
+    )
+    total_barangays_assessed: int = Field(description="Total unique barangays with BBI data")
+    assessment_year: int | None = Field(None, description="Assessment year filter (if applied)")
+
+
+class AnonymizedBarangayStatus(BaseModel):
+    """
+    Anonymized status for a single barangay in the heatmap.
+
+    Uses anonymous identifiers instead of actual barangay names to protect privacy.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    anonymous_id: str = Field(description="Anonymous identifier (e.g., 'Barangay A', 'Barangay B')")
+    status: str = Field(description="Status: 'pass', 'fail', or 'in_progress'")
+
+
+class GeographicHeatmapResponse(BaseModel):
+    """
+    Anonymized geographic data for heatmap visualization.
+
+    Provides status data for visualization without revealing individual
+    barangay identities. Map rendering uses anonymous identifiers.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    barangays: list[AnonymizedBarangayStatus] = Field(
+        description="Anonymized status for each barangay"
+    )
+    summary: dict = Field(
+        description="Summary counts: pass_count, fail_count, in_progress_count, not_started_count"
+    )
+    total_barangays: int = Field(description="Total number of barangays in the municipality")
+
+
 class ExternalAnalyticsDashboardResponse(BaseModel):
     """
     Complete dashboard data for external stakeholders.
@@ -132,6 +211,9 @@ class ExternalAnalyticsDashboardResponse(BaseModel):
     governance_area_performance: GovernanceAreaPerformanceResponse
     top_failing_indicators: TopFailingIndicatorsResponse
     ai_insights: AnonymizedAIInsightsResponse
+    bbi_trends: BBIFunctionalityTrendsResponse | None = Field(
+        None, description="BBI functionality trends (optional, may be null if no BBI data)"
+    )
     data_disclaimer: str = Field(
         default="This data is aggregated and anonymized. Individual barangay performance cannot be identified.",
         description="Privacy disclaimer",

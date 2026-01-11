@@ -99,7 +99,7 @@ def create_test_user(
 
     # Add role-specific required fields
     if role == UserRole.VALIDATOR and mock_governance_area:
-        user.validator_area_id = mock_governance_area.id
+        user.assessor_area_id = mock_governance_area.id
     elif role == UserRole.BLGU_USER and mock_barangay:
         user.barangay_id = mock_barangay.id
 

@@ -177,7 +177,7 @@ export function FileUploadProperties({ fieldId }: FileUploadPropertiesProps) {
         <Input
           id="allowed_file_types"
           {...register("allowed_file_types", { required: "File types required" })}
-          placeholder="pdf, jpg, png, docx"
+          placeholder="pdf, jpg, png"
         />
         <p className="text-xs text-gray-500">Comma-separated list (e.g., pdf, jpg, png)</p>
         {errors.allowed_file_types && (

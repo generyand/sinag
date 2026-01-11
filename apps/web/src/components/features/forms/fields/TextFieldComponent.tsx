@@ -20,13 +20,13 @@ export function TextFieldComponent<TFieldValues extends FieldValues>({
   error,
 }: TextFieldComponentProps<TFieldValues>) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={field.field_id} className="text-sm font-medium">
+    <div className="space-y-3">
+      <Label htmlFor={field.field_id} className="text-base font-semibold">
         {field.label}
         {field.required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
-      {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
+      {field.help_text && <p className="text-base text-muted-foreground">{field.help_text}</p>}
 
       <Controller
         name={name}
@@ -55,7 +55,7 @@ export function TextFieldComponent<TFieldValues extends FieldValues>({
       />
 
       {error && (
-        <p id={`${field.field_id}-error`} className="text-sm text-destructive" role="alert">
+        <p id={`${field.field_id}-error`} className="text-base text-destructive" role="alert">
           {error}
         </p>
       )}

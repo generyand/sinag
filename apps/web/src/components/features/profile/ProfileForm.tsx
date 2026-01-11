@@ -6,8 +6,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { isAxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
-import { usePostAuthChangePassword, usePostAuthLogout } from "@sinag/shared";
+import {
+  usePostAuthChangePassword,
+  usePostAuthLogout,
+  usePostUsersMeLogo,
+  useDeleteUsersMeLogo,
+  getGetUsersMeQueryKey,
+} from "@sinag/shared";
 import { useUserBarangay } from "@/hooks/useUserBarangay";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,9 +51,13 @@ import {
   CheckCircle,
   Save,
   Phone,
+  Eye,
+  EyeOff,
+  ImageIcon,
 } from "lucide-react";
 import { User as UserType } from "@sinag/shared";
 import { classifyError } from "@/lib/error-utils";
+import { AvatarUpload } from "@/components/shared";
 
 // Password change form schema
 const passwordChangeSchema = z
@@ -54,13 +66,22 @@ const passwordChangeSchema = z
     newPassword: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
       .regex(/[0-9]/, "Password must contain at least one number")
-      .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
+      .regex(
+        /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/,
+        "Password must contain at least one special character"
+      ),
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: "New password must be different from current password",
+    path: ["newPassword"],
   });
 
 type PasswordChangeForm = z.infer<typeof passwordChangeSchema>;
@@ -71,13 +92,55 @@ interface ProfileFormProps {
 
 export function ProfileForm({ user }: ProfileFormProps) {
   const router = useRouter();
-  const { logout } = useAuthStore();
+  const queryClient = useQueryClient();
+  const { logout, setUser } = useAuthStore();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPasswords, setShowNewPasswords] = useState(false); // Linked toggle for new + confirm
+  const [logoError, setLogoError] = useState<string | null>(null);
   const { barangayName, isLoading: barangayLoading } = useUserBarangay();
   const { governanceAreaName, isLoading: governanceAreaLoading } = useAssessorGovernanceArea();
 
   const changePasswordMutation = usePostAuthChangePassword();
   const logoutMutation = usePostAuthLogout();
+
+  // Logo upload/delete mutations
+  const uploadLogoMutation = usePostUsersMeLogo();
+  const deleteLogoMutation = useDeleteUsersMeLogo();
+
+  const handleLogoUpload = async (file: File) => {
+    setLogoError(null);
+    try {
+      const updatedUser = await uploadLogoMutation.mutateAsync({
+        data: { file },
+      });
+      // Update auth store with the new user data (includes logo_url)
+      setUser(updatedUser);
+      // Invalidate user query to refresh the logo in other components
+      queryClient.invalidateQueries({ queryKey: getGetUsersMeQueryKey() });
+      toast.success("Profile logo updated successfully");
+    } catch (error: unknown) {
+      const errorInfo = classifyError(error);
+      setLogoError(errorInfo.message);
+      toast.error(`Failed to upload logo: ${errorInfo.message}`);
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    setLogoError(null);
+    try {
+      const updatedUser = await deleteLogoMutation.mutateAsync();
+      // Update auth store with the new user data (logo_url will be null)
+      setUser(updatedUser);
+      // Invalidate user query to refresh the logo in other components
+      queryClient.invalidateQueries({ queryKey: getGetUsersMeQueryKey() });
+      toast.success("Profile logo removed");
+    } catch (error: unknown) {
+      const errorInfo = classifyError(error);
+      setLogoError(errorInfo.message);
+      toast.error(`Failed to remove logo: ${errorInfo.message}`);
+    }
+  };
 
   const form = useForm<PasswordChangeForm>({
     resolver: zodResolver(passwordChangeSchema),
@@ -102,18 +165,22 @@ export function ProfileForm({ user }: ProfileFormProps) {
       // Show logout dialog to inform user they will be logged out
       setShowLogoutDialog(true);
     } catch (error: unknown) {
-      const errorInfo = classifyError(error);
-
-      // If it's an auth error (401), show specific error on the current password field
-      if (errorInfo.type === "auth") {
+      // Check for the specific "incorrect current password" error from backend (returns 400)
+      if (
+        isAxiosError<{ detail?: string }>(error) &&
+        error.response?.status === 400 &&
+        error.response?.data?.detail === "Incorrect current password"
+      ) {
         form.setError("currentPassword", {
           type: "manual",
           message: "The current password you entered is incorrect.",
         });
-      } else {
-        // For other errors, show a toast with detailed error info
-        toast.error(`${errorInfo.title}: ${errorInfo.message}`);
+        return;
       }
+
+      // For other errors, show a toast with detailed error info
+      const errorInfo = classifyError(error);
+      toast.error(`${errorInfo.title}: ${errorInfo.message}`);
     }
   };
 
@@ -131,13 +198,17 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
   // Password strength checker
   const newPassword = form.watch("newPassword");
+  const confirmPassword = form.watch("confirmPassword");
   const passwordRequirements = {
     length: newPassword.length >= 8,
+    uppercase: /[A-Z]/.test(newPassword),
+    lowercase: /[a-z]/.test(newPassword),
     number: /[0-9]/.test(newPassword),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
+    special: /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/.test(newPassword),
   };
 
   const allRequirementsMet = Object.values(passwordRequirements).every(Boolean);
+  const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-stretch">
       {/* User Details Section - Enhanced */}
@@ -154,6 +225,29 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
           <CardContent className="relative z-10 flex flex-col h-full">
             <div className="space-y-6 flex-1">
+              {/* Profile Logo Section */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-[var(--border)]">
+                <AvatarUpload
+                  currentImageUrl={user?.logo_url}
+                  onUpload={handleLogoUpload}
+                  onRemove={user?.logo_url ? handleLogoRemove : undefined}
+                  isUploading={uploadLogoMutation.isPending || deleteLogoMutation.isPending}
+                  error={logoError}
+                  size="lg"
+                  fallbackInitials={user?.name?.slice(0, 2).toUpperCase()}
+                />
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-[var(--cityscape-yellow)]" />
+                    Profile Logo
+                  </h3>
+                  <p className="text-sm text-[var(--text-secondary)] max-w-xs">
+                    Upload your organization logo or profile picture. This will be displayed in the
+                    navigation header.
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <label className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -237,13 +331,15 @@ export function ProfileForm({ user }: ProfileFormProps) {
               </div>
             </div>
 
-            <Alert className="bg-[var(--cityscape-yellow)]/10 border-[var(--cityscape-yellow)]/20 backdrop-blur-sm mt-6">
-              <Info className="h-4 w-4 text-[var(--cityscape-yellow)]" />
-              <AlertDescription className="text-sm text-[var(--foreground)]">
-                Your user details are managed by the administrator. To request a change, please
-                contact your MLGOO-DILG.
-              </AlertDescription>
-            </Alert>
+            {user?.role !== "MLGOO_DILG" && (
+              <Alert className="bg-[var(--cityscape-yellow)]/10 border-[var(--cityscape-yellow)]/20 backdrop-blur-sm mt-6">
+                <Info className="h-4 w-4 text-[var(--cityscape-yellow)]" />
+                <AlertDescription className="text-sm text-[var(--foreground)]">
+                  Your user details are managed by the administrator. To request a change, please
+                  contact your MLGOO-DILG.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -274,12 +370,22 @@ export function ProfileForm({ user }: ProfileFormProps) {
                       <FormControl>
                         <div className="relative">
                           <Input
-                            type="password"
+                            type={showCurrentPassword ? "text" : "password"}
                             placeholder="Enter your current password"
-                            className="bg-[var(--card)] backdrop-blur-sm border-[var(--border)] rounded-sm"
+                            className="bg-[var(--card)] backdrop-blur-sm border-[var(--border)] rounded-sm pr-10"
                             {...field}
                           />
-                          <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+                          >
+                            {showCurrentPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -298,12 +404,22 @@ export function ProfileForm({ user }: ProfileFormProps) {
                       <FormControl>
                         <div className="relative">
                           <Input
-                            type="password"
+                            type={showNewPasswords ? "text" : "password"}
                             placeholder="Enter your new password"
-                            className="bg-[var(--card)] backdrop-blur-sm border-[var(--border)] rounded-sm"
+                            className="bg-[var(--card)] backdrop-blur-sm border-[var(--border)] rounded-sm pr-10"
                             {...field}
                           />
-                          <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPasswords(!showNewPasswords)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+                          >
+                            {showNewPasswords ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -324,6 +440,26 @@ export function ProfileForm({ user }: ProfileFormProps) {
                                 {passwordRequirements.length ? "✓" : "✗"}
                               </div>
                               <span>At least 8 characters</span>
+                            </div>
+                            <div
+                              className={`flex items-center gap-2 text-xs ${passwordRequirements.uppercase ? "text-green-600" : "text-red-500"}`}
+                            >
+                              <div
+                                className={`w-4 h-4 rounded-full flex items-center justify-center text-white text-xs ${passwordRequirements.uppercase ? "bg-green-500" : "bg-red-500"}`}
+                              >
+                                {passwordRequirements.uppercase ? "✓" : "✗"}
+                              </div>
+                              <span>At least one uppercase letter (A-Z)</span>
+                            </div>
+                            <div
+                              className={`flex items-center gap-2 text-xs ${passwordRequirements.lowercase ? "text-green-600" : "text-red-500"}`}
+                            >
+                              <div
+                                className={`w-4 h-4 rounded-full flex items-center justify-center text-white text-xs ${passwordRequirements.lowercase ? "bg-green-500" : "bg-red-500"}`}
+                              >
+                                {passwordRequirements.lowercase ? "✓" : "✗"}
+                              </div>
+                              <span>At least one lowercase letter (a-z)</span>
                             </div>
                             <div
                               className={`flex items-center gap-2 text-xs ${passwordRequirements.number ? "text-green-600" : "text-red-500"}`}
@@ -363,14 +499,49 @@ export function ProfileForm({ user }: ProfileFormProps) {
                       <FormControl>
                         <div className="relative">
                           <Input
-                            type="password"
+                            type={showNewPasswords ? "text" : "password"}
                             placeholder="Confirm your new password"
-                            className="bg-[var(--card)] backdrop-blur-sm border-[var(--border)] rounded-sm"
+                            className={`bg-[var(--card)] backdrop-blur-sm border-[var(--border)] rounded-sm pr-10 ${
+                              confirmPassword
+                                ? passwordsMatch
+                                  ? "border-green-500 focus-visible:ring-green-500"
+                                  : "border-red-500 focus-visible:ring-red-500"
+                                : ""
+                            }`}
                             {...field}
                           />
-                          <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPasswords(!showNewPasswords)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+                          >
+                            {showNewPasswords ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
                       </FormControl>
+                      {/* Password match indicator */}
+                      {confirmPassword && (
+                        <div
+                          className={`flex items-center gap-2 text-xs mt-2 ${
+                            passwordsMatch ? "text-green-600" : "text-red-500"
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-full flex items-center justify-center text-white text-xs ${
+                              passwordsMatch ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          >
+                            {passwordsMatch ? "✓" : "✗"}
+                          </div>
+                          <span>
+                            {passwordsMatch ? "Passwords match" : "Passwords do not match"}
+                          </span>
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -379,7 +550,9 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    disabled={!allRequirementsMet || changePasswordMutation.isPending}
+                    disabled={
+                      !allRequirementsMet || !passwordsMatch || changePasswordMutation.isPending
+                    }
                     className="w-full h-12 text-sm font-semibold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] hover:from-[var(--cityscape-yellow-dark)] hover:to-[var(--cityscape-yellow)] text-[var(--cityscape-accent-foreground)] rounded-sm shadow-lg hover:shadow-xl transition-all duration-200"
                   >
                     {changePasswordMutation.isPending ? (

@@ -101,8 +101,8 @@ async def login(
         if remaining_attempts <= 0:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Account temporarily locked due to multiple failed login attempts. Try again in 15 minutes.",
-                headers={"Retry-After": "900"},
+                detail="Account temporarily locked due to multiple failed login attempts. Try again in 1 minute.",
+                headers={"Retry-After": "60"},
             )
 
         # Generic error message (don't reveal if user exists or is inactive)

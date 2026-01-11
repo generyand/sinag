@@ -1,6 +1,6 @@
 """
 Tests for user service FK (Foreign Key) existence validation
-Tests that the service layer validates validator_area_id and barangay_id references
+Tests that the service layer validates assessor_area_id and barangay_id references
 """
 
 import pytest
@@ -85,14 +85,14 @@ class TestCreateUserFKValidation:
             name="Validator User",
             password="ValidPass123",
             role=UserRole.VALIDATOR,
-            validator_area_id=governance_area.id,
+            assessor_area_id=governance_area.id,
         )
 
         result = user_service.create_user_admin(db_session, user_data)
 
         assert result.id is not None
         assert result.role == UserRole.VALIDATOR
-        assert result.validator_area_id == governance_area.id
+        assert result.assessor_area_id == governance_area.id
 
     def test_create_validator_with_nonexistent_governance_area(self, db_session: Session):
         """Test creating VALIDATOR with non-existent governance area fails."""
@@ -101,7 +101,7 @@ class TestCreateUserFKValidation:
             name="Validator User",
             password="ValidPass123",
             role=UserRole.VALIDATOR,
-            validator_area_id=99999,  # Non-existent ID
+            assessor_area_id=99999,  # Non-existent ID
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -149,14 +149,14 @@ class TestCreateUserFKValidation:
             name="Assessor User",
             password="ValidPass123",
             role=UserRole.ASSESSOR,
-            # No validator_area_id or barangay_id
+            # No assessor_area_id or barangay_id
         )
 
         result = user_service.create_user_admin(db_session, user_data)
 
         assert result.id is not None
         assert result.role == UserRole.ASSESSOR
-        assert result.validator_area_id is None
+        assert result.assessor_area_id is None
         assert result.barangay_id is None
 
     def test_create_mlgoo_dilg_does_not_validate_fks(self, db_session: Session):
@@ -166,14 +166,14 @@ class TestCreateUserFKValidation:
             name="Admin User",
             password="ValidPass123",
             role=UserRole.MLGOO_DILG,
-            # No validator_area_id or barangay_id
+            # No assessor_area_id or barangay_id
         )
 
         result = user_service.create_user_admin(db_session, user_data)
 
         assert result.id is not None
         assert result.role == UserRole.MLGOO_DILG
-        assert result.validator_area_id is None
+        assert result.assessor_area_id is None
         assert result.barangay_id is None
 
 
@@ -191,14 +191,14 @@ class TestUpdateUserFKValidation:
         """Test updating to VALIDATOR with existing governance area succeeds."""
         update_data = UserAdminUpdate(
             role=UserRole.VALIDATOR,
-            validator_area_id=governance_area.id,
+            assessor_area_id=governance_area.id,
         )
 
         result = user_service.update_user_admin(db_session, sample_user.id, update_data)
 
         assert result is not None
         assert result.role == UserRole.VALIDATOR
-        assert result.validator_area_id == governance_area.id
+        assert result.assessor_area_id == governance_area.id
         assert result.barangay_id is None  # Should be cleared
 
     def test_update_user_to_validator_with_nonexistent_governance_area(
@@ -207,7 +207,7 @@ class TestUpdateUserFKValidation:
         """Test updating to VALIDATOR with non-existent governance area fails."""
         update_data = UserAdminUpdate(
             role=UserRole.VALIDATOR,
-            validator_area_id=99999,  # Non-existent ID
+            assessor_area_id=99999,  # Non-existent ID
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -219,14 +219,14 @@ class TestUpdateUserFKValidation:
     def test_update_validator_area_with_valid_id(
         self, db_session: Session, governance_area: GovernanceArea
     ):
-        """Test updating validator_area_id with existing area succeeds."""
+        """Test updating assessor_area_id with existing area succeeds."""
         # Create a validator first
         validator = User(
             email="validator@example.com",
             name="Validator User",
             hashed_password=get_password_hash("password123"),
             role=UserRole.VALIDATOR,
-            validator_area_id=governance_area.id,
+            assessor_area_id=governance_area.id,
             is_active=True,
         )
         db_session.add(validator)
@@ -246,24 +246,24 @@ class TestUpdateUserFKValidation:
         db_session.commit()
 
         # Update to new area
-        update_data = UserAdminUpdate(validator_area_id=new_area.id)
+        update_data = UserAdminUpdate(assessor_area_id=new_area.id)
 
         result = user_service.update_user_admin(db_session, validator.id, update_data)
 
         assert result is not None
-        assert result.validator_area_id == new_area.id
+        assert result.assessor_area_id == new_area.id
 
     def test_update_validator_area_with_nonexistent_id(
         self, db_session: Session, governance_area: GovernanceArea
     ):
-        """Test updating validator_area_id with non-existent area fails."""
+        """Test updating assessor_area_id with non-existent area fails."""
         # Create a validator first
         validator = User(
             email="validator@example.com",
             name="Validator User",
             hashed_password=get_password_hash("password123"),
             role=UserRole.VALIDATOR,
-            validator_area_id=governance_area.id,
+            assessor_area_id=governance_area.id,
             is_active=True,
         )
         db_session.add(validator)
@@ -271,7 +271,7 @@ class TestUpdateUserFKValidation:
         db_session.refresh(validator)
 
         # Try to update to non-existent area
-        update_data = UserAdminUpdate(validator_area_id=99999)
+        update_data = UserAdminUpdate(assessor_area_id=99999)
 
         with pytest.raises(HTTPException) as exc_info:
             user_service.update_user_admin(db_session, validator.id, update_data)
@@ -289,7 +289,7 @@ class TestUpdateUserFKValidation:
             name="Validator User",
             hashed_password=get_password_hash("password123"),
             role=UserRole.VALIDATOR,
-            validator_area_id=governance_area.id,
+            assessor_area_id=governance_area.id,
             is_active=True,
         )
         db_session.add(validator)
@@ -307,7 +307,7 @@ class TestUpdateUserFKValidation:
         assert result is not None
         assert result.role == UserRole.BLGU_USER
         assert result.barangay_id == barangay.id
-        assert result.validator_area_id is None  # Should be cleared
+        assert result.assessor_area_id is None  # Should be cleared
 
     def test_update_user_to_blgu_with_nonexistent_barangay(
         self, db_session: Session, sample_user: User
@@ -364,14 +364,14 @@ class TestFKValidationEdgeCases:
     def test_validator_without_area_initially_then_update_with_valid_area(
         self, db_session: Session, governance_area: GovernanceArea
     ):
-        """Test that validator_area_id requirement is checked at service level."""
+        """Test that assessor_area_id requirement is checked at service level."""
         # This should fail at service level (validator requires area)
         user_data = UserAdminCreate(
             email="validator@example.com",
             name="Validator User",
             password="ValidPass123",
             role=UserRole.VALIDATOR,
-            validator_area_id=None,  # Missing required field
+            assessor_area_id=None,  # Missing required field
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -407,21 +407,21 @@ class TestFKValidationEdgeCases:
             name="Validator User",
             hashed_password=get_password_hash("password123"),
             role=UserRole.VALIDATOR,
-            validator_area_id=governance_area.id,
+            assessor_area_id=governance_area.id,
             is_active=True,
         )
         db_session.add(validator)
         db_session.commit()
         db_session.refresh(validator)
 
-        # Update only name (validator_area_id not provided in update)
+        # Update only name (assessor_area_id not provided in update)
         update_data = UserAdminUpdate(name="Updated Validator Name")
 
         result = user_service.update_user_admin(db_session, validator.id, update_data)
 
         assert result is not None
         assert result.name == "Updated Validator Name"
-        assert result.validator_area_id == governance_area.id  # Should remain unchanged
+        assert result.assessor_area_id == governance_area.id  # Should remain unchanged
 
     def test_blgu_user_keeps_existing_barangay_when_not_updated(
         self, db_session: Session, sample_user: User, barangay: Barangay

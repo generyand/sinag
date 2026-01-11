@@ -471,12 +471,13 @@ export type IndicatorCreateTechnicalNotesText = string | null;
  * IndicatorDetailItem
  */
 export interface IndicatorDetailItem {
-  response_id: number;
+  response_id: IndicatorDetailItemResponseId;
   indicator_id: number;
   indicator_name: string;
   indicator_code: IndicatorDetailItemIndicatorCode;
   validation_status: IndicatorDetailItemValidationStatus;
   assessor_remarks: IndicatorDetailItemAssessorRemarks;
+  is_completed: boolean;
   is_recalibration_target: boolean;
   mov_files?: MOVFileItem[];
 }
@@ -486,6 +487,12 @@ export interface IndicatorDetailItem {
  * IndicatorDetailItemIndicatorCode
  */
 export type IndicatorDetailItemIndicatorCode = string | null;
+
+
+/**
+ * IndicatorDetailItemResponseId
+ */
+export type IndicatorDetailItemResponseId = number | null;
 
 
 /**

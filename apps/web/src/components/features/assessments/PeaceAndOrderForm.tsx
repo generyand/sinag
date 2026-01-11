@@ -141,7 +141,7 @@ export default function PeaceAndOrderForm({
 
         <div className="flex items-center justify-between pt-6 border-t border-gray-200">
           <div className="text-sm text-gray-500">
-            Overall Score:{" "}
+            Compliance Rate:{" "}
             <span className="font-medium">
               {Math.round(
                 (Object.values(formData)

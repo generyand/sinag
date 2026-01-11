@@ -84,24 +84,35 @@ EOF
 }
 
 # Start Redis if not running
+# Handles both main repo (redis-celery, redis-cache) and worktree (redis) configurations
 ensure_redis() {
-    local need_celery=false
-    local need_cache=false
+    # Check which docker-compose configuration we have
+    if grep -q "redis-celery:" "${PROJECT_ROOT}/docker-compose.yml" 2>/dev/null; then
+        # Main repo: uses redis-celery and redis-cache services
+        local need_start=false
+        if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis-celery"; then
+            need_start=true
+        fi
+        if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis-cache"; then
+            need_start=true
+        fi
 
-    if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis-celery"; then
-        need_celery=true
-    fi
-
-    if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis-cache"; then
-        need_cache=true
-    fi
-
-    if $need_celery || $need_cache; then
-        echo -e "${BLUE}Starting Redis...${NC}"
-        docker compose -f "${PROJECT_ROOT}/docker-compose.yml" up -d redis-celery redis-cache
-        echo -e "${GREEN}✓ Redis started${NC}"
+        if $need_start; then
+            echo -e "${BLUE}Starting Redis (celery + cache)...${NC}"
+            docker compose -f "${PROJECT_ROOT}/docker-compose.yml" up -d redis-celery redis-cache
+            echo -e "${GREEN}✓ Redis started${NC}"
+        else
+            echo -e "${GREEN}✓ Redis already running${NC}"
+        fi
     else
-        echo -e "${GREEN}✓ Redis already running${NC}"
+        # Worktree: uses simplified single redis service
+        if ! docker ps --format '{{.Names}}' | grep -q "sinag-redis"; then
+            echo -e "${BLUE}Starting Redis...${NC}"
+            docker compose -f "${PROJECT_ROOT}/docker-compose.yml" up -d redis
+            echo -e "${GREEN}✓ Redis started${NC}"
+        else
+            echo -e "${GREEN}✓ Redis already running${NC}"
+        fi
     fi
 }
 

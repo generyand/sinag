@@ -1,14 +1,15 @@
 "use client";
 
-import { Eye, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getStatusConfig, getProgressBarColor } from "./utils/statusConfig";
-import type { SubmissionUIModel } from "./utils/dataTransformers";
+import { Check, Eye, Loader2, Send } from "lucide-react";
+import { getValidatorDisplayStatus, type SubmissionUIModel } from "./utils/dataTransformers";
+import { getProgressBarColor, getStatusConfig } from "./utils/statusConfig";
 
 interface SubmissionsMobileCardProps {
   submission: SubmissionUIModel;
   onView: (submission: SubmissionUIModel) => void;
   onRemind: (submission: SubmissionUIModel) => void;
+  remindingId?: number | null;
 }
 
 /**
@@ -19,17 +20,19 @@ export function SubmissionsMobileCard({
   submission,
   onView,
   onRemind,
+  remindingId,
 }: SubmissionsMobileCardProps) {
   const statusConfig = getStatusConfig(submission.currentStatus);
   const StatusIcon = statusConfig.icon;
   const progressColor = getProgressBarColor(submission.overallProgress);
+  const validatorDisplay = getValidatorDisplayStatus(submission);
 
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 shadow-sm">
       {/* Header: Barangay name and status */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <h3 className="font-semibold text-[var(--foreground)] text-base">
-          {submission.barangayName}
+          Brgy. {submission.barangayName}
         </h3>
         <div
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium shrink-0"
@@ -63,34 +66,36 @@ export function SubmissionsMobileCard({
       </div>
 
       {/* Meta info */}
-      <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-        <div>
-          <span className="text-[var(--muted-foreground)] block mb-0.5">Validators</span>
-          <div className="flex items-center gap-1.5">
-            {submission.assignedValidators.length > 0 ? (
-              submission.assignedValidators.slice(0, 3).map((validator) => (
-                <div
-                  key={validator.id}
-                  role="img"
-                  aria-label={`Validator: ${validator.name}`}
-                  title={validator.name}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm"
-                >
-                  {validator.avatar}
-                </div>
-              ))
-            ) : (
-              <span className="text-[var(--muted-foreground)] italic">None assigned</span>
-            )}
-            {submission.assignedValidators.length > 3 && (
-              <span className="text-xs text-[var(--muted-foreground)]">
-                +{submission.assignedValidators.length - 3}
-              </span>
-            )}
-          </div>
+      <div className="space-y-2 mb-4 text-sm">
+        {/* Assessors Progress */}
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-[var(--foreground)]">Assessors:</span>
+          <span
+            className={
+              submission.areasApprovedCount === 6
+                ? "text-green-600 dark:text-green-400 font-medium"
+                : "text-[var(--foreground)]"
+            }
+          >
+            {submission.areasApprovedCount}/6
+          </span>
+          {submission.areasApprovedCount === 6 ? (
+            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+              <Check className="h-3.5 w-3.5" />
+              Complete
+            </span>
+          ) : (
+            <span className="text-[var(--muted-foreground)]">Submitted</span>
+          )}
         </div>
-        <div>
-          <span className="text-[var(--muted-foreground)] block mb-0.5">Last Updated</span>
+        {/* Validator Status */}
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-[var(--foreground)]">Validator:</span>
+          <span className={validatorDisplay.className}>{validatorDisplay.text}</span>
+        </div>
+        {/* Last Updated */}
+        <div className="flex items-center gap-2">
+          <span className="text-[var(--muted-foreground)]">Updated:</span>
           <span className="text-[var(--foreground)]">{submission.lastUpdated}</span>
         </div>
       </div>
@@ -110,12 +115,17 @@ export function SubmissionsMobileCard({
           variant="outline"
           size="sm"
           onClick={() => onRemind(submission)}
+          disabled={remindingId === submission.id}
           aria-label={`Send reminder to ${submission.barangayName}`}
           title="Send a reminder email to the barangay to complete their submission"
-          className="flex-1 bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium"
+          className="flex-1 bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium disabled:opacity-50"
         >
-          <Send className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          Remind
+          {remindingId === submission.id ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <Send className="h-4 w-4 mr-1.5" aria-hidden="true" />
+          )}
+          {remindingId === submission.id ? "Sending..." : "Remind"}
         </Button>
       </div>
     </div>
@@ -126,6 +136,7 @@ interface SubmissionsMobileListProps {
   submissions: SubmissionUIModel[];
   onView: (submission: SubmissionUIModel) => void;
   onRemind: (submission: SubmissionUIModel) => void;
+  remindingId?: number | null;
 }
 
 /**
@@ -135,6 +146,7 @@ export function SubmissionsMobileList({
   submissions,
   onView,
   onRemind,
+  remindingId,
 }: SubmissionsMobileListProps) {
   return (
     <div className="space-y-3 p-4 lg:hidden">
@@ -144,6 +156,7 @@ export function SubmissionsMobileList({
           submission={submission}
           onView={onView}
           onRemind={onRemind}
+          remindingId={remindingId}
         />
       ))}
     </div>

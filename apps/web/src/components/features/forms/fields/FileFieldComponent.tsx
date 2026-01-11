@@ -891,6 +891,14 @@ export function FileFieldComponent({
       normalizedStatus === "REWORK" ||
       normalizedStatus === "NEEDS_REWORK");
 
+  // Can rotate: Same rules as delete - only BLGU users during DRAFT or REWORK status
+  const canRotate =
+    !disabled &&
+    isBLGU &&
+    (normalizedStatus === "DRAFT" ||
+      normalizedStatus === "REWORK" ||
+      normalizedStatus === "NEEDS_REWORK");
+
   // Reason why upload is disabled
   const uploadDisabledReason = !canUpload
     ? normalizedStatus === "SUBMITTED_FOR_REVIEW" ||
@@ -913,14 +921,14 @@ export function FileFieldComponent({
   return (
     <div className="space-y-4" id={`file-upload-${field.field_id}`}>
       {/* Field Label and Help Text */}
-      <div className="space-y-1">
+      <div className="space-y-2">
         <Label
           htmlFor={`file-upload-${field.field_id}`}
-          className="text-sm font-medium text-[var(--text-primary)]"
+          className="text-lg font-bold text-[var(--text-primary)] block"
         >
           {field.label}
           {field.required && (
-            <span className="text-red-500 ml-1" aria-hidden="true">
+            <span className="text-red-500 ml-1 text-xl" aria-hidden="true">
               *
             </span>
           )}
@@ -930,7 +938,7 @@ export function FileFieldComponent({
         {field.help_text && (
           <p
             id={`file-help-${field.field_id}`}
-            className="text-sm text-[var(--text-secondary)] whitespace-pre-line"
+            className="text-base text-[var(--text-secondary)] whitespace-pre-line leading-relaxed"
           >
             {field.help_text}
           </p>
@@ -1133,6 +1141,7 @@ export function FileFieldComponent({
             onPreview={handlePreview}
             onDownload={handleDownload}
             canDelete={canDelete}
+            canRotate={canRotate}
             loading={isLoadingFiles}
             onDeleteSuccess={handleDeleteSuccess}
             movAnnotations={movAnnotations}

@@ -22,6 +22,7 @@ import {
   Image,
   Loader2,
   MessageSquare,
+  RotateCw,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,9 @@ interface FileListProps {
   onDelete?: (fileId: number) => void;
   onPreview?: (file: MOVFileResponse) => void;
   onDownload?: (file: MOVFileResponse) => void;
+  onRotate?: (fileId: number) => void;
   canDelete?: boolean;
+  canRotate?: boolean;
   loading?: boolean;
   emptyMessage?: string;
   movAnnotations?: any[];
@@ -193,7 +196,9 @@ export function FileList({
   onDelete,
   onPreview,
   onDownload,
+  onRotate,
   canDelete = false,
+  canRotate = false,
   loading = false,
   emptyMessage = "No files uploaded yet",
   movAnnotations = [],
@@ -466,6 +471,24 @@ export function FileList({
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    {canRotate && onRotate && file.file_type.startsWith("image/") && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRotate(file.id)}
+                        title="Rotate image 90° clockwise"
+                        className={
+                          mlgooFlagged.isFlagged
+                            ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
+                            : hasAnnotations
+                              ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
+                              : ""
+                        }
+                      >
+                        <RotateCw className="h-4 w-4" />
+                      </Button>
+                    )}
                     {onDownload && (
                       <Button
                         type="button"

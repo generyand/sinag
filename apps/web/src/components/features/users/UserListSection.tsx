@@ -3,9 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUsers } from "@/hooks/useUsers";
+import { useAuthStore } from "@/store/useAuthStore";
 import type { User, UserListResponse } from "@sinag/shared";
+import { useDeleteUsersUserId } from "@sinag/shared";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { UserForm } from "./UserForm";
 import { UserManagementSkeleton } from "./UserManagementSkeleton";
 import UserManagementTable from "./UserManagementTable";
@@ -26,14 +29,33 @@ export default function UserListSection() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-  const { data, isLoading, error } = useUsers({
+  const { data, isLoading, error, refetch } = useUsers({
     page: 1,
     size: 100, // Fetch up to 100 users to show all users
   }) as {
     data?: UserListResponse;
     isLoading: boolean;
     error: unknown;
+    refetch: () => void;
   };
+
+  // Get current user to prevent self-deletion
+  const currentUser = useAuthStore((state) => state.user);
+
+  // Delete user mutation
+  const deleteUserMutation = useDeleteUsersUserId({
+    mutation: {
+      onSuccess: () => {
+        toast.success("User deactivated successfully");
+        refetch();
+      },
+      onError: (error) => {
+        const errorMessage =
+          error?.detail?.[0]?.msg || error?.detail || "Failed to deactivate user";
+        toast.error(errorMessage);
+      },
+    },
+  });
 
   // Filter and paginate users - now using debounced search query
   const filteredAndPaginatedUsers = useMemo(() => {
@@ -76,14 +98,23 @@ export default function UserListSection() {
     setEditingUser(null);
   }, []);
 
+  const handleDeleteUser = useCallback(
+    (user: User) => {
+      deleteUserMutation.mutate({ userId: user.id });
+    },
+    [deleteUserMutation]
+  );
+
   // Memoize stats calculations to prevent unnecessary recalculations
   const stats = useMemo(() => {
-    if (!data?.users) return { total: 0, active: 0, blgu: 0 };
+    if (!data?.users) return { total: 0, active: 0, blgu: 0, assessor: 0, validator: 0 };
 
     return {
       total: data.total || data.users.length,
       active: data.users.filter((u) => u.is_active).length,
       blgu: data.users.filter((u) => u.role === "BLGU_USER").length,
+      assessor: data.users.filter((u) => u.role === "ASSESSOR").length,
+      validator: data.users.filter((u) => u.role === "VALIDATOR").length,
     };
   }, [data?.users, data?.total]);
 
@@ -149,31 +180,53 @@ export default function UserListSection() {
             </div>
 
             {/* Enhanced Quick Stats */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6">
-              <div className="flex gap-4 sm:contents">
-                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
-                  <div className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
-                    {stats.total}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+              {/* Role-based stats - prominent cards */}
+              <div className="flex gap-3 sm:gap-4">
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-3 sm:p-4 text-center shadow-sm border border-[var(--border)] min-w-[80px] sm:min-w-[90px]">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
+                    {stats.blgu}
                   </div>
                   <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                    Total
+                    BLGU
                   </div>
                 </div>
-                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] flex-1 sm:flex-none sm:min-w-[100px]">
-                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                    {stats.active}
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-3 sm:p-4 text-center shadow-sm border border-[var(--border)] min-w-[80px] sm:min-w-[90px]">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                    {stats.assessor}
                   </div>
                   <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                    Active
+                    Assessor
+                  </div>
+                </div>
+                <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-3 sm:p-4 text-center shadow-sm border border-[var(--border)] min-w-[80px] sm:min-w-[90px]">
+                  <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                    {stats.validator}
+                  </div>
+                  <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                    Validator
                   </div>
                 </div>
               </div>
-              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-4 text-center shadow-sm border border-[var(--border)] min-w-[100px]">
-                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[var(--cityscape-yellow)] to-[var(--cityscape-yellow-dark)] bg-clip-text text-transparent">
-                  {stats.blgu}
+
+              {/* Stacked Total/Active stats - compact on the right */}
+              <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-2 sm:p-3 shadow-sm border border-[var(--border)] flex flex-row sm:flex-col gap-2 sm:gap-1 justify-center min-w-[70px]">
+                <div className="text-center">
+                  <span className="text-base sm:text-lg font-bold text-[var(--foreground)]">
+                    {stats.total}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-[var(--muted-foreground)] uppercase tracking-wide ml-1 sm:ml-0 sm:block">
+                    Total
+                  </span>
                 </div>
-                <div className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  BLGU
+                <div className="hidden sm:block w-full h-px bg-[var(--border)]"></div>
+                <div className="text-center">
+                  <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    {stats.active}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-[var(--muted-foreground)] uppercase tracking-wide ml-1 sm:ml-0 sm:block">
+                    Active
+                  </span>
                 </div>
               </div>
             </div>
@@ -253,6 +306,9 @@ export default function UserListSection() {
           <UserManagementTable
             users={filteredAndPaginatedUsers.users}
             onEditUser={handleEditUser}
+            onDeleteUser={handleDeleteUser}
+            currentUserId={currentUser?.id}
+            isDeleting={deleteUserMutation.isPending}
           />
 
           {/* Pagination Controls */}
@@ -413,7 +469,7 @@ const MemoizedUserForm = React.memo(function MemoizedUserForm({
       email: editingUser.email,
       role: editingUser.role,
       phone_number: editingUser.phone_number || undefined,
-      validator_area_id: editingUser.validator_area_id || undefined,
+      assessor_area_id: editingUser.assessor_area_id || undefined,
       barangay_id: editingUser.barangay_id || undefined,
       is_active: editingUser.is_active,
       is_superuser: editingUser.is_superuser,

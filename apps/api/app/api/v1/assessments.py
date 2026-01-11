@@ -2337,9 +2337,11 @@ async def get_calibration_summary(
     # Get the governance area ID from the calibration data
     governance_area_id = None
 
-    # First, try to get from the validator relationship
+    # After workflow restructuring: Validators are system-wide (no area assignment)
+    # Try to get from the validator's area (legacy data only, validators now have no area)
     if assessment.calibration_validator:
-        governance_area_id = assessment.calibration_validator.validator_area_id
+        # Validators are now system-wide, but check assessor_area_id for legacy compatibility
+        governance_area_id = getattr(assessment.calibration_validator, "assessor_area_id", None)
 
     # If not found, try to get from stored summary
     if not governance_area_id and isinstance(summary_data, dict):
@@ -2479,3 +2481,150 @@ async def regenerate_calibration_summary(
         "status": "processing",
         "force": force,
     }
+
+
+# =============================================================================
+# Per-Area Submission Endpoints (Workflow Restructuring)
+# =============================================================================
+
+
+@router.post(
+    "/{assessment_id}/areas/{governance_area_id}/submit",
+    tags=["assessments"],
+    summary="Submit governance area for review",
+)
+async def submit_area_for_review(
+    assessment_id: int,
+    governance_area_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_blgu_user),
+):
+    """
+    BLGU submits a specific governance area for assessor review.
+
+    After workflow restructuring, BLGUs can submit individual governance areas
+    instead of the entire assessment at once. Each area is reviewed by the
+    area-specific assessor.
+
+    **Path Parameters:**
+    - assessment_id: ID of the assessment
+    - governance_area_id: ID of the governance area (1-6)
+
+    **Returns:** Success status and area info
+
+    **Raises:**
+    - 403: User not authorized to access this assessment
+    - 404: Assessment or governance area not found
+    - 400: Area already submitted or approved
+    """
+    from app.services.area_submission_service import area_submission_service
+
+    try:
+        result = area_submission_service.submit_area(
+            db=db,
+            assessment_id=assessment_id,
+            governance_area_id=governance_area_id,
+            user=current_user,
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting area: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to submit area: {str(e)}",
+        )
+
+
+@router.post(
+    "/{assessment_id}/areas/{governance_area_id}/resubmit",
+    tags=["assessments"],
+    summary="Resubmit governance area after rework",
+)
+async def resubmit_area_after_rework(
+    assessment_id: int,
+    governance_area_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(get_current_blgu_user),
+):
+    """
+    BLGU resubmits a governance area after rework.
+
+    This endpoint is used when an area was sent back for rework by the
+    area-specific assessor and the BLGU has made the required corrections.
+
+    **Path Parameters:**
+    - assessment_id: ID of the assessment
+    - governance_area_id: ID of the governance area (1-6)
+
+    **Returns:** Success status and area info
+
+    **Raises:**
+    - 403: User not authorized to access this assessment
+    - 404: Assessment or governance area not found
+    - 400: Area is not in rework status
+    """
+    from app.services.area_submission_service import area_submission_service
+
+    try:
+        result = area_submission_service.resubmit_area(
+            db=db,
+            assessment_id=assessment_id,
+            governance_area_id=governance_area_id,
+            user=current_user,
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resubmitting area: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to resubmit area: {str(e)}",
+        )
+
+
+@router.get(
+    "/{assessment_id}/area-status",
+    tags=["assessments"],
+    summary="Get area submission status",
+)
+async def get_area_submission_status(
+    assessment_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Get submission status for all governance areas.
+
+    Returns status for each of the 6 governance areas including:
+    - Current status (draft/submitted/in_review/rework/approved)
+    - Submission timestamps
+    - Approval status
+    - Rework information if applicable
+
+    **Path Parameters:**
+    - assessment_id: ID of the assessment
+
+    **Returns:** Area submission status for all 6 areas
+
+    **Raises:**
+    - 404: Assessment not found
+    """
+    from app.services.area_submission_service import area_submission_service
+
+    try:
+        result = area_submission_service.get_area_status(
+            db=db,
+            assessment_id=assessment_id,
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting area status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get area status: {str(e)}",
+        )

@@ -36,13 +36,58 @@ export interface AssessorQueueItem {
   status: string;
   updated_at: string;
   area_progress?: number;
+  governance_area_id?: AssessorQueueItemGovernanceAreaId;
+  governance_area_name?: AssessorQueueItemGovernanceAreaName;
+  area_status?: AssessorQueueItemAreaStatus;
+  is_resubmission?: boolean;
+  areas_in_rework?: AssessorQueueItemAreasInRework;
+  rework_round_used?: boolean;
 }
+
+
+/**
+ * AssessorQueueItemAreaStatus
+ */
+export type AssessorQueueItemAreaStatus = string | null;
+
+
+/**
+ * AssessorQueueItemAreasInRework
+ */
+export type AssessorQueueItemAreasInRework = number[] | null;
+
+
+/**
+ * AssessorQueueItemGovernanceAreaId
+ */
+export type AssessorQueueItemGovernanceAreaId = number | null;
+
+
+/**
+ * AssessorQueueItemGovernanceAreaName
+ */
+export type AssessorQueueItemGovernanceAreaName = string | null;
 
 
 /**
  * AssessorQueueItemSubmissionDate
  */
 export type AssessorQueueItemSubmissionDate = string | null;
+
+
+/**
+ * GetAssessorDashboardParams
+ */
+export type GetAssessorDashboardParams = {
+/**
+ * Assessment year filter (e.g., 2024, 2025). Defaults to active year.
+ */
+year?: number | null;
+/**
+ * Whether to include draft assessments in barangay list
+ */
+include_draft?: boolean;
+};
 
 
 /**

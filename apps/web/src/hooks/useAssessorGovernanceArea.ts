@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { GovernanceArea } from "@sinag/shared";
 import { useGovernanceAreas } from "./useGovernanceAreas";
@@ -10,26 +11,27 @@ export function useAssessorGovernanceArea() {
   const { user } = useAuthStore();
   const { data: governanceAreasData, isLoading, error } = useGovernanceAreas();
 
-  const getAssessorGovernanceArea = () => {
+  // Memoize the governance area name calculation
+  const governanceAreaName = useMemo(() => {
     if (!user || user.role !== "ASSESSOR") {
       return null;
     }
 
-    if (!user.validator_area_id || !governanceAreasData) {
-      return "Unknown Governance Area";
+    if (!user.assessor_area_id || !governanceAreasData) {
+      return null;
     }
 
     const governanceArea = (governanceAreasData as GovernanceArea[]).find(
-      (ga: GovernanceArea) => ga.id === user.validator_area_id
+      (ga: GovernanceArea) => ga.id === user.assessor_area_id
     );
 
-    return governanceArea?.name || "Unknown Governance Area";
-  };
+    return governanceArea?.name || null;
+  }, [user, governanceAreasData]);
 
   return {
-    governanceAreaName: getAssessorGovernanceArea(),
+    governanceAreaName,
     isLoading,
     error,
-    governanceAreaId: user?.validator_area_id,
+    governanceAreaId: user?.assessor_area_id,
   };
 }

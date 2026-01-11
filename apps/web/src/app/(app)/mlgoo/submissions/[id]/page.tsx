@@ -13,6 +13,18 @@ const GOVERNANCE_AREA_LOGOS: Record<string, string> = {
   "Business-Friendliness and Competitiveness": "/Assessment_Areas/businessFriendliness.webp",
 };
 
+// Type for MOV file with new/rejected flags
+type MovFile = {
+  id: number;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  is_new?: boolean;
+  is_rejected?: boolean;
+  has_annotations?: boolean;
+};
+
 import { CapDevInsightsCard } from "@/components/features/capdev";
 import { SecureFileViewer } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
@@ -30,13 +42,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
   getGetCapdevAssessmentsAssessmentIdQueryKey,
+  useGetAssessmentsList,
   useGetCapdevAssessmentsAssessmentId,
   useGetMlgooAssessmentsAssessmentId,
   usePatchMlgooAssessmentResponsesResponseIdOverrideStatus,
   usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
-  usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate,
-  usePostAssessmentsAssessmentIdReworkSummaryRegenerate,
-  usePostAssessmentsIdRegenerateInsights,
   usePostCapdevAssessmentsAssessmentIdRegenerate,
   usePostMlgooAssessmentsAssessmentIdApprove,
   usePostMlgooAssessmentsAssessmentIdRecalibrateByMov,
@@ -46,25 +56,201 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowLeft,
+  Award,
   Calendar,
   CheckCircle,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Clock,
   Eye,
+  FileCheck,
   FileText,
   LayoutDashboard,
   ListChecks,
   Loader2,
-  RefreshCw,
   RotateCcw,
-  Sparkles,
+  TrendingUp,
+  Upload,
   X,
   XCircle,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
+
+// Reusable Verdict Result Card component for showing SGLGB pass/fail status
+function VerdictResultCard({ isPassed }: { isPassed: boolean }) {
+  return (
+    <Card
+      className={`rounded-sm shadow-lg border overflow-hidden ${
+        isPassed
+          ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200"
+          : "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200"
+      }`}
+    >
+      <CardContent className="py-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 ${
+              isPassed ? "bg-green-500" : "bg-amber-400"
+            }`}
+          >
+            {isPassed ? (
+              <Award className="w-8 h-8 text-white" />
+            ) : (
+              <TrendingUp className="w-8 h-8 text-white" />
+            )}
+          </div>
+          <div className="text-center sm:text-left flex-1">
+            <h3 className={`text-xl font-bold ${isPassed ? "text-green-800" : "text-amber-800"}`}>
+              {isPassed ? "SGLGB Achieved" : "SGLGB Not Yet Achieved"}
+            </h3>
+            <p className={`text-sm mt-1 ${isPassed ? "text-green-700" : "text-amber-700"}`}>
+              {isPassed
+                ? "This barangay has successfully met the requirements for the Seal of Good Local Governance for Barangays."
+                : "This barangay did not meet all requirements this cycle. Review the detailed results below."}
+            </p>
+          </div>
+          <div className="flex-shrink-0">
+            <span
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${
+                isPassed
+                  ? "bg-green-100 text-green-800 border border-green-300"
+                  : "bg-amber-100 text-amber-800 border border-amber-300"
+              }`}
+            >
+              {isPassed ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+              {isPassed ? "PASSED" : "FAILED"}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Completion Progress Card for DRAFT assessments
+// Shows indicator completion based on is_completed flag (form filled + required MOVs)
+// This aligns with the geographic map's completion calculation
+function CompletionProgressCard({
+  completedIndicators,
+  totalIndicators,
+  totalMovFiles,
+}: {
+  completedIndicators: number;
+  totalIndicators: number;
+  totalMovFiles: number;
+}) {
+  const percentage =
+    totalIndicators > 0 ? Math.round((completedIndicators / totalIndicators) * 100) : 0;
+
+  // Determine color based on percentage
+  const getProgressColor = () => {
+    if (percentage >= 80) return "bg-green-500";
+    if (percentage >= 50) return "bg-amber-500";
+    if (percentage >= 25) return "bg-orange-500";
+    return "bg-gray-400";
+  };
+
+  const getTextColor = () => {
+    if (percentage >= 80) return "text-green-700";
+    if (percentage >= 50) return "text-amber-700";
+    if (percentage >= 25) return "text-orange-700";
+    return "text-gray-600";
+  };
+
+  const getBgColor = () => {
+    if (percentage >= 80) return "bg-green-50 border-green-200";
+    if (percentage >= 50) return "bg-amber-50 border-amber-200";
+    if (percentage >= 25) return "bg-orange-50 border-orange-200";
+    return "bg-gray-50 border-gray-200";
+  };
+
+  const getStatusMessage = () => {
+    if (percentage === 100) return "All indicators complete";
+    if (percentage >= 80) return "Almost complete - just a few more to go";
+    if (percentage >= 50) return "Good progress - over halfway there";
+    if (percentage >= 25) return "Getting started - keep going";
+    if (percentage > 0) return "Early stage - many indicators need completion";
+    return "No indicators completed yet";
+  };
+
+  return (
+    <Card className={`rounded-sm border shadow-sm ${getBgColor()}`}>
+      <CardContent className="py-4">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+          {/* Left: Icon and Title */}
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                percentage >= 80
+                  ? "bg-green-100"
+                  : percentage >= 50
+                    ? "bg-amber-100"
+                    : percentage >= 25
+                      ? "bg-orange-100"
+                      : "bg-gray-100"
+              }`}
+            >
+              <Upload className={`w-6 h-6 ${getTextColor()}`} />
+            </div>
+            <div>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>Indicator Completion</h3>
+              <p className="text-xs text-gray-500">{getStatusMessage()}</p>
+            </div>
+          </div>
+
+          {/* Center: Progress Bar */}
+          <div className="flex-1 lg:max-w-md">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-gray-600">
+                {completedIndicators} of {totalIndicators} indicators
+              </span>
+              <span className={`text-sm font-bold ${getTextColor()}`}>{percentage}%</span>
+            </div>
+            <div
+              className="relative w-full h-2.5 bg-gray-200 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuenow={percentage}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Indicator completion: ${percentage}% complete, ${completedIndicators} of ${totalIndicators} indicators`}
+            >
+              <div
+                className={`absolute inset-y-0 left-0 ${getProgressColor()} rounded-full transition-all duration-500 ease-out`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Right: Stats */}
+          <div className="flex items-center gap-6 lg:pl-4 lg:border-l border-gray-200">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                <FileCheck className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{completedIndicators}</p>
+                <p className="text-xs text-gray-500">Completed</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{totalMovFiles}</p>
+                <p className="text-xs text-gray-500">Total Files</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function SubmissionDetailsPage() {
   const { isAuthenticated } = useAuthStore();
@@ -97,6 +283,39 @@ export default function SubmissionDetailsPage() {
 
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
+
+  // Fetch all submissions for prev/next navigation
+  const { data: allSubmissions } = useGetAssessmentsList({});
+
+  // Compute previous and next submission IDs
+  const { prevSubmissionId, nextSubmissionId, currentIndex, totalSubmissions } =
+    React.useMemo(() => {
+      if (!allSubmissions || !Array.isArray(allSubmissions)) {
+        return {
+          prevSubmissionId: null,
+          nextSubmissionId: null,
+          currentIndex: -1,
+          totalSubmissions: 0,
+        };
+      }
+
+      const sortedSubmissions = [...allSubmissions].sort((a: any, b: any) => {
+        // Sort by barangay name alphabetically for consistent navigation
+        const nameA = a.barangay_name || "";
+        const nameB = b.barangay_name || "";
+        return nameA.localeCompare(nameB);
+      });
+
+      const currentIdx = sortedSubmissions.findIndex((s: any) => s.id === assessmentId);
+
+      return {
+        prevSubmissionId: currentIdx > 0 ? sortedSubmissions[currentIdx - 1].id : null,
+        nextSubmissionId:
+          currentIdx < sortedSubmissions.length - 1 ? sortedSubmissions[currentIdx + 1].id : null,
+        currentIndex: currentIdx,
+        totalSubmissions: sortedSubmissions.length,
+      };
+    }, [allSubmissions, assessmentId]);
 
   // Track previous CapDev status for notifications
   const prevCapDevStatusRef = React.useRef<string | null>(null);
@@ -172,85 +391,6 @@ export default function SubmissionDetailsPage() {
       await refetchCapdev();
     } catch (err: any) {
       toast.dismiss("capdev-regenerate");
-      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
-      toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
-    }
-  };
-
-  // AI Insights regeneration mutation
-  const regenerateInsightsMutation = usePostAssessmentsIdRegenerateInsights();
-
-  const handleRegenerateInsights = async () => {
-    if (!assessmentId) return;
-
-    toast.loading("Regenerating AI insights...", { id: "insights-regenerate" });
-
-    try {
-      await regenerateInsightsMutation.mutateAsync({
-        id: assessmentId,
-        params: { force: true },
-      });
-
-      toast.dismiss("insights-regenerate");
-      toast.success("AI insights regeneration started!", { duration: 5000 });
-
-      // Invalidate queries to refresh data
-      await queryClient.invalidateQueries();
-    } catch (err: any) {
-      toast.dismiss("insights-regenerate");
-      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
-      toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
-    }
-  };
-
-  // Rework summary regeneration mutation
-  const regenerateReworkMutation = usePostAssessmentsAssessmentIdReworkSummaryRegenerate();
-
-  const handleRegenerateReworkSummary = async () => {
-    if (!assessmentId) return;
-
-    toast.loading("Regenerating rework summary...", { id: "rework-regenerate" });
-
-    try {
-      await regenerateReworkMutation.mutateAsync({
-        assessmentId,
-        params: { force: true },
-      });
-
-      toast.dismiss("rework-regenerate");
-      toast.success("Rework summary regeneration started!", { duration: 5000 });
-
-      // Invalidate queries to refresh data
-      await queryClient.invalidateQueries();
-    } catch (err: any) {
-      toast.dismiss("rework-regenerate");
-      const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
-      toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
-    }
-  };
-
-  // Calibration summary regeneration mutation
-  const regenerateCalibrationMutation =
-    usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate();
-
-  const handleRegenerateCalibrationSummary = async (governanceAreaId: number) => {
-    if (!assessmentId) return;
-
-    toast.loading("Regenerating calibration summary...", { id: "calibration-regenerate" });
-
-    try {
-      await regenerateCalibrationMutation.mutateAsync({
-        assessmentId,
-        params: { governance_area_id: governanceAreaId, force: true },
-      });
-
-      toast.dismiss("calibration-regenerate");
-      toast.success("Calibration summary regeneration started!", { duration: 5000 });
-
-      // Invalidate queries to refresh data
-      await queryClient.invalidateQueries();
-    } catch (err: any) {
-      toast.dismiss("calibration-regenerate");
       const errorMessage = err?.response?.data?.detail || err?.message || "Failed to regenerate";
       toast.error(`Regeneration failed: ${errorMessage}`, { duration: 6000 });
     }
@@ -526,6 +666,9 @@ export default function SubmissionDetailsPage() {
   const governanceAreas = assessment.governance_areas || [];
   const isAwaitingApproval = assessment.status === "AWAITING_MLGOO_APPROVAL";
   const canRecalibrate = assessment.can_recalibrate && isAwaitingApproval;
+  const isCompleted = assessment.status === "COMPLETED";
+  const complianceStatus = assessment.compliance_status; // "PASSED" or "FAILED"
+  const isPassed = complianceStatus === "PASSED";
 
   // Calculate totals
   const totalPass = governanceAreas.reduce((sum: number, ga: any) => sum + (ga.pass_count || 0), 0);
@@ -539,17 +682,24 @@ export default function SubmissionDetailsPage() {
     assessment.overall_score ??
     (totalIndicators > 0 ? Math.round((totalPass / totalIndicators) * 100) : 0);
 
-  // Type for MOV file with new/rejected flags (defined before usage)
-  type MovFile = {
-    id: number;
-    file_name: string;
-    file_url: string;
-    file_type: string;
-    file_size: number;
-    is_new?: boolean;
-    is_rejected?: boolean;
-    has_annotations?: boolean;
-  };
+  // Calculate indicator completion progress (for DRAFT assessments)
+  // Uses is_completed flag which checks: form filled + required MOVs uploaded
+  // This aligns with the geographic map's completion calculation
+  const isDraft = assessment.status === "DRAFT";
+  let completedIndicators = 0;
+  let totalMovFiles = 0;
+  let allIndicatorsCount = 0;
+
+  for (const ga of governanceAreas) {
+    for (const ind of ga.indicators || []) {
+      allIndicatorsCount++;
+      const movCount = (ind.mov_files || []).length;
+      totalMovFiles += movCount;
+      if (ind.is_completed) {
+        completedIndicators++;
+      }
+    }
+  }
 
   // Get all failed/conditional indicators for recalibration selection
   // Note: validation_status from backend is uppercase (PASS, FAIL, CONDITIONAL)
@@ -585,7 +735,7 @@ export default function SubmissionDetailsPage() {
     (assessment.mlgoo_recalibration_mov_file_ids || []).map((item: any) => item.mov_file_id)
   );
   // Get comments for flagged files
-  const mlgooFlaggedFileComments = new Map(
+  const mlgooFlaggedFileComments = new Map<number, string>(
     (assessment.mlgoo_recalibration_mov_file_ids || []).map((item: any) => [
       item.mov_file_id,
       item.comment,
@@ -661,16 +811,53 @@ export default function SubmissionDetailsPage() {
     <div className="min-h-screen bg-[var(--background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
-          {/* Back Button */}
-          <div>
+          {/* Navigation Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <Button
               variant="ghost"
               onClick={() => router.push("/mlgoo/submissions")}
               className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] rounded-sm transition-colors duration-200"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Submissions
+              <span className="hidden xs:inline">Back to</span> Submissions
             </Button>
+
+            {/* Prev/Next Navigation */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+              {totalSubmissions > 0 && (
+                <span className="text-sm text-[var(--muted-foreground)] mr-0 sm:mr-2">
+                  {currentIndex + 1} of {totalSubmissions}
+                </span>
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    prevSubmissionId && router.push(`/mlgoo/submissions/${prevSubmissionId}`)
+                  }
+                  disabled={!prevSubmissionId}
+                  className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
+                  title="Previous submission"
+                >
+                  <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Previous</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    nextSubmissionId && router.push(`/mlgoo/submissions/${nextSubmissionId}`)
+                  }
+                  disabled={!nextSubmissionId}
+                  className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
+                  title="Next submission"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-4 w-4 sm:ml-1" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Header with Status and Action Buttons */}
@@ -687,10 +874,10 @@ export default function SubmissionDetailsPage() {
               <span
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-medium ${
                   isAwaitingApproval
-                    ? "bg-yellow-100 text-yellow-800"
+                    ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                     : assessment.status === "COMPLETED"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300"
                 }`}
               >
                 {isAwaitingApproval ? (
@@ -705,7 +892,7 @@ export default function SubmissionDetailsPage() {
 
               {/* Show recalibration count badge if already recalibrated */}
               {assessment.mlgoo_recalibration_count > 0 && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-sm text-xs font-medium bg-purple-100 text-purple-800">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-sm text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
                   <RotateCcw className="h-3 w-3" />
                   Recalibrated {assessment.mlgoo_recalibration_count}x
                 </span>
@@ -756,55 +943,66 @@ export default function SubmissionDetailsPage() {
             </div>
           </div>
 
+          {/* Completion Progress Card - Only for DRAFT assessments */}
+          {isDraft && (
+            <CompletionProgressCard
+              completedIndicators={completedIndicators}
+              totalIndicators={allIndicatorsCount}
+              totalMovFiles={totalMovFiles}
+            />
+          )}
+
           {/* Recalibration Mode Panel - MOV File Level Selection */}
           {isRecalibrationMode && (
-            <Card className="bg-orange-50 border-orange-200">
+            <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-800">
+                <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-300">
                   <RotateCcw className="h-5 w-5" />
                   Request Recalibration
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-orange-700">
+                <p className="text-sm text-orange-700 dark:text-orange-400">
                   Select the specific MOV files that need to be resubmitted. The BLGU will be given
                   a 3-day grace period to provide replacement documentation for only the selected
                   files.
                 </p>
 
-                <div className="bg-white rounded-sm border border-orange-200 p-4 max-h-[500px] overflow-y-auto">
-                  <p className="text-sm font-medium text-gray-700 mb-3">
+                <div className="bg-white dark:bg-slate-800 rounded-sm border border-orange-200 dark:border-orange-800/50 p-4 max-h-[500px] overflow-y-auto">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Failed/Conditional Indicators ({failedIndicators.length})
                   </p>
                   <div className="space-y-3">
                     {failedIndicators.map((ind) => (
                       <div
                         key={ind.id}
-                        className="border border-gray-200 rounded-lg overflow-hidden"
+                        className="border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden"
                       >
                         {/* Indicator header (non-selectable, just for grouping) */}
                         <div
-                          className="flex items-start gap-3 p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                          className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700"
                           onClick={() => toggleIndicatorExpanded(ind.id)}
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {ind.code} - {formatIndicatorName(ind.name, assessment.cycle_year)}
                             </p>
-                            <p className="text-xs text-gray-500">{ind.areaName}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {ind.areaName}
+                            </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-xs px-2 py-0.5 rounded ${
                                 ind.status?.toUpperCase() === "FAIL"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-yellow-100 text-yellow-700"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                  : "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
                               }`}
                             >
                               {ind.status}
                             </span>
                             {ind.mov_files.length > 0 ? (
-                              <div className="flex items-center text-gray-500">
+                              <div className="flex items-center text-gray-500 dark:text-gray-400">
                                 <FileText className="h-4 w-4 mr-1" />
                                 <span className="text-xs">{ind.mov_files.length}</span>
                                 {expandedIndicators.has(ind.id) ? (
@@ -814,7 +1012,7 @@ export default function SubmissionDetailsPage() {
                                 )}
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                              <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
                                 <AlertCircle className="h-3 w-3" />
                                 No MOV
                               </span>
@@ -824,8 +1022,8 @@ export default function SubmissionDetailsPage() {
 
                         {/* Expandable MOV files section with checkboxes */}
                         {expandedIndicators.has(ind.id) && ind.mov_files.length > 0 && (
-                          <div className="p-3 bg-white border-t border-gray-200 space-y-2">
-                            <p className="text-xs font-medium text-gray-600 mb-2">
+                          <div className="p-3 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 space-y-2">
+                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                               Select files to flag for resubmission:
                             </p>
                             {ind.mov_files.map((file: MovFile) => (
@@ -833,8 +1031,8 @@ export default function SubmissionDetailsPage() {
                                 key={file.id}
                                 className={`flex items-center justify-between p-2 rounded-lg border transition-colors ${
                                   selectedMovFiles.includes(file.id)
-                                    ? "bg-orange-50 border-orange-300"
-                                    : "bg-slate-50 border-slate-100 hover:border-slate-200"
+                                    ? "bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700"
+                                    : "bg-slate-50 dark:bg-slate-700/50 border-slate-100 dark:border-slate-600 hover:border-slate-200 dark:hover:border-slate-500"
                                 }`}
                               >
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1332,9 +1530,9 @@ export default function SubmissionDetailsPage() {
 
           {/* Cannot Recalibrate Notice */}
           {isAwaitingApproval && !canRecalibrate && assessment.mlgoo_recalibration_count > 0 && (
-            <Card className="bg-purple-50 border-purple-200">
+            <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-3 text-purple-700">
+                <div className="flex items-center gap-3 text-purple-700 dark:text-purple-300">
                   <AlertCircle className="h-5 w-5" />
                   <p className="text-sm">
                     Recalibration has already been requested once for this assessment. Each
@@ -1347,17 +1545,17 @@ export default function SubmissionDetailsPage() {
 
           <Tabs defaultValue="overview" className="w-full">
             <div className="flex justify-center mb-8">
-              <TabsList className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 h-auto p-1.5 bg-gray-100/80 rounded-3xl sm:rounded-full border border-gray-200/50 gap-2 sm:gap-0">
+              <TabsList className="grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 h-auto p-1.5 bg-gray-100/80 dark:bg-slate-800 rounded-3xl sm:rounded-full border border-gray-200/50 dark:border-slate-700 gap-2 sm:gap-0">
                 <TabsTrigger
                   value="overview"
-                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 data-[state=active]:hover:text-white"
+                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 text-gray-600 dark:text-gray-400 data-[state=active]:bg-orange-600 dark:data-[state=active]:bg-orange-600 data-[state=active]:text-white dark:data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 dark:hover:text-orange-400 data-[state=active]:hover:text-white"
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Executive Overview
                 </TabsTrigger>
                 <TabsTrigger
                   value="detailed"
-                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 data-[state=active]:hover:text-white"
+                  className="flex items-center justify-center gap-2.5 rounded-2xl sm:rounded-full py-3 text-sm font-medium transition-all duration-300 text-gray-600 dark:text-gray-400 data-[state=active]:bg-orange-600 dark:data-[state=active]:bg-orange-600 data-[state=active]:text-white dark:data-[state=active]:text-white data-[state=active]:shadow-lg hover:text-orange-600 dark:hover:text-orange-400 data-[state=active]:hover:text-white"
                 >
                   <ListChecks className="h-4 w-4" />
                   Detailed Assessment
@@ -1368,169 +1566,61 @@ export default function SubmissionDetailsPage() {
             <TabsContent value="overview" className="space-y-6">
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-600">{overallScore}%</p>
-                      <p className="text-sm text-gray-500 mt-1">Overall Score</p>
+                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                        {overallScore}%
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Compliance Rate
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-green-600">{totalPass}</p>
-                      <p className="text-sm text-gray-500 mt-1">Pass</p>
+                      <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                        {totalPass}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pass</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-red-600">{totalFail}</p>
-                      <p className="text-sm text-gray-500 mt-1">Fail</p>
+                      <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+                        {totalFail}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Fail</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white rounded-sm shadow border">
+                <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
                   <CardContent className="pt-6">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-yellow-600">{totalConditional}</p>
-                      <p className="text-sm text-gray-500 mt-1">Conditional</p>
+                      <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                        {totalConditional}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Conditional</p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
+              {/* SGLGB Verdict Result - Only for Completed Assessments */}
+              {isCompleted && complianceStatus && <VerdictResultCard isPassed={isPassed} />}
+
               {/* CapDev AI Insights Section - Only for Completed Assessments */}
-              {assessment.status === "COMPLETED" && (
+              {isCompleted && (
                 <CapDevInsightsCard
                   insights={capdevInsights as any}
                   isLoading={isCapdevLoading}
                   onRegenerate={handleRegenerateCapdev}
                   isRegenerating={regenerateCapdevMutation.isPending}
                 />
-              )}
-
-              {/* AI Summary Management Section - For MLGOO Admins */}
-              {(assessment.rework_count > 0 ||
-                assessment.calibration_count > 0 ||
-                assessment.ai_recommendations) && (
-                <Card className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] overflow-hidden">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-3 text-lg font-semibold text-[var(--foreground)]">
-                      <div className="w-8 h-8 rounded-sm flex items-center justify-center bg-purple-100">
-                        <Sparkles className="h-5 w-5 text-purple-600" />
-                      </div>
-                      AI Summary Management
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Regenerate AI-generated summaries and insights for this assessment.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* General AI Insights Regenerate */}
-                      {assessment.ai_recommendations && (
-                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-blue-800">AI Insights</h4>
-                              <p className="text-xs text-blue-600 mt-1">
-                                General assessment recommendations
-                              </p>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleRegenerateInsights}
-                              disabled={regenerateInsightsMutation.isPending}
-                              className="border-blue-300 text-blue-700 hover:bg-blue-100"
-                            >
-                              {regenerateInsightsMutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-4 w-4" />
-                              )}
-                              <span className="ml-2">Regenerate</span>
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Rework Summary Regenerate */}
-                      {assessment.rework_count > 0 && (
-                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-orange-800">Rework Summary</h4>
-                              <p className="text-xs text-orange-600 mt-1">
-                                {assessment.rework_count} rework
-                                {assessment.rework_count > 1 ? "s" : ""} recorded
-                              </p>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleRegenerateReworkSummary}
-                              disabled={regenerateReworkMutation.isPending}
-                              className="border-orange-300 text-orange-700 hover:bg-orange-100"
-                            >
-                              {regenerateReworkMutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-4 w-4" />
-                              )}
-                              <span className="ml-2">Regenerate</span>
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Calibration Summary Regenerate - Per Governance Area */}
-                      {assessment.calibration_count > 0 &&
-                        governanceAreas
-                          .filter(
-                            (ga: any) => ga.calibration_count > 0 || ga.has_calibration_summary
-                          )
-                          .map((ga: any) => (
-                            <div
-                              key={`calib-${ga.id}`}
-                              className="p-4 bg-purple-50 rounded-lg border border-purple-200"
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex-1">
-                                  <h4 className="font-medium text-purple-800">
-                                    Calibration Summary
-                                  </h4>
-                                  <p
-                                    className="text-xs text-purple-600 mt-1 truncate"
-                                    title={ga.name}
-                                  >
-                                    {ga.name}
-                                  </p>
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleRegenerateCalibrationSummary(ga.id)}
-                                  disabled={regenerateCalibrationMutation.isPending}
-                                  className="border-purple-300 text-purple-700 hover:bg-purple-100"
-                                >
-                                  {regenerateCalibrationMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <RefreshCw className="h-4 w-4" />
-                                  )}
-                                  <span className="ml-2">Regenerate</span>
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                    </div>
-                  </CardContent>
-                </Card>
               )}
 
               {/* Governance Areas Breakdown */}
@@ -1551,35 +1641,37 @@ export default function SubmissionDetailsPage() {
                     {governanceAreas.map((ga: any) => (
                       <div
                         key={ga.id}
-                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-50 rounded-sm border border-gray-200 gap-4 md:gap-0"
+                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-sm border border-gray-200 dark:border-slate-700 gap-4 md:gap-0"
                       >
                         <div className="flex-1 w-full md:w-auto">
-                          <h4 className="font-medium text-gray-900">{ga.name}</h4>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                            {ga.name}
+                          </h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                             {ga.indicators?.length || 0} indicators
                           </p>
                         </div>
-                        <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto border-t md:border-t-0 border-gray-200/50 pt-3 md:pt-0">
+                        <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto border-t md:border-t-0 border-gray-200/50 dark:border-slate-700/50 pt-3 md:pt-0">
                           <div className="text-center">
-                            <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
                               <CheckCircle className="h-4 w-4" />
                               {ga.pass_count || 0}
                             </span>
-                            <p className="text-xs text-gray-500">Pass</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Pass</p>
                           </div>
                           <div className="text-center">
-                            <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                            <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
                               <XCircle className="h-4 w-4" />
                               {ga.fail_count || 0}
                             </span>
-                            <p className="text-xs text-gray-500">Fail</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Fail</p>
                           </div>
                           <div className="text-center">
-                            <span className="inline-flex items-center gap-1 text-yellow-600 font-medium">
+                            <span className="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium">
                               <AlertCircle className="h-4 w-4" />
                               {ga.conditional_count || 0}
                             </span>
-                            <p className="text-xs text-gray-500">Conditional</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Conditional</p>
                           </div>
                         </div>
                       </div>
@@ -1647,11 +1739,14 @@ export default function SubmissionDetailsPage() {
             </TabsContent>
 
             <TabsContent value="detailed" className="space-y-6">
+              {/* SGLGB Verdict Result - Only for Completed Assessments */}
+              {isCompleted && complianceStatus && <VerdictResultCard isPassed={isPassed} />}
+
               {/* Recalibration Info (if applicable) */}
               {assessment.is_mlgoo_recalibration && assessment.mlgoo_recalibration_comments && (
-                <Card className="bg-purple-50 border-purple-200">
+                <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-purple-800">
+                    <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-300">
                       <RotateCcw className="h-5 w-5" />
                       Recalibration Details
                     </CardTitle>
@@ -1659,17 +1754,19 @@ export default function SubmissionDetailsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm font-medium text-purple-700">MLGOO Comments:</p>
-                        <p className="text-sm text-purple-900 mt-1">
+                        <p className="text-sm font-medium text-purple-700 dark:text-purple-400">
+                          MLGOO Comments:
+                        </p>
+                        <p className="text-sm text-purple-900 dark:text-purple-200 mt-1">
                           {assessment.mlgoo_recalibration_comments}
                         </p>
                       </div>
                       {assessment.grace_period_expires_at && (
                         <div>
-                          <p className="text-sm font-medium text-purple-700">
+                          <p className="text-sm font-medium text-purple-700 dark:text-purple-400">
                             Grace Period Expires:
                           </p>
-                          <p className="text-sm text-purple-900 mt-1">
+                          <p className="text-sm text-purple-900 dark:text-purple-200 mt-1">
                             {new Date(assessment.grace_period_expires_at).toLocaleString()}
                           </p>
                         </div>
@@ -1685,11 +1782,11 @@ export default function SubmissionDetailsPage() {
                 return (
                   <Card
                     key={`detail-${ga.id}`}
-                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6 transition-all duration-300 hover:shadow-md py-0 gap-0"
+                    className="bg-white dark:bg-slate-800/80 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden mb-6 transition-all duration-300 hover:shadow-md py-0 gap-0"
                   >
-                    <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50/30 border-b border-amber-100/50 p-4">
+                    <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50/30 dark:from-slate-700/80 dark:to-slate-800/50 border-b border-amber-100/50 dark:border-slate-600 p-4">
                       <div className="flex items-center gap-4">
-                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-amber-100 p-1">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white dark:bg-slate-600 shadow-sm ring-1 ring-amber-100 dark:ring-slate-500 p-1">
                           <Image
                             src={logoSrc}
                             alt={ga.name}
@@ -1699,17 +1796,17 @@ export default function SubmissionDetailsPage() {
                           />
                         </div>
                         <div>
-                          <CardTitle className="text-lg font-bold text-gray-800">
+                          <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-100">
                             {ga.name}
                           </CardTitle>
-                          <p className="text-sm text-gray-500 font-medium mt-0.5">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-0.5">
                             Performance Indicators
                           </p>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <div className="divide-y divide-gray-100">
+                      <div className="divide-y divide-gray-100 dark:divide-slate-700">
                         {(ga.indicators || []).map((indicator: any) => {
                           const isRecalibrationTarget = indicator.is_recalibration_target;
                           const status = indicator.validation_status?.toUpperCase();
@@ -1717,25 +1814,25 @@ export default function SubmissionDetailsPage() {
                           const isExpanded = expandedIndicators.has(indicator.indicator_id);
                           return (
                             <div
-                              key={indicator.response_id}
-                              className={`${isRecalibrationTarget ? "bg-purple-50/30" : ""}`}
+                              key={indicator.indicator_id}
+                              className={`${isRecalibrationTarget ? "bg-purple-50/30 dark:bg-purple-900/20" : ""}`}
                             >
                               {/* Indicator Header */}
-                              <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                              <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition-colors">
                                 <div className="flex-1 space-y-2">
                                   <div className="flex items-start gap-3">
-                                    <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 text-gray-600 font-mono text-xs font-bold border border-gray-200">
+                                    <span className="shrink-0 px-2 py-1 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-mono text-xs font-bold border border-gray-200 dark:border-slate-600">
                                       {indicator.indicator_code}
                                     </span>
                                     <div>
-                                      <p className="font-medium text-gray-900 leading-snug">
+                                      <p className="font-medium text-gray-900 dark:text-gray-100 leading-snug">
                                         {formatIndicatorName(
                                           indicator.indicator_name,
                                           assessment.cycle_year
                                         )}
                                       </p>
                                       {isRecalibrationTarget && (
-                                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-semibold border border-purple-200">
+                                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
                                           <RotateCcw className="h-3.5 w-3.5" />
                                           Recalibration Target
                                         </div>
@@ -1743,8 +1840,8 @@ export default function SubmissionDetailsPage() {
                                     </div>
                                   </div>
                                   {indicator.assessor_remarks && (
-                                    <div className="ml-12 mt-1 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border border-gray-100 italic">
-                                      <span className="font-semibold text-gray-700 not-italic mr-1">
+                                    <div className="ml-12 mt-1 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-xs text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-slate-600 italic">
+                                      <span className="font-semibold text-gray-700 dark:text-gray-200 not-italic mr-1">
                                         Remarks:
                                       </span>
                                       {indicator.assessor_remarks}
@@ -1761,7 +1858,7 @@ export default function SubmissionDetailsPage() {
                                       onClick={() =>
                                         toggleIndicatorExpanded(indicator.indicator_id)
                                       }
-                                      className="h-8 px-2 text-gray-500 hover:text-gray-700"
+                                      className="h-8 px-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                                     >
                                       <FileText className="h-4 w-4 mr-1" />
                                       <span className="text-xs">{movFiles.length} MOV</span>
@@ -1773,7 +1870,7 @@ export default function SubmissionDetailsPage() {
                                     </Button>
                                   )}
                                   {movFiles.length === 0 && (
-                                    <span className="text-xs text-gray-400 flex items-center gap-1 mr-2">
+                                    <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mr-2">
                                       <AlertCircle className="h-3 w-3" />
                                       No MOV
                                     </span>
@@ -1794,12 +1891,12 @@ export default function SubmissionDetailsPage() {
                                       <SelectTrigger
                                         className={`h-8 w-[130px] text-xs font-bold border shadow-sm ${
                                           status === "PASS"
-                                            ? "bg-green-100 text-green-700 border-green-200"
+                                            ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
                                             : status === "FAIL"
-                                              ? "bg-red-100 text-red-700 border-red-200"
+                                              ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"
                                               : status === "CONDITIONAL"
-                                                ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                                : "bg-gray-100 text-gray-700 border-gray-200"
+                                                ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+                                                : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700"
                                         }`}
                                       >
                                         <SelectValue />
@@ -1829,12 +1926,12 @@ export default function SubmissionDetailsPage() {
                                     <span
                                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm border ${
                                         status === "PASS"
-                                          ? "bg-green-100 text-green-700 border-green-200"
+                                          ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
                                           : status === "FAIL"
-                                            ? "bg-red-100 text-red-700 border-red-200"
+                                            ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"
                                             : status === "CONDITIONAL"
-                                              ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                              : "bg-gray-100 text-gray-700 border-gray-200"
+                                              ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+                                              : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700"
                                       }`}
                                     >
                                       {status === "PASS" && <CheckCircle className="h-3.5 w-3.5" />}
@@ -1851,25 +1948,25 @@ export default function SubmissionDetailsPage() {
                               {/* Expandable MOV Files Section */}
                               {isExpanded && movFiles.length > 0 && (
                                 <div className="px-4 pb-4 pt-0">
-                                  <div className="ml-12 bg-slate-50 rounded-lg border border-slate-200 p-3">
-                                    <p className="text-xs font-medium text-slate-600 mb-2">
+                                  <div className="ml-12 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
                                       Uploaded MOV Files:
                                     </p>
                                     <div className="space-y-2">
                                       {movFiles.map((file: MovFile) => (
                                         <div
                                           key={file.id}
-                                          className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100 hover:border-slate-200 transition-colors"
+                                          className="flex items-center justify-between p-2 bg-white dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-600 hover:border-slate-200 dark:hover:border-slate-500 transition-colors"
                                         >
                                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center flex-shrink-0">
-                                              <FileText className="h-4 w-4 text-slate-600" />
+                                            <div className="w-8 h-8 rounded bg-slate-200 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
+                                              <FileText className="h-4 w-4 text-slate-600 dark:text-slate-300" />
                                             </div>
                                             <div className="min-w-0">
-                                              <p className="text-xs font-medium text-gray-900 truncate">
+                                              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                                                 {file.file_name}
                                               </p>
-                                              <p className="text-xs text-gray-500">
+                                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 {Math.round(file.file_size / 1024)} KB
                                               </p>
                                             </div>
@@ -1884,7 +1981,7 @@ export default function SubmissionDetailsPage() {
                                                 file_type: file.file_type,
                                               })
                                             }
-                                            className="h-7 px-2 text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
+                                            className="h-7 px-2 text-xs border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
                                           >
                                             <Eye className="h-3 w-3 mr-1" />
                                             View
@@ -1911,11 +2008,13 @@ export default function SubmissionDetailsPage() {
       {/* File Preview Modal */}
       {previewFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-[80vw] h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-[80vw] h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
               <div>
-                <h2 className="text-lg font-semibold">{previewFile.file_name}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {previewFile.file_name}
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   {previewFile.file_type === "application/pdf" ? "PDF Document" : "Image File"}
                 </p>
@@ -1928,7 +2027,7 @@ export default function SubmissionDetailsPage() {
             </div>
 
             {/* Content - Use SecureFileViewer for secure file access */}
-            <div className="flex-1 overflow-auto bg-white">
+            <div className="flex-1 overflow-auto bg-white dark:bg-slate-900">
               <SecureFileViewer
                 file={{
                   id: previewFile.id,

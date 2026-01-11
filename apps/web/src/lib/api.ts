@@ -122,10 +122,19 @@ export const mutator = async <T = unknown, D = unknown>(
   options?: AxiosRequestConfig<D>
 ): Promise<T> => {
   try {
-    const response: AxiosResponse<T> = await axiosInstance({
-      ...config,
-      ...options,
-    });
+    // Merge config with options
+    const mergedConfig = { ...config, ...options };
+
+    // For FormData requests, explicitly unset Content-Type header
+    // This allows axios to automatically set it with the correct boundary
+    if (mergedConfig.data instanceof FormData) {
+      mergedConfig.headers = {
+        ...mergedConfig.headers,
+        "Content-Type": undefined,
+      };
+    }
+
+    const response: AxiosResponse<T> = await axiosInstance(mergedConfig);
     return response.data;
   } catch (error) {
     // Re-throw the error for React Query to handle

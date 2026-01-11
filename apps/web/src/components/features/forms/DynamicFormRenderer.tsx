@@ -1105,19 +1105,19 @@ function SectionRenderer({
       <div className="mb-10 last:mb-0">
         <div className="mb-6 pb-4 border-b border-zinc-200 dark:border-zinc-800">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 {friendlyTitle}
               </h2>
               {friendlyDescription && (
-                <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-4xl">
+                <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-4xl">
                   {friendlyDescription}
                 </p>
               )}
             </div>
             {/* Overall completion indicator */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold uppercase tracking-wide border shrink-0 ${
                 overallComplete
                   ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
                   : "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
@@ -1131,11 +1131,12 @@ function SectionRenderer({
 
         <div>
           {/* Info alert for OR logic */}
-          <Alert className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
-            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <AlertDescription className="text-blue-800 dark:text-blue-300">
-              <strong>Select ONE option</strong> that applies to your barangay&apos;s situation. You
-              only need to upload documents for the option that matches your case.
+          <Alert className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20 p-5">
+            <Info className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-800 dark:text-blue-300 text-base">
+              <strong className="text-lg">Select ONE option</strong> that applies to your
+              barangay&apos;s situation. You only need to upload documents for the option that
+              matches your case.
             </AlertDescription>
           </Alert>
 
@@ -1155,14 +1156,14 @@ function SectionRenderer({
                       : "border-zinc-200 dark:border-zinc-800"
                   }`}
                 >
-                  <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-zinc-50 dark:hover:bg-zinc-800/50 [&[data-state=open]]:bg-zinc-50 dark:[&[data-state=open]]:bg-zinc-800/50">
+                  <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-zinc-50 dark:hover:bg-zinc-800/50 [&[data-state=open]]:bg-zinc-50 dark:[&[data-state=open]]:bg-zinc-800/50">
                     <div className="flex items-center justify-between w-full pr-4 gap-4">
-                      <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100 text-left">
+                      <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 text-left">
                         {group.label}
                       </span>
                       {/* Progress indicator for this option */}
                       <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
+                        className={`text-sm font-semibold px-3 py-1.5 rounded-full border ${
                           progress.isComplete
                             ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50"
                             : "bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
@@ -1227,12 +1228,12 @@ function SectionRenderer({
   return (
     <div className="mb-10 last:mb-0">
       <div className="mb-6 pb-4 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="space-y-1">
-          <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             {friendlyTitle}
           </h2>
           {friendlyDescription && (
-            <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-4xl">
+            <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-4xl">
               {friendlyDescription}
             </p>
           )}
@@ -1452,12 +1453,12 @@ function NotesSection({ notes }: NotesSectionProps) {
   };
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
-      <div className="flex items-start gap-3">
-        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-        <div className="space-y-2">
-          <p className="font-semibold text-blue-900 dark:text-blue-100">{notes.title}</p>
-          <ul className="space-y-1.5 text-sm text-blue-800 dark:text-blue-200">
+    <div className="rounded-lg border-2 border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30 p-5">
+      <div className="flex items-start gap-4">
+        <Info className="h-6 w-6 text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" />
+        <div className="space-y-3">
+          <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{notes.title}</p>
+          <ul className="space-y-2 text-base text-blue-800 dark:text-blue-200 leading-relaxed">
             {notes.items.map((item, index) => {
               const indentLevel = getIndentLevel(item.label);
               const trimmedLabel = item.label?.trim();
@@ -1465,7 +1466,7 @@ function NotesSection({ notes }: NotesSectionProps) {
 
               // Empty line spacer
               if (!item.label && !item.text) {
-                return <li key={index} className="h-2" />;
+                return <li key={index} className="h-3" />;
               }
 
               return (
@@ -1475,9 +1476,9 @@ function NotesSection({ notes }: NotesSectionProps) {
                   style={{ marginLeft: `${indentLevel * 1.5}rem` }}
                 >
                   {trimmedLabel && (
-                    <span className="font-medium flex-shrink-0">{trimmedLabel}</span>
+                    <span className="font-semibold flex-shrink-0">{trimmedLabel}</span>
                   )}
-                  <span className={isHeader ? "font-semibold mt-2" : ""}>{item.text}</span>
+                  <span className={isHeader ? "font-bold mt-2 text-lg" : ""}>{item.text}</span>
                 </li>
               );
             })}

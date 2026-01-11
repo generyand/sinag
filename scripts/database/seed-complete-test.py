@@ -30,18 +30,18 @@ def main():
         trans = conn.begin()
 
         try:
-            # Step 1: Verify validators exist
+            # Step 1: Verify validators exist (system-wide after workflow restructuring)
             print("Verifying validator accounts...")
             validators = conn.execute(text("""
-                SELECT id, email, validator_area_id
+                SELECT id, email
                 FROM users
                 WHERE role = 'VALIDATOR'
-                ORDER BY validator_area_id
+                ORDER BY email
             """)).fetchall()
 
-            print(f"✅ Found {len(validators)} validator accounts:")
+            print(f"✅ Found {len(validators)} validator accounts (system-wide):")
             for v in validators:
-                print(f"  - {v[1]} (Area {v[2]})")
+                print(f"  - {v[1]}")
 
             # Step 2: Create BLGU user
             print("\nCreating BLGU test user...")

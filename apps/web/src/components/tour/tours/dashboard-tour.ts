@@ -17,15 +17,16 @@ export function getDashboardTourSteps(language: TourLanguage): TourStep[] {
       disableBeacon: true,
       showOnPaths: ["/blgu/dashboard"],
     },
-    // Step 2: Year Selector - show early while at top of page
+    // Step 2: Assessment Progress - shows overall progress percentage
     {
-      target: '[data-tour="year-selector"]',
-      content: getStepTranslation(dashboardTourTranslations.yearSelector, language).content,
-      title: getStepTranslation(dashboardTourTranslations.yearSelector, language).title,
-      placement: "bottom-end",
+      target: '[data-tour="assessment-progress"]',
+      content: getStepTranslation(dashboardTourTranslations.assessmentProgress, language).content,
+      title: getStepTranslation(dashboardTourTranslations.assessmentProgress, language).title,
+      placement: "right",
       showOnPaths: ["/blgu/dashboard"],
     },
     // Step 3: Phase Timeline (auto placement adjusts for mobile/desktop)
+    // Note: Year Selector step removed because the component only renders when multiple years exist
     {
       target: '[data-tour="phase-timeline"]',
       content: getStepTranslation(dashboardTourTranslations.phaseTimeline, language).content,

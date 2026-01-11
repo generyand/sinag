@@ -437,7 +437,7 @@ def validator_user(db_session, mock_governance_area):
         name="Validator User",
         hashed_password=pwd_context.hash("password123"),
         role=UserRole.VALIDATOR,
-        validator_area_id=mock_governance_area.id,
+        assessor_area_id=mock_governance_area.id,
         is_active=True,
     )
     db_session.add(user)

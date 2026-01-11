@@ -36,9 +36,9 @@ import {
 } from "@sinag/shared";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, BarChart3, Filter, RefreshCw } from "lucide-react";
+import { AlertCircle, BarChart3, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -48,6 +48,40 @@ export default function AnalyticsPage() {
   // Get initial tab from URL or default to "overview"
   const initialTab = (searchParams.get("tab") as AnalyticsTabId) || "overview";
   const [activeTab, setActiveTab] = useState<AnalyticsTabId>(initialTab);
+
+  // Pipeline filter state - controls which barangays are shown based on status
+  // Initialize from URL params for shareable links
+  const initialPipelineFilter = searchParams.get("filter") || "all";
+  const [pipelineFilter, setPipelineFilter] = useState<string>(initialPipelineFilter);
+
+  // Ref for Assessment Data section - used for auto-scroll when clicking pipeline status
+  const assessmentDataRef = useRef<HTMLDivElement>(null);
+
+  // Handler for pipeline filter changes - updates URL and scrolls to Assessment Data
+  const handlePipelineFilterChange = useCallback(
+    (filter: string) => {
+      setPipelineFilter(filter);
+      const params = new URLSearchParams(searchParams.toString());
+      if (filter === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", filter);
+      }
+      router.push(`/analytics?${params.toString()}`, { scroll: false });
+
+      // Auto-scroll to Assessment Data section when filtering (not when clearing)
+      if (filter !== "all" && assessmentDataRef.current) {
+        // Small delay to ensure filter is applied before scrolling
+        setTimeout(() => {
+          assessmentDataRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 100);
+      }
+    },
+    [router, searchParams]
+  );
 
   // Use the centralized filter hook (now uses year instead of cycle)
   const {
@@ -94,6 +128,7 @@ export default function AnalyticsPage() {
     error: municipalError,
   } = useGetMunicipalOverviewDashboard({
     year: selectedYear ?? undefined,
+    include_draft: true, // Include draft assessments so they show in barangay list
   });
 
   // BBI Analytics data hook for municipality-wide BBI status matrix
@@ -256,7 +291,6 @@ export default function AnalyticsPage() {
                 {reportsData && (
                   <div className="flex-shrink-0">
                     <ExportControls
-                      tableData={reportsData.table_data.rows || []}
                       currentFilters={{
                         year: filters.year,
                         start_date: filters.start_date,
@@ -267,6 +301,35 @@ export default function AnalyticsPage() {
                       }}
                       reportsData={reportsData}
                       activeTab={activeTab}
+                      municipalData={
+                        municipalData
+                          ? {
+                              compliance_summary: municipalData.compliance_summary,
+                              governance_area_performance: municipalData.governance_area_performance
+                                ? {
+                                    areas: municipalData.governance_area_performance.areas || [],
+                                    core_areas_pass_rate:
+                                      municipalData.governance_area_performance
+                                        .core_areas_pass_rate,
+                                    essential_areas_pass_rate:
+                                      municipalData.governance_area_performance
+                                        .essential_areas_pass_rate,
+                                  }
+                                : undefined,
+                              top_failing_indicators: municipalData.top_failing_indicators
+                                ? {
+                                    indicators:
+                                      municipalData.top_failing_indicators.indicators || [],
+                                    total_indicators_assessed:
+                                      municipalData.top_failing_indicators
+                                        .total_indicators_assessed,
+                                  }
+                                : undefined,
+                            }
+                          : undefined
+                      }
+                      municipalityName="Sulop"
+                      generatedBy={user?.name}
                     />
                   </div>
                 )}
@@ -302,64 +365,70 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Global Filters */}
-          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Filter
-                className="h-5 w-5"
-                style={{ color: "var(--cityscape-yellow)" }}
-                aria-hidden="true"
-              />
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">Global Filters</h2>
-            </div>
-
-            {/* Filters Row */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-              {/* Year Selector */}
-              <div className="w-full sm:w-auto">
-                <YearSelector showLabel showIcon />
+          <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-4">
+            {/* Compact Layout: Title + Filters in One Row (Desktop) */}
+            <div className="flex flex-col lg:flex-row lg:items-end gap-3 lg:gap-4">
+              {/* Title Section */}
+              <div className="flex items-center gap-2 lg:pb-2">
+                <SlidersHorizontal
+                  className="h-5 w-5"
+                  style={{ color: "var(--cityscape-yellow)" }}
+                  aria-hidden="true"
+                />
+                <h2 className="text-base lg:text-lg font-semibold text-[var(--foreground)] whitespace-nowrap">
+                  Choose Period
+                </h2>
               </div>
 
-              {/* Phase Selector */}
-              <div className="w-full sm:w-64">
-                <label
-                  htmlFor="phase-select"
-                  className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide"
-                >
-                  Assessment Phase
-                </label>
-                <Select
-                  value={selectedPhase}
-                  onValueChange={(value: "phase1" | "phase2" | "all") => {
-                    setSelectedPhase(value);
-                  }}
-                >
-                  <SelectTrigger
-                    id="phase-select"
-                    className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm"
+              {/* Filters Row */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-end flex-1">
+                {/* Year Selector */}
+                <div className="w-full sm:w-auto">
+                  <YearSelector showLabel showIcon />
+                </div>
+
+                {/* Phase Selector */}
+                <div className="w-full sm:w-64">
+                  <label
+                    htmlFor="phase-select"
+                    className="block text-xs font-medium text-[var(--text-secondary)] mb-1 uppercase tracking-wide"
                   >
-                    <SelectValue placeholder="Select phase" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
-                    <SelectItem
-                      value="all"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                    Assessment Phase
+                  </label>
+                  <Select
+                    value={selectedPhase}
+                    onValueChange={(value: "phase1" | "phase2" | "all") => {
+                      setSelectedPhase(value);
+                    }}
+                  >
+                    <SelectTrigger
+                      id="phase-select"
+                      className="w-full bg-[var(--background)] border-[var(--border)] rounded-sm"
                     >
-                      All Phases
-                    </SelectItem>
-                    <SelectItem
-                      value="phase1"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      Phase 1: Table Assessment (Assessor)
-                    </SelectItem>
-                    <SelectItem
-                      value="phase2"
-                      className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
-                    >
-                      Phase 2: Table Validation (Validator)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                      <SelectValue placeholder="Select phase" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[var(--card)] border border-[var(--border)] shadow-xl rounded-sm z-50">
+                      <SelectItem
+                        value="all"
+                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                      >
+                        All Phases
+                      </SelectItem>
+                      <SelectItem
+                        value="phase1"
+                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                      >
+                        Phase 1: Table Assessment (Assessor)
+                      </SelectItem>
+                      <SelectItem
+                        value="phase2"
+                        className="text-[var(--foreground)] hover:bg-[var(--cityscape-yellow)]/10 cursor-pointer px-3 py-2"
+                      >
+                        Phase 2: Table Validation (Validator)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
@@ -377,7 +446,11 @@ export default function AnalyticsPage() {
             {activeTab === "overview" && municipalData && (
               <>
                 {/* Compliance Summary - Full Width */}
-                <ComplianceSummaryCard data={municipalData.compliance_summary} />
+                <ComplianceSummaryCard
+                  data={municipalData.compliance_summary}
+                  onFilterChange={handlePipelineFilterChange}
+                  activeFilter={pipelineFilter}
+                />
 
                 {/* Two Column Layout for Analytics */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -402,10 +475,14 @@ export default function AnalyticsPage() {
                 <AggregatedCapDevCard data={municipalData.capdev_summary} />
 
                 {/* Barangay Status Table - Full Width */}
-                <BarangayStatusTable
-                  data={municipalData.barangay_statuses}
-                  onViewCapDev={handleViewCapDev}
-                />
+                <div ref={assessmentDataRef}>
+                  <BarangayStatusTable
+                    data={municipalData.barangay_statuses}
+                    onViewCapDev={handleViewCapDev}
+                    pipelineFilter={pipelineFilter}
+                    onPipelineFilterChange={handlePipelineFilterChange}
+                  />
+                </div>
 
                 {/* Footer with generation timestamp */}
                 <p className="text-xs text-gray-400 text-right">
@@ -486,19 +563,21 @@ function DashboardSkeleton() {
       </div>
 
       {/* Filters Skeleton */}
-      <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Skeleton className="h-5 w-5 rounded-sm" />
-          <Skeleton className="h-6 w-32" />
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="w-full sm:w-64">
-            <Skeleton className="h-4 w-32 mb-1" />
-            <Skeleton className="h-10 w-full" />
+      <div className="bg-[var(--card)] rounded-sm shadow-lg border border-[var(--border)] p-4">
+        <div className="flex flex-col lg:flex-row lg:items-end gap-3 lg:gap-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded-sm" />
+            <Skeleton className="h-6 w-32" />
           </div>
-          <div className="w-full sm:w-64">
-            <Skeleton className="h-4 w-32 mb-1" />
-            <Skeleton className="h-10 w-full" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-1">
+            <div className="w-full sm:w-auto">
+              <Skeleton className="h-4 w-32 mb-1" />
+              <Skeleton className="h-10 w-48" />
+            </div>
+            <div className="w-full sm:w-64">
+              <Skeleton className="h-4 w-32 mb-1" />
+              <Skeleton className="h-10 w-full" />
+            </div>
           </div>
         </div>
       </div>

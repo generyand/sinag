@@ -60,6 +60,102 @@ export interface ApproveAssessmentResponse {
 
 
 /**
+ * AssessmentActivityListResponse
+ */
+export interface AssessmentActivityListResponse {
+  items: AssessmentActivityResponse[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+
+/**
+ * AssessmentActivityResponse
+ */
+export interface AssessmentActivityResponse {
+  /** Activity action type */
+  action: string;
+  /** Status before action */
+  from_status?: AssessmentActivityResponseFromStatus;
+  /** Status after action */
+  to_status?: AssessmentActivityResponseToStatus;
+  /** Additional context */
+  extra_data?: AssessmentActivityResponseExtraData;
+  /** Human-readable description */
+  description?: AssessmentActivityResponseDescription;
+  id: number;
+  assessment_id: number;
+  user_id: AssessmentActivityResponseUserId;
+  created_at: string;
+  user_email?: AssessmentActivityResponseUserEmail;
+  user_name?: AssessmentActivityResponseUserName;
+  barangay_name?: AssessmentActivityResponseBarangayName;
+  assessment_year?: AssessmentActivityResponseAssessmentYear;
+}
+
+
+/**
+ * AssessmentActivityResponseAssessmentYear
+ */
+export type AssessmentActivityResponseAssessmentYear = number | null;
+
+
+/**
+ * AssessmentActivityResponseBarangayName
+ */
+export type AssessmentActivityResponseBarangayName = string | null;
+
+
+/**
+ * AssessmentActivityResponseDescription
+ */
+export type AssessmentActivityResponseDescription = string | null;
+
+
+/**
+ * AssessmentActivityResponseExtraData
+ */
+export type AssessmentActivityResponseExtraData = AssessmentActivityResponseExtraDataAnyOf | null;
+
+
+/**
+ * AssessmentActivityResponseExtraDataAnyOf
+ */
+export type AssessmentActivityResponseExtraDataAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentActivityResponseFromStatus
+ */
+export type AssessmentActivityResponseFromStatus = string | null;
+
+
+/**
+ * AssessmentActivityResponseToStatus
+ */
+export type AssessmentActivityResponseToStatus = string | null;
+
+
+/**
+ * AssessmentActivityResponseUserEmail
+ */
+export type AssessmentActivityResponseUserEmail = string | null;
+
+
+/**
+ * AssessmentActivityResponseUserId
+ */
+export type AssessmentActivityResponseUserId = number | null;
+
+
+/**
+ * AssessmentActivityResponseUserName
+ */
+export type AssessmentActivityResponseUserName = string | null;
+
+
+/**
  * AssessmentBBIComplianceResponse
  */
 export interface AssessmentBBIComplianceResponse {
@@ -729,11 +825,31 @@ export interface AssessmentRow {
   governance_areas_passed?: AssessmentRowGovernanceAreasPassed;
   /** Total number of governance areas */
   total_governance_areas?: AssessmentRowTotalGovernanceAreas;
+  /** Number of core governance areas passed (FAS, DP, SPO) */
+  core_areas_passed?: AssessmentRowCoreAreasPassed;
+  /** Total number of core areas (always 3) */
+  total_core_areas?: number;
+  /** Number of essential governance areas passed (SPS, BFC, EM) */
+  essential_areas_passed?: AssessmentRowEssentialAreasPassed;
+  /** Total number of essential areas (always 3) */
+  total_essential_areas?: number;
   /** Number of indicators passed (Pass/Conditional) */
   indicators_passed?: AssessmentRowIndicatorsPassed;
   /** Total number of indicators */
   total_indicators?: AssessmentRowTotalIndicators;
 }
+
+
+/**
+ * AssessmentRowCoreAreasPassed
+ */
+export type AssessmentRowCoreAreasPassed = number | null;
+
+
+/**
+ * AssessmentRowEssentialAreasPassed
+ */
+export type AssessmentRowEssentialAreasPassed = number | null;
 
 
 /**
@@ -818,6 +934,89 @@ export type AssessmentSubmissionValidationErrorsItem = { [key: string]: unknown 
  * AssessmentSubmissionValidationWarningsItem
  */
 export type AssessmentSubmissionValidationWarningsItem = { [key: string]: unknown };
+
+
+/**
+ * AssessmentTimelineItem
+ */
+export interface AssessmentTimelineItem {
+  id: number;
+  action: string;
+  from_status: AssessmentTimelineItemFromStatus;
+  to_status: AssessmentTimelineItemToStatus;
+  description: AssessmentTimelineItemDescription;
+  extra_data: AssessmentTimelineItemExtraData;
+  created_at: string;
+  user_id: AssessmentTimelineItemUserId;
+  user_email: AssessmentTimelineItemUserEmail;
+  user_name: AssessmentTimelineItemUserName;
+  user_role?: AssessmentTimelineItemUserRole;
+}
+
+
+/**
+ * AssessmentTimelineItemDescription
+ */
+export type AssessmentTimelineItemDescription = string | null;
+
+
+/**
+ * AssessmentTimelineItemExtraData
+ */
+export type AssessmentTimelineItemExtraData = AssessmentTimelineItemExtraDataAnyOf | null;
+
+
+/**
+ * AssessmentTimelineItemExtraDataAnyOf
+ */
+export type AssessmentTimelineItemExtraDataAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentTimelineItemFromStatus
+ */
+export type AssessmentTimelineItemFromStatus = string | null;
+
+
+/**
+ * AssessmentTimelineItemToStatus
+ */
+export type AssessmentTimelineItemToStatus = string | null;
+
+
+/**
+ * AssessmentTimelineItemUserEmail
+ */
+export type AssessmentTimelineItemUserEmail = string | null;
+
+
+/**
+ * AssessmentTimelineItemUserId
+ */
+export type AssessmentTimelineItemUserId = number | null;
+
+
+/**
+ * AssessmentTimelineItemUserName
+ */
+export type AssessmentTimelineItemUserName = string | null;
+
+
+/**
+ * AssessmentTimelineItemUserRole
+ */
+export type AssessmentTimelineItemUserRole = string | null;
+
+
+/**
+ * AssessmentTimelineResponse
+ */
+export interface AssessmentTimelineResponse {
+  assessment_id: number;
+  barangay_name: string;
+  current_status: string;
+  timeline: AssessmentTimelineItem[];
+}
 
 
 /**
@@ -967,6 +1166,12 @@ export interface AssessmentYearCreate {
   calibration_deadline?: AssessmentYearCreateCalibrationDeadline;
   /** Optional description for this year */
   description?: AssessmentYearCreateDescription;
+  /** Days for initial submission window (~30-60 days recommended) */
+  submission_window_days?: AssessmentYearCreateSubmissionWindowDays;
+  /** Days BLGU has to resubmit after Assessor triggers rework */
+  rework_window_days?: AssessmentYearCreateReworkWindowDays;
+  /** Days BLGU has to resubmit after Validator triggers calibration */
+  calibration_window_days?: AssessmentYearCreateCalibrationWindowDays;
 }
 
 
@@ -974,6 +1179,12 @@ export interface AssessmentYearCreate {
  * AssessmentYearCreateCalibrationDeadline
  */
 export type AssessmentYearCreateCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearCreateCalibrationWindowDays
+ */
+export type AssessmentYearCreateCalibrationWindowDays = number | null;
 
 
 /**
@@ -998,6 +1209,18 @@ export type AssessmentYearCreatePhase2Deadline = string | null;
  * AssessmentYearCreateReworkDeadline
  */
 export type AssessmentYearCreateReworkDeadline = string | null;
+
+
+/**
+ * AssessmentYearCreateReworkWindowDays
+ */
+export type AssessmentYearCreateReworkWindowDays = number | null;
+
+
+/**
+ * AssessmentYearCreateSubmissionWindowDays
+ */
+export type AssessmentYearCreateSubmissionWindowDays = number | null;
 
 
 /**
@@ -1035,6 +1258,9 @@ export interface AssessmentYearResponse {
   updated_at?: AssessmentYearResponseUpdatedAt;
   activated_at?: AssessmentYearResponseActivatedAt;
   deactivated_at?: AssessmentYearResponseDeactivatedAt;
+  submission_window_days?: AssessmentYearResponseSubmissionWindowDays;
+  rework_window_days?: AssessmentYearResponseReworkWindowDays;
+  calibration_window_days?: AssessmentYearResponseCalibrationWindowDays;
   activated_by?: AssessmentYearResponseActivatedBy;
   deactivated_by?: AssessmentYearResponseDeactivatedBy;
 }
@@ -1056,6 +1282,12 @@ export type AssessmentYearResponseActivatedBy = AppSchemasAssessmentYearUserNest
  * AssessmentYearResponseCalibrationDeadline
  */
 export type AssessmentYearResponseCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearResponseCalibrationWindowDays
+ */
+export type AssessmentYearResponseCalibrationWindowDays = number | null;
 
 
 /**
@@ -1095,6 +1327,18 @@ export type AssessmentYearResponseReworkDeadline = string | null;
 
 
 /**
+ * AssessmentYearResponseReworkWindowDays
+ */
+export type AssessmentYearResponseReworkWindowDays = number | null;
+
+
+/**
+ * AssessmentYearResponseSubmissionWindowDays
+ */
+export type AssessmentYearResponseSubmissionWindowDays = number | null;
+
+
+/**
  * AssessmentYearResponseUpdatedAt
  */
 export type AssessmentYearResponseUpdatedAt = string | null;
@@ -1128,6 +1372,12 @@ export interface AssessmentYearUpdate {
   calibration_deadline?: AssessmentYearUpdateCalibrationDeadline;
   /** New description */
   description?: AssessmentYearUpdateDescription;
+  /** Days for initial submission window */
+  submission_window_days?: AssessmentYearUpdateSubmissionWindowDays;
+  /** Days BLGU has after Assessor triggers rework */
+  rework_window_days?: AssessmentYearUpdateReworkWindowDays;
+  /** Days BLGU has after Validator triggers calibration */
+  calibration_window_days?: AssessmentYearUpdateCalibrationWindowDays;
 }
 
 
@@ -1147,6 +1397,12 @@ export type AssessmentYearUpdateAssessmentPeriodStart = string | null;
  * AssessmentYearUpdateCalibrationDeadline
  */
 export type AssessmentYearUpdateCalibrationDeadline = string | null;
+
+
+/**
+ * AssessmentYearUpdateCalibrationWindowDays
+ */
+export type AssessmentYearUpdateCalibrationWindowDays = number | null;
 
 
 /**
@@ -1174,9 +1430,27 @@ export type AssessmentYearUpdateReworkDeadline = string | null;
 
 
 /**
+ * AssessmentYearUpdateReworkWindowDays
+ */
+export type AssessmentYearUpdateReworkWindowDays = number | null;
+
+
+/**
+ * AssessmentYearUpdateSubmissionWindowDays
+ */
+export type AssessmentYearUpdateSubmissionWindowDays = number | null;
+
+
+/**
  * AssessorAnalyticsResponseAssessmentPeriod
  */
 export type AssessorAnalyticsResponseAssessmentPeriod = string | null;
+
+
+/**
+ * BBIFunctionalityTrendsResponseAssessmentYear
+ */
+export type BBIFunctionalityTrendsResponseAssessmentYear = number | null;
 
 
 /**
@@ -1283,9 +1557,27 @@ export type BarangayAssessmentStatusTotalResponses = number | null;
 
 
 /**
+ * BarangayMapPointAssessmentId
+ */
+export type BarangayMapPointAssessmentId = number | null;
+
+
+/**
  * BarangayMapPointAssessmentStatus
  */
 export type BarangayMapPointAssessmentStatus = AssessmentStatusDetail | null;
+
+
+/**
+ * BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost
+ */
+export interface BodySendAreaForReworkApiV1AssessorAssessmentsAssessmentIdAreasGovernanceAreaIdReworkPost {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  comments: string;
+}
 
 
 /**
@@ -1377,6 +1669,98 @@ export interface GARAssessmentListResponse {
   /** Total count of assessments */
   total?: number;
 }
+
+
+/**
+ * GetAssessmentActivitiesExportParams
+ */
+export type GetAssessmentActivitiesExportParams = {
+/**
+ * Filter by assessment ID
+ */
+assessment_id?: number | null;
+/**
+ * Filter by user ID
+ */
+user_id?: number | null;
+/**
+ * Filter by barangay ID
+ */
+barangay_id?: number | null;
+/**
+ * Filter by action type
+ */
+action?: string | null;
+/**
+ * Filter from date
+ */
+start_date?: string | null;
+/**
+ * Filter to date
+ */
+end_date?: string | null;
+};
+
+
+/**
+ * GetAssessmentActivitiesParams
+ */
+export type GetAssessmentActivitiesParams = {
+/**
+ * Number of records to skip
+ * @minimum 0
+ */
+skip?: number;
+/**
+ * Maximum records to return
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+/**
+ * Filter by assessment ID
+ */
+assessment_id?: number | null;
+/**
+ * Filter by user ID
+ */
+user_id?: number | null;
+/**
+ * Filter by barangay ID
+ */
+barangay_id?: number | null;
+/**
+ * Filter by action type
+ */
+action?: string | null;
+/**
+ * Filter from date
+ */
+start_date?: string | null;
+/**
+ * Filter to date
+ */
+end_date?: string | null;
+};
+
+
+/**
+ * GetAssessmentActivitiesSummaryParams
+ */
+export type GetAssessmentActivitiesSummaryParams = {
+/**
+ * Filter by barangay ID
+ */
+barangay_id?: number | null;
+/**
+ * Filter from date
+ */
+start_date?: string | null;
+/**
+ * Filter to date
+ */
+end_date?: string | null;
+};
 
 
 /**

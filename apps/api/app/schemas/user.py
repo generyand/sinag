@@ -114,12 +114,17 @@ class User(BaseModel):
     name: str
     role: UserRole
     phone_number: str | None = None
-    validator_area_id: int | None = None  # Validator's assigned governance area
+    assessor_area_id: int | None = (
+        None  # Assessor's assigned governance area (area-specific after restructuring)
+    )
+    municipal_office_id: int | None = None  # User's assigned municipal office
     barangay_id: int | None = None
     is_active: bool
     is_superuser: bool
     must_change_password: bool
     preferred_language: LanguageCode = "ceb"
+    logo_url: str | None = None
+    logo_uploaded_at: datetime | None = None
     created_at: datetime
     updated_at: datetime | None = None
 
@@ -155,12 +160,13 @@ class UserUpdate(BaseModel):
     name: str | None = None
     role: UserRole | None = None
     phone_number: str | None = None
-    validator_area_id: int | None = None
+    assessor_area_id: int | None = None
+    municipal_office_id: int | None = None
     barangay_id: int | None = None
     is_active: bool | None = None
     preferred_language: LanguageCode | None = None
 
-    @field_validator("validator_area_id", "barangay_id", mode="before")
+    @field_validator("assessor_area_id", "municipal_office_id", "barangay_id", mode="before")
     @classmethod
     def coerce_ids(cls, v: int | str | None) -> int | None:
         return coerce_to_optional_int(v)
@@ -174,7 +180,8 @@ class UserAdminCreate(BaseModel):
     password: str
     role: UserRole = UserRole.BLGU_USER
     phone_number: str | None = None
-    validator_area_id: int | None = None
+    assessor_area_id: int | None = None
+    municipal_office_id: int | None = None
     barangay_id: int | None = None
     is_active: bool = True
     is_superuser: bool = False
@@ -186,7 +193,7 @@ class UserAdminCreate(BaseModel):
     def check_password_strength(cls, v: str) -> str:
         return validate_password_strength(v)
 
-    @field_validator("validator_area_id", "barangay_id", mode="before")
+    @field_validator("assessor_area_id", "municipal_office_id", "barangay_id", mode="before")
     @classmethod
     def coerce_ids(cls, v: int | str | None) -> int | None:
         return coerce_to_optional_int(v)
@@ -199,14 +206,15 @@ class UserAdminUpdate(BaseModel):
     name: str | None = None
     role: UserRole | None = None
     phone_number: str | None = None
-    validator_area_id: int | None = None
+    assessor_area_id: int | None = None
+    municipal_office_id: int | None = None
     barangay_id: int | None = None
     is_active: bool | None = None
     is_superuser: bool | None = None
     must_change_password: bool | None = None
     preferred_language: LanguageCode | None = None
 
-    @field_validator("validator_area_id", "barangay_id", mode="before")
+    @field_validator("assessor_area_id", "municipal_office_id", "barangay_id", mode="before")
     @classmethod
     def coerce_ids(cls, v: int | str | None) -> int | None:
         return coerce_to_optional_int(v)

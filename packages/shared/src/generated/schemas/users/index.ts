@@ -7,6 +7,16 @@ import type { TourPreferences } from '../tourpreferences';
 import type { TourPreferencesUpdate } from '../tourpreferences';
 
 /**
+ * AppSchemasDeadlineExtensionUserNested
+ */
+export interface AppSchemasDeadlineExtensionUserNested {
+  id: number;
+  name: string;
+  email: string;
+}
+
+
+/**
  * AppSchemasIndicatorUserNested
  */
 export interface AppSchemasIndicatorUserNested {
@@ -42,6 +52,15 @@ export type AuditLogResponseUserEmail = string | null;
  * AuditLogResponseUserName
  */
 export type AuditLogResponseUserName = string | null;
+
+
+/**
+ * BodyUploadUserLogoApiV1UsersMeLogoPost
+ */
+export interface BodyUploadUserLogoApiV1UsersMeLogoPost {
+  /** Profile logo image (JPEG, PNG, or WebP, max 5MB) */
+  file: Blob;
+}
 
 
 /**
@@ -117,6 +136,12 @@ export type PostUsersUserIdResetPassword200 = { [key: string]: unknown };
 
 
 /**
+ * SendReminderResponseBlguUserEmail
+ */
+export type SendReminderResponseBlguUserEmail = string | null;
+
+
+/**
  * User
  */
 export interface User {
@@ -125,12 +150,15 @@ export interface User {
   name: string;
   role: UserRole;
   phone_number?: UserPhoneNumber;
-  validator_area_id?: UserValidatorAreaId;
+  assessor_area_id?: UserAssessorAreaId;
+  municipal_office_id?: UserMunicipalOfficeId;
   barangay_id?: UserBarangayId;
   is_active: boolean;
   is_superuser: boolean;
   must_change_password: boolean;
   preferred_language?: UserPreferredLanguage;
+  logo_url?: UserLogoUrl;
+  logo_uploaded_at?: UserLogoUploadedAt;
   created_at: string;
   updated_at?: UserUpdatedAt;
 }
@@ -145,7 +173,8 @@ export interface UserAdminCreate {
   password: string;
   role?: UserRole;
   phone_number?: UserAdminCreatePhoneNumber;
-  validator_area_id?: UserAdminCreateValidatorAreaId;
+  assessor_area_id?: UserAdminCreateAssessorAreaId;
+  municipal_office_id?: UserAdminCreateMunicipalOfficeId;
   barangay_id?: UserAdminCreateBarangayId;
   is_active?: boolean;
   is_superuser?: boolean;
@@ -155,9 +184,21 @@ export interface UserAdminCreate {
 
 
 /**
+ * UserAdminCreateAssessorAreaId
+ */
+export type UserAdminCreateAssessorAreaId = number | null;
+
+
+/**
  * UserAdminCreateBarangayId
  */
 export type UserAdminCreateBarangayId = number | null;
+
+
+/**
+ * UserAdminCreateMunicipalOfficeId
+ */
+export type UserAdminCreateMunicipalOfficeId = number | null;
 
 
 /**
@@ -181,12 +222,6 @@ export const UserAdminCreatePreferredLanguage = {
 
 
 /**
- * UserAdminCreateValidatorAreaId
- */
-export type UserAdminCreateValidatorAreaId = number | null;
-
-
-/**
  * UserAdminUpdate
  */
 export interface UserAdminUpdate {
@@ -194,13 +229,20 @@ export interface UserAdminUpdate {
   name?: UserAdminUpdateName;
   role?: UserAdminUpdateRole;
   phone_number?: UserAdminUpdatePhoneNumber;
-  validator_area_id?: UserAdminUpdateValidatorAreaId;
+  assessor_area_id?: UserAdminUpdateAssessorAreaId;
+  municipal_office_id?: UserAdminUpdateMunicipalOfficeId;
   barangay_id?: UserAdminUpdateBarangayId;
   is_active?: UserAdminUpdateIsActive;
   is_superuser?: UserAdminUpdateIsSuperuser;
   must_change_password?: UserAdminUpdateMustChangePassword;
   preferred_language?: UserAdminUpdatePreferredLanguage;
 }
+
+
+/**
+ * UserAdminUpdateAssessorAreaId
+ */
+export type UserAdminUpdateAssessorAreaId = number | null;
 
 
 /**
@@ -225,6 +267,12 @@ export type UserAdminUpdateIsActive = boolean | null;
  * UserAdminUpdateIsSuperuser
  */
 export type UserAdminUpdateIsSuperuser = boolean | null;
+
+
+/**
+ * UserAdminUpdateMunicipalOfficeId
+ */
+export type UserAdminUpdateMunicipalOfficeId = number | null;
 
 
 /**
@@ -258,9 +306,9 @@ export type UserAdminUpdateRole = UserRole | null;
 
 
 /**
- * UserAdminUpdateValidatorAreaId
+ * UserAssessorAreaId
  */
-export type UserAdminUpdateValidatorAreaId = number | null;
+export type UserAssessorAreaId = number | null;
 
 
 /**
@@ -279,6 +327,24 @@ export interface UserListResponse {
   size: number;
   total_pages: number;
 }
+
+
+/**
+ * UserLogoUploadedAt
+ */
+export type UserLogoUploadedAt = string | null;
+
+
+/**
+ * UserLogoUrl
+ */
+export type UserLogoUrl = string | null;
+
+
+/**
+ * UserMunicipalOfficeId
+ */
+export type UserMunicipalOfficeId = number | null;
 
 
 /**
@@ -363,11 +429,18 @@ export interface UserUpdate {
   name?: UserUpdateName;
   role?: UserUpdateRole;
   phone_number?: UserUpdatePhoneNumber;
-  validator_area_id?: UserUpdateValidatorAreaId;
+  assessor_area_id?: UserUpdateAssessorAreaId;
+  municipal_office_id?: UserUpdateMunicipalOfficeId;
   barangay_id?: UserUpdateBarangayId;
   is_active?: UserUpdateIsActive;
   preferred_language?: UserUpdatePreferredLanguage;
 }
+
+
+/**
+ * UserUpdateAssessorAreaId
+ */
+export type UserUpdateAssessorAreaId = number | null;
 
 
 /**
@@ -386,6 +459,12 @@ export type UserUpdateEmail = string | null;
  * UserUpdateIsActive
  */
 export type UserUpdateIsActive = boolean | null;
+
+
+/**
+ * UserUpdateMunicipalOfficeId
+ */
+export type UserUpdateMunicipalOfficeId = number | null;
 
 
 /**
@@ -413,18 +492,6 @@ export type UserUpdateRole = UserRole | null;
 
 
 /**
- * UserUpdateValidatorAreaId
- */
-export type UserUpdateValidatorAreaId = number | null;
-
-
-/**
  * UserUpdatedAt
  */
 export type UserUpdatedAt = string | null;
-
-
-/**
- * UserValidatorAreaId
- */
-export type UserValidatorAreaId = number | null;

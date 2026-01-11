@@ -1,125 +1,158 @@
 # Assessor and Validator Validation Workflow
 
 This document describes the validation workflow for both Assessors and Validators in the SINAG SGLGB
-assessment system, including the calibration workflow introduced in Phase 2.
+assessment system, including the per-area assessment workflow and calibration process.
 
-**Last Updated:** 2025-12-28
+**Last Updated:** 2026-01-11
 
 ---
 
 ## Role Definitions
 
-### Assessor
+### Assessor (Area-Specific)
 
-**Purpose:** Review BLGU submissions and provide feedback for improvements
+**Purpose:** Review BLGU submissions for a specific governance area and provide feedback
 
 **Responsibilities:**
 
-- Review indicator responses and uploaded MOV files
+- Review indicator responses and uploaded MOV files **within their assigned governance area**
 - Provide clear, actionable comments/notes to BLGU
 - Identify issues that need to be addressed
 - **Cannot** determine Pass/Fail/Conditional status for indicators
-- Can request ONE rework cycle from BLGU
+- Can request rework for their assigned area (one rework round per assessment)
+- Approve their area when satisfied (triggers status transition when all 6 areas approved)
 
-**Access:** Can work with any barangay (no governance area restriction)
+**Access:** Assigned to one of 6 governance areas via `assessor_area_id`
 
-### Validator
+**Database Field:** `users.assessor_area_id` (FK to `governance_areas.id`)
 
-**Purpose:** Perform final validation, determine Pass/Fail status, and calibrate specific indicators
+### Validator (System-Wide)
+
+**Purpose:** Perform final validation after all 6 assessors approve, determine Pass/Fail status
 
 **Responsibilities:**
 
-- Review indicator responses and uploaded MOV files
+- Review indicator responses and uploaded MOV files **across all governance areas**
 - Provide feedback comments to BLGU
 - **Determine final Pass/Fail/Conditional status** for each indicator
 - Review assessor remarks (if any)
 - Make the final decision on indicator compliance
-- **Request calibration** for specific governance areas (routes back to same Validator)
+- **Request calibration** for the entire assessment (routes back to BLGU, then returns to Validator)
 
-**Access:** Assigned to specific governance areas only via `validator_area_id`
+**Access:** System-wide access to all assessments in `AWAITING_FINAL_VALIDATION` status
 
 ---
 
 ## Workflow Overview
+
+### Per-Area Assessor Workflow (6 Assessors for 6 Areas)
+
+After workflow restructuring (January 2026), assessors are area-specific:
+
+```mermaid
+graph TD
+    A[BLGU Submits Assessment] --> B[Status: SUBMITTED]
+    B --> C1[Assessor 1 Reviews Area 1]
+    B --> C2[Assessor 2 Reviews Area 2]
+    B --> C3[Assessor 3 Reviews Area 3]
+    B --> C4[Assessor 4 Reviews Area 4]
+    B --> C5[Assessor 5 Reviews Area 5]
+    B --> C6[Assessor 6 Reviews Area 6]
+    C1 -->|Approve| D1[area_assessor_approved.1 = true]
+    C2 -->|Approve| D2[area_assessor_approved.2 = true]
+    C3 -->|Rework| E[Any Area Rework]
+    E --> F[Status: REWORK, rework_round_used = true]
+    F --> G[BLGU Revises All Flagged Areas]
+    G --> B
+    D1 & D2 --> H{All 6 Areas Approved?}
+    H -->|Yes| I[Status: AWAITING_FINAL_VALIDATION]
+    H -->|No| J[Wait for remaining assessors]
+```
 
 ### Main Workflow (Including Calibration and MLGOO Approval)
 
 ```mermaid
 graph TD
     A[BLGU Submits Assessment] --> B[Status: SUBMITTED]
-    B --> C[Assessor Reviews]
-    C --> D{Assessor Decision}
-    D -->|Issues Found| E[Send for Rework]
-    E --> F[Status: REWORK]
-    F --> G[BLGU Revises]
-    G --> B
-    D -->|Looks Good| H[Assessor Finalizes]
-    H --> I[Status: AWAITING_FINAL_VALIDATION]
-    I --> J[Validator Reviews]
-    J --> K{Validator Decision}
-    K -->|Issues in Area| L[Request Calibration]
-    L --> M[Status: REWORK + is_calibration_rework=true]
-    M --> N[BLGU Addresses Calibration]
-    N --> O[BLGU Submits for Calibration]
-    O --> J
-    K -->|All Good| P[Validator Determines Pass/Fail]
-    P --> Q[Validator Finalizes]
-    Q --> R[Status: AWAITING_MLGOO_APPROVAL]
-    R --> S[MLGOO Reviews]
-    S --> T{MLGOO Decision}
-    T -->|Issues Found| U[Request RE-calibration]
-    U --> V[Status: REWORK + is_mlgoo_recalibration=true]
-    V --> W[BLGU Addresses RE-calibration]
-    W --> X[BLGU Resubmits]
-    X --> R
-    T -->|Approved| Y[MLGOO Approves]
-    Y --> Z[Status: COMPLETED]
+    B --> C[6 Assessors Review Per-Area]
+    C --> D{All 6 Areas Approved?}
+    D -->|Any Area Needs Rework| E[Status: REWORK]
+    E --> F[BLGU Revises Flagged Areas]
+    F --> B
+    D -->|All Approved| G[Status: AWAITING_FINAL_VALIDATION]
+    G --> H[Validator Reviews All Areas]
+    H --> I{Validator Decision}
+    I -->|Issues Found| J[Request Calibration]
+    J --> K[Status: REWORK + is_calibration_rework=true]
+    K --> L[BLGU Addresses Calibration]
+    L --> M[BLGU Submits for Calibration]
+    M --> H
+    I -->|All Good| N[Validator Determines Pass/Fail]
+    N --> O[Validator Finalizes]
+    O --> P[Status: AWAITING_MLGOO_APPROVAL]
+    P --> Q[MLGOO Reviews]
+    Q --> R{MLGOO Decision}
+    R -->|Issues Found| S[Request RE-calibration]
+    S --> T[Status: REWORK + is_mlgoo_recalibration=true]
+    T --> U[BLGU Addresses RE-calibration]
+    U --> V[BLGU Resubmits]
+    V --> P
+    R -->|Approved| W[MLGOO Approves]
+    W --> X[Status: COMPLETED]
 ```
 
-### Parallel Calibration Flow
+### Per-Area Approval Tracking
 
-Multiple validators can request calibration simultaneously for different governance areas:
+The system tracks each governance area's approval status independently:
 
-```mermaid
-graph TD
-    A[Assessment in AWAITING_FINAL_VALIDATION] --> B[Validator 1 Reviews Area 1]
-    A --> C[Validator 2 Reviews Area 2]
-    A --> D[Validator 3 Reviews Area 3]
-    B -->|Issues| E[Calibration Request Area 1]
-    C -->|Issues| F[Calibration Request Area 2]
-    D -->|Good| G[Mark Area 3 Complete]
-    E --> H[pending_calibrations updated]
-    F --> H
-    H --> I[BLGU Sees All Pending Calibrations]
-    I --> J[BLGU Addresses Each Area]
-    J --> K[Submit for Calibration per Area]
-    K --> L[Each Validator Reviews Their Area]
+```python
+# Database fields on Assessment model
+area_submission_status: dict  # {"1": {"status": "approved", "approved_at": "...", "assessor_id": 5}, ...}
+area_assessor_approved: dict  # {"1": true, "2": false, "3": true, ...}
+
+# When all 6 areas are approved:
+if assessment.all_areas_approved():  # Checks area_assessor_approved["1"] through ["6"]
+    assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
 ```
 
 ---
 
-## Assessor Workflow
+## Assessor Workflow (Per-Area)
 
 ### 1. Submissions Queue
 
-- Assessors see all submitted assessments (not filtered by governance area)
+- **Assessors see only assessments where their governance area needs review**
+- Queue is filtered by `assessor_area_id` (each assessor is assigned to one of 6 governance areas)
 - Queue shows:
   - Barangay name
   - Submission date
   - Current status
+  - Area progress (indicators reviewed in their area)
   - Last updated timestamp
+
+**Queue Filtering Logic:**
+
+```python
+# Assessors only see assessments where their area is pending review
+is_assessor = user.role == UserRole.ASSESSOR and user.assessor_area_id is not None
+
+# Skip assessments where the assessor's area is already approved
+area_status = assessment.get_area_status(assessor.assessor_area_id)
+if area_status == "approved":
+    continue  # Don't show in queue
+```
 
 ### 2. Reviewing a Submission
 
 **Three-Panel Layout:**
 
-1. **Left Panel:** Indicator tree navigation
+1. **Left Panel:** Indicator tree navigation (filtered to assessor's governance area)
 2. **Middle Panel:** MOV files uploaded by BLGU
 3. **Right Panel:** Validation checklist and comments
 
 **What Assessors Can Do:**
 
-- Review each indicator's MOV checklist
+- Review each indicator's MOV checklist **within their assigned governance area only**
 - View uploaded MOV files (preview/download)
 - Write **Assessor's Notes (Visible to BLGU)**
   - Clear, actionable feedback
@@ -132,52 +165,97 @@ graph TD
 
 **What Assessors Cannot Do:**
 
-- ❌ Set Pass/Fail/Conditional status for indicators
-- ❌ Make final validation decisions
+- Set Pass/Fail/Conditional status for indicators
+- Make final validation decisions
+- Review indicators outside their assigned governance area
+- Use the legacy `finalize_assessment()` endpoint (blocked for assessors)
 
-**UI Message for Assessors:**
+**UI Header Context:**
 
-> ℹ️ **Assessor Note** As an assessor, you can review submissions and provide feedback. Only
-> validators can mark indicators as Pass/Fail/Conditional.
+The validation interface shows the assessor's assigned governance area in the header:
 
-### 3. Two Actions Available
+```
+Reviewing: [Barangay Name] - [Governance Area Name]
+Progress: X/6 areas approved
+```
 
-#### Option A: Send for Rework
+### 3. Two Actions Available (Per-Area)
 
-- **Condition:** At least one indicator has issues
-- **Limitation:** Only ONE rework cycle allowed (`rework_count` must be 0)
-- **Action:** "Compile and Send for Rework" button
-- **Result:** Status changes to `REWORK`, BLGU can revise
+#### Option A: Send Area for Rework
 
-#### Option B: Finalize for Validator Review
+- **Endpoint:** `POST /assessor/assessments/{id}/areas/{area_id}/rework`
+- **Condition:** At least one indicator in their area has issues
+- **Limitation:** Only ONE rework round allowed per assessment (`rework_round_used` must be `false`)
+- **Action:** "Send for Rework" button
+- **Result:**
+  - `area_submission_status[area_id].status` = "rework"
+  - Assessment status changes to `REWORK`
+  - `rework_round_used` = `true` (blocks future rework requests from all assessors)
 
-- **Condition:** All indicators reviewed, no major issues
-- **Action:** "Finalize Validation" button
-- **Result:** Status changes to `AWAITING_FINAL_VALIDATION`, goes to validator
+#### Option B: Approve Area
+
+- **Endpoint:** `POST /assessor/assessments/{id}/areas/{area_id}/approve`
+- **Condition:** All indicators in their area reviewed, no major issues
+- **Action:** "Approve Area" button
+- **Result:**
+  - `area_assessor_approved[area_id]` = `true`
+  - `area_submission_status[area_id].status` = "approved"
+  - If all 6 areas are now approved, assessment moves to `AWAITING_FINAL_VALIDATION`
+
+**Automatic Status Transition:**
+
+When the 6th assessor approves their area, the system automatically:
+
+1. Checks `assessment.all_areas_approved()` (verifies all 6 areas have
+   `area_assessor_approved = true`)
+2. Transitions status to `AWAITING_FINAL_VALIDATION`
+3. Logs the transition for audit purposes
 
 ---
 
-## Validator Workflow
+## Validator Workflow (System-Wide)
 
 ### 1. Submissions Queue
 
-- Validators see only submissions from their assigned governance area
-- Same queue interface as assessors
+- **Validators see all assessments in `AWAITING_FINAL_VALIDATION` status** (system-wide access)
+- These are assessments where all 6 assessors have approved their respective areas
+- Queue shows:
+  - Barangay name
+  - Submission date
+  - Current status
+  - Overall progress (all 6 areas)
+  - Last updated timestamp
+
+**Queue Filtering Logic:**
+
+```python
+# Validators see all assessments ready for final validation
+is_validator = user.role == UserRole.VALIDATOR
+
+# Show assessments in AWAITING_FINAL_VALIDATION (all 6 areas approved)
+# Also show REWORK for parallel calibration support
+query = query.filter(
+    Assessment.status.in_([
+        AssessmentStatus.AWAITING_FINAL_VALIDATION,
+        AssessmentStatus.REWORK,  # Include for parallel calibration
+    ])
+)
+```
 
 ### 2. Reviewing a Submission
 
 **Same Three-Panel Layout:**
 
-1. **Left Panel:** Indicator tree navigation
+1. **Left Panel:** Indicator tree navigation (all 6 governance areas visible)
 2. **Middle Panel:** MOV files uploaded by BLGU
 3. **Right Panel:** Validation checklist with automatic result calculation
 
 **What Validators Can Do:**
 
-- Everything assessors can do, PLUS:
-- ✅ **Determine Pass/Fail/Conditional status** for each indicator
-- ✅ View assessor remarks (if assessor left any)
-- ✅ See automatic result calculation with override capability
+- Review indicators across **all governance areas** (not limited to one area)
+- **Determine Pass/Fail/Conditional status** for each indicator
+- View assessor remarks from all 6 assessors (if any left remarks)
+- See automatic result calculation with override capability
 
 ### 3. Processing of Results (Validator Only)
 
@@ -399,22 +477,24 @@ When MLGOO is satisfied with the assessment:
 
 ## Key Differences: Assessor vs Validator vs MLGOO
 
-| Feature                       | Assessor             | Validator                     | MLGOO             |
-| ----------------------------- | -------------------- | ----------------------------- | ----------------- |
-| **Access**                    | All barangays        | Assigned governance area only | All barangays     |
-| **Review MOVs**               | Yes                  | Yes                           | Yes               |
-| **Leave Comments**            | Yes                  | Yes                           | Yes               |
-| **Set Pass/Fail Status**      | No                   | Yes                           | No (reviews only) |
-| **See Automatic Result**      | No                   | Yes                           | Yes               |
-| **Override Automatic Result** | No                   | Yes                           | No                |
-| **Send for Rework**           | Yes (once)           | No                            | No                |
-| **Request Calibration**       | No                   | Yes (per area)                | No                |
-| **Request RE-Calibration**    | No                   | No                            | Yes               |
-| **Final Validation**          | Forward to Validator | Forward to MLGOO              | Mark as COMPLETED |
-| **View Assessor Remarks**     | N/A                  | Yes (read-only)               | Yes (read-only)   |
-| **Write Assessor Remarks**    | Yes                  | No                            | No                |
-| **Create MOV Annotations**    | Yes                  | Yes                           | Yes               |
-| **Final Approval**            | No                   | No                            | Yes               |
+| Feature                       | Assessor (Area-Specific)            | Validator (System-Wide)    | MLGOO             |
+| ----------------------------- | ----------------------------------- | -------------------------- | ----------------- |
+| **Access**                    | Assigned governance area only       | All governance areas       | All barangays     |
+| **Required Field**            | `assessor_area_id`                  | None                       | None              |
+| **Review Scope**              | Indicators in assigned area only    | All indicators (6 areas)   | All indicators    |
+| **Review MOVs**               | Yes (own area)                      | Yes (all areas)            | Yes               |
+| **Leave Comments**            | Yes                                 | Yes                        | Yes               |
+| **Set Pass/Fail Status**      | No                                  | Yes                        | No (reviews only) |
+| **See Automatic Result**      | No                                  | Yes                        | Yes               |
+| **Override Automatic Result** | No                                  | Yes                        | No                |
+| **Send for Rework**           | Yes (per-area, once per assessment) | No                         | No                |
+| **Request Calibration**       | No                                  | Yes (entire assessment)    | No                |
+| **Request RE-Calibration**    | No                                  | No                         | Yes               |
+| **Approve Action**            | Approve own area                    | Finalize entire assessment | Mark as COMPLETED |
+| **View Assessor Remarks**     | N/A                                 | Yes (from all 6 assessors) | Yes (read-only)   |
+| **Write Assessor Remarks**    | Yes                                 | No                         | No                |
+| **Create MOV Annotations**    | Yes                                 | Yes                        | Yes               |
+| **Final Approval**            | No                                  | No                         | Yes               |
 
 ---
 
@@ -538,20 +618,35 @@ During rework mode, OR-logic validation rules behave differently:
 
 ### Backend Endpoints
 
+**Per-Area Endpoints (Assessor - Area-Specific):**
+
+- `POST /api/v1/assessor/assessments/{assessment_id}/areas/{governance_area_id}/approve`
+  - Assessor approves their assigned governance area
+  - Validates that `assessor.assessor_area_id == governance_area_id`
+  - Updates `area_assessor_approved[area_id] = true`
+  - If all 6 areas approved, transitions to `AWAITING_FINAL_VALIDATION`
+
+- `POST /api/v1/assessor/assessments/{assessment_id}/areas/{governance_area_id}/rework`
+  - Assessor sends their area back for rework
+  - Validates that `assessor.assessor_area_id == governance_area_id`
+  - Updates `area_submission_status[area_id].status = "rework"`
+  - Sets assessment status to `REWORK`
+  - Sets `rework_round_used = true` (blocks future rework from all assessors)
+
 **Validation Endpoints:**
 
 - `POST /api/v1/assessor/assessment-responses/{response_id}/validate`
   - Saves validation status, public comment, and assessor remarks
   - Used by both assessors (comments only) and validators (full validation)
 
-- `POST /api/v1/assessor/assessments/{assessment_id}/rework`
+- `POST /api/v1/assessor/assessments/{assessment_id}/rework` (Legacy)
   - Sends assessment back to BLGU for revision
-  - Only available to assessors, only once per assessment
+  - **Note:** Assessors should use per-area endpoint instead
 
 - `POST /api/v1/assessor/assessments/{assessment_id}/finalize`
   - Finalizes validation
-  - Assessors: Changes status to AWAITING_FINAL_VALIDATION
-  - Validators: Changes status to COMPLETED
+  - **Blocked for Assessors:** Assessors must use per-area approve endpoint
+  - Validators: Changes status to `AWAITING_MLGOO_APPROVAL`
 
 **Calibration Endpoints:**
 
@@ -594,6 +689,47 @@ class ValidationRequest(BaseModel):
     assessor_remarks: str | None = None  # Visible to validators only
 ```
 
+**Per-Area Tracking Fields (Assessment Model):**
+
+```python
+# Total governance areas constant
+TOTAL_GOVERNANCE_AREAS = 6  # IDs 1-6
+
+# Per-area submission tracking
+area_submission_status: dict = {}  # {"1": {"status": "approved", "approved_at": "...", "assessor_id": 5}, ...}
+area_assessor_approved: dict = {}  # {"1": true, "2": false, ...}
+
+# Rework round tracking
+rework_round_used: bool = False    # True after first rework (all 6 assessors share one round)
+
+# Calibration round tracking
+calibration_round_used: bool = False  # True after first calibration
+```
+
+**Helper Methods (Assessment Model):**
+
+```python
+def all_areas_approved(self) -> bool:
+    """Check if all 6 governance areas are approved by assessors."""
+    if not self.area_assessor_approved:
+        return False
+    return all(
+        self.area_assessor_approved.get(str(i), False)
+        for i in range(1, TOTAL_GOVERNANCE_AREAS + 1)
+    )
+
+def get_area_status(self, governance_area_id: int) -> str:
+    """Get the status of a specific governance area (draft, submitted, in_review, rework, approved)."""
+    if not self.area_submission_status:
+        return "draft"
+    area_data = self.area_submission_status.get(str(governance_area_id), {})
+    return area_data.get("status", "draft")
+
+def can_assessor_request_rework(self) -> bool:
+    """Check if assessors can still request rework (one round only)."""
+    return not self.rework_round_used
+```
+
 **Calibration Fields (Assessment Model):**
 
 ```python
@@ -623,6 +759,36 @@ class MOVAnnotation(BaseModel):
 ---
 
 ## Migration Notes
+
+**January 2026 Updates (Workflow Restructuring):**
+
+1. **Role Swap - Assessors are Now Area-Specific:**
+   - **Before:** Assessors were system-wide, Validators were area-specific
+   - **After:** Assessors are area-specific (6 assessors for 6 areas), Validators are system-wide
+   - Added `users.assessor_area_id` field (FK to `governance_areas.id`)
+   - Removed area restriction from Validators (they now see all areas)
+
+2. **Per-Area Submission Workflow:**
+   - Added `TOTAL_GOVERNANCE_AREAS = 6` constant to Assessment model
+   - Added `area_submission_status` JSONB field to track per-area status
+   - Added `area_assessor_approved` JSONB field for quick approval lookup
+   - Added `rework_round_used` boolean to track if rework has been triggered
+   - Added `calibration_round_used` boolean for calibration tracking
+
+3. **New Per-Area Endpoints:**
+   - `POST /assessor/assessments/{id}/areas/{area_id}/approve` - Assessor approves their area
+   - `POST /assessor/assessments/{id}/areas/{area_id}/rework` - Assessor sends area for rework
+   - Legacy `finalize_assessment()` is blocked for assessors (must use per-area approve)
+
+4. **Assessment Status Flow Changes:**
+   - Status moves to `AWAITING_FINAL_VALIDATION` only when all 6 areas are approved
+   - `all_areas_approved()` helper method checks all 6 areas
+   - Validators only see assessments in `AWAITING_FINAL_VALIDATION` status
+
+5. **Frontend Changes:**
+   - `AssessorValidationClient.tsx` uses per-area endpoints for assessors
+   - Header shows governance area context for assessors
+   - Progress indicator shows X/6 areas approved
 
 **December 2025 Updates:**
 

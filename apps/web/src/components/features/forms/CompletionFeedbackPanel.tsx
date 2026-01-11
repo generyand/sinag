@@ -123,13 +123,14 @@ export function CompletionFeedbackPanel({
     // For SHARED+OR logic (e.g., indicator 4.1.6, 4.8.4)
     // Pattern: SHARED (required) + (OPTION A OR OPTION B) = 2 total requirements
     if (isSharedPlusOrLogic) {
-      // Group fields by completion_group (not option_group to avoid accordion rendering)
+      // Group fields by completion_group (fallback to option_group for backwards compatibility)
       const sharedFields: FormSchemaFieldsItem[] = [];
       const optionAFields: FormSchemaFieldsItem[] = [];
       const optionBFields: FormSchemaFieldsItem[] = [];
 
       requiredFields.forEach((field) => {
-        const completionGroup = (field as any).completion_group;
+        // Check completion_group first, then fallback to option_group
+        const completionGroup = (field as any).completion_group || (field as any).option_group;
         if (completionGroup === "shared") {
           sharedFields.push(field);
         } else if (completionGroup === "option_a") {

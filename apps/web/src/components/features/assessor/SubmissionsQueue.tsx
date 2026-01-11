@@ -97,7 +97,7 @@ export function SubmissionsQueue({ items = [] }: SubmissionsQueueProps) {
                 <TableBody>
                   {tabFiltered.map((row) => (
                     <TableRow key={row.assessment_id}>
-                      <TableCell>{row.barangay_name}</TableCell>
+                      <TableCell>Brgy. {row.barangay_name}</TableCell>
                       <TableCell>
                         {row.submission_date ? new Date(row.submission_date).toLocaleString() : "—"}
                       </TableCell>

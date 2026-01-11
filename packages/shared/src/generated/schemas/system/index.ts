@@ -4,6 +4,8 @@
 // 🏷️  Based on FastAPI tag: "system"
 
 import type { ActivateYearResponseAssessmentsCreated } from '../assessments';
+import type { ActivitySummary } from '../common';
+import type { ActivityByActionCount } from '../common';
 import type { PdfRect } from '../common';
 import type { AnonymizedInsight } from '../common';
 import type { ApprovalQueueItem } from '../common';
@@ -30,12 +32,20 @@ import type { StatusDistributionItem } from '../common';
 import type { ReworkStats } from '../common';
 import type { DashboardKPIResponseBbiAnalytics } from '../analytics';
 import type { TopReworkReasons } from '../common';
+import type { DeadlineExtensionResponse } from '../deadlineextension';
+import type { AppSchemasDeadlineExtensionUserNested } from '../users';
 import type { DeadlineOverrideResponse } from '../deadlineoverride';
+import type { ExportSummary } from '../export';
+import type { ExportDataType } from '../common';
+import type { AvailableCycle } from '../common';
+import type { AnonymizedBarangayStatus } from '../common';
+import type { MunicipalOfficeWithGovernanceArea } from '../municipalofficewithgovernancearea';
 import type { ReportMetadataAssessmentYear } from '../assessments';
 import type { ChartData } from '../common';
 import type { MapData } from '../common';
 import type { TableData } from '../common';
 import type { ReviewHistoryItem } from '../common';
+import type { SendReminderResponseBlguUserEmail } from '../users';
 import type { AssessmentStatus } from '../assessments';
 import type { SubmissionValidationResult } from '../error';
 import type { ValidationStatus } from '../error';
@@ -102,6 +112,15 @@ export interface ActivateYearResponse {
  * ActivateYearResponsePreviousActiveYear
  */
 export type ActivateYearResponsePreviousActiveYear = number | null;
+
+
+/**
+ * ActivityCountsResponse
+ */
+export interface ActivityCountsResponse {
+  summary: ActivitySummary;
+  by_action: ActivityByActionCount[];
+}
 
 
 /**
@@ -210,6 +229,16 @@ export type AuditLogResponseIpAddress = string | null;
 export interface BLGUDashboardResponse {
   /** Assessment ID */
   assessment_id: number;
+  /** Phase 1 submission deadline (from active assessment year) */
+  phase1_deadline?: BLGUDashboardResponsePhase1Deadline;
+  /** Days remaining until Phase 1 deadline (negative if past). Only populated for DRAFT assessments. */
+  days_until_deadline?: BLGUDashboardResponseDaysUntilDeadline;
+  /** Urgency level based on days remaining: normal (>7 days), warning (4-7 days), urgent (2-3 days), critical (<=1 day), expired (deadline passed). Only populated for DRAFT assessments. */
+  deadline_urgency_level?: BLGUDashboardResponseDeadlineUrgencyLevel;
+  /** True if assessment was automatically submitted at deadline */
+  is_auto_submitted?: boolean;
+  /** Timestamp when assessment was auto-submitted (if applicable) */
+  auto_submitted_at?: BLGUDashboardResponseAutoSubmittedAt;
   /** Assessment status (DRAFT, SUBMITTED, IN_REVIEW, REWORK, COMPLETED) */
   status: string;
   /** Number of times rework has been requested (0 or 1) */
@@ -328,6 +357,12 @@ export type BLGUDashboardResponseAreaResultsAnyOfItem = { [key: string]: unknown
 
 
 /**
+ * BLGUDashboardResponseAutoSubmittedAt
+ */
+export type BLGUDashboardResponseAutoSubmittedAt = string | null;
+
+
+/**
  * BLGUDashboardResponseCalibrationGovernanceAreaId
  */
 export type BLGUDashboardResponseCalibrationGovernanceAreaId = number | null;
@@ -361,6 +396,24 @@ export type BLGUDashboardResponseCalibrationSubmittedAt = string | null;
  * BLGUDashboardResponseCalibrationValidatorId
  */
 export type BLGUDashboardResponseCalibrationValidatorId = number | null;
+
+
+/**
+ * BLGUDashboardResponseDaysUntilDeadline
+ */
+export type BLGUDashboardResponseDaysUntilDeadline = number | null;
+
+
+/**
+ * BLGUDashboardResponseDeadlineUrgencyLevel
+ */
+export type BLGUDashboardResponseDeadlineUrgencyLevel = 'normal' | 'warning' | 'urgent' | 'critical' | 'expired' | null;
+
+
+/**
+ * BLGUDashboardResponsePhase1Deadline
+ */
+export type BLGUDashboardResponsePhase1Deadline = string | null;
 
 
 /**
@@ -570,6 +623,23 @@ export type DashboardKPIResponseTopReworkReasons = TopReworkReasons | null;
 
 
 /**
+ * DeadlineExtensionListResponse
+ */
+export interface DeadlineExtensionListResponse {
+  /** List of extensions for the assessment */
+  extensions: DeadlineExtensionResponse[];
+  /** Total number of extensions */
+  total: number;
+}
+
+
+/**
+ * DeadlineExtensionResponseExtender
+ */
+export type DeadlineExtensionResponseExtender = AppSchemasDeadlineExtensionUserNested | null;
+
+
+/**
  * DeadlineOverrideListResponse
  */
 export interface DeadlineOverrideListResponse {
@@ -606,6 +676,45 @@ export interface DeadlineStatusListResponse {
 
 
 /**
+ * ExportGenerateResponse
+ */
+export interface ExportGenerateResponse {
+  success: boolean;
+  message: string;
+  summary?: ExportGenerateResponseSummary;
+  download_url?: ExportGenerateResponseDownloadUrl;
+}
+
+
+/**
+ * ExportGenerateResponseDownloadUrl
+ */
+export type ExportGenerateResponseDownloadUrl = string | null;
+
+
+/**
+ * ExportGenerateResponseSummary
+ */
+export type ExportGenerateResponseSummary = ExportSummary | null;
+
+
+/**
+ * ExportOptionsResponse
+ */
+export interface ExportOptionsResponse {
+  data_types: ExportDataType[];
+  cycles: AvailableCycle[];
+  default_cycle_id?: ExportOptionsResponseDefaultCycleId;
+}
+
+
+/**
+ * ExportOptionsResponseDefaultCycleId
+ */
+export type ExportOptionsResponseDefaultCycleId = number | null;
+
+
+/**
  * FormSchemaMetadataGovernanceAreaName
  */
 export type FormSchemaMetadataGovernanceAreaName = string | null;
@@ -615,6 +724,25 @@ export type FormSchemaMetadataGovernanceAreaName = string | null;
  * FormSchemaResponseFormSchema
  */
 export type FormSchemaResponseFormSchema = { [key: string]: unknown };
+
+
+/**
+ * GeographicHeatmapResponse
+ */
+export interface GeographicHeatmapResponse {
+  /** Anonymized status for each barangay */
+  barangays: AnonymizedBarangayStatus[];
+  /** Summary counts: pass_count, fail_count, in_progress_count, not_started_count */
+  summary: GeographicHeatmapResponseSummary;
+  /** Total number of barangays in the municipality */
+  total_barangays: number;
+}
+
+
+/**
+ * GeographicHeatmapResponseSummary
+ */
+export type GeographicHeatmapResponseSummary = { [key: string]: unknown };
 
 
 /**
@@ -686,6 +814,42 @@ export type HealthCheckChecks = { [key: string]: unknown };
  * HealthCheckConnections
  */
 export type HealthCheckConnections = { [key: string]: unknown };
+
+
+/**
+ * MunicipalOfficeListResponse
+ */
+export interface MunicipalOfficeListResponse {
+  offices: MunicipalOfficeWithGovernanceArea[];
+  total: number;
+  page: number;
+  size: number;
+  total_pages: number;
+}
+
+
+/**
+ * MunicipalOfficeResponseContactEmail
+ */
+export type MunicipalOfficeResponseContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeResponseContactNumber
+ */
+export type MunicipalOfficeResponseContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeResponseContactPerson
+ */
+export type MunicipalOfficeResponseContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficeResponseDescription
+ */
+export type MunicipalOfficeResponseDescription = string | null;
 
 
 /**
@@ -871,6 +1035,21 @@ export type ReworkSummaryResponseEstimatedTime = string | null;
  * ReworkSummaryResponseLanguage
  */
 export type ReworkSummaryResponseLanguage = string | null;
+
+
+/**
+ * SendReminderResponse
+ */
+export interface SendReminderResponse {
+  success: boolean;
+  message: string;
+  assessment_id: number;
+  barangay_name: string;
+  blgu_user_email: SendReminderResponseBlguUserEmail;
+  sent_by: string;
+  sent_at: string;
+  email_sent: boolean;
+}
 
 
 /**

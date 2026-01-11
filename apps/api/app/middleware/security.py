@@ -90,13 +90,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # SECURITY: Stricter limits for auth endpoints to prevent brute-force
         self.limits = {
             "/api/v1/auth/login": {
-                "requests": 5,
-                "window": 300,
-            },  # 5 per 5 min (strict)
+                "requests": 20,
+                "window": 60,
+            },  # 20 per 1 min (testing)
             "/api/v1/auth/change-password": {
-                "requests": 3,
-                "window": 300,
-            },  # 3 per 5 min
+                "requests": 100,
+                "window": 60,
+            },  # 100 per 1 min (testing phase - increase before production)
             "/api/v1/auth": {
                 "requests": 10,
                 "window": 60,

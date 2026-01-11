@@ -206,6 +206,7 @@ export function VisualizationGrid({ data, isLoading, showOnly }: VisualizationGr
                   name: p.name,
                   status,
                   compliance_rate: p.score ?? undefined,
+                  assessment_id: p.assessment_id ?? undefined,
                   assessmentStatus,
                   workflowStatus,
                 };

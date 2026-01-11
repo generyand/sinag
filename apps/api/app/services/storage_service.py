@@ -743,6 +743,161 @@ class StorageService:
             raise Exception(f"Database operation failed: {str(e)}")
 
     # ============================================================================
+    # Story 4.x: Image Rotation Service
+    # Allows BLGU users to permanently rotate uploaded images
+    # ============================================================================
+
+    def rotate_image_file(
+        self, db: Session, file_id: int, user_id: int, degrees: int = 90
+    ) -> MOVFile:
+        """
+        Rotate an image file in Supabase Storage permanently.
+
+        This method:
+        1. Checks user permissions (same rules as delete)
+        2. Downloads the image from Supabase Storage
+        3. Rotates it using ImageProcessingService
+        4. Re-uploads to replace the original file
+        5. Updates file_size in the database
+
+        Args:
+            db: Database session
+            file_id: ID of the MOVFile to rotate
+            user_id: ID of the user requesting rotation
+            degrees: Rotation angle in degrees clockwise (default: 90)
+
+        Returns:
+            MOVFile: The updated MOVFile instance
+
+        Raises:
+            HTTPException 400: If file is not an image
+            HTTPException 403: If permission check fails
+            HTTPException 404: If file not found
+            Exception: If rotation or upload fails
+        """
+        # Reuse permission check from delete (same rules apply)
+        has_permission, error_message = self._check_delete_permission(db, file_id, user_id)
+
+        if not has_permission:
+            logger.warning(
+                f"Permission denied: User {user_id} attempted to rotate file {file_id}. "
+                f"Reason: {error_message}"
+            )
+            raise HTTPException(status_code=403, detail=error_message)
+
+        # Load the file
+        mov_file = db.query(MOVFile).filter(MOVFile.id == file_id).first()
+
+        if not mov_file:
+            raise HTTPException(status_code=404, detail=f"File with ID {file_id} not found")
+
+        # Check if file is an image
+        if not mov_file.file_type.startswith("image/"):
+            raise HTTPException(
+                status_code=400, detail="Only image files (JPEG, PNG) can be rotated"
+            )
+
+        # Validate content type is specifically supported
+        if mov_file.file_type not in ("image/jpeg", "image/png"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Rotation not supported for file type: {mov_file.file_type}. "
+                f"Only JPEG and PNG images are supported.",
+            )
+
+        # Extract storage path from file_url (same logic as delete_mov_file)
+        storage_path = None
+        try:
+            if f"/{self.MOV_FILES_BUCKET}/" in mov_file.file_url:
+                encoded_path = mov_file.file_url.split(f"/{self.MOV_FILES_BUCKET}/")[1]
+                storage_path = unquote(encoded_path).split("?")[0].lstrip("/")
+            else:
+                raise ValueError(f"Could not extract storage path from URL: {mov_file.file_url}")
+        except Exception as e:
+            logger.error(f"Error extracting storage path from URL {mov_file.file_url}: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Invalid file URL format: {mov_file.file_url}"
+            )
+
+        # Keep original bytes for rollback
+        original_bytes = None
+        original_deleted = False
+
+        try:
+            supabase = _get_supabase_client()
+
+            # Step 1: Download the current image
+            logger.info(f"Downloading image from storage: {storage_path}")
+            download_result = supabase.storage.from_(self.MOV_FILES_BUCKET).download(storage_path)
+
+            if not download_result:
+                raise Exception("Failed to download file from storage")
+
+            original_bytes = download_result
+
+            # Step 2: Rotate the image
+            from app.services.image_processing_service import image_processing_service
+
+            rotated_bytes, was_rotated = image_processing_service.rotate_image(
+                original_bytes, mov_file.file_type, degrees
+            )
+
+            if not was_rotated:
+                raise Exception("Failed to rotate image")
+
+            # Step 3: Delete the original file from storage
+            logger.info(f"Deleting original file from storage: {storage_path}")
+            supabase.storage.from_(self.MOV_FILES_BUCKET).remove([storage_path])
+            original_deleted = True
+
+            # Step 4: Re-upload the rotated image with the same path
+            logger.info(f"Uploading rotated image to storage: {storage_path}")
+            upload_result = supabase.storage.from_(self.MOV_FILES_BUCKET).upload(
+                path=storage_path,
+                file=rotated_bytes,
+                file_options={"content-type": mov_file.file_type, "upsert": "true"},
+            )
+
+            if isinstance(upload_result, dict) and upload_result.get("error"):
+                raise Exception(f"Supabase upload error: {upload_result['error']}")
+
+            # Step 5: Update file_size in database (rotation might change size slightly)
+            mov_file.file_size = len(rotated_bytes)
+            db.commit()
+            db.refresh(mov_file)
+
+            logger.info(
+                f"Successfully rotated image {file_id} by {degrees} degrees. "
+                f"New size: {len(rotated_bytes)} bytes"
+            )
+
+            return mov_file
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to rotate image {file_id}: {str(e)}")
+
+            # Rollback: If we deleted the original but failed to upload rotated version,
+            # try to restore the original
+            if original_bytes and original_deleted:
+                try:
+                    supabase = _get_supabase_client()
+                    supabase.storage.from_(self.MOV_FILES_BUCKET).upload(
+                        path=storage_path,
+                        file=original_bytes,
+                        file_options={"content-type": mov_file.file_type, "upsert": "true"},
+                    )
+                    logger.info(f"Rollback successful: restored original file {storage_path}")
+                except Exception as rollback_error:
+                    logger.error(
+                        f"CRITICAL: Failed to restore original file {storage_path}: {rollback_error}. "
+                        f"Manual recovery required!"
+                    )
+
+            raise HTTPException(status_code=500, detail=f"Image rotation failed: {str(e)}")
+
+    # ============================================================================
     # Signed URL Generation for Secure File Access
     # ============================================================================
 
@@ -909,16 +1064,17 @@ class StorageService:
                         status_code=403, detail="You don't have permission to access this file"
                     )
 
-        # VALIDATORs can only access files within their assigned governance area
-        if user.role == UserRole.VALIDATOR and user.validator_area_id:
+        # ASSESSORs can only access files within their assigned governance area
+        # After workflow restructuring: ASSESSORs are area-specific, VALIDATORs are system-wide
+        if user.role == UserRole.ASSESSOR and user.assessor_area_id:
             indicator = db.query(Indicator).filter(Indicator.id == mov_file.indicator_id).first()
-            if indicator and indicator.governance_area_id != user.validator_area_id:
+            if indicator and indicator.governance_area_id != user.assessor_area_id:
                 raise HTTPException(
                     status_code=403,
                     detail="You can only access files within your assigned governance area",
                 )
 
-        # ASSESSOR and MLGOO_DILG have access to all files (no additional restrictions)
+        # VALIDATOR and MLGOO_DILG have access to all files (no additional restrictions)
 
         # Generate and return signed URL
         try:

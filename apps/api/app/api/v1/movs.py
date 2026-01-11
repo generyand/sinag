@@ -292,3 +292,62 @@ def delete_mov_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete file: {str(e)}",
         )
+
+
+@router.post(
+    "/files/{file_id}/rotate",
+    response_model=MOVFileResponse,
+    status_code=status.HTTP_200_OK,
+    tags=["movs"],
+    summary="Rotate an image file 90 degrees clockwise",
+    description="""
+    Rotate an image file permanently by 90 degrees clockwise.
+
+    - **Permission check**: Only the uploader (BLGU user) can rotate their own files
+    - **Status restriction**: Only allowed for DRAFT or NEEDS_REWORK assessments
+    - **File type**: Only supports image files (JPEG, PNG)
+    - **Permanent**: Replaces the original file in storage with the rotated version
+
+    Returns the updated file metadata with new file size.
+    """,
+)
+def rotate_mov_file(
+    file_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> MOVFileResponse:
+    """
+    Rotate an image file 90 degrees clockwise (permanent operation).
+
+    Args:
+        file_id: ID of the MOV file to rotate
+        db: Database session
+        current_user: Currently authenticated user
+
+    Returns:
+        MOVFileResponse with updated file metadata
+
+    Raises:
+        HTTPException 400: File is not an image or unsupported image type
+        HTTPException 403: Permission denied (not uploader, wrong status)
+        HTTPException 404: File not found
+        HTTPException 500: Rotation failed
+    """
+    try:
+        rotated_file = storage_service.rotate_image_file(
+            db=db,
+            file_id=file_id,
+            user_id=current_user.id,
+        )
+
+        return MOVFileResponse.model_validate(rotated_file)
+
+    except HTTPException:
+        # Re-raise HTTPExceptions from the service (400, 403, 404, 500)
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rotate image: {str(e)}",
+        )

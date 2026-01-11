@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
+  getGetAssessorAssessmentsAssessmentIdQueryKey,
   useGetAssessorAssessmentsAssessmentId,
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdCalibrate,
@@ -69,7 +70,16 @@ function sortIndicatorCode(a: string, b: string): number {
 
 export function ValidatorValidationClient({ assessmentId }: ValidatorValidationClientProps) {
   const router = useRouter();
-  const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId);
+  const { data, isLoading, isError, error } = useGetAssessorAssessmentsAssessmentId(assessmentId, {
+    query: {
+      queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+      // CRITICAL: Disable refetchOnWindowFocus to prevent losing unsaved work
+      // When user alt-tabs back, we don't want to overwrite their validation changes
+      refetchOnWindowFocus: false,
+      refetchOnMount: true, // Still fetch fresh data on initial mount
+      staleTime: 5 * 60 * 1000, // 5 minutes - data won't go stale while working
+    },
+  });
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const finalizeMut = usePostAssessorAssessmentsAssessmentIdFinalize();
@@ -268,12 +278,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
   const statusText: string = core?.status ?? core?.assessment_status ?? "";
 
-  // Check if THIS validator's area has already been calibrated (per-area limit)
-  const validatorAreaId = currentUser?.validator_area_id;
-  const calibratedAreaIds: number[] = (core?.calibrated_area_ids ?? []) as number[];
-  const calibrationAlreadyUsed = validatorAreaId
-    ? calibratedAreaIds.includes(validatorAreaId)
-    : false;
+  // Check if calibration has already been used for this assessment (1 round limit)
+  // After workflow restructuring: validators are system-wide, calibration is per-assessment
+  const calibrationAlreadyUsed: boolean = (core?.calibration_round_used ?? false) as boolean;
 
   // Get timestamps for MOV file separation (new vs old files)
   // These are passed to MiddleMovFilesPanel which determines per-indicator which timestamp to use
@@ -429,43 +436,45 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }
 
     try {
-      // Show loading toast
-      toast.loading(
-        `Saving ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
-        { id: "save-draft-toast" }
-      );
+      // Serialize requests to prevent overwhelming the backend
+      // Previously used Promise.all() which caused 503 errors due to connection pool exhaustion
+      for (let i = 0; i < payloads.length; i++) {
+        const p = payloads[i];
 
-      await Promise.all(
-        payloads.map((p) => {
-          console.log(
-            `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
-          );
-          return validateMut.mutateAsync({
-            responseId: p.id,
-            data: {
-              // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
-              validation_status: p.v.status
-                ? (p.v.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
-                : undefined,
-              public_comment: p.v.publicComment ?? null,
-              // Include checklist data in response_data
-              response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
-              // Include calibration flag
-              flagged_for_calibration: p.flaggedForCalibration,
-            },
-          });
-        })
-      );
+        // Show progress toast
+        toast.loading(
+          `Saving ${i + 1}/${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
+          { id: "save-draft-toast" }
+        );
+
+        console.log(
+          `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
+        );
+
+        await validateMut.mutateAsync({
+          responseId: p.id,
+          data: {
+            // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
+            validation_status: p.v.status
+              ? (p.v.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
+              : undefined,
+            public_comment: p.v.publicComment ?? null,
+            // Include checklist data in response_data
+            response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
+            // Include calibration flag
+            flagged_for_calibration: p.flaggedForCalibration,
+          },
+        });
+      }
+
       // Invalidate all queries to force refetch with updated response_data
       await qc.invalidateQueries();
 
       // Dismiss loading and show success
       toast.dismiss("save-draft-toast");
       toast.success(
-        `✅ Saved ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""} as draft`,
-        {
-          duration: 3000,
-        }
+        `Saved ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""} as draft`,
+        { duration: 3000 }
       );
     } catch (error) {
       console.error("Error saving validation:", error);
@@ -564,6 +573,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           description: "Please log in again to complete finalization.",
           duration: 6000,
         });
+      } else if (errorInfo.type === "server") {
+        toast.error("Server temporarily unavailable", {
+          description: "The server is busy. Please wait a moment and try again.",
+          duration: 6000,
+        });
       } else if (errorInfo.type === "validation") {
         // Check if the error is about unreviewed indicators
         const isUnreviewedError =
@@ -633,6 +647,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       } else if (errorInfo.type === "auth") {
         toast.error("Session expired", {
           description: "Please log in again to submit for calibration.",
+          duration: 6000,
+        });
+      } else if (errorInfo.type === "server") {
+        toast.error("Server temporarily unavailable", {
+          description: "The server is busy. Please wait a moment and try again.",
           duration: 6000,
         });
       } else if (errorInfo.type === "validation") {
@@ -1099,7 +1118,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               }}
               title={
                 calibrationAlreadyUsed
-                  ? "Calibration has already been used for your governance area (max 1 per area)"
+                  ? "Calibration has already been used for this assessment (max 1 per assessment)"
                   : !Object.values(calibrationFlags).some((v) => v === true)
                     ? "Flag at least one indicator for calibration using the toggle"
                     : undefined

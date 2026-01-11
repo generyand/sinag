@@ -1,5 +1,8 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -8,11 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { BarangaySubmission } from "@/types/submissions";
-import { Play, Eye, Clock } from "lucide-react";
+import { Clock, Eye, Play } from "lucide-react";
 
 interface SubmissionsTableProps {
   submissions: BarangaySubmission[];
@@ -280,7 +280,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
                     </div>
                     <div>
                       <div className="font-semibold text-[var(--foreground)]">
-                        {submission.barangayName}
+                        Brgy. {submission.barangayName}
                       </div>
                       {submission.assignedTo && (
                         <div className="text-xs text-[var(--text-muted)]">

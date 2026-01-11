@@ -6,16 +6,18 @@ import enum
 
 class UserRole(str, enum.Enum):
     """
-    Enum for user roles.
+    User roles in the SINAG system.
 
     Using a string-based enum improves readability and maintainability.
 
     Roles:
-    - MLGOO_DILG: Admin/Chairman role with system-wide access (enum value 0 in DB)
-    - ASSESSOR: Assessor role with arbitrary barangay selection (enum value 1 in DB)
-    - VALIDATOR: Validator role with governance area specialization (enum value 2 in DB)
-    - BLGU_USER: BLGU user role with specific barangay assignment (enum value 3 in DB)
-    - KATUPARAN_CENTER_USER: External user from Katuparan Center with read-only access to aggregated data for research purposes (enum value 4 in DB)
+    - MLGOO_DILG: Admin/Chairman role with system-wide access
+    - ASSESSOR: Area-specific (6 users for 6 governance areas) - uses assessor_area_id
+                Reviews ASSIGNED governance area, can request REWORK
+    - VALIDATOR: System-wide (3 DILG team members) - no area restriction
+                 Reviews ALL governance areas, can request CALIBRATION
+    - BLGU_USER: BLGU user role with specific barangay assignment
+    - KATUPARAN_CENTER_USER: External user with read-only access
     """
 
     MLGOO_DILG = "MLGOO_DILG"
@@ -159,6 +161,11 @@ class NotificationType(str, enum.Enum):
     - ASSESSMENT_APPROVED: MLGOO approves assessment -> BLGU notified
     - DEADLINE_EXPIRED_LOCKED: Grace period expired -> BLGU locked, MLGOO notified
     - GRACE_PERIOD_WARNING: Grace period expiring soon -> BLGU warned
+    - SUBMISSION_REMINDER: MLGOO sends manual reminder -> BLGU notified
+    - DEADLINE_REMINDER_7_DAYS: Automated reminder 7 days before deadline -> BLGU notified
+    - DEADLINE_REMINDER_3_DAYS: Automated reminder 3 days before deadline -> BLGU notified
+    - DEADLINE_REMINDER_1_DAY: Automated reminder 1 day before deadline -> BLGU notified
+    - AUTO_SUBMITTED: Assessment auto-submitted at deadline -> BLGU notified
     """
 
     NEW_SUBMISSION = "NEW_SUBMISSION"
@@ -174,3 +181,10 @@ class NotificationType(str, enum.Enum):
     ASSESSMENT_APPROVED = "ASSESSMENT_APPROVED"
     DEADLINE_EXPIRED_LOCKED = "DEADLINE_EXPIRED_LOCKED"
     GRACE_PERIOD_WARNING = "GRACE_PERIOD_WARNING"
+    # Manual reminders from MLGOO
+    SUBMISSION_REMINDER = "SUBMISSION_REMINDER"
+    # Automated Phase 1 deadline reminders
+    DEADLINE_REMINDER_7_DAYS = "DEADLINE_REMINDER_7_DAYS"
+    DEADLINE_REMINDER_3_DAYS = "DEADLINE_REMINDER_3_DAYS"
+    DEADLINE_REMINDER_1_DAY = "DEADLINE_REMINDER_1_DAY"
+    AUTO_SUBMITTED = "AUTO_SUBMITTED"

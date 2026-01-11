@@ -18,6 +18,7 @@ from app.db.models.assessment import (
 )
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
+from app.services.assessment_activity_service import assessment_activity_service
 from app.services.bbi_service import bbi_service
 
 
@@ -32,6 +33,24 @@ class MLGOOService:
     def __init__(self):
         """Initialize the MLGOO service."""
         self.logger = logging.getLogger(__name__)
+
+    def _format_utc_datetime(self, dt: datetime | None) -> str | None:
+        """
+        Format a datetime as ISO 8601 string with 'Z' suffix indicating UTC.
+
+        JavaScript's Date constructor interprets timestamps without timezone info
+        as local time, but with 'Z' suffix as UTC. Since our backend stores all
+        times in UTC using datetime.utcnow(), we append 'Z' for correct parsing.
+
+        Args:
+            dt: The datetime to format, or None
+
+        Returns:
+            ISO 8601 string with 'Z' suffix (e.g., '2025-01-05T02:33:12Z'), or None
+        """
+        if dt is None:
+            return None
+        return dt.isoformat() + "Z"
 
     def _parse_indicator_code(self, code: str) -> tuple:
         """
@@ -153,12 +172,8 @@ class MLGOOService:
                     "barangay_name": barangay_name,
                     "blgu_user_id": assessment.blgu_user_id,
                     "status": assessment.status.value,
-                    "submitted_at": assessment.submitted_at.isoformat()
-                    if assessment.submitted_at
-                    else None,
-                    "validated_at": assessment.validated_at.isoformat()
-                    if assessment.validated_at
-                    else None,
+                    "submitted_at": self._format_utc_datetime(assessment.submitted_at),
+                    "validated_at": self._format_utc_datetime(assessment.validated_at),
                     "compliance_status": assessment.final_compliance_status.value
                     if assessment.final_compliance_status
                     else None,
@@ -248,6 +263,24 @@ class MLGOOService:
         barangay_name = "Unknown Barangay"
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
+
+        # Log activity: Assessment approved and completed
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="approved",
+                user_id=mlgoo_user.id,  # type: ignore
+                from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
+                to_status=AssessmentStatus.COMPLETED.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "comments": comments,
+                },
+                description=f"Assessment approved by {mlgoo_user.name}",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log approval activity: {e}")
 
         self.logger.info(
             f"MLGOO {mlgoo_user.name} approved assessment {assessment_id} for {barangay_name}"
@@ -404,6 +437,26 @@ class MLGOOService:
         for response in assessment.responses:
             if response.indicator_id in indicator_ids and response.indicator:
                 indicator_names.append(response.indicator.name)
+
+        # Log activity: Recalibration requested
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="recalibration_requested",
+                user_id=mlgoo_user.id,  # type: ignore
+                from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
+                to_status=AssessmentStatus.REWORK.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "indicator_ids": indicator_ids,
+                    "indicator_names": indicator_names,
+                    "comments": comments,
+                },
+                description=f"RE-calibration requested by {mlgoo_user.name} for {len(indicator_ids)} indicator(s)",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log recalibration activity: {e}")
 
         self.logger.info(
             f"MLGOO {mlgoo_user.name} requested RE-calibration for assessment {assessment_id} "
@@ -569,6 +622,27 @@ class MLGOOService:
                     }
                 )
 
+        # Log activity: Recalibration requested (by MOV)
+        try:
+            assessment_activity_service.log_activity(
+                db=db,
+                assessment_id=assessment_id,
+                action="recalibration_requested",
+                user_id=mlgoo_user.id,  # type: ignore
+                from_status=AssessmentStatus.AWAITING_MLGOO_APPROVAL.value,
+                to_status=AssessmentStatus.REWORK.value,
+                extra_data={
+                    "barangay_name": barangay_name,
+                    "mov_file_count": len(mov_files),
+                    "indicator_ids": indicator_ids,
+                    "comments": overall_comments,
+                    "type": "mov_file_recalibration",
+                },
+                description=f"RE-calibration requested by {mlgoo_user.name} for {len(mov_files)} MOV file(s)",
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to log recalibration activity: {e}")
+
         self.logger.info(
             f"MLGOO {mlgoo_user.name} requested MOV file RE-calibration for assessment {assessment_id} "
             f"({barangay_name}). MOV files: {requested_mov_ids}"
@@ -718,29 +792,57 @@ class MLGOOService:
                 }
             )
 
-        # Group responses by governance area
-        areas_data = {}
+        # Build a mapping of indicator_id -> response for existing responses
+        response_by_indicator: dict[int, AssessmentResponse] = {}
         for response in assessment.responses:
-            if not response.indicator:
+            if response.indicator_id:
+                response_by_indicator[response.indicator_id] = response
+
+        # Get ALL active child indicators applicable to this assessment year
+        # Only child indicators (parent_id IS NOT NULL) are actual assessment items
+        # Parent indicators are just category groupings
+        assessment_year = assessment.assessment_year
+        all_indicators_query = (
+            db.query(Indicator)
+            .options(joinedload(Indicator.governance_area))
+            .filter(
+                Indicator.is_active == True,
+                Indicator.parent_id.isnot(None),  # Only child indicators (actual assessment items)
+                # Year-based filtering: indicator must be effective for this assessment year
+                (Indicator.effective_from_year.is_(None))
+                | (Indicator.effective_from_year <= assessment_year),
+                (Indicator.effective_to_year.is_(None))
+                | (Indicator.effective_to_year >= assessment_year),
+            )
+            .all()
+        )
+
+        # Group ALL indicators by governance area
+        areas_data = {}
+        for indicator in all_indicators_query:
+            area = indicator.governance_area
+            if not area:
                 continue
 
-            area = response.indicator.governance_area
-            area_id = area.id if area else 0
-            area_name = area.name if area else "Unknown Area"
+            area_id = area.id
+            area_name = area.name
 
             if area_id not in areas_data:
                 areas_data[area_id] = {
                     "id": area_id,
                     "name": area_name,
-                    "area_type": area.area_type.value if area and area.area_type else None,
+                    "area_type": area.area_type.value if area.area_type else None,
                     "pass_count": 0,
                     "fail_count": 0,
                     "conditional_count": 0,
                     "indicators": [],
                 }
 
-            # Count statuses
-            if response.validation_status:
+            # Check if there's an existing response for this indicator
+            response = response_by_indicator.get(indicator.id)
+
+            # Count statuses (only for indicators with responses and validation status)
+            if response and response.validation_status:
                 status_val = (
                     response.validation_status.value
                     if hasattr(response.validation_status, "value")
@@ -755,23 +857,24 @@ class MLGOOService:
                 elif status_upper == "CONDITIONAL":
                     areas_data[area_id]["conditional_count"] += 1
 
-            areas_data[area_id]["indicators"].append(
-                {
-                    "response_id": response.id,
-                    "indicator_id": response.indicator_id,
-                    "indicator_name": response.indicator.name,
-                    "indicator_code": response.indicator.indicator_code,
-                    "validation_status": response.validation_status.value
-                    if response.validation_status
-                    else None,
-                    "assessor_remarks": response.assessor_remarks,
-                    "is_recalibration_target": bool(
-                        assessment.mlgoo_recalibration_indicator_ids
-                        and response.indicator_id in assessment.mlgoo_recalibration_indicator_ids
-                    ),
-                    "mov_files": mov_files_by_indicator.get(response.indicator_id, []),
-                }
-            )
+            # Build indicator data (with or without response)
+            indicator_data = {
+                "response_id": response.id if response else None,
+                "indicator_id": indicator.id,
+                "indicator_name": indicator.name,
+                "indicator_code": indicator.indicator_code,
+                "validation_status": response.validation_status.value
+                if response and response.validation_status
+                else None,
+                "assessor_remarks": response.assessor_remarks if response else None,
+                "is_completed": response.is_completed if response else False,
+                "is_recalibration_target": bool(
+                    assessment.mlgoo_recalibration_indicator_ids
+                    and indicator.id in assessment.mlgoo_recalibration_indicator_ids
+                ),
+                "mov_files": mov_files_by_indicator.get(indicator.id, []),
+            }
+            areas_data[area_id]["indicators"].append(indicator_data)
 
         # Sort indicators in each governance area by indicator_code
         for area_id in areas_data:
@@ -799,12 +902,8 @@ class MLGOOService:
             "blgu_user_id": assessment.blgu_user_id,
             "blgu_user_name": assessment.blgu_user.name if assessment.blgu_user else None,
             "status": assessment.status.value,
-            "submitted_at": assessment.submitted_at.isoformat()
-            if assessment.submitted_at
-            else None,
-            "validated_at": assessment.validated_at.isoformat()
-            if assessment.validated_at
-            else None,
+            "submitted_at": self._format_utc_datetime(assessment.submitted_at),
+            "validated_at": self._format_utc_datetime(assessment.validated_at),
             "compliance_status": assessment.final_compliance_status.value
             if assessment.final_compliance_status
             else None,
@@ -814,40 +913,32 @@ class MLGOOService:
             "can_approve": assessment.status == AssessmentStatus.AWAITING_MLGOO_APPROVAL,
             "can_recalibrate": assessment.can_request_mlgoo_recalibration,
             # Rework tracking (Assessor stage)
-            "rework_requested_at": assessment.rework_requested_at.isoformat()
-            if assessment.rework_requested_at
-            else None,
-            "rework_submitted_at": assessment.rework_submitted_at.isoformat()
-            if assessment.rework_submitted_at
-            else None,
+            "rework_requested_at": self._format_utc_datetime(assessment.rework_requested_at),
+            "rework_submitted_at": self._format_utc_datetime(assessment.rework_submitted_at),
             "rework_count": assessment.rework_count,
             # Calibration tracking (Validator stage)
-            "calibration_requested_at": assessment.calibration_requested_at.isoformat()
-            if assessment.calibration_requested_at
-            else None,
-            "calibration_submitted_at": assessment.calibration_submitted_at.isoformat()
-            if assessment.calibration_submitted_at
-            else None,
+            "calibration_requested_at": self._format_utc_datetime(
+                assessment.calibration_requested_at
+            ),
+            "calibration_submitted_at": self._format_utc_datetime(
+                assessment.calibration_submitted_at
+            ),
             # MLGOO RE-calibration tracking
             "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
             "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
-            "mlgoo_recalibration_requested_at": assessment.mlgoo_recalibration_requested_at.isoformat()
-            if assessment.mlgoo_recalibration_requested_at
-            else None,
-            "mlgoo_recalibration_submitted_at": assessment.mlgoo_recalibration_submitted_at.isoformat()
-            if assessment.mlgoo_recalibration_submitted_at
-            else None,
+            "mlgoo_recalibration_requested_at": self._format_utc_datetime(
+                assessment.mlgoo_recalibration_requested_at
+            ),
+            "mlgoo_recalibration_submitted_at": self._format_utc_datetime(
+                assessment.mlgoo_recalibration_submitted_at
+            ),
             "mlgoo_recalibration_indicator_ids": assessment.mlgoo_recalibration_indicator_ids,
             "mlgoo_recalibration_mov_file_ids": assessment.mlgoo_recalibration_mov_file_ids,
             "mlgoo_recalibration_comments": assessment.mlgoo_recalibration_comments,
             # MLGOO approval
-            "mlgoo_approved_at": assessment.mlgoo_approved_at.isoformat()
-            if assessment.mlgoo_approved_at
-            else None,
-            "grace_period_expires_at": (
-                assessment.grace_period_expires_at.isoformat()
-                if assessment.grace_period_expires_at
-                else None
+            "mlgoo_approved_at": self._format_utc_datetime(assessment.mlgoo_approved_at),
+            "grace_period_expires_at": self._format_utc_datetime(
+                assessment.grace_period_expires_at
             ),
             "is_locked_for_deadline": assessment.is_locked_for_deadline,
         }

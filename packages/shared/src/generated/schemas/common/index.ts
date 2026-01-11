@@ -13,14 +13,17 @@ import type { BBIFunctionalityCheckRule } from '../bbis';
 import type { ApprovalQueueItemBlguUserId } from '../users';
 import type { ApprovalQueueItemComplianceStatus } from '../compliance';
 import type { ApprovalQueueItemOverallScore } from '../movs';
+import type { BarangayMapPointAssessmentId } from '../assessments';
 import type { BarangayMapPointAssessmentStatus } from '../assessments';
 import type { BarangayAssessmentStatus } from '../assessments';
+import type { DeadlineExtensionResponse } from '../deadlineextension';
 import type { FileUploadFieldConditionalMovRequirement } from '../movs';
 import type { SectionHeaderField } from '../sectionheaderfield';
 import type { InfoTextField } from '../infotextfield';
 import type { GovernanceAreaIndicator } from '../indicators';
 import type { IndicatorDetailItem } from '../indicators';
 import type { IndicatorItem } from '../indicators';
+import type { MunicipalOfficeResponse } from '../municipaloffice';
 import type { MunicipalComplianceSummary } from '../compliance';
 import type { GovernanceAreaPerformanceList } from '../governanceareaperformance';
 import type { TopFailingIndicatorsList } from '../indicators';
@@ -104,6 +107,30 @@ export const AISummarySummaryType = {
 
 
 /**
+ * ActivityByActionCount
+ */
+export interface ActivityByActionCount {
+  action: string;
+  count: number;
+  label: string;
+}
+
+
+/**
+ * ActivitySummary
+ */
+export interface ActivitySummary {
+  total_activities: number;
+  submissions_count: number;
+  approvals_count: number;
+  rework_requests_count: number;
+  calibrations_count: number;
+  last_7_days: number;
+  last_30_days: number;
+}
+
+
+/**
  * AffectedBarangay
  */
 export interface AffectedBarangay {
@@ -132,6 +159,17 @@ export type AnnotationCreateRects = PdfRect[] | null;
  * AnnotationUpdateComment
  */
 export type AnnotationUpdateComment = string | null;
+
+
+/**
+ * AnonymizedBarangayStatus
+ */
+export interface AnonymizedBarangayStatus {
+  /** Anonymous identifier (e.g., 'Barangay A', 'Barangay B') */
+  anonymous_id: string;
+  /** Status: 'pass', 'fail', or 'in_progress' */
+  status: string;
+}
 
 
 /**
@@ -253,6 +291,17 @@ export const AreaType = {
 
 
 /**
+ * AvailableCycle
+ */
+export interface AvailableCycle {
+  id: number;
+  name: string;
+  year: number;
+  is_active: boolean;
+}
+
+
+/**
  * BarChartData
  */
 export interface BarChartData {
@@ -301,6 +350,8 @@ export interface BarangayDistributionItem {
 export interface BarangayMapPoint {
   /** Unique identifier for the barangay */
   barangay_id: number;
+  /** Assessment ID for linking to GAR report */
+  assessment_id?: BarangayMapPointAssessmentId;
   /** Barangay name */
   name: string;
   /** Latitude coordinate */
@@ -574,6 +625,67 @@ export type DatePickerFieldMinDate = string | null;
 
 
 /**
+ * DeadlineExtensionCreateExtensionType
+ */
+export type DeadlineExtensionCreateExtensionType = typeof DeadlineExtensionCreateExtensionType[keyof typeof DeadlineExtensionCreateExtensionType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeadlineExtensionCreateExtensionType = {
+  rework: 'rework',
+  calibration: 'calibration',
+} as const;
+
+
+/**
+ * ExportDataType
+ */
+export interface ExportDataType {
+  /** Data type key */
+  key: string;
+  /** Display label */
+  label: string;
+  /** Description of what's included */
+  description: string;
+  /** Whether selected by default */
+  default?: boolean;
+}
+
+
+/**
+ * ExportRequestCycleId
+ */
+export type ExportRequestCycleId = number | null;
+
+
+/**
+ * ExportSummaryCycleName
+ */
+export type ExportSummaryCycleName = string | null;
+
+
+/**
+ * ExportSummaryCycleYear
+ */
+export type ExportSummaryCycleYear = number | null;
+
+
+/**
+ * ExtendDeadlineResult
+ */
+export interface ExtendDeadlineResult {
+  /** Whether the extension was successful */
+  success: boolean;
+  /** Human-readable result message */
+  message: string;
+  /** The created extension record */
+  extension: DeadlineExtensionResponse;
+  /** The new deadline after extension */
+  new_deadline: string;
+}
+
+
+/**
  * FieldAnswerInput
  */
 export interface FieldAnswerInput {
@@ -698,6 +810,43 @@ export type FormSchemaNotes = FormNotes | null;
  * FormSchemaSecondaryNotes
  */
 export type FormSchemaSecondaryNotes = FormNotes | null;
+
+
+/**
+ * GetMunicipalOfficesGroupedParams
+ */
+export type GetMunicipalOfficesGroupedParams = {
+/**
+ * Filter by active status
+ */
+is_active?: boolean | null;
+};
+
+
+/**
+ * GetMunicipalOfficesParams
+ */
+export type GetMunicipalOfficesParams = {
+/**
+ * Page number
+ * @minimum 1
+ */
+page?: number;
+/**
+ * Page size
+ * @minimum 1
+ * @maximum 100
+ */
+size?: number;
+/**
+ * Filter by governance area ID
+ */
+governance_area_id?: number | null;
+/**
+ * Filter by active status
+ */
+is_active?: boolean | null;
+};
 
 
 /**
@@ -845,6 +994,102 @@ export const MatchValueRuleOperator = {
   contains: 'contains',
   not_contains: 'not_contains',
 } as const;
+
+
+/**
+ * MunicipalOfficeCreateContactEmail
+ */
+export type MunicipalOfficeCreateContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeCreateContactNumber
+ */
+export type MunicipalOfficeCreateContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeCreateContactPerson
+ */
+export type MunicipalOfficeCreateContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficeCreateDescription
+ */
+export type MunicipalOfficeCreateDescription = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateAbbreviation
+ */
+export type MunicipalOfficeUpdateAbbreviation = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateContactEmail
+ */
+export type MunicipalOfficeUpdateContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateContactNumber
+ */
+export type MunicipalOfficeUpdateContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateContactPerson
+ */
+export type MunicipalOfficeUpdateContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateDescription
+ */
+export type MunicipalOfficeUpdateDescription = string | null;
+
+
+/**
+ * MunicipalOfficeUpdateIsActive
+ */
+export type MunicipalOfficeUpdateIsActive = boolean | null;
+
+
+/**
+ * MunicipalOfficeUpdateName
+ */
+export type MunicipalOfficeUpdateName = string | null;
+
+
+/**
+ * MunicipalOfficeWithGovernanceAreaContactEmail
+ */
+export type MunicipalOfficeWithGovernanceAreaContactEmail = string | null;
+
+
+/**
+ * MunicipalOfficeWithGovernanceAreaContactNumber
+ */
+export type MunicipalOfficeWithGovernanceAreaContactNumber = string | null;
+
+
+/**
+ * MunicipalOfficeWithGovernanceAreaContactPerson
+ */
+export type MunicipalOfficeWithGovernanceAreaContactPerson = string | null;
+
+
+/**
+ * MunicipalOfficesByArea
+ */
+export interface MunicipalOfficesByArea {
+  governance_area_id: number;
+  governance_area_name: string;
+  governance_area_code: string;
+  area_type: string;
+  offices: MunicipalOfficeResponse[];
+}
 
 
 /**

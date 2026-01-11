@@ -13,19 +13,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { classifyError } from "@/lib/error-utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
+  getGetAssessorAssessmentsAssessmentIdQueryKey,
   useGetAssessorAssessmentsAssessmentId,
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
   usePostAssessorAssessmentsAssessmentIdRework,
+  // Per-area endpoints for area-specific assessors
+  usePostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApprove,
+  usePostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdRework,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft } from "lucide-react";
+import { AlertCircle, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MiddleMovFilesPanel } from "./MiddleMovFilesPanel";
 
@@ -45,19 +52,38 @@ interface AssessorValidationClientProps {
 type AnyRecord = Record<string, any>;
 
 export function AssessorValidationClient({ assessmentId }: AssessorValidationClientProps) {
-  const { data, isLoading, isError, error, dataUpdatedAt } =
-    useGetAssessorAssessmentsAssessmentId(assessmentId);
+  const { data, isLoading, isError, error, dataUpdatedAt } = useGetAssessorAssessmentsAssessmentId(
+    assessmentId,
+    {
+      query: {
+        queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+        // CRITICAL: Disable refetchOnWindowFocus to prevent losing unsaved work
+        // When user alt-tabs back, we don't want to overwrite their checklist changes
+        refetchOnWindowFocus: false,
+        refetchOnMount: true, // Still fetch fresh data on initial mount
+        staleTime: 5 * 60 * 1000, // 5 minutes - data won't go stale while working
+      },
+    }
+  );
   const qc = useQueryClient();
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const reworkMut = usePostAssessorAssessmentsAssessmentIdRework();
   const finalizeMut = usePostAssessorAssessmentsAssessmentIdFinalize();
+  // Per-area mutations for area-specific assessors
+  const areaApproveMut = usePostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdApprove();
+  const areaReworkMut = usePostAssessorAssessmentsAssessmentIdAreasGovernanceAreaIdRework();
   const { toast } = useToast();
+  const router = useRouter();
 
   // Get user role to determine workflow behavior
   const { user } = useAuthStore();
   const userRole = user?.role || "";
   const isValidator = userRole === "VALIDATOR";
   const isAssessor = userRole === "ASSESSOR";
+  // Get assessor's assigned governance area (for area-specific workflow)
+  const assessorAreaId = user?.assessor_area_id ?? null;
+  // Flag to detect configuration error (assessor without area assignment)
+  const isAssessorWithoutArea = isAssessor && !assessorAreaId;
 
   // All hooks must be called before any conditional returns
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
@@ -228,16 +254,35 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         // For indicators that passed (requires_rework=false), load their old checklist data
         const responseData = resp.response_data || {};
 
-        // Find all assessor_val_ prefixed fields and convert them to checklist format
+        // Find all assessor_val_ and validator_val_ prefixed fields and convert them to checklist format
+        // Priority: validator_val_ takes precedence over assessor_val_ (validators override assessors)
         Object.keys(responseData).forEach((key) => {
-          if (key.startsWith("assessor_val_")) {
-            // Remove the assessor_val_ prefix
-            const fieldName = key.replace("assessor_val_", "");
+          let fieldName: string | null = null;
+          let prefix: string | null = null;
+
+          if (key.startsWith("validator_val_")) {
+            fieldName = key.replace("validator_val_", "");
+            prefix = "validator_val_";
+          } else if (key.startsWith("assessor_val_")) {
+            fieldName = key.replace("assessor_val_", "");
+            prefix = "assessor_val_";
+          }
+
+          if (fieldName && prefix) {
             // Convert to checklist format: checklist_{responseId}_{fieldName}
             const checklistKey = `checklist_${responseId}_${fieldName}`;
+
+            // Only set if not already set by a higher priority prefix (validator_val_)
+            // Since we iterate Object.keys which has no guaranteed order, check if validator_val_ version exists
+            const validatorKey = `validator_val_${fieldName}`;
+            if (prefix === "assessor_val_" && validatorKey in responseData) {
+              // Skip assessor value if validator value exists
+              return;
+            }
+
             initialChecklistData[checklistKey] = responseData[key];
             console.log(
-              `[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]}`
+              `[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]} (from ${prefix})`
             );
           }
         });
@@ -289,6 +334,22 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     "") as string;
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
   const statusText: string = core?.status ?? core?.assessment_status ?? "";
+
+  // Per-area approval tracking (for assessor workflow visibility)
+  const areaAssessorApproved: Record<string, boolean> = (core?.area_assessor_approved ??
+    {}) as Record<string, boolean>;
+  const approvedAreasCount = Object.values(areaAssessorApproved).filter(Boolean).length;
+  const totalGovernanceAreas = 6; // SGLGB has 6 governance areas
+
+  // Get the assessor's assigned area name (for header display)
+  const assessorAreaName: string = useMemo(() => {
+    if (!isAssessor || !assessorAreaId) return "";
+    // Find the governance area name from the responses
+    const areaResponse = responses.find(
+      (r: AnyRecord) => r.indicator?.governance_area?.id === assessorAreaId
+    );
+    return areaResponse?.indicator?.governance_area?.name ?? `Area ${assessorAreaId}`;
+  }, [isAssessor, assessorAreaId, responses]);
 
   // Transform to match BLGU assessment structure for TreeNavigator
   // Memoize this so it recalculates when checklistData or form changes
@@ -398,10 +459,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             let hasPersistedComments = false;
 
             if (!resp.requires_rework) {
-              // Check backend response_data for persisted ASSESSOR checklist data
+              // Check backend response_data for persisted checklist data
+              // Check both assessor_val_ and validator_val_ prefixes
               const responseData = (resp as AnyRecord).response_data || {};
               hasPersistedChecklistData = Object.keys(responseData).some((key) => {
-                if (!key.startsWith("assessor_val_")) return false;
+                if (!key.startsWith("assessor_val_") && !key.startsWith("validator_val_"))
+                  return false;
                 const value = responseData[key];
                 return value === true || (typeof value === "string" && value.trim().length > 0);
               });
@@ -655,11 +718,17 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     setIsSaving(true);
 
     try {
-      // Save all responses in parallel for faster performance
-      const savePromises = Array.from(allResponseIds).map(async (responseId) => {
+      // Serialize requests to prevent overwhelming the backend
+      // Previously used Promise.all() which caused 503 errors due to connection pool exhaustion
+      const responseIdsArray = Array.from(allResponseIds);
+
+      for (let i = 0; i < responseIdsArray.length; i++) {
+        const responseId = responseIdsArray[i];
         const formData = form[responseId];
 
-        console.log(`[onSaveDraft] Processing response ${responseId}`);
+        console.log(
+          `[onSaveDraft] Processing response ${responseId} (${i + 1}/${responseIdsArray.length})`
+        );
         console.log(`[onSaveDraft] Form data for ${responseId}:`, formData);
 
         // Extract checklist data for this response
@@ -670,8 +739,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             // For assessment_field items, keep the _yes/_no suffix
             const fieldName = key.replace(`checklist_${responseId}_`, "");
 
-            // PREFIX with "assessor_val_" to avoid conflicts with BLGU assessment data
-            const prefixedFieldName = `assessor_val_${fieldName}`;
+            // PREFIX based on user role:
+            // - Validators use "validator_val_" prefix (compliance service checks this)
+            // - Assessors use "assessor_val_" prefix
+            const prefix = isValidator ? "validator_val_" : "assessor_val_";
+            const prefixedFieldName = `${prefix}${fieldName}`;
             responseChecklistData[prefixedFieldName] = checklistData[key];
             console.log(
               `[onSaveDraft] Extracted checklist: ${key} -> ${prefixedFieldName} = ${checklistData[key]}`
@@ -709,38 +781,59 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
         console.log(`[onSaveDraft] Payload for response ${responseId}:`, payloadData);
 
-        return validateMut.mutateAsync({
+        await validateMut.mutateAsync({
           responseId: responseId,
           data: payloadData,
         });
-      });
+      }
 
-      console.log("[onSaveDraft] Waiting for all save promises to complete...");
-      await Promise.all(savePromises);
       console.log("[onSaveDraft] All saves completed successfully");
 
-      // Show success toast with better styling
+      // Invalidate queries to refresh UI
+      console.log("[onSaveDraft] Invalidating queries to refresh UI...");
+      await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
+
+      // Show success toast
       toast({
         title: "Saved",
         description: "Validation progress saved successfully",
         duration: 2000,
         className: "bg-green-600 text-white border-none",
       });
-
-      // Invalidate queries to refresh data with saved changes
-      console.log("[onSaveDraft] Invalidating queries to refresh UI...");
-      await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
     } catch (error) {
       console.error("Error saving validation data:", error);
       // Reset mutation state to allow retry
       validateMut.reset();
 
-      // Show error toast
-      toast({
-        title: "Error saving",
-        description: "Failed to save validation progress. Please try again.",
-        variant: "destructive",
-      });
+      // Classify error for better user feedback
+      const errorInfo = classifyError(error);
+
+      // Show error toast with specific error type and message
+      if (errorInfo.type === "network") {
+        toast({
+          title: "Unable to save draft",
+          description: "Check your internet connection and try again.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "auth") {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to save your work.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "permission") {
+        toast({
+          title: "Access denied",
+          description: "You do not have permission to validate this assessment.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: errorInfo.title,
+          description: errorInfo.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       // CRITICAL: Always reset loading state, whether success or error
       isSavingRef.current = false;
@@ -749,6 +842,25 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   };
 
   const onSendRework = async () => {
+    // For ASSESSORS: Validate that flagged indicators have comments
+    if (isAssessor && assessorAreaId) {
+      const flaggedResponseIds = Object.keys(reworkFlags);
+      const flaggedWithoutComments = flaggedResponseIds.filter((responseId) => {
+        const comment = form[Number(responseId)]?.publicComment;
+        return !comment || comment.trim().length === 0;
+      });
+
+      if (flaggedWithoutComments.length > 0) {
+        toast({
+          title: "Missing Rework Comments",
+          description: `Please add comments to ${flaggedWithoutComments.length} flagged indicator(s) to explain what needs to be fixed.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+    }
+
     // Show processing toast
     toast({
       title: "Processing...",
@@ -758,53 +870,120 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
     try {
       await onSaveDraft();
-      await reworkMut.mutateAsync({ assessmentId });
 
-      // Show success toast
-      toast({
-        title: "✅ Sent for Rework",
-        description:
-          "Assessment has been sent back to BLGU for rework with your feedback comments.",
-        duration: 3000,
-        className: "bg-orange-600 text-white border-none",
-      });
+      // For ASSESSORS (area-specific): Use per-area rework endpoint
+      // For VALIDATORS (system-wide): Use full rework endpoint
+      if (isAssessor && assessorAreaId) {
+        // Compile rework comments from flagged indicators
+        const flaggedResponseIds = Object.keys(reworkFlags);
+        const reworkComments = flaggedResponseIds
+          .map((responseId) => {
+            const comment = form[Number(responseId)]?.publicComment;
+            return comment ? comment.trim() : null;
+          })
+          .filter(Boolean)
+          .join("\n\n");
+
+        await areaReworkMut.mutateAsync({
+          assessmentId,
+          governanceAreaId: assessorAreaId,
+          data: {
+            comments: reworkComments,
+          },
+        });
+
+        toast({
+          title: "Area Sent for Rework",
+          description: "Your governance area has been sent back to BLGU for rework.",
+          duration: 3000,
+          className: "bg-orange-600 text-white border-none",
+        });
+      } else {
+        // System-wide rework for validators
+        await reworkMut.mutateAsync({ assessmentId });
+
+        toast({
+          title: "Sent for Rework",
+          description:
+            "Assessment has been sent back to BLGU for rework with your feedback comments.",
+          duration: 3000,
+          className: "bg-orange-600 text-white border-none",
+        });
+      }
 
       // Invalidate queries and redirect back to queue
       await qc.invalidateQueries();
 
       // Redirect to submissions queue after short delay
       setTimeout(() => {
-        window.location.href = "/assessor/submissions";
+        const redirectPath = isAssessor ? "/assessor/submissions" : "/validator/submissions";
+        router.push(redirectPath);
       }, 1500);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error sending for rework:", error);
-      const errorMessage =
-        error?.response?.data?.detail ||
-        error?.message ||
-        "Failed to send for rework. Please try again.";
-      toast({
-        title: "❌ Error",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000,
-      });
+
+      // Classify error for better user feedback
+      const errorInfo = classifyError(error);
+
+      if (errorInfo.type === "network") {
+        toast({
+          title: "Unable to send for rework",
+          description: "Check your internet connection and try again.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "auth") {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to continue.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "permission") {
+        toast({
+          title: "Access denied",
+          description: "You do not have permission to send this assessment for rework.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "server") {
+        toast({
+          title: "Server temporarily unavailable",
+          description: "The server is busy. Please wait a moment and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: errorInfo.title,
+          description: errorInfo.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const onFinalize = async () => {
     try {
+      // Save draft first (serialized requests to prevent 503 errors)
       await onSaveDraft();
-      await finalizeMut.mutateAsync({ assessmentId });
 
-      // Show success toast with different message based on role
-      if (isAssessor) {
+      // For ASSESSORS (area-specific): Use per-area approve endpoint
+      // For VALIDATORS (system-wide): Use full finalize endpoint
+      if (isAssessor && assessorAreaId) {
+        // Per-area approval for area-specific assessors
+        await areaApproveMut.mutateAsync({
+          assessmentId,
+          governanceAreaId: assessorAreaId,
+        });
+
         toast({
-          title: "Sent to Validator",
-          description: "Assessment has been finalized and sent to the validator for final review.",
+          title: "Area Approved",
+          description:
+            "Your governance area has been approved. When all 6 areas are approved, the assessment will move to validation.",
           duration: 3000,
           className: "bg-green-600 text-white border-none",
         });
       } else {
+        // System-wide finalize for validators
+        await finalizeMut.mutateAsync({ assessmentId });
+
         toast({
           title: "Validation Complete",
           description:
@@ -819,19 +998,40 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
       // Redirect to submissions queue after short delay
       setTimeout(() => {
-        if (isAssessor) {
-          window.location.href = "/assessor/submissions";
-        } else {
-          window.location.href = "/validator/submissions";
-        }
+        const redirectPath = isAssessor ? "/assessor/submissions" : "/validator/submissions";
+        router.push(redirectPath);
       }, 1500);
     } catch (error) {
       console.error("Error finalizing assessment:", error);
-      toast({
-        title: "Error",
-        description: "Failed to finalize assessment. Please try again.",
-        variant: "destructive",
-      });
+
+      // Classify error for better user feedback
+      const errorInfo = classifyError(error);
+
+      if (errorInfo.type === "network") {
+        toast({
+          title: "Unable to finalize",
+          description: "Check your internet connection and try again.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "auth") {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to finalize.",
+          variant: "destructive",
+        });
+      } else if (errorInfo.type === "server") {
+        toast({
+          title: "Server temporarily unavailable",
+          description: "The server is busy. Please wait a moment and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: errorInfo.title,
+          description: errorInfo.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -864,24 +1064,57 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               className="shrink-0 gap-1 text-muted-foreground hover:text-foreground px-1.5 sm:px-2"
             >
-              <Link href="/assessor/submissions">
+              <Link href={isAssessor ? "/assessor/submissions" : "/validator/submissions"}>
                 <ChevronLeft className="h-4 w-4" />
                 <span className="font-medium hidden sm:inline">Queue</span>
               </Link>
             </Button>
             <div className="h-6 sm:h-8 w-px bg-border shrink-0" />
             <div className="min-w-0 flex flex-col justify-center flex-1">
-              <div className="text-xs sm:text-sm font-bold text-foreground truncate leading-tight">
-                {barangayName}{" "}
-                <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">/</span>{" "}
-                <span className="hidden md:inline">{governanceArea}</span>
-              </div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight mt-0.5 hidden sm:block">
-                Assessor Validation Workspace {cycleYear ? `• CY ${cycleYear}` : ""}
-              </div>
+              {/* Show assessor's assigned area prominently */}
+              {isAssessor && assessorAreaName ? (
+                <>
+                  <div className="text-xs sm:text-sm font-bold text-foreground truncate leading-tight">
+                    {assessorAreaName}
+                    <span className="text-muted-foreground font-normal text-[10px] sm:text-xs ml-2">
+                      (Your Area)
+                    </span>
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight mt-0.5">
+                    {barangayName} {cycleYear ? `• CY ${cycleYear}` : ""}
+                    <span className="hidden sm:inline">
+                      {" "}
+                      • {approvedAreasCount}/{totalGovernanceAreas} areas approved
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs sm:text-sm font-bold text-foreground truncate leading-tight">
+                    {barangayName}{" "}
+                    <span className="text-muted-foreground font-medium mx-1 hidden sm:inline">
+                      /
+                    </span>{" "}
+                    <span className="hidden md:inline">{governanceArea}</span>
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground truncate leading-tight mt-0.5 hidden sm:block">
+                    {isValidator ? "Validator" : "Assessor"} Validation Workspace{" "}
+                    {cycleYear ? `• CY ${cycleYear}` : ""}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Per-area progress badge for assessors */}
+            {isAssessor && !isAssessorWithoutArea && (
+              <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-muted rounded-md text-xs">
+                <span className="font-medium">
+                  {approvedAreasCount}/{totalGovernanceAreas}
+                </span>
+                <span className="text-muted-foreground">areas</span>
+              </div>
+            )}
             {statusText ? (
               <div className="scale-75 sm:scale-90 origin-right">
                 <StatusBadge status={statusText} />
@@ -892,7 +1125,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={isSaving}
+              disabled={isSaving || isAssessorWithoutArea}
               className="text-xs sm:text-sm px-2 sm:px-4"
             >
               <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save as Draft"}</span>
@@ -901,6 +1134,20 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           </div>
         </div>
       </div>
+
+      {/* Configuration Error Alert - Assessor without area assignment */}
+      {isAssessorWithoutArea && (
+        <div className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-3">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Configuration Error</AlertTitle>
+            <AlertDescription>
+              Your account is not assigned to a governance area. Please contact your administrator
+              to assign you to a specific governance area before you can review assessments.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Mobile Tab Navigation (< 768px) */}
       <div className="md:hidden sticky top-[56px] z-10 bg-background border-b border-border">
@@ -1198,7 +1445,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
                 disabled={
-                  !hasIndicatorsFlaggedForRework || reworkCount !== 0 || reworkMut.isPending
+                  !hasIndicatorsFlaggedForRework ||
+                  reworkCount !== 0 ||
+                  reworkMut.isPending ||
+                  areaReworkMut.isPending
                 }
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
@@ -1208,7 +1458,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     : undefined
                 }
               >
-                {reworkMut.isPending ? (
+                {reworkMut.isPending || areaReworkMut.isPending ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
@@ -1292,19 +1542,19 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               </Button>
             )}
 
-            {/* Finalize - Assessors, just needs review */}
+            {/* Approve Area - Assessors approve their governance area */}
             {isAssessor && (
               <Button
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={!allReviewed || finalizeMut.isPending}
+                disabled={!allReviewed || finalizeMut.isPending || areaApproveMut.isPending}
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
-                title={!allReviewed ? "Review all indicators before finalizing" : undefined}
+                title={!allReviewed ? "Review all indicators before approving" : undefined}
               >
-                <span className="hidden sm:inline">Finalize and Send to Validator</span>
-                <span className="sm:hidden">Finalize</span>
+                <span className="hidden sm:inline">Approve Area and Send to Validator</span>
+                <span className="sm:hidden">Approve</span>
               </Button>
             )}
 
@@ -1335,10 +1585,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       <AlertDialog open={showReworkConfirm} onOpenChange={setShowReworkConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Send Assessment for Rework?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isAssessor ? "Send Area for Rework?" : "Send Assessment for Rework?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will send the assessment back to BLGU for rework with your feedback. The BLGU
-              will need to address the issues you&apos;ve identified before resubmitting.
+              {isAssessor
+                ? "This will send your governance area back to BLGU for rework with your feedback. All 6 assessors' rework requests will be compiled into a single rework round for the BLGU to address."
+                : "This will send the assessment back to BLGU for rework with your feedback. The BLGU will need to address the issues you've identified before resubmitting."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1356,16 +1609,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirmation Dialog - Finalize */}
+      {/* Confirmation Dialog - Finalize/Approve */}
       <AlertDialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {isAssessor ? "Finalize and Send to Validator?" : "Finalize Validation?"}
+              {isAssessor ? "Approve Your Governance Area?" : "Finalize Validation?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {isAssessor
-                ? "This will finalize your review and send the assessment to the Validator for final validation. Make sure you have reviewed all indicators."
+                ? "This will approve your governance area. Once all 6 governance areas are approved by their respective assessors, the assessment will move to the Validator for final validation."
                 : "This will complete the validation process. This action is final and cannot be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1378,7 +1631,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               }}
               className="bg-green-600 hover:bg-green-700"
             >
-              Yes, Finalize
+              {isAssessor ? "Yes, Approve Area" : "Yes, Finalize"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

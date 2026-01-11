@@ -124,11 +124,10 @@ describe("FileFieldComponent", () => {
     field_id: "test_mov_upload",
     field_type: "file_upload",
     label: "Upload Files for BESWMC Documents",
-    help_text:
-      "Upload supporting documents (PDF, DOCX, XLSX, images, or video). Maximum file size: 50MB",
+    help_text: "Upload supporting documents (PDF or images only). Maximum file size: 50MB",
     required: false,
     order: 2,
-    allowed_file_types: [".pdf", ".docx", ".xlsx", ".jpg", ".jpeg", ".png", ".mp4"],
+    allowed_file_types: [".pdf", ".jpg", ".jpeg", ".png"],
     max_file_size_mb: 50,
   };
 
@@ -175,7 +174,7 @@ describe("FileFieldComponent", () => {
   it("should show help text", () => {
     renderComponent();
 
-    expect(screen.getByText(/Upload supporting documents/i)).toBeInTheDocument();
+    expect(screen.getByText(/PDF or images only/i)).toBeInTheDocument();
   });
 
   it("should display allowed file types", () => {

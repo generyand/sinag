@@ -17,11 +17,15 @@ import type {
 
 import type {
   AnonymizedAIInsightsResponse,
+  BBIFunctionalityTrendsResponse,
   ExternalAnalyticsDashboardResponse,
+  GeographicHeatmapResponse,
   GetExternalAnalyticsAiInsightsSummaryParams,
+  GetExternalAnalyticsBbiTrendsParams,
   GetExternalAnalyticsDashboardParams,
   GetExternalAnalyticsExportCsvParams,
   GetExternalAnalyticsExportPdfParams,
+  GetExternalAnalyticsGeographicHeatmapParams,
   GetExternalAnalyticsGovernanceAreasParams,
   GetExternalAnalyticsOverallParams,
   GetExternalAnalyticsTopFailingIndicatorsParams,
@@ -381,6 +385,146 @@ export function useGetExternalAnalyticsDashboard<TData = Awaited<ReturnType<type
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetExternalAnalyticsDashboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Returns aggregated BBI functionality trends showing the distribution of barangays across functionality tiers for each BBI type.
+ * @summary Get BBI Functionality Trends
+ */
+export const getExternalAnalyticsBbiTrends = (
+    params?: GetExternalAnalyticsBbiTrendsParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<BBIFunctionalityTrendsResponse>(
+      {url: `/api/v1/external/analytics/bbi-trends`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetExternalAnalyticsBbiTrendsQueryKey = (params?: GetExternalAnalyticsBbiTrendsParams,) => {
+    return [
+    `/api/v1/external/analytics/bbi-trends`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetExternalAnalyticsBbiTrendsQueryOptions = <TData = Awaited<ReturnType<typeof getExternalAnalyticsBbiTrends>>, TError = HTTPValidationError>(params?: GetExternalAnalyticsBbiTrendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsBbiTrends>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExternalAnalyticsBbiTrendsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExternalAnalyticsBbiTrends>>> = ({ signal }) => getExternalAnalyticsBbiTrends(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsBbiTrends>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExternalAnalyticsBbiTrendsQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsBbiTrends>>>
+export type GetExternalAnalyticsBbiTrendsQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get BBI Functionality Trends
+ */
+
+export function useGetExternalAnalyticsBbiTrends<TData = Awaited<ReturnType<typeof getExternalAnalyticsBbiTrends>>, TError = HTTPValidationError>(
+ params?: GetExternalAnalyticsBbiTrendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsBbiTrends>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExternalAnalyticsBbiTrendsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * Returns anonymized geographic performance data for heatmap visualization. Barangay names are replaced with anonymous identifiers (Barangay A, B, C, etc.) to protect privacy.
+ * @summary Get Geographic Performance Heatmap
+ */
+export const getExternalAnalyticsGeographicHeatmap = (
+    params?: GetExternalAnalyticsGeographicHeatmapParams,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<GeographicHeatmapResponse>(
+      {url: `/api/v1/external/analytics/geographic/heatmap`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetExternalAnalyticsGeographicHeatmapQueryKey = (params?: GetExternalAnalyticsGeographicHeatmapParams,) => {
+    return [
+    `/api/v1/external/analytics/geographic/heatmap`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetExternalAnalyticsGeographicHeatmapQueryOptions = <TData = Awaited<ReturnType<typeof getExternalAnalyticsGeographicHeatmap>>, TError = HTTPValidationError>(params?: GetExternalAnalyticsGeographicHeatmapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsGeographicHeatmap>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExternalAnalyticsGeographicHeatmapQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExternalAnalyticsGeographicHeatmap>>> = ({ signal }) => getExternalAnalyticsGeographicHeatmap(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn,   staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsGeographicHeatmap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExternalAnalyticsGeographicHeatmapQueryResult = NonNullable<Awaited<ReturnType<typeof getExternalAnalyticsGeographicHeatmap>>>
+export type GetExternalAnalyticsGeographicHeatmapQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get Geographic Performance Heatmap
+ */
+
+export function useGetExternalAnalyticsGeographicHeatmap<TData = Awaited<ReturnType<typeof getExternalAnalyticsGeographicHeatmap>>, TError = HTTPValidationError>(
+ params?: GetExternalAnalyticsGeographicHeatmapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExternalAnalyticsGeographicHeatmap>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExternalAnalyticsGeographicHeatmapQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

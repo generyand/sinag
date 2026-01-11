@@ -4,6 +4,7 @@
 
 export * from './admin';
 export * from './analytics';
+export * from './assessment-activities';
 export * from './assessment-years';
 export * from './assessments';
 export * from './assessor';
@@ -12,6 +13,7 @@ export * from './bbis';
 export * from './blgu-dashboard';
 export * from './capdev';
 export * from './compliance';
+export * from './deadline-windows';
 export * from './default';
 export * from './external-analytics';
 export * from './gar';
@@ -19,6 +21,8 @@ export * from './indicators';
 export * from './lookups';
 export * from './mlgoo';
 export * from './movs';
+export * from './municipal-export';
+export * from './municipal-offices';
 export * from './municipal-overview';
 export * from './notifications';
 export * from './system';

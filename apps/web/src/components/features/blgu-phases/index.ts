@@ -8,10 +8,12 @@
  */
 
 export { PhaseCard, type PhaseStatus } from "./PhaseCard";
+export { DeadlineBanner } from "./DeadlineBanner";
 export { Phase1Section } from "./Phase1Section";
 export { Phase2Section } from "./Phase2Section";
 export { VerdictSection } from "./VerdictSection";
 export { PhaseTimeline } from "./PhaseTimeline";
+export { AssessmentProgress } from "./AssessmentProgress";
 export {
   BBIComplianceCard,
   type BBIComplianceData,

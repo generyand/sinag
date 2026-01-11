@@ -2,8 +2,8 @@
 Tests for FileValidationService (Story 4.4)
 
 Tests file validation functionality including:
-- Valid file types (PDF, DOCX, XLSX, JPG, PNG, MP4)
-- Invalid file types (EXE, ZIP, SH)
+- Valid file types (PDF, JPG, PNG only)
+- Invalid file types (EXE, ZIP, SH, DOCX, XLSX, MP4)
 - File size validation (50MB limit)
 - File content security checks
 """
@@ -24,24 +24,13 @@ class TestFileValidationService:
         """Fixture providing FileValidationService instance."""
         return FileValidationService()
 
-    # Test 1: Valid file types (Task 4.4.7)
+    # Test 1: Valid file types (Task 4.4.7) - Only PDF and images
     @pytest.mark.parametrize(
         "filename,content_type,content",
         [
             ("test.pdf", "application/pdf", b"%PDF-1.4\n%"),
-            (
-                "test.docx",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                b"PK\x03\x04",
-            ),
-            (
-                "test.xlsx",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                b"PK\x03\x04",
-            ),
             ("test.jpg", "image/jpeg", b"\xff\xd8\xff"),
             ("test.png", "image/png", b"\x89PNG\r\n\x1a\n"),
-            ("test.mp4", "video/mp4", b"\x00\x00\x00\x20ftypisom"),
         ],
     )
     def test_valid_file_types(self, service, filename, content_type, content):
@@ -57,7 +46,7 @@ class TestFileValidationService:
         assert result.error_message is None
         assert result.error_code is None
 
-    # Test 2: Invalid file types (Task 4.4.8)
+    # Test 2: Invalid file types (Task 4.4.8) - including DOCX, XLSX, MP4
     @pytest.mark.parametrize(
         "filename,content_type",
         [
@@ -66,6 +55,16 @@ class TestFileValidationService:
             ("script.sh", "application/x-sh"),
             ("text.txt", "text/plain"),
             ("python.py", "text/x-python"),
+            # DOCX, XLSX, and MP4 are no longer allowed
+            (
+                "document.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+            (
+                "spreadsheet.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ),
+            ("video.mp4", "video/mp4"),
         ],
     )
     def test_invalid_file_types(self, service, filename, content_type):
@@ -152,22 +151,20 @@ class TestFileValidationService:
         assert "suspicious or executable" in result.error_message.lower()
         assert result.error_code == "SUSPICIOUS_CONTENT"
 
-    def test_office_files_allow_zip_signature(self, service):
-        """Test that DOCX/XLSX files are allowed to have ZIP signature."""
-        # DOCX files are ZIP archives, should be allowed
+    def test_zip_signature_is_rejected(self, service):
+        """Test that ZIP signature is rejected (DOCX/XLSX no longer allowed)."""
+        # ZIP archives with PK signature should now be rejected
         file_data = io.BytesIO(b"PK\x03\x04" + b"\x00" * 100)
         upload_file = UploadFile(
-            filename="document.docx",
+            filename="archive.zip",
             file=file_data,
-            headers={
-                "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            },
+            headers={"content-type": "application/zip"},
         )
 
         result = service.validate_file_content(upload_file)
 
-        assert result.success is True
-        assert result.error_message is None
+        assert result.success is False
+        assert result.error_code == "SUSPICIOUS_CONTENT"
 
     def test_unknown_file_type(self, service):
         """Test that files with unknown MIME type fail validation."""

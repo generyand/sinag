@@ -459,9 +459,11 @@ function ChecklistItemHistory({ item, responseData }: ChecklistItemHistoryProps)
   } else if (
     item.item_type === "document_count" ||
     item.requires_document_count ||
-    item.item_type === "calculation_field"
+    item.item_type === "calculation_field" ||
+    item.item_type === "date_input" ||
+    item.item_type === "text_input"
   ) {
-    // Input fields (document count or calculation)
+    // Input fields (document count, calculation, date, or text)
     const valueKey = `assessor_val_${itemId}`;
     const value = responseData[valueKey];
 
@@ -469,9 +471,25 @@ function ChecklistItemHistory({ item, responseData }: ChecklistItemHistoryProps)
     const isValidValue =
       value && String(value).trim() !== "" && String(value).trim() !== "false" && value !== false;
     if (isValidValue) {
+      // Format date values nicely for display
+      let displayText = String(value);
+      if (item.item_type === "date_input") {
+        try {
+          const dateObj = new Date(value);
+          if (!isNaN(dateObj.getTime())) {
+            displayText = dateObj.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+          }
+        } catch {
+          // Keep original value if parsing fails - this is intentional
+        }
+      }
       displayValue = (
         <span className="inline-flex items-center px-2 py-1 rounded-sm text-sm font-medium bg-blue-50 text-blue-900 dark:bg-blue-950/30 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
-          {String(value)}
+          {displayText}
         </span>
       );
     } else {
@@ -661,9 +679,10 @@ export function RightAssessorPanel({
             item.item_type === "document_count" ||
             item.item_type === "calculation_field" ||
             item.item_type === "date_input" ||
+            item.item_type === "text_input" ||
             item.requires_document_count
           ) {
-            // Input fields (document count, calculation, or date) - start empty
+            // Input fields (document count, calculation, date, or text) - start empty
             // Convert false/boolean to empty string (legacy data may have false stored)
             const rawValue = responseData[`validator_val_${item.item_id}`];
             obj[itemKey] =
@@ -691,9 +710,10 @@ export function RightAssessorPanel({
             item.item_type === "document_count" ||
             item.item_type === "calculation_field" ||
             item.item_type === "date_input" ||
+            item.item_type === "text_input" ||
             item.requires_document_count
           ) {
-            // Input fields (document count, calculation, or date)
+            // Input fields (document count, calculation, date, or text)
             // Convert false/boolean to empty string (legacy data may have false stored)
             const rawValue = responseData[`assessor_val_${item.item_id}`];
             obj[itemKey] =
@@ -733,10 +753,12 @@ export function RightAssessorPanel({
     itemKey: string,
     checklistData: Record<string, any>
   ): boolean => {
-    // For document_count or calculation_field, check if value is provided
+    // For input fields, check if value is provided
     if (
       item.item_type === "document_count" ||
       item.item_type === "calculation_field" ||
+      item.item_type === "date_input" ||
+      item.item_type === "text_input" ||
       item.requires_document_count
     ) {
       const value = checklistData[itemKey];
@@ -1309,7 +1331,7 @@ export function RightAssessorPanel({
                                     );
                                   })()
                                 ) : item.item_type === "calculation_field" ? (
-                                  // Calculation/input field with optional mov_description box
+                                  // Calculation/input field with optional mov_description box (above input)
                                   <div className="space-y-2">
                                     {item.mov_description && (
                                       <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
@@ -1408,7 +1430,7 @@ export function RightAssessorPanel({
                                 )}
 
                               {/* Auto-calculated Physical/Financial Accomplishment for specific indicators */}
-                              {/* Physical: show after physical_reflected field */}
+                              {/* Physical: show after physical_accomplished field (after both inputs) */}
                               {[
                                 "2.1.4",
                                 "3.2.3",
@@ -1418,7 +1440,7 @@ export function RightAssessorPanel({
                                 "4.8.4",
                                 "6.1.4",
                               ].includes(indicatorCode) &&
-                                item.item_id?.endsWith("_physical_reflected") && (
+                                item.item_id?.endsWith("_physical_accomplished") && (
                                   <AccomplishmentAutoCalculator
                                     responseId={r.id}
                                     watched={watched}

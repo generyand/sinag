@@ -1,16 +1,23 @@
-import * as React from "react";
-import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Eye, EyeOff } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -18,23 +25,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useGovernanceAreas } from "@/hooks/useGovernanceAreas";
-import { useBarangays } from "@/hooks/useBarangays";
 import { useToast } from "@/hooks/use-toast";
+import { useBarangays } from "@/hooks/useBarangays";
+import { useGovernanceAreas } from "@/hooks/useGovernanceAreas";
+import { classifyError } from "@/lib/error-utils";
 import {
-  UserRole,
-  UserAdminCreate,
-  UserAdminUpdate,
   Barangay,
   GovernanceArea,
+  MunicipalOfficeResponse,
+  UserAdminCreate,
+  UserAdminUpdate,
+  UserRole,
   UserRoleOption,
-  usePostUsers,
-  usePutUsersUserId,
   getGetUsersQueryKey,
   useGetLookupsRoles,
+  useGetMunicipalOffices,
+  usePostUsers,
+  usePostUsersUserIdResetPassword,
+  usePutUsersUserId,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { classifyError } from "@/lib/error-utils";
+import { Eye, EyeOff, RotateCcw } from "lucide-react";
+import * as React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface UserFormProps {
   open: boolean;
@@ -46,7 +59,8 @@ interface UserFormProps {
     password?: string;
     role?: UserRole;
     phone_number?: string;
-    validator_area_id?: number;
+    assessor_area_id?: number;
+    municipal_office_id?: number;
     barangay_id?: number;
     is_active?: boolean;
     is_superuser?: boolean;
@@ -64,7 +78,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
 
   // Only use state for select values and checkboxes that need to control visibility
   const [role, setRole] = useState<UserRole>(UserRole.BLGU_USER);
-  const [validatorAreaId, setValidatorAreaId] = useState<number | null>(null);
+  const [assessorAreaId, setAssessorAreaId] = useState<number | null>(null);
+  const [municipalOfficeId, setMunicipalOfficeId] = useState<number | null>(null);
   const [barangayId, setBarangayId] = useState<number | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [isSuperuser, setIsSuperuser] = useState(false);
@@ -72,12 +87,20 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const { toast } = useToast();
 
-  // Fetch governance areas, barangays, and roles data
+  // Fetch governance areas, barangays, roles, and municipal offices data
   const { data: governanceAreas, isLoading: isLoadingGovernanceAreas } = useGovernanceAreas();
   const { data: barangays, isLoading: isLoadingBarangays } = useBarangays();
   const { data: roles, isLoading: isLoadingRoles } = useGetLookupsRoles();
+  // After workflow restructuring: Municipal offices are linked to ASSESSOR (area-specific)
+  const { data: municipalOfficesData, isLoading: isLoadingMunicipalOffices } =
+    useGetMunicipalOffices(
+      { governance_area_id: assessorAreaId ?? undefined, is_active: true },
+      // @ts-expect-error - Query key is generated internally by the hook
+      { query: { enabled: role === UserRole.ASSESSOR && assessorAreaId !== null } }
+    );
 
   // Type assertions for the data
   const typedGovernanceAreas = governanceAreas as GovernanceArea[] | undefined;
@@ -117,10 +140,26 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     ));
   }, [typedRoles, isLoadingRoles]);
 
+  // Memoize the municipal office options (filtered by selected governance area)
+  const municipalOfficeOptions = useMemo(() => {
+    if (isLoadingMunicipalOffices) return null;
+    const offices = municipalOfficesData?.offices as MunicipalOfficeResponse[] | undefined;
+    if (!offices) return null;
+    return offices.map((office: MunicipalOfficeResponse) => (
+      <SelectItem key={office.id} value={office.id.toString()}>
+        {office.abbreviation} - {office.name}
+      </SelectItem>
+    ));
+  }, [municipalOfficesData, isLoadingMunicipalOffices]);
+
   // Auto-generated mutation hooks
   const queryClient = useQueryClient();
   const createUserMutation = usePostUsers();
   const updateUserMutation = usePutUsersUserId();
+  const resetPasswordMutation = usePostUsersUserIdResetPassword();
+
+  // Default password for BLGU users
+  const DEFAULT_PASSWORD = "DILG@Sinag@2025";
 
   // Reset form when dialog opens/closes or initialValues change
   useEffect(() => {
@@ -132,7 +171,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         if (passwordRef.current) passwordRef.current.value = "";
         if (phoneRef.current) phoneRef.current.value = initialValues.phone_number || "";
         setRole(initialValues.role || UserRole.BLGU_USER);
-        setValidatorAreaId(initialValues.validator_area_id || null);
+        setAssessorAreaId(initialValues.assessor_area_id || null);
+        setMunicipalOfficeId(initialValues.municipal_office_id || null);
         setBarangayId(initialValues.barangay_id || null);
         setIsActive(initialValues.is_active ?? true);
         setIsSuperuser(initialValues.is_superuser ?? false);
@@ -144,7 +184,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
         if (passwordRef.current) passwordRef.current.value = "";
         if (phoneRef.current) phoneRef.current.value = "";
         setRole(UserRole.BLGU_USER);
-        setValidatorAreaId(null);
+        setAssessorAreaId(null);
+        setMunicipalOfficeId(null);
         setBarangayId(null);
         setIsActive(true);
         setIsSuperuser(false);
@@ -156,7 +197,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     open,
     initialValues,
     setRole,
-    setValidatorAreaId,
+    setAssessorAreaId,
+    setMunicipalOfficeId,
     setBarangayId,
     setIsActive,
     setIsSuperuser,
@@ -167,8 +209,10 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     const typedRole = newRole as UserRole;
     setRole(typedRole);
     // Clear area assignments when role changes
-    if (typedRole !== UserRole.VALIDATOR) {
-      setValidatorAreaId(null);
+    // After workflow restructuring: ASSESSOR is area-specific (needs governance area)
+    if (typedRole !== UserRole.ASSESSOR) {
+      setAssessorAreaId(null);
+      setMunicipalOfficeId(null);
     }
     if (typedRole !== UserRole.BLGU_USER) {
       setBarangayId(null);
@@ -179,8 +223,12 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     const numValue = value === "" ? null : parseInt(value, 10);
     if (name === "barangay_id") {
       setBarangayId(numValue);
-    } else if (name === "validator_area_id") {
-      setValidatorAreaId(numValue);
+    } else if (name === "assessor_area_id") {
+      setAssessorAreaId(numValue);
+      // Clear municipal office when governance area changes
+      setMunicipalOfficeId(null);
+    } else if (name === "municipal_office_id") {
+      setMunicipalOfficeId(numValue);
     }
   }, []);
 
@@ -208,8 +256,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     }
 
     // Role-based validation
-    if (role === UserRole.VALIDATOR && !validatorAreaId) {
-      newErrors.validator_area_id = "Governance area is required for Validator role";
+    // After workflow restructuring: ASSESSOR is area-specific (needs governance area)
+    if (role === UserRole.ASSESSOR && !assessorAreaId) {
+      newErrors.assessor_area_id = "Governance area is required for Assessor role";
     }
 
     if (role === UserRole.BLGU_USER && !barangayId) {
@@ -218,7 +267,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [isEditing, role, validatorAreaId, barangayId]);
+  }, [isEditing, role, assessorAreaId, barangayId]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -240,7 +289,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           email: email || null,
           role: role,
           phone_number: phone_number || null,
-          validator_area_id: validatorAreaId,
+          assessor_area_id: assessorAreaId,
+          municipal_office_id: municipalOfficeId,
           barangay_id: barangayId,
           is_active: isActive,
           is_superuser: isSuperuser,
@@ -276,7 +326,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           password: password,
           role: role,
           phone_number: phone_number || null,
-          validator_area_id: validatorAreaId,
+          assessor_area_id: assessorAreaId,
+          municipal_office_id: municipalOfficeId,
           barangay_id: barangayId,
           is_active: isActive,
           is_superuser: isSuperuser,
@@ -311,7 +362,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
       isEditing,
       initialValues,
       role,
-      validatorAreaId,
+      assessorAreaId,
+      municipalOfficeId,
       barangayId,
       isActive,
       isSuperuser,
@@ -324,7 +376,38 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     ]
   );
 
-  const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
+  // Handle reset password to default
+  const handleResetPassword = useCallback(() => {
+    if (!initialValues?.id) return;
+
+    const userName = nameRef.current?.value || "this user";
+
+    resetPasswordMutation.mutate(
+      { userId: initialValues.id, data: { new_password: DEFAULT_PASSWORD } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetUsersQueryKey() });
+          toast({
+            title: "Password Reset",
+            description: `Password has been reset to the default for ${userName}. They will be required to change it on next login.`,
+          });
+          setShowResetPasswordDialog(false);
+        },
+        onError: (error) => {
+          const errorInfo = classifyError(error);
+          toast({
+            title: errorInfo.title,
+            description: errorInfo.message,
+            variant: "destructive",
+          });
+          setShowResetPasswordDialog(false);
+        },
+      }
+    );
+  }, [initialValues?.id, resetPasswordMutation, queryClient, toast, DEFAULT_PASSWORD]);
+
+  const isLoading =
+    createUserMutation.isPending || updateUserMutation.isPending || resetPasswordMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -378,8 +461,9 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {!isEditing && (
+          {/* Password field - only shown when creating */}
+          {!isEditing && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="password" className="text-sm font-medium text-[var(--foreground)]">
                   Password *
@@ -409,8 +493,39 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                   <p className="text-red-600 dark:text-red-400 text-xs mt-1">{errors.password}</p>
                 )}
               </div>
-            )}
 
+              <div>
+                <Label htmlFor="role" className="text-sm font-medium text-[var(--foreground)]">
+                  Role
+                </Label>
+                <Select
+                  value={role}
+                  onValueChange={handleRoleChange}
+                  disabled={isLoading || isLoadingRoles}
+                >
+                  <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
+                    {isLoadingRoles ? (
+                      <SelectItem value="loading" disabled>
+                        Loading...
+                      </SelectItem>
+                    ) : roleOptions ? (
+                      roleOptions
+                    ) : (
+                      <SelectItem value="no-data" disabled>
+                        No roles available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Role field in its own row when editing */}
+          {isEditing && (
             <div>
               <Label htmlFor="role" className="text-sm font-medium text-[var(--foreground)]">
                 Role
@@ -420,7 +535,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                 onValueChange={handleRoleChange}
                 disabled={isLoading || isLoadingRoles}
               >
-                <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 md:w-1/2">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
@@ -438,7 +553,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -499,22 +614,23 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
               </div>
             )}
 
-            {/* Conditional dropdown for Validator role */}
-            {role === UserRole.VALIDATOR && (
-              <div>
+            {/* Conditional dropdown for Assessor role - Governance Area */}
+            {/* After workflow restructuring: ASSESSOR is area-specific (needs governance area) */}
+            {role === UserRole.ASSESSOR && (
+              <div className="min-w-0">
                 <Label
-                  htmlFor="validator_area_id"
+                  htmlFor="assessor_area_id"
                   className="text-sm font-medium text-[var(--foreground)]"
                 >
                   Assigned Governance Area *
                 </Label>
                 <Select
-                  value={validatorAreaId?.toString() || ""}
-                  onValueChange={(value) => handleSelectChange("validator_area_id", value)}
+                  value={assessorAreaId?.toString() || ""}
+                  onValueChange={(value) => handleSelectChange("assessor_area_id", value)}
                   disabled={isLoading}
                 >
                   <SelectTrigger
-                    className={`mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 ${errors.validator_area_id ? "border-red-500 dark:border-red-700" : ""}`}
+                    className={`mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20 ${errors.assessor_area_id ? "border-red-500 dark:border-red-700" : ""}`}
                   >
                     <SelectValue placeholder="Select a governance area" />
                   </SelectTrigger>
@@ -532,14 +648,51 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
                     )}
                   </SelectContent>
                 </Select>
-                {errors.validator_area_id && (
+                {errors.assessor_area_id && (
                   <p className="text-red-600 dark:text-red-400 text-xs mt-1">
-                    {errors.validator_area_id}
+                    {errors.assessor_area_id}
                   </p>
                 )}
               </div>
             )}
           </div>
+
+          {/* Municipal Office dropdown for Assessor role - shown when governance area is selected */}
+          {role === UserRole.ASSESSOR && assessorAreaId && (
+            <div className="min-w-0">
+              <Label
+                htmlFor="municipal_office_id"
+                className="text-sm font-medium text-[var(--foreground)]"
+              >
+                Municipal Office
+              </Label>
+              <Select
+                value={municipalOfficeId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange("municipal_office_id", value)}
+                disabled={isLoading || isLoadingMunicipalOffices}
+              >
+                <SelectTrigger className="mt-1 border-[var(--border)] focus:border-[var(--cityscape-yellow)] focus:ring-[var(--cityscape-yellow)]/20">
+                  <SelectValue placeholder="Select a municipal office" />
+                </SelectTrigger>
+                <SelectContent className="bg-[var(--card)] border border-[var(--border)]">
+                  {isLoadingMunicipalOffices ? (
+                    <SelectItem value="loading" disabled>
+                      Loading...
+                    </SelectItem>
+                  ) : municipalOfficeOptions && municipalOfficeOptions.length > 0 ? (
+                    municipalOfficeOptions
+                  ) : (
+                    <SelectItem value="no-data" disabled>
+                      No offices for this governance area
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                Select the municipal office this assessor manages
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-[var(--foreground)]">User Settings</h3>
@@ -592,25 +745,72 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
           </div>
 
           <DialogFooter className="flex gap-3 pt-4">
+            {/* Reset Password Button - Only shown when editing */}
+            {isEditing && initialValues?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowResetPasswordDialog(true)}
+                disabled={isLoading}
+                className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset Password
+              </Button>
+            )}
+            <div className="flex-1" />
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
-              className="flex-1 border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--hover)]"
+              className="border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--hover)]"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-[var(--cityscape-accent-foreground)]"
+              className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-[var(--cityscape-accent-foreground)]"
             >
               {isLoading ? "Saving..." : isEditing ? "Update User" : "Create User"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Reset Password Confirmation Dialog */}
+      <AlertDialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+        <AlertDialogContent className="bg-[var(--card)] border border-[var(--border)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[var(--foreground)]">
+              Reset Password to Default?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--muted-foreground)]">
+              This will reset the password for{" "}
+              <strong>{nameRef.current?.value || "this user"}</strong> to the default password:{" "}
+              <code className="bg-[var(--muted)] px-2 py-1 rounded text-sm font-mono">
+                {DEFAULT_PASSWORD}
+              </code>
+              <br />
+              <br />
+              The user will be required to change their password on the next login.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--hover)]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPassword}
+              disabled={resetPasswordMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

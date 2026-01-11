@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
@@ -22,12 +22,14 @@ import { showError, showWarning } from "@/lib/toast";
 
 export default function GARPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, token } = useAuthStore();
   const effectiveYear = useEffectiveYear();
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>("");
   const [selectedAreaId, setSelectedAreaId] = useState<string>("all"); // Default to All Areas
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [urlParamsProcessed, setUrlParamsProcessed] = useState(false);
 
   // Auth check
   useEffect(() => {
@@ -43,15 +45,44 @@ export default function GARPage() {
     }
   }, [isAuthenticated, user, router]);
 
-  // Reset selected assessment when year changes
+  // Reset selected assessment when year changes (but not if we have URL params to process)
   useEffect(() => {
+    if (!urlParamsProcessed) return;
     setSelectedAssessmentId("");
-  }, [effectiveYear]);
+  }, [effectiveYear, urlParamsProcessed]);
 
   // Fetch completed assessments list for the selected year
   const { data: assessmentsData, isLoading: loadingAssessments } = useGetGarAssessments({
     year: effectiveYear ?? undefined,
   });
+
+  // Process URL params after assessments data is loaded (for deep linking from map)
+  useEffect(() => {
+    if (urlParamsProcessed || loadingAssessments || !assessmentsData) return;
+
+    const urlAssessmentId = searchParams.get("assessmentId");
+    const urlAreaId = searchParams.get("areaId");
+
+    if (urlAssessmentId) {
+      // Verify the assessment exists in the current year's data
+      const assessmentExists = assessmentsData.assessments?.some(
+        (a) => String(a.assessment_id) === urlAssessmentId
+      );
+
+      if (assessmentExists) {
+        setSelectedAssessmentId(urlAssessmentId);
+        if (urlAreaId) {
+          // Valid area IDs are "1" through "6" or "all"
+          const validAreaIds = ["1", "2", "3", "4", "5", "6", "all"];
+          if (validAreaIds.includes(urlAreaId)) {
+            setSelectedAreaId(urlAreaId);
+          }
+        }
+      }
+    }
+
+    setUrlParamsProcessed(true);
+  }, [searchParams, assessmentsData, loadingAssessments, urlParamsProcessed]);
 
   // Fetch GAR data for selected assessment
   const {
@@ -59,11 +90,11 @@ export default function GARPage() {
     isLoading: loadingGar,
     error: garError,
   } = useGetGarAssessmentId(
-    parseInt(selectedAssessmentId) || 0,
-    { governance_area_id: selectedAreaId === "all" ? undefined : parseInt(selectedAreaId) },
+    parseInt(selectedAssessmentId, 10) || 0,
+    { governance_area_id: selectedAreaId === "all" ? undefined : parseInt(selectedAreaId, 10) },
     {
       query: {
-        enabled: !!selectedAssessmentId && parseInt(selectedAssessmentId) > 0,
+        enabled: !!selectedAssessmentId && parseInt(selectedAssessmentId, 10) > 0,
       } as any,
     }
   );

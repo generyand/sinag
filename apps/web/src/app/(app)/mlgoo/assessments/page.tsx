@@ -105,7 +105,7 @@ export default function AssessmentsPage() {
                   <div className="flex items-center space-x-4">
                     {assessment.score && (
                       <div className="text-sm text-gray-900">
-                        Score: <span className="font-medium">{assessment.score}%</span>
+                        Compliance Rate: <span className="font-medium">{assessment.score}%</span>
                       </div>
                     )}
                     {getStatusBadge(assessment.status)}

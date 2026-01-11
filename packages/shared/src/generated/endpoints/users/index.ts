@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BodyUploadUserLogoApiV1UsersMeLogoPost,
   GetUsersParams,
   GetUsersStatsDashboard200,
   HTTPValidationError,
@@ -259,6 +260,159 @@ export const usePatchUsersMeLanguage = <TError = HTTPValidationError,
       return useMutation(mutationOptions);
     }
     /**
+ * Upload a profile logo for the current user.
+
+This endpoint allows users to upload their profile picture or organization logo.
+The image will be stored in Supabase Storage and the URL will be saved to the user's profile.
+
+**Requirements:**
+- **Allowed formats**: JPEG, PNG, WebP
+- **Maximum file size**: 5MB
+- **Recommended dimensions**: At least 200x200 pixels for best quality
+
+**Behavior:**
+- If the user already has a logo, the old one will be deleted and replaced
+- The logo URL is publicly accessible for display in the application
+
+Returns:
+    Updated user profile with new logo_url and logo_uploaded_at
+ * @summary Upload User Logo
+ */
+export const postUsersMeLogo = (
+    bodyUploadUserLogoApiV1UsersMeLogoPost: BodyUploadUserLogoApiV1UsersMeLogoPost,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      const formData = new FormData();
+formData.append(`file`, bodyUploadUserLogoApiV1UsersMeLogoPost.file)
+
+      return mutator<User>(
+      {url: `/api/v1/users/me/logo`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostUsersMeLogoMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUsersMeLogo>>, TError,{data: BodyUploadUserLogoApiV1UsersMeLogoPost}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postUsersMeLogo>>, TError,{data: BodyUploadUserLogoApiV1UsersMeLogoPost}, TContext> => {
+
+const mutationKey = ['postUsersMeLogo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postUsersMeLogo>>, {data: BodyUploadUserLogoApiV1UsersMeLogoPost}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postUsersMeLogo(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostUsersMeLogoMutationResult = NonNullable<Awaited<ReturnType<typeof postUsersMeLogo>>>
+    export type PostUsersMeLogoMutationBody = BodyUploadUserLogoApiV1UsersMeLogoPost
+    export type PostUsersMeLogoMutationError = HTTPValidationError
+
+    /**
+ * @summary Upload User Logo
+ */
+export const usePostUsersMeLogo = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUsersMeLogo>>, TError,{data: BodyUploadUserLogoApiV1UsersMeLogoPost}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postUsersMeLogo>>,
+        TError,
+        {data: BodyUploadUserLogoApiV1UsersMeLogoPost},
+        TContext
+      > => {
+
+      const mutationOptions = getPostUsersMeLogoMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Delete the current user's profile logo.
+
+This endpoint removes the user's profile logo from both Supabase Storage
+and clears the logo_url from their profile.
+
+Returns:
+    Updated user profile with cleared logo fields
+
+Raises:
+    404: If the user has no logo to delete
+ * @summary Delete User Logo
+ */
+export const deleteUsersMeLogo = (
+    
+ options?: SecondParameter<typeof mutator>,) => {
+      
+      
+      return mutator<User>(
+      {url: `/api/v1/users/me/logo`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteUsersMeLogoMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUsersMeLogo>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUsersMeLogo>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteUsersMeLogo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUsersMeLogo>>, void> = () => {
+          
+
+          return  deleteUsersMeLogo(requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUsersMeLogoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUsersMeLogo>>>
+    
+    export type DeleteUsersMeLogoMutationError = unknown
+
+    /**
+ * @summary Delete User Logo
+ */
+export const useDeleteUsersMeLogo = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUsersMeLogo>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUsersMeLogo>>,
+        TError,
+        void,
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteUsersMeLogoMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
  * Get paginated list of users with optional filtering.
 
 Requires admin privileges (MLGOO_DILG role).
@@ -335,10 +489,10 @@ export function useGetUsers<TData = Awaited<ReturnType<typeof getUsers>>, TError
 
 Requires admin privileges (MLGOO_DILG role).
 
-Role-based assignment rules:
-- VALIDATOR: Requires validator_area_id (governance area assignment)
+Role-based assignment rules (after workflow restructuring):
+- ASSESSOR: Requires assessor_area_id (governance area assignment, area-specific)
 - BLGU_USER: Requires barangay_id (barangay assignment)
-- ASSESSOR: No assignments (arbitrary barangay selection in workflow)
+- VALIDATOR: No assignments (system-wide access)
 - MLGOO_DILG: No assignments (system-wide access)
 
 The service layer enforces these rules and returns 400 Bad Request for invalid combinations.
@@ -481,10 +635,10 @@ export function useGetUsersUserId<TData = Awaited<ReturnType<typeof getUsers$Use
 
 Requires admin privileges (MLGOO_DILG role).
 
-Role-based assignment rules:
-- VALIDATOR: Requires validator_area_id (governance area assignment)
+Role-based assignment rules (after workflow restructuring):
+- ASSESSOR: Requires assessor_area_id (governance area assignment, area-specific)
 - BLGU_USER: Requires barangay_id (barangay assignment)
-- ASSESSOR: No assignments (arbitrary barangay selection in workflow)
+- VALIDATOR: No assignments (system-wide access)
 - MLGOO_DILG: No assignments (system-wide access)
 
 When changing a user's role, the service layer automatically clears incompatible assignments.

@@ -2089,4 +2089,243 @@ export const usePostAssessmentsAssessmentIdCalibrationSummaryRegenerate = <TErro
 
       return useMutation(mutationOptions);
     }
+    /**
+ * BLGU submits a specific governance area for assessor review.
+
+After workflow restructuring, BLGUs can submit individual governance areas
+instead of the entire assessment at once. Each area is reviewed by the
+area-specific assessor.
+
+**Path Parameters:**
+- assessment_id: ID of the assessment
+- governance_area_id: ID of the governance area (1-6)
+
+**Returns:** Success status and area info
+
+**Raises:**
+- 403: User not authorized to access this assessment
+- 404: Assessment or governance area not found
+- 400: Area already submitted or approved
+ * @summary Submit governance area for review
+ */
+export const postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit = (
+    assessmentId: number,
+    governanceAreaId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `/api/v1/assessments/${assessmentId}/areas/${governanceAreaId}/submit`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsAssessmentIdAreasGovernanceAreaIdSubmitMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit>>, TError,{assessmentId: number;governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit>>, TError,{assessmentId: number;governanceAreaId: number}, TContext> => {
+
+const mutationKey = ['postAssessmentsAssessmentIdAreasGovernanceAreaIdSubmit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit>>, {assessmentId: number;governanceAreaId: number}> = (props) => {
+          const {assessmentId,governanceAreaId} = props ?? {};
+
+          return  postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit(assessmentId,governanceAreaId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsAssessmentIdAreasGovernanceAreaIdSubmitMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit>>>
     
+    export type PostAssessmentsAssessmentIdAreasGovernanceAreaIdSubmitMutationError = HTTPValidationError
+
+    /**
+ * @summary Submit governance area for review
+ */
+export const usePostAssessmentsAssessmentIdAreasGovernanceAreaIdSubmit = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit>>, TError,{assessmentId: number;governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdSubmit>>,
+        TError,
+        {assessmentId: number;governanceAreaId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsAssessmentIdAreasGovernanceAreaIdSubmitMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * BLGU resubmits a governance area after rework.
+
+This endpoint is used when an area was sent back for rework by the
+area-specific assessor and the BLGU has made the required corrections.
+
+**Path Parameters:**
+- assessment_id: ID of the assessment
+- governance_area_id: ID of the governance area (1-6)
+
+**Returns:** Success status and area info
+
+**Raises:**
+- 403: User not authorized to access this assessment
+- 404: Assessment or governance area not found
+- 400: Area is not in rework status
+ * @summary Resubmit governance area after rework
+ */
+export const postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit = (
+    assessmentId: number,
+    governanceAreaId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `/api/v1/assessments/${assessmentId}/areas/${governanceAreaId}/resubmit`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAssessmentsAssessmentIdAreasGovernanceAreaIdResubmitMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit>>, TError,{assessmentId: number;governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit>>, TError,{assessmentId: number;governanceAreaId: number}, TContext> => {
+
+const mutationKey = ['postAssessmentsAssessmentIdAreasGovernanceAreaIdResubmit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit>>, {assessmentId: number;governanceAreaId: number}> = (props) => {
+          const {assessmentId,governanceAreaId} = props ?? {};
+
+          return  postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit(assessmentId,governanceAreaId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAssessmentsAssessmentIdAreasGovernanceAreaIdResubmitMutationResult = NonNullable<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit>>>
+    
+    export type PostAssessmentsAssessmentIdAreasGovernanceAreaIdResubmitMutationError = HTTPValidationError
+
+    /**
+ * @summary Resubmit governance area after rework
+ */
+export const usePostAssessmentsAssessmentIdAreasGovernanceAreaIdResubmit = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit>>, TError,{assessmentId: number;governanceAreaId: number}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAssessments$AssessmentIdAreas$GovernanceAreaIdResubmit>>,
+        TError,
+        {assessmentId: number;governanceAreaId: number},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAssessmentsAssessmentIdAreasGovernanceAreaIdResubmitMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Get submission status for all governance areas.
+
+Returns status for each of the 6 governance areas including:
+- Current status (draft/submitted/in_review/rework/approved)
+- Submission timestamps
+- Approval status
+- Rework information if applicable
+
+**Path Parameters:**
+- assessment_id: ID of the assessment
+
+**Returns:** Area submission status for all 6 areas
+
+**Raises:**
+- 404: Assessment not found
+ * @summary Get area submission status
+ */
+export const getAssessments$AssessmentIdAreaStatus = (
+    assessmentId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<unknown>(
+      {url: `/api/v1/assessments/${assessmentId}/area-status`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAssessmentsAssessmentIdAreaStatusQueryKey = (assessmentId?: number,) => {
+    return [
+    `/api/v1/assessments/${assessmentId}/area-status`
+    ] as const;
+    }
+
+    
+export const getGetAssessmentsAssessmentIdAreaStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAssessments$AssessmentIdAreaStatus>>, TError = HTTPValidationError>(assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdAreaStatus>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessmentsAssessmentIdAreaStatusQueryKey(assessmentId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessments$AssessmentIdAreaStatus>>> = ({ signal }) => getAssessments$AssessmentIdAreaStatus(assessmentId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(assessmentId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdAreaStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessmentsAssessmentIdAreaStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessments$AssessmentIdAreaStatus>>>
+export type GetAssessmentsAssessmentIdAreaStatusQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get area submission status
+ */
+
+export function useGetAssessmentsAssessmentIdAreaStatus<TData = Awaited<ReturnType<typeof getAssessments$AssessmentIdAreaStatus>>, TError = HTTPValidationError>(
+ assessmentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessments$AssessmentIdAreaStatus>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessmentsAssessmentIdAreaStatusQueryOptions(assessmentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+

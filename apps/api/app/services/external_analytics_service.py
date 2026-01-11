@@ -5,16 +5,22 @@
 import logging
 
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.cache import CACHE_TTL_EXTERNAL_ANALYTICS, cache
 from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
+from app.db.models.barangay import Barangay
+from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.schemas.external_analytics import (
     AnonymizedAIInsightsResponse,
+    AnonymizedBarangayStatus,
     AnonymizedInsight,
+    BBIFunctionalityDistribution,
+    BBIFunctionalityTrendsResponse,
     ExternalAnalyticsDashboardResponse,
+    GeographicHeatmapResponse,
     GovernanceAreaPerformance,
     GovernanceAreaPerformanceResponse,
     OverallComplianceResponse,
@@ -147,9 +153,13 @@ class ExternalAnalyticsService:
             Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
         )
 
-        # Apply cycle filter if specified
+        # Apply year filter if specified (assessment_cycle parameter is treated as year)
         if assessment_cycle:
-            query = query.filter(Assessment.assessment_cycle == assessment_cycle)
+            try:
+                year = int(assessment_cycle)
+                query = query.filter(Assessment.assessment_year == year)
+            except (ValueError, TypeError):
+                pass  # Ignore invalid year filter
 
         assessments = query.all()
 
@@ -221,10 +231,20 @@ class ExternalAnalyticsService:
             )
 
             if assessment_cycle:
-                query = query.join(Assessment).filter(
-                    Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
-                )
+                try:
+                    year = int(assessment_cycle)
+                    query = query.join(Assessment).filter(
+                        Assessment.assessment_year == year,
+                        Assessment.status.in_(
+                            [AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]
+                        ),
+                    )
+                except (ValueError, TypeError):
+                    query = query.join(Assessment).filter(
+                        Assessment.status.in_(
+                            [AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]
+                        )
+                    )
             else:
                 query = query.join(Assessment).filter(
                     Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
@@ -328,10 +348,20 @@ class ExternalAnalyticsService:
             )
 
             if assessment_cycle:
-                query = query.join(Assessment).filter(
-                    Assessment.assessment_cycle == assessment_cycle,
-                    Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]),
-                )
+                try:
+                    year = int(assessment_cycle)
+                    query = query.join(Assessment).filter(
+                        Assessment.assessment_year == year,
+                        Assessment.status.in_(
+                            [AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]
+                        ),
+                    )
+                except (ValueError, TypeError):
+                    query = query.join(Assessment).filter(
+                        Assessment.status.in_(
+                            [AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]
+                        )
+                    )
             else:
                 query = query.join(Assessment).filter(
                     Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
@@ -403,7 +433,11 @@ class ExternalAnalyticsService:
         )
 
         if assessment_cycle:
-            query = query.filter(Assessment.assessment_cycle == assessment_cycle)
+            try:
+                year = int(assessment_cycle)
+                query = query.filter(Assessment.assessment_year == year)
+            except (ValueError, TypeError):
+                pass  # Ignore invalid year filter
 
         # Group by indicator and order by failure count
         results = (
@@ -473,7 +507,11 @@ class ExternalAnalyticsService:
         )
 
         if assessment_cycle:
-            query = query.filter(Assessment.assessment_cycle == assessment_cycle)
+            try:
+                year = int(assessment_cycle)
+                query = query.filter(Assessment.assessment_year == year)
+            except (ValueError, TypeError):
+                pass  # Ignore invalid year filter
 
         assessments = query.all()
 
@@ -551,6 +589,228 @@ class ExternalAnalyticsService:
 
         return all_insights
 
+    def get_bbi_trends(
+        self, db: Session, assessment_year: int | None = None
+    ) -> BBIFunctionalityTrendsResponse:
+        """
+        Get aggregated BBI functionality trends across all barangays.
+
+        Shows the distribution of barangays across the 4 functionality tiers
+        for each BBI type.
+
+        Args:
+            db: Database session
+            assessment_year: Optional year filter
+
+        Returns:
+            BBIFunctionalityTrendsResponse with per-BBI aggregated data
+
+        Raises:
+            ValueError: If fewer than minimum threshold barangays have BBI data
+        """
+        # Get all active BBIs with eager loading to prevent N+1 queries
+        bbis = (
+            db.query(BBI)
+            .options(joinedload(BBI.governance_area))
+            .filter(BBI.is_active == True)
+            .all()
+        )
+
+        if not bbis:
+            logger.info("No active BBIs found")
+            return BBIFunctionalityTrendsResponse(
+                bbis=[],
+                total_barangays_assessed=0,
+                assessment_year=assessment_year,
+            )
+
+        # Query BBI results, optionally filtered by year
+        query = db.query(BBIResult)
+        if assessment_year:
+            query = query.filter(BBIResult.assessment_year == assessment_year)
+
+        # Join with Assessment to ensure only completed assessments
+        query = query.join(Assessment).filter(
+            Assessment.status.in_([AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED])
+        )
+
+        results = query.all()
+
+        # Count unique barangays
+        unique_barangay_ids = set(r.barangay_id for r in results)
+        total_barangays = len(unique_barangay_ids)
+
+        # Check minimum threshold
+        if total_barangays < MINIMUM_AGGREGATION_THRESHOLD:
+            raise ValueError(
+                f"Insufficient BBI data for anonymization. Minimum {MINIMUM_AGGREGATION_THRESHOLD} "
+                f"barangays required, only {total_barangays} available."
+            )
+
+        # Group results by BBI
+        bbi_distributions = []
+        for bbi in bbis:
+            bbi_results = [r for r in results if r.bbi_id == bbi.id]
+
+            if not bbi_results:
+                continue
+
+            # Count per functionality tier
+            highly_functional = sum(
+                1 for r in bbi_results if r.compliance_rating == "HIGHLY_FUNCTIONAL"
+            )
+            moderately_functional = sum(
+                1 for r in bbi_results if r.compliance_rating == "MODERATELY_FUNCTIONAL"
+            )
+            low_functional = sum(1 for r in bbi_results if r.compliance_rating == "LOW_FUNCTIONAL")
+            non_functional = sum(1 for r in bbi_results if r.compliance_rating == "NON_FUNCTIONAL")
+
+            total_for_bbi = len(bbi_results)
+
+            # Get governance area code
+            governance_area = bbi.governance_area
+
+            bbi_distributions.append(
+                BBIFunctionalityDistribution(
+                    bbi_abbreviation=bbi.abbreviation,
+                    bbi_name=bbi.name,
+                    governance_area_code=governance_area.code if governance_area else "",
+                    highly_functional_count=highly_functional,
+                    moderately_functional_count=moderately_functional,
+                    low_functional_count=low_functional,
+                    non_functional_count=non_functional,
+                    total_assessed=total_for_bbi,
+                    highly_functional_percentage=round(
+                        (highly_functional / total_for_bbi * 100) if total_for_bbi > 0 else 0, 2
+                    ),
+                    moderately_functional_percentage=round(
+                        (moderately_functional / total_for_bbi * 100) if total_for_bbi > 0 else 0, 2
+                    ),
+                    low_functional_percentage=round(
+                        (low_functional / total_for_bbi * 100) if total_for_bbi > 0 else 0, 2
+                    ),
+                    non_functional_percentage=round(
+                        (non_functional / total_for_bbi * 100) if total_for_bbi > 0 else 0, 2
+                    ),
+                )
+            )
+
+        logger.info(
+            f"BBI trends calculated: {len(bbi_distributions)} BBIs, {total_barangays} barangays"
+        )
+
+        return BBIFunctionalityTrendsResponse(
+            bbis=bbi_distributions,
+            total_barangays_assessed=total_barangays,
+            assessment_year=assessment_year,
+        )
+
+    def get_geographic_heatmap_data(
+        self, db: Session, assessment_year: int | None = None
+    ) -> GeographicHeatmapResponse:
+        """
+        Get anonymized geographic performance data for heatmap visualization.
+
+        Returns status data for each barangay using anonymous identifiers
+        (Barangay A, Barangay B, etc.) to protect privacy.
+
+        Args:
+            db: Database session
+            assessment_year: Optional year filter
+
+        Returns:
+            GeographicHeatmapResponse with anonymized barangay statuses
+
+        Raises:
+            ValueError: If fewer than minimum threshold barangays exist
+        """
+        # Get all barangays
+        barangays = db.query(Barangay).all()
+        total_barangays = len(barangays)
+
+        if total_barangays < MINIMUM_AGGREGATION_THRESHOLD:
+            raise ValueError(
+                f"Insufficient barangays for anonymization. Minimum {MINIMUM_AGGREGATION_THRESHOLD} "
+                f"barangays required, only {total_barangays} available."
+            )
+
+        # Build query for assessments with eager loading to prevent N+1 queries
+        query = db.query(Assessment).options(joinedload(Assessment.blgu_user))
+        if assessment_year:
+            query = query.filter(Assessment.assessment_year == assessment_year)
+
+        assessments = query.all()
+
+        # Create a mapping of barangay_id to their latest assessment status
+        # We need to get barangay_id from the user's barangay
+        barangay_statuses = {}
+        for assessment in assessments:
+            if assessment.blgu_user and assessment.blgu_user.barangay_id:
+                barangay_id = assessment.blgu_user.barangay_id
+                # Store the latest assessment status
+                if barangay_id not in barangay_statuses:
+                    barangay_statuses[barangay_id] = assessment
+                elif assessment.created_at > barangay_statuses[barangay_id].created_at:
+                    barangay_statuses[barangay_id] = assessment
+
+        # Create anonymized list with consistent anonymous IDs
+        # Sort barangays by ID for consistent anonymous mapping
+        sorted_barangays = sorted(barangays, key=lambda b: b.id)
+        anonymized_barangays = []
+        summary = {"pass_count": 0, "fail_count": 0, "in_progress_count": 0, "not_started_count": 0}
+
+        for idx, barangay in enumerate(sorted_barangays):
+            # Generate anonymous ID (A, B, C, ... Z, AA, AB, etc.)
+            anonymous_id = f"Barangay {self._get_anonymous_letter(idx)}"
+
+            # Determine status
+            assessment = barangay_statuses.get(barangay.id)
+            if assessment is None:
+                status = "not_started"
+                summary["not_started_count"] += 1
+            elif assessment.status in [AssessmentStatus.COMPLETED, AssessmentStatus.VALIDATED]:
+                if assessment.final_compliance_status == ComplianceStatus.PASSED:
+                    status = "pass"
+                    summary["pass_count"] += 1
+                else:
+                    status = "fail"
+                    summary["fail_count"] += 1
+            else:
+                status = "in_progress"
+                summary["in_progress_count"] += 1
+
+            anonymized_barangays.append(
+                AnonymizedBarangayStatus(anonymous_id=anonymous_id, status=status)
+            )
+
+        logger.info(f"Geographic heatmap data generated: {total_barangays} barangays anonymized")
+
+        return GeographicHeatmapResponse(
+            barangays=anonymized_barangays,
+            summary=summary,
+            total_barangays=total_barangays,
+        )
+
+    def _get_anonymous_letter(self, index: int) -> str:
+        """
+        Convert an index to an anonymous letter identifier.
+
+        0 -> A, 1 -> B, ..., 25 -> Z, 26 -> AA, 27 -> AB, etc.
+
+        Args:
+            index: Zero-based index
+
+        Returns:
+            Anonymous letter string (A-Z, then AA-AZ, etc.)
+        """
+        result = ""
+        while True:
+            result = chr(ord("A") + (index % 26)) + result
+            index = index // 26 - 1
+            if index < 0:
+                break
+        return result
+
     def get_complete_dashboard(
         self, db: Session, assessment_cycle: str | None = None
     ) -> ExternalAnalyticsDashboardResponse:
@@ -592,11 +852,27 @@ class ExternalAnalyticsService:
         top_failing_indicators = self.get_top_failing_indicators(db, assessment_cycle)
         ai_insights = self.get_anonymized_ai_insights(db, assessment_cycle)
 
+        # Get BBI trends (optional - may fail if no BBI data)
+        bbi_trends = None
+        try:
+            # Extract year from assessment_cycle for BBI query
+            assessment_year = None
+            if assessment_cycle:
+                try:
+                    assessment_year = int(assessment_cycle)
+                except (ValueError, TypeError):
+                    pass
+            bbi_trends = self.get_bbi_trends(db, assessment_year)
+        except ValueError as e:
+            # BBI trends fail due to insufficient data - that's OK, we'll return None
+            logger.info(f"BBI trends not available: {e}")
+
         dashboard = ExternalAnalyticsDashboardResponse(
             overall_compliance=overall_compliance,
             governance_area_performance=governance_area_performance,
             top_failing_indicators=top_failing_indicators,
             ai_insights=ai_insights,
+            bbi_trends=bbi_trends,
         )
 
         # Store in cache (convert to dict for JSON serialization)
@@ -740,6 +1016,36 @@ class ExternalAnalyticsService:
                         insight.priority or "N/A",
                     ]
                 )
+
+            # BBI Functionality Trends Section (if available)
+            if dashboard_data.bbi_trends and dashboard_data.bbi_trends.bbis:
+                writer.writerow([""])
+                writer.writerow(["BBI FUNCTIONALITY TRENDS"])
+                writer.writerow(
+                    [
+                        "BBI",
+                        "Name",
+                        "Governance Area",
+                        "Highly Functional",
+                        "Moderately Functional",
+                        "Low Functional",
+                        "Non-Functional",
+                        "Total Assessed",
+                    ]
+                )
+                for bbi in dashboard_data.bbi_trends.bbis:
+                    writer.writerow(
+                        [
+                            bbi.bbi_abbreviation,
+                            bbi.bbi_name,
+                            bbi.governance_area_code,
+                            f"{bbi.highly_functional_count} ({bbi.highly_functional_percentage:.1f}%)",
+                            f"{bbi.moderately_functional_count} ({bbi.moderately_functional_percentage:.1f}%)",
+                            f"{bbi.low_functional_count} ({bbi.low_functional_percentage:.1f}%)",
+                            f"{bbi.non_functional_count} ({bbi.non_functional_percentage:.1f}%)",
+                            bbi.total_assessed,
+                        ]
+                    )
 
             csv_content = output.getvalue()
             output.close()

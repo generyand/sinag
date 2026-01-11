@@ -42,9 +42,12 @@ class User(Base):
         nullable=False,
         default=UserRole.BLGU_USER,
     )
-    validator_area_id = Column(
+    assessor_area_id = Column(
         SmallInteger, ForeignKey("governance_areas.id"), nullable=True
-    )  # Reference to governance_areas.id - Only used when role is VALIDATOR
+    )  # Reference to governance_areas.id - Only used when role is ASSESSOR
+    municipal_office_id = Column(
+        Integer, ForeignKey("municipal_offices.id"), nullable=True
+    )  # Reference to municipal_offices.id - Used for municipal office assignment
     barangay_id = Column(Integer, ForeignKey("barangays.id"), nullable=True)
 
     # User preferences
@@ -69,6 +72,14 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
 
+    # Profile
+    logo_url = Column(
+        String, nullable=True, comment="URL to user's profile logo/avatar in Supabase Storage"
+    )
+    logo_uploaded_at = Column(
+        DateTime(timezone=True), nullable=True, comment="Timestamp when logo was last uploaded"
+    )
+
     # Timestamps
     created_at = Column(
         DateTime(timezone=True),
@@ -83,7 +94,12 @@ class User(Base):
 
     # Relationships
     barangay = relationship("Barangay", back_populates="users")
-    validator_area = relationship("GovernanceArea", back_populates="validators")
+    assessor_area = relationship("GovernanceArea", back_populates="assessors")
+    municipal_office = relationship(
+        "MunicipalOffice",
+        foreign_keys=[municipal_office_id],
+        backref="validators",
+    )
     assessments = relationship(
         "Assessment", foreign_keys="Assessment.blgu_user_id", back_populates="blgu_user"
     )

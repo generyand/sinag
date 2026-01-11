@@ -20,13 +20,13 @@ export function CheckboxFieldComponent<TFieldValues extends FieldValues>({
   error,
 }: CheckboxFieldComponentProps<TFieldValues>) {
   return (
-    <div className="space-y-2">
-      <Label className="text-sm font-medium">
+    <div className="space-y-3">
+      <Label className="text-base font-semibold">
         {field.label}
         {field.required && <span className="text-destructive ml-1">*</span>}
       </Label>
 
-      {field.help_text && <p className="text-sm text-muted-foreground">{field.help_text}</p>}
+      {field.help_text && <p className="text-base text-muted-foreground">{field.help_text}</p>}
 
       <Controller
         name={name}
@@ -40,14 +40,14 @@ export function CheckboxFieldComponent<TFieldValues extends FieldValues>({
             : [];
 
           return (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {field.options.map((option) => {
                 const isChecked = currentValue.includes(option.value);
 
                 return (
                   <div
                     key={option.value}
-                    className="flex items-center space-x-3 p-3 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)] hover:border-[var(--cityscape-yellow)]/50 transition-all duration-200 cursor-pointer group"
+                    className="flex items-center space-x-4 p-4 min-h-[56px] rounded-lg border-2 border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)] hover:border-[var(--cityscape-yellow)]/50 transition-all duration-200 cursor-pointer group"
                     onClick={() => {
                       if (!isChecked) {
                         controllerField.onChange([...currentValue, option.value]);
@@ -75,7 +75,7 @@ export function CheckboxFieldComponent<TFieldValues extends FieldValues>({
                     />
                     <Label
                       htmlFor={`${field.field_id}-${option.value}`}
-                      className="font-medium cursor-pointer flex-1 text-[var(--foreground)] group-hover:text-[var(--cityscape-yellow-dark)] transition-colors"
+                      className="text-base font-medium cursor-pointer flex-1 text-[var(--foreground)] group-hover:text-[var(--cityscape-yellow-dark)] transition-colors leading-relaxed"
                     >
                       {option.label}
                     </Label>
@@ -88,7 +88,7 @@ export function CheckboxFieldComponent<TFieldValues extends FieldValues>({
       />
 
       {error && (
-        <p id={`${field.field_id}-error`} className="text-sm text-destructive" role="alert">
+        <p id={`${field.field_id}-error`} className="text-base text-destructive" role="alert">
           {error}
         </p>
       )}

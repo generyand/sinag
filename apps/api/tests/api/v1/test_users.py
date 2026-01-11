@@ -753,7 +753,7 @@ def test_get_user_stats_unauthorized(client: TestClient):
 def test_create_validator_user_with_area_assignment(
     client: TestClient, db_session: Session, admin_user: User, mock_governance_area
 ):
-    """Test creating VALIDATOR user with required validator_area_id"""
+    """Test creating VALIDATOR user with required assessor_area_id"""
     _override_user_and_db(client, admin_user, db_session)
 
     unique_email = f"validator_{uuid.uuid4().hex[:8]}@example.com"
@@ -762,7 +762,7 @@ def test_create_validator_user_with_area_assignment(
         "name": "Validator User",
         "password": "ValidatorPass123!",
         "role": UserRole.VALIDATOR.value,
-        "validator_area_id": mock_governance_area.id,  # Required for VALIDATOR role
+        "assessor_area_id": mock_governance_area.id,  # Required for VALIDATOR role
     }
 
     response = client.post("/api/v1/users/", json=user_data)
@@ -771,19 +771,19 @@ def test_create_validator_user_with_area_assignment(
     data = response.json()
     assert data["email"] == unique_email
     assert data["role"] == UserRole.VALIDATOR.value
-    assert data["validator_area_id"] == mock_governance_area.id
+    assert data["assessor_area_id"] == mock_governance_area.id
 
     # Verify in database
     new_user = db_session.query(User).filter(User.email == unique_email).first()
     assert new_user is not None
-    assert new_user.validator_area_id == mock_governance_area.id
+    assert new_user.assessor_area_id == mock_governance_area.id
     assert new_user.barangay_id is None
 
 
 def test_create_validator_user_without_area_fails(
     client: TestClient, db_session: Session, admin_user: User
 ):
-    """Test creating VALIDATOR user without validator_area_id fails validation"""
+    """Test creating VALIDATOR user without assessor_area_id fails validation"""
     _override_user_and_db(client, admin_user, db_session)
 
     unique_email = f"validator_{uuid.uuid4().hex[:8]}@example.com"
@@ -792,7 +792,7 @@ def test_create_validator_user_without_area_fails(
         "name": "Validator User",
         "password": "ValidatorPass123!",
         "role": UserRole.VALIDATOR.value,
-        # validator_area_id is missing
+        # assessor_area_id is missing
     }
 
     response = client.post("/api/v1/users/", json=user_data)
@@ -814,7 +814,7 @@ def test_create_assessor_user_no_assignment_required(
         "name": "Assessor User",
         "password": "AssessorPass123!",
         "role": UserRole.ASSESSOR.value,
-        # No barangay_id or validator_area_id
+        # No barangay_id or assessor_area_id
     }
 
     response = client.post("/api/v1/users/", json=user_data)
@@ -823,13 +823,13 @@ def test_create_assessor_user_no_assignment_required(
     data = response.json()
     assert data["role"] == UserRole.ASSESSOR.value
     assert data.get("barangay_id") is None
-    assert data.get("validator_area_id") is None
+    assert data.get("assessor_area_id") is None
 
 
 def test_create_assessor_with_validator_area_clears_it(
     client: TestClient, db_session: Session, admin_user: User
 ):
-    """Test creating ASSESSOR user with validator_area_id silently clears it"""
+    """Test creating ASSESSOR user with assessor_area_id silently clears it"""
     _override_user_and_db(client, admin_user, db_session)
 
     unique_email = f"assessor_{uuid.uuid4().hex[:8]}@example.com"
@@ -838,7 +838,7 @@ def test_create_assessor_with_validator_area_clears_it(
         "name": "Assessor User",
         "password": "AssessorPass123!",
         "role": UserRole.ASSESSOR.value,
-        "validator_area_id": 1,  # Should be cleared for ASSESSOR
+        "assessor_area_id": 1,  # Should be cleared for ASSESSOR
     }
 
     response = client.post("/api/v1/users/", json=user_data)
@@ -846,12 +846,12 @@ def test_create_assessor_with_validator_area_clears_it(
     assert response.status_code == 200
     data = response.json()
     assert data["role"] == UserRole.ASSESSOR.value
-    assert data.get("validator_area_id") is None  # Should be cleared
+    assert data.get("assessor_area_id") is None  # Should be cleared
 
     # Verify in database
     new_user = db_session.query(User).filter(User.email == unique_email).first()
     assert new_user is not None
-    assert new_user.validator_area_id is None
+    assert new_user.assessor_area_id is None
 
 
 def test_create_mlgoo_dilg_user_no_assignment_required(
@@ -875,7 +875,7 @@ def test_create_mlgoo_dilg_user_no_assignment_required(
     data = response.json()
     assert data["role"] == UserRole.MLGOO_DILG.value
     assert data.get("barangay_id") is None
-    assert data.get("validator_area_id") is None
+    assert data.get("assessor_area_id") is None
 
 
 def test_create_blgu_user_requires_barangay(
@@ -898,7 +898,7 @@ def test_create_blgu_user_requires_barangay(
     assert response.status_code == 200
     data = response.json()
     assert data["barangay_id"] == mock_barangay.id
-    assert data.get("validator_area_id") is None
+    assert data.get("assessor_area_id") is None
 
 
 def test_create_duplicate_email_fails(
@@ -937,7 +937,7 @@ def test_update_user_role_from_blgu_to_validator(
     blgu_user: User,
     mock_governance_area,
 ):
-    """Test changing user from BLGU_USER to VALIDATOR clears barangay_id and sets validator_area_id"""
+    """Test changing user from BLGU_USER to VALIDATOR clears barangay_id and sets assessor_area_id"""
     _override_user_and_db(client, admin_user, db_session)
 
     # Verify initial state
@@ -948,27 +948,27 @@ def test_update_user_role_from_blgu_to_validator(
         f"/api/v1/users/{blgu_user.id}",
         json={
             "role": UserRole.VALIDATOR.value,
-            "validator_area_id": mock_governance_area.id,
+            "assessor_area_id": mock_governance_area.id,
         },
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data["role"] == UserRole.VALIDATOR.value
-    assert data["validator_area_id"] == mock_governance_area.id
+    assert data["assessor_area_id"] == mock_governance_area.id
     assert data.get("barangay_id") is None
 
     # Verify in database
     db_session.refresh(blgu_user)
     assert blgu_user.role == UserRole.VALIDATOR
-    assert blgu_user.validator_area_id == mock_governance_area.id
+    assert blgu_user.assessor_area_id == mock_governance_area.id
     assert blgu_user.barangay_id is None
 
 
 def test_update_user_role_from_validator_to_assessor(
     client: TestClient, db_session: Session, admin_user: User, mock_governance_area
 ):
-    """Test changing user from VALIDATOR to ASSESSOR clears validator_area_id"""
+    """Test changing user from VALIDATOR to ASSESSOR clears assessor_area_id"""
     _override_user_and_db(client, admin_user, db_session)
 
     # Create validator user
@@ -978,7 +978,7 @@ def test_update_user_role_from_validator_to_assessor(
         name="Validator User",
         hashed_password=pwd_context.hash("TestPassword123!"),
         role=UserRole.VALIDATOR,
-        validator_area_id=mock_governance_area.id,
+        assessor_area_id=mock_governance_area.id,
         is_active=True,
     )
     db_session.add(validator)
@@ -996,12 +996,12 @@ def test_update_user_role_from_validator_to_assessor(
     assert response.status_code == 200
     data = response.json()
     assert data["role"] == UserRole.ASSESSOR.value
-    assert data.get("validator_area_id") is None
+    assert data.get("assessor_area_id") is None
 
     # Verify in database
     db_session.refresh(validator)
     assert validator.role == UserRole.ASSESSOR
-    assert validator.validator_area_id is None
+    assert validator.assessor_area_id is None
 
 
 def test_update_user_role_from_assessor_to_blgu(
@@ -1073,7 +1073,7 @@ def test_validator_cannot_access_user_management(
         name="Validator User",
         hashed_password=pwd_context.hash("TestPassword123!"),
         role=UserRole.VALIDATOR,
-        validator_area_id=mock_governance_area.id,
+        assessor_area_id=mock_governance_area.id,
         is_active=True,
     )
     db_session.add(validator)

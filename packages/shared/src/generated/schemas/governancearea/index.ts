@@ -22,4 +22,6 @@ export interface GovernanceArea {
 export interface GovernanceAreaSummary {
   id: number;
   name: string;
+  code: string;
+  area_type: string;
 }

@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.enums import NotificationType, UserRole
 from app.db.models.assessment import Assessment
@@ -161,7 +161,7 @@ class NotificationService:
         )
         return notifications
 
-    def notify_validators_for_governance_area(
+    def notify_assessors_for_governance_area(
         self,
         db: Session,
         notification_type: NotificationType,
@@ -171,35 +171,38 @@ class NotificationService:
         assessment_id: int,
     ) -> list[Notification]:
         """
-        Send notification to validators assigned to a specific governance area.
+        Send notification to assessors assigned to a specific governance area.
+
+        After workflow restructuring: ASSESSORs are area-specific (not VALIDATORs).
+        VALIDATORs are now system-wide.
 
         Args:
             db: Database session
             notification_type: Type of notification
             title: Notification title
             message: Notification message
-            governance_area_id: Governance area to find validators for
+            governance_area_id: Governance area to find assessors for
             assessment_id: Related assessment ID
 
         Returns:
             List of created Notification objects
         """
-        # Get validators for this governance area
-        validators = (
+        # Get assessors for this governance area (area-specific after workflow restructuring)
+        assessors = (
             db.query(User)
             .filter(
-                User.role == UserRole.VALIDATOR,
-                User.validator_area_id == governance_area_id,
+                User.role == UserRole.ASSESSOR,
+                User.assessor_area_id == governance_area_id,
                 User.is_active == True,
             )
             .all()
         )
 
         notifications = []
-        for validator in validators:
+        for assessor in assessors:
             notification = self.create_notification(
                 db=db,
-                recipient_id=validator.id,
+                recipient_id=assessor.id,
                 notification_type=notification_type,
                 title=title,
                 message=message,
@@ -209,7 +212,7 @@ class NotificationService:
             notifications.append(notification)
 
         self.logger.info(
-            f"Created {len(notifications)} notifications for validators "
+            f"Created {len(notifications)} notifications for assessors "
             f"in governance area {governance_area_id}"
         )
         return notifications
@@ -244,6 +247,50 @@ class NotificationService:
             title=title,
             message=message,
             assessment_id=assessment_id,
+        )
+
+    def send_submission_reminder(
+        self,
+        db: Session,
+        assessment_id: int,
+    ) -> Notification | None:
+        """
+        Send a submission reminder to the BLGU user associated with an assessment.
+
+        This is used by MLGOO to manually remind BLGUs to complete their submissions.
+
+        Args:
+            db: Database session
+            assessment_id: Assessment ID
+
+        Returns:
+            Created Notification object or None if assessment not found
+        """
+        assessment = (
+            db.query(Assessment)
+            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+        if not assessment:
+            return None
+
+        if not assessment.blgu_user_id:
+            return None
+
+        # Get barangay name for the notification message
+        barangay_name = "your barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        return self.create_notification(
+            db=db,
+            recipient_id=assessment.blgu_user_id,
+            notification_type=NotificationType.SUBMISSION_REMINDER,
+            title="Reminder: Complete Your Assessment",
+            message=f"This is a friendly reminder from MLGOO-DILG to complete the SGLGB assessment for {barangay_name}.",
+            assessment_id=assessment_id,
+            send_email=True,
         )
 
     def notify_specific_validator(

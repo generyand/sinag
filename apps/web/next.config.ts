@@ -15,6 +15,17 @@ const nextConfig: NextConfig = {
   // Monorepo configuration for Vercel deployment
   transpilePackages: ["@sinag/shared"],
 
+  // Image optimization configuration for external images
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
+
   // Ensure proper output configuration
   output: "standalone",
 

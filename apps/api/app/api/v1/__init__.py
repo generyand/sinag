@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from . import (
     admin,
     analytics,
+    assessment_activities,
     assessment_years,
     assessments,
     assessor,
@@ -18,12 +19,15 @@ from . import (
     blgu_dashboard,
     capdev,
     compliance,
+    deadline_extensions,
     external_analytics,
     gar,
     indicators,
     lookups,
     mlgoo,
     movs,
+    municipal_export,
+    municipal_offices,
     municipal_overview,
     notifications,
     system,
@@ -59,4 +63,16 @@ api_router.include_router(municipal_overview.router)  # Prefix already included 
 api_router.include_router(year_config.router, prefix="/year-config", tags=["year-config"])
 api_router.include_router(
     assessment_years.router, prefix="/assessment-years", tags=["assessment-years"]
+)
+api_router.include_router(
+    deadline_extensions.router, prefix="/deadline-extensions", tags=["deadline-windows"]
+)
+api_router.include_router(
+    municipal_offices.router, prefix="/municipal-offices", tags=["municipal-offices"]
+)
+api_router.include_router(
+    assessment_activities.router, prefix="/assessment-activities", tags=["assessment-activities"]
+)
+api_router.include_router(
+    municipal_export.router, prefix="/municipal-export", tags=["municipal-export"]
 )

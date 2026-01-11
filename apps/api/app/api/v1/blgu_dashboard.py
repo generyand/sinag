@@ -11,8 +11,8 @@ Compliance status (PASS/FAIL/CONDITIONAL) is NEVER exposed to BLGU users.
 """
 
 from collections import defaultdict
-from datetime import datetime
-from typing import Any
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -21,6 +21,7 @@ from app.api import deps
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 from app.schemas.blgu_dashboard import (
     AISummary,
@@ -30,6 +31,33 @@ from app.schemas.blgu_dashboard import (
 )
 
 router = APIRouter(tags=["blgu-dashboard"])
+
+
+def _calculate_deadline_urgency(
+    days_remaining: int | None,
+) -> Literal["normal", "warning", "urgent", "critical", "expired"] | None:
+    """
+    Calculate urgency level based on days remaining until deadline.
+
+    Args:
+        days_remaining: Number of days until deadline (negative if past)
+
+    Returns:
+        Urgency level string or None if no deadline
+    """
+    if days_remaining is None:
+        return None
+
+    if days_remaining < 0:
+        return "expired"
+    elif days_remaining <= 1:
+        return "critical"
+    elif days_remaining <= 3:
+        return "urgent"
+    elif days_remaining <= 7:
+        return "warning"
+    else:
+        return "normal"
 
 
 @router.get("/{assessment_id}", response_model=BLGUDashboardResponse)
@@ -96,6 +124,30 @@ def get_blgu_dashboard(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access this assessment",
         )
+
+    # Calculate Phase 1 deadline information
+    phase1_deadline = None
+    days_until_deadline = None
+    deadline_urgency_level = None
+
+    # Get the assessment year config for deadline info
+    year_config = (
+        db.query(AssessmentYear).filter(AssessmentYear.year == assessment.assessment_year).first()
+    )
+
+    if year_config and year_config.phase1_deadline:
+        phase1_deadline = year_config.phase1_deadline
+
+        # Only calculate days remaining for DRAFT assessments
+        if assessment.status == AssessmentStatus.DRAFT:
+            now = datetime.now(UTC)
+            deadline = phase1_deadline
+            if deadline.tzinfo is None:
+                deadline = deadline.replace(tzinfo=UTC)
+
+            time_diff = deadline - now
+            days_until_deadline = time_diff.days
+            deadline_urgency_level = _calculate_deadline_urgency(days_until_deadline)
 
     # Calculate completion metrics and group by governance area
     # We need to count ALL indicators, not just those with responses
@@ -425,19 +477,23 @@ def get_blgu_dashboard(
             )
 
         # Legacy single calibration info (for backward compatibility)
+        # After workflow restructuring: Validators are system-wide and don't have area assignments
         if assessment.calibration_validator_id:
             calibration_validator = (
                 db.query(User).filter(User.id == assessment.calibration_validator_id).first()
             )
-            if calibration_validator and calibration_validator.validator_area_id:
-                cal_area = (
-                    db.query(GovernanceArea)
-                    .filter(GovernanceArea.id == calibration_validator.validator_area_id)
-                    .first()
-                )
-                if cal_area:
-                    calibration_governance_area_id = cal_area.id
-                    calibration_governance_area_name = cal_area.name
+            # Note: After restructuring, validators are system-wide (no validator_area_id)
+            # This block is for backward compatibility with legacy data only
+            if calibration_validator:
+                # Check for legacy validator_area_id (should be None after restructuring)
+                legacy_area_id = getattr(calibration_validator, "assessor_area_id", None)
+                if legacy_area_id:
+                    cal_area = (
+                        db.query(GovernanceArea).filter(GovernanceArea.id == legacy_area_id).first()
+                    )
+                    if cal_area:
+                        calibration_governance_area_id = cal_area.id
+                        calibration_governance_area_name = cal_area.name
 
     # AI Summary: Include rework or calibration summary if available
     # PARALLEL CALIBRATION: Combine summaries from all governance areas
@@ -958,6 +1014,12 @@ def get_blgu_dashboard(
     # Epic 5.0: Return status and rework tracking fields
     return {
         "assessment_id": assessment_id,
+        # Phase 1 Deadline tracking fields
+        "phase1_deadline": phase1_deadline,
+        "days_until_deadline": days_until_deadline,
+        "deadline_urgency_level": deadline_urgency_level,
+        "is_auto_submitted": assessment.auto_submitted_at is not None,
+        "auto_submitted_at": assessment.auto_submitted_at,
         "status": assessment.status.value,  # Epic 5.0: Assessment workflow status
         "rework_count": assessment.rework_count,  # Epic 5.0: Rework cycle count (0 or 1)
         "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"

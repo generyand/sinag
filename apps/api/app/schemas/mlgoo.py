@@ -169,12 +169,13 @@ class MOVFileItem(BaseModel):
 class IndicatorDetailItem(BaseModel):
     """Indicator details within a governance area."""
 
-    response_id: int
+    response_id: int | None  # None for indicators without uploaded MOVs (no response yet)
     indicator_id: int
     indicator_name: str
     indicator_code: str | None
     validation_status: str | None
     assessor_remarks: str | None
+    is_completed: bool  # Completion status (form filled + required MOVs uploaded)
     is_recalibration_target: bool
     mov_files: list[MOVFileItem] = Field(default_factory=list)
 
@@ -348,3 +349,16 @@ class OverrideValidationStatusResponse(BaseModel):
     remarks: str | None
     updated_by: str
     updated_at: str
+
+
+class SendReminderResponse(BaseModel):
+    """Response for sending a submission reminder."""
+
+    success: bool
+    message: str
+    assessment_id: int
+    barangay_name: str
+    blgu_user_email: str | None
+    sent_by: str
+    sent_at: str
+    email_sent: bool

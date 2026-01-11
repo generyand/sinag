@@ -155,18 +155,47 @@ async def get_current_validator_user(
     db: Session = Depends(get_db),
 ) -> User:
     """
-    Get the current authenticated Validator user with governance area loaded.
+    Get the current authenticated Validator user (system-wide access).
+
+    After workflow restructuring, VALIDATORs are system-wide (3 DILG team members).
+    They review ALL 6 governance areas, can request CALIBRATION.
+    No area assignment required.
 
     - Requires role to be VALIDATOR
-    - Ensures an assigned validator_area exists
-    - Returns the user with validator_area eagerly loaded
+    - No governance area requirement (system-wide)
 
     Raises:
-        HTTPException: 403 if role is not VALIDATOR or governance area missing
+        HTTPException: 403 if role is not VALIDATOR
+    """
+    if current_user.role != UserRole.VALIDATOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. Validator access required.",
+        )
+
+    return current_user
+
+
+async def get_current_assessor_user(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    Get the current authenticated Assessor user with governance area loaded.
+
+    After workflow restructuring, ASSESSORs are area-specific (6 users for 6 areas).
+    They review their ASSIGNED governance area, can request REWORK.
+
+    - Requires role to be ASSESSOR
+    - Ensures an assigned assessor_area exists
+    - Returns the user with assessor_area eagerly loaded
+
+    Raises:
+        HTTPException: 403 if role is not ASSESSOR or governance area missing
     """
     user_with_area = (
         db.query(User)
-        .options(joinedload(User.validator_area))
+        .options(joinedload(User.assessor_area))
         .filter(User.id == current_user.id)
         .first()
     )
@@ -178,16 +207,16 @@ async def get_current_validator_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if getattr(user_with_area, "role", None) is None or user_with_area.role != UserRole.VALIDATOR:
+    if getattr(user_with_area, "role", None) is None or user_with_area.role != UserRole.ASSESSOR:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions. Validator access required.",
+            detail="Not enough permissions. Assessor access required.",
         )
 
-    if user_with_area.validator_area is None:
+    if user_with_area.assessor_area is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Validator must be assigned to a governance area.",
+            detail="Assessor must be assigned to a governance area.",
         )
 
     return user_with_area
@@ -200,8 +229,8 @@ async def get_current_validator_user_http(
     """
     HTTP-friendly dependency that authenticates and enforces Validator role.
 
-    Returns 401 for any invalid credentials or missing validator context to align
-    with tests that expect unauthorized when user context is incomplete.
+    After workflow restructuring, VALIDATORs are system-wide (no area required).
+    Returns 401 for any invalid credentials to align with tests.
     """
     # Verify and decode JWT
     try:
@@ -229,7 +258,7 @@ async def get_current_validator_user_http(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Enforce validator role and governance area
+    # Enforce validator role (system-wide, no area required)
     if getattr(user, "role", None) != UserRole.VALIDATOR:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -237,10 +266,58 @@ async def get_current_validator_user_http(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    return user
+
+
+async def get_current_assessor_user_http(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    HTTP-friendly dependency that authenticates and enforces Assessor role.
+
+    After workflow restructuring, ASSESSORs are area-specific (require assessor_area).
+    Returns 401 for any invalid credentials or missing assessor context.
+    """
+    # Verify and decode JWT
+    try:
+        payload = verify_token(credentials.credentials)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Load user
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None or not getattr(user, "is_active", False):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Enforce assessor role
+    if getattr(user, "role", None) != UserRole.ASSESSOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Assessor must have assigned governance area
     user_with_area = (
-        db.query(User).options(joinedload(User.validator_area)).filter(User.id == user.id).first()
+        db.query(User).options(joinedload(User.assessor_area)).filter(User.id == user.id).first()
     )
-    if user_with_area is None or user_with_area.validator_area is None:
+    if user_with_area is None or user_with_area.assessor_area is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -257,16 +334,16 @@ async def get_current_assessor_or_validator(
     """
     Dependency that accepts both ASSESSOR and VALIDATOR roles.
 
-    - VALIDATOR: Must have validator_area_id assigned
-    - ASSESSOR: Can optionally have validator_area_id for filtered access,
-                or None for system-wide access (flexible assignment)
+    After workflow restructuring:
+    - ASSESSOR: Area-specific (6 users), MUST have assessor_area_id assigned
+    - VALIDATOR: System-wide (3 users), no area required
 
     Returns:
-        User: Current assessor or validator user with optional governance area
+        User: Current assessor or validator user
 
     Raises:
         HTTPException: 403 if user doesn't have ASSESSOR or VALIDATOR role
-        HTTPException: 403 if VALIDATOR doesn't have validator_area_id assigned
+        HTTPException: 403 if ASSESSOR doesn't have assessor_area_id assigned
     """
     # Check role is ASSESSOR or VALIDATOR
     if current_user.role not in (UserRole.ASSESSOR, UserRole.VALIDATOR):
@@ -275,26 +352,23 @@ async def get_current_assessor_or_validator(
             detail="Access denied. ASSESSOR or VALIDATOR role required.",
         )
 
-    # Load user with validator_area relationship
-    user_with_area = (
-        db.query(User)
-        .options(joinedload(User.validator_area))
-        .filter(User.id == current_user.id)
-        .first()
-    )
-
-    # VALIDATOR must have validator_area_id assigned
-    if current_user.role == UserRole.VALIDATOR:
-        if user_with_area is None or user_with_area.validator_area is None:
+    # ASSESSOR must have assessor_area_id assigned (area-specific)
+    if current_user.role == UserRole.ASSESSOR:
+        user_with_area = (
+            db.query(User)
+            .options(joinedload(User.assessor_area))
+            .filter(User.id == current_user.id)
+            .first()
+        )
+        if user_with_area is None or user_with_area.assessor_area is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Validator must be assigned to a governance area.",
+                detail="Assessor must be assigned to a governance area.",
             )
+        return user_with_area
 
-    # ASSESSOR can have validator_area_id (for filtered access) or None (system-wide)
-    # No additional validation required for ASSESSOR role
-
-    return user_with_area
+    # VALIDATOR is system-wide (no area required)
+    return current_user
 
 
 async def require_mlgoo_dilg(
@@ -392,6 +466,8 @@ async def get_current_external_user(
 
 
 # Assessor/Validator endpoints use the new combined dependency
-# This supports both ASSESSOR (flexible assignment) and VALIDATOR (area-specific) roles
+# After workflow restructuring:
+# - ASSESSOR: Area-specific (6 users for 6 governance areas)
+# - VALIDATOR: System-wide (3 DILG team members)
 get_current_area_assessor_user = get_current_assessor_or_validator
 get_current_area_assessor_user_http = get_current_assessor_or_validator

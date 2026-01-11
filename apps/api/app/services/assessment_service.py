@@ -33,6 +33,7 @@ from app.schemas.assessment import (
     MOVCreate,
     ProgressSummary,
 )
+from app.services.assessment_activity_service import assessment_activity_service
 from app.services.completeness_validation_service import completeness_validation_service
 from app.services.year_config_service import indicator_snapshot_service
 
@@ -1525,8 +1526,8 @@ class AssessmentService:
 
                     if is_new or is_valid_old:
                         filtered_movs.append(mov)
-                print(
-                    f"[DEBUG] _check_response_completion: REWORK - Granular Filter (Annotations={annotation_count})"
+                self.logger.debug(
+                    f"_check_response_completion: REWORK - Granular Filter (Annotations={annotation_count})"
                 )
 
             elif feedback_count > 0:
@@ -1537,8 +1538,8 @@ class AssessmentService:
                     for m in all_movs
                     if m.uploaded_at and m.uploaded_at >= effective_rework_requested_at
                 ]
-                print(
-                    f"[DEBUG] _check_response_completion: REWORK - Strict Filter (Comments={feedback_count})"
+                self.logger.debug(
+                    f"_check_response_completion: REWORK - Strict Filter (Comments={feedback_count})"
                 )
 
             else:
@@ -1546,8 +1547,8 @@ class AssessmentService:
                 # (filtered_movs is already all_movs)
                 pass
 
-            print(
-                f"[DEBUG] _check_response_completion: Result - {len(all_movs)} total MOVs -> {len(filtered_movs)} valid MOVs"
+            self.logger.debug(
+                f"_check_response_completion: Result - {len(all_movs)} total MOVs -> {len(filtered_movs)} valid MOVs"
             )
 
         # Check if this is the new Epic 4.0 format with 'fields' array
@@ -1566,14 +1567,14 @@ class AssessmentService:
                     response_data=response_data or {},
                     uploaded_movs=valid_mov_objects,
                 )
-                print(
-                    f"[DEBUG] _check_response_completion (new format): is_complete={result['is_complete']}, "
+                self.logger.debug(
+                    f"_check_response_completion (new format): is_complete={result['is_complete']}, "
                     f"filled={result['filled_field_count']}/{result['required_field_count']}"
                 )
                 return result["is_complete"]
             except Exception as e:
-                print(
-                    f"[DEBUG] _check_response_completion: Error using completeness_validation_service: {e}"
+                self.logger.warning(
+                    f"_check_response_completion: Error using completeness_validation_service: {e}"
                 )
                 return False
 
@@ -1625,8 +1626,8 @@ class AssessmentService:
 
                 if not all(mov_section_hits.values()):
                     missing = [s for s, hit in mov_section_hits.items() if not hit]
-                    print(
-                        f"[DEBUG] _check_response_completion: Missing MOVs for 'yes' sections: {missing}"
+                    self.logger.debug(
+                        f"_check_response_completion: Missing MOVs for 'yes' sections: {missing}"
                     )
                     return False
 
@@ -1643,16 +1644,28 @@ class AssessmentService:
 
             # If "yes" exists, we need MOVs
             if has_any_yes and mov_count <= 0:
-                print("[DEBUG] _check_response_completion: Has 'yes' but no valid MOVs")
+                self.logger.debug("_check_response_completion: Has 'yes' but no valid MOVs")
                 return False
 
             # For rework scenarios: if response_data is empty but MOVs exist,
             # consider it complete (BLGU uploaded new MOVs for rework)
+            # NOTE: This check must come BEFORE the compliance_values check below,
+            # because empty response_data means no compliance values but is valid for rework.
             if not response_data and mov_count > 0:
-                print(
-                    f"[DEBUG] _check_response_completion: Empty response_data but has {mov_count} valid MOVs - marking complete"
+                self.logger.debug(
+                    f"_check_response_completion: Empty response_data but has {mov_count} valid MOVs - marking complete"
                 )
                 return True
+
+            # FIX: If no compliance values were extracted, the indicator form hasn't been
+            # properly filled out - should not be marked as complete.
+            # This fixes the alignment issue between geographic map (is_completed based)
+            # and submission detail page (MOV file count based) completion metrics.
+            if not compliance_values:
+                self.logger.debug(
+                    "_check_response_completion: No compliance values found in response_data"
+                )
+                return False
 
             return bool(response_data)
 
@@ -1764,7 +1777,7 @@ class AssessmentService:
                     .all()
                 )
         except Exception as e:
-            print(f"[WARN] recompute_response_completion: Failed to fetch MOVFiles: {e}")
+            self.logger.warning(f"recompute_response_completion: Failed to fetch MOVFiles: {e}")
 
         # Get assessment status and rework timestamp
         assessment_status = None
@@ -1779,16 +1792,12 @@ class AssessmentService:
             mlgoo_recalibration_requested_at = response.assessment.mlgoo_recalibration_requested_at
 
         # Debug: log input data
-        try:
-            # mov_paths = [getattr(m, "storage_path", "") for m in movs_list]
-            print(
-                f"[DEBUG] recompute_response_completion: response_id={getattr(response, 'id', None)}, "
-                f"indicator_id={getattr(response, 'indicator_id', None)}, "
-                f"response_data={response_data}, mov_count={mov_count}, "
-                f"mov_file_count={len(mov_files)}, status={assessment_status}"
-            )
-        except Exception:
-            pass
+        self.logger.debug(
+            f"recompute_response_completion: response_id={getattr(response, 'id', None)}, "
+            f"indicator_id={getattr(response, 'indicator_id', None)}, "
+            f"response_data={response_data}, mov_count={mov_count}, "
+            f"mov_file_count={len(mov_files)}, status={assessment_status}"
+        )
 
         # Check for feedback comments (for Hybrid Rework Logic)
         feedback_count = 0
@@ -1808,7 +1817,9 @@ class AssessmentService:
                     .count()
                 )
         except Exception as e:
-            print(f"[WARN] recompute_response_completion: Failed to fetch FeedbackComments: {e}")
+            self.logger.warning(
+                f"recompute_response_completion: Failed to fetch FeedbackComments: {e}"
+            )
 
         completion = self._check_response_completion(
             form_schema=form_schema,
@@ -1823,13 +1834,10 @@ class AssessmentService:
         )
 
         # Debug: trace recompute outputs
-        try:
-            print(
-                f"[DEBUG] recompute_response_completion: response_id={getattr(response, 'id', None)}, "
-                f"new_is_completed={completion}"
-            )
-        except Exception:
-            pass
+        self.logger.debug(
+            f"recompute_response_completion: response_id={getattr(response, 'id', None)}, "
+            f"new_is_completed={completion}"
+        )
 
         # REWORK COMPLETION FIX: If completion is False but we're in REWORK status with new MOVs,
         # check if the indicator has new MOVs uploaded after rework_requested_at.
@@ -1846,8 +1854,8 @@ class AssessmentService:
                 1 for m in mov_files if m.uploaded_at and m.uploaded_at >= rework_requested_at
             )
             if new_mov_count > 0:
-                print(
-                    f"[DEBUG] recompute_response_completion: REWORK FIX - Found {new_mov_count} new MOVs "
+                self.logger.debug(
+                    f"recompute_response_completion: REWORK FIX - Found {new_mov_count} new MOVs "
                     f"uploaded after rework_requested_at. Marking as complete."
                 )
                 completion = True
@@ -1947,11 +1955,25 @@ class AssessmentService:
         # Run preliminary compliance check (for additional MOV checks)
         validation_result = self._run_preliminary_compliance_check(assessment)
 
-        # CRITICAL: Create empty AssessmentResponse records for ALL indicators without responses
+        # CRITICAL: Create empty AssessmentResponse records for ALL child indicators without responses
         # This ensures Assessors can review and mark ALL indicators for rework, even those
         # where BLGU didn't upload any files
+        # Only child indicators (parent_id IS NOT NULL) are actual assessment items
         existing_indicator_ids = {r.indicator_id for r in assessment.responses}
-        all_indicators = db.query(Indicator).filter(Indicator.is_active == True).all()
+        assessment_year = assessment.assessment_year
+        all_indicators = (
+            db.query(Indicator)
+            .filter(
+                Indicator.is_active == True,
+                Indicator.parent_id.isnot(None),  # Only child indicators (actual assessment items)
+                # Year-based filtering: indicator must be effective for this assessment year
+                (Indicator.effective_from_year.is_(None))
+                | (Indicator.effective_from_year <= assessment_year),
+                (Indicator.effective_to_year.is_(None))
+                | (Indicator.effective_to_year >= assessment_year),
+            )
+            .all()
+        )
 
         created_empty_responses = 0
         for indicator in all_indicators:
@@ -1999,6 +2021,20 @@ class AssessmentService:
             # Set specific resubmission timestamps for timeline tracking
             if is_rework_resubmission:
                 assessment.rework_submitted_at = datetime.utcnow()
+                # CRITICAL: Reset area statuses from "rework" back to "submitted"
+                # This allows assessors to approve areas after BLGU resubmits
+                if assessment.area_submission_status:
+                    from sqlalchemy.orm.attributes import flag_modified
+
+                    for area_key, area_data in assessment.area_submission_status.items():
+                        if isinstance(area_data, dict) and area_data.get("status") == "rework":
+                            area_data["status"] = "submitted"
+                            area_data["resubmitted_at"] = datetime.utcnow().isoformat()
+                            self.logger.info(
+                                f"[REWORK RESUBMISSION] Reset area {area_key} status from 'rework' to 'submitted'"
+                            )
+                    flag_modified(assessment, "area_submission_status")
+
             if is_calibration_resubmission:
                 assessment.calibration_submitted_at = datetime.utcnow()
             if is_mlgoo_recalibration_resubmission:
@@ -2031,6 +2067,44 @@ class AssessmentService:
 
             db.commit()
             db.refresh(assessment)
+
+            # Get barangay name for activity logging
+            barangay_name = "Unknown Barangay"
+            if assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            # Log activity: Submission or resubmission
+            try:
+                # Determine the action type based on resubmission context
+                if is_mlgoo_recalibration_resubmission:
+                    action = "recalibration_submitted"
+                    from_status = AssessmentStatus.REWORK.value
+                    description = "RE-calibration resubmission"
+                elif is_calibration_resubmission:
+                    action = "calibration_submitted"
+                    from_status = AssessmentStatus.REWORK.value
+                    description = "Calibration resubmission"
+                elif is_rework_resubmission:
+                    action = "rework_submitted"
+                    from_status = AssessmentStatus.REWORK.value
+                    description = "Rework resubmission"
+                else:
+                    action = "submitted"
+                    from_status = AssessmentStatus.DRAFT.value
+                    description = "Assessment submitted"
+
+                assessment_activity_service.log_activity(
+                    db=db,
+                    assessment_id=assessment_id,
+                    action=action,
+                    user_id=assessment.blgu_user_id,
+                    from_status=from_status,
+                    to_status=AssessmentStatus.SUBMITTED_FOR_REVIEW.value,
+                    extra_data={"barangay_name": barangay_name},
+                    description=description,
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to log submission activity: {e}")
 
             # Create indicator snapshots on FIRST submission only
             # Snapshots preserve the exact indicator definitions (with resolved year placeholders)
@@ -3300,29 +3374,29 @@ class AssessmentService:
                 )
                 validated_area_ids = [area_id for (area_id,) in validated_area_ids]
 
-                # Find validators assigned to these validated areas
+                # Find assessors assigned to these validated areas (area-specific after restructuring)
                 if validated_area_ids:
-                    area_validators = (
+                    area_assessors = (
                         db.query(User)
                         .filter(
-                            User.role == UserRole.VALIDATOR,
-                            User.validator_area_id.in_(validated_area_ids),
+                            User.role == UserRole.ASSESSOR,
+                            User.assessor_area_id.in_(validated_area_ids),
                         )
                         .all()
                     )
-                    for validator in area_validators:
-                        if validator.id not in validators_dict:
-                            validators_dict[validator.id] = {
-                                "id": validator.id,
-                                "name": validator.name,
-                                "email": validator.email,
+                    for assessor in area_assessors:
+                        if assessor.id not in validators_dict:
+                            validators_dict[assessor.id] = {
+                                "id": assessor.id,
+                                "name": assessor.name,
+                                "email": assessor.email,
                                 "initials": "".join(
-                                    [word[0].upper() for word in validator.name.split()[:2]]
+                                    [word[0].upper() for word in assessor.name.split()[:2]]
                                 )
-                                if validator.name
-                                else "V",
-                                "role": "validator",
-                                "governance_area_id": validator.validator_area_id,
+                                if assessor.name
+                                else "A",
+                                "role": "assessor",
+                                "governance_area_id": assessor.assessor_area_id,
                             }
 
                 # 3. Add the calibration validator (legacy - for backward compatibility)
@@ -3339,7 +3413,7 @@ class AssessmentService:
                             if validator.name
                             else "V",
                             "role": "validator",
-                            "governance_area_id": validator.validator_area_id,
+                            "governance_area_id": None,  # Validators are now system-wide
                         }
 
                 # 4. Add users who left feedback comments
@@ -3404,6 +3478,11 @@ class AssessmentService:
                     # MLGOO RE-calibration flags
                     "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
                     "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
+                    # Per-area assessor approval tracking
+                    "area_assessor_approved": assessment.area_assessor_approved or {},
+                    "areas_approved_count": sum(
+                        1 for v in (assessment.area_assessor_approved or {}).values() if v
+                    ),
                 }
             )
 

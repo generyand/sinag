@@ -1,19 +1,16 @@
 "use client";
 
-import { Upload, X, FileIcon, AlertCircle } from "lucide-react";
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, FileIcon, Upload, X } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
 
 const ALLOWED_FILE_TYPES = {
   "application/pdf": [".pdf"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
   "image/jpeg": [".jpg", ".jpeg"],
   "image/png": [".png"],
-  "video/mp4": [".mp4"],
 };
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -47,7 +44,7 @@ export function FileUpload({
         if (rejection.errors?.[0]?.code === "file-too-large") {
           setValidationError(`File size exceeds 50MB limit. Please select a smaller file.`);
         } else if (rejection.errors?.[0]?.code === "file-invalid-type") {
-          setValidationError(`Invalid file type. Allowed types: PDF, DOCX, XLSX, JPG, PNG, MP4`);
+          setValidationError(`Invalid file type. Only PDF and image files (JPG, PNG) are allowed.`);
         } else {
           setValidationError(`File rejected: ${rejection.errors?.[0]?.message}`);
         }
@@ -95,10 +92,10 @@ export function FileUpload({
         <div
           {...getRootProps()}
           className={cn(
-            "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200",
+            "border-4 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-200 min-h-[200px] flex flex-col items-center justify-center",
             isDragActive
-              ? "border-blue-500 bg-blue-50 scale-[1.02]"
-              : "border-[var(--border)] hover:border-blue-400 hover:bg-[var(--hover)]",
+              ? "border-blue-500 bg-blue-50 scale-[1.02] shadow-lg"
+              : "border-blue-300 hover:border-blue-500 hover:bg-blue-50/50 bg-blue-50/20",
             disabled &&
               "opacity-50 cursor-not-allowed hover:border-[var(--border)] hover:bg-transparent",
             displayError && "border-red-500 bg-red-50"
@@ -107,24 +104,21 @@ export function FileUpload({
           <input {...getInputProps()} />
           <Upload
             className={cn(
-              "mx-auto h-12 w-12 mb-4 transition-colors",
-              isDragActive ? "text-blue-500" : "text-[var(--text-secondary)]"
+              "mx-auto h-20 w-20 mb-6 transition-colors",
+              isDragActive ? "text-blue-600" : "text-blue-500"
             )}
+            strokeWidth={2.5}
           />
-          <p className="text-sm font-medium text-[var(--text-primary)] mb-1">
-            {isDragActive ? (
-              "Drop files here"
-            ) : (
-              <>
-                Drag and drop files here, or{" "}
-                <span className="text-blue-600 hover:text-blue-700 font-semibold">
-                  click to browse
-                </span>
-              </>
-            )}
+          <p className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+            {isDragActive ? "Drop files here" : <>Click here to upload files</>}
           </p>
-          <p className="text-xs text-[var(--text-secondary)] mt-2">
-            Supported: PDF, DOCX, XLSX, JPG, PNG, MP4 (max 50MB each) • Multiple files allowed
+          <p className="text-base text-blue-600 font-medium mb-3">
+            or drag and drop your files here
+          </p>
+          <p className="text-sm text-[var(--text-secondary)] mt-2 bg-white/80 px-4 py-2 rounded-lg border border-gray-200">
+            Accepted: PDF, Images (JPG, PNG)
+            <br />
+            Maximum size: 50MB per file
           </p>
         </div>
       ) : (

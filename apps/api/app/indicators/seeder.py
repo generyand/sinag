@@ -402,6 +402,17 @@ def _generate_form_schema_from_checklist(
     # Parse upload sections from instructions for BLGU users
     fields = _parse_upload_sections_from_instructions(upload_instructions)
 
+    # For SHARED_PLUS_OR_LOGIC, add completion_group to file_upload fields
+    # This is used by CompletionFeedbackPanel and completeness_validation_service
+    # to determine which fields are shared vs option_a vs option_b
+    if validation_rule == "SHARED_PLUS_OR_LOGIC":
+        for f in fields:
+            if f.get("field_type") == "file_upload":
+                option_group = f.get("option_group")
+                if option_group:
+                    # Map option_group to completion_group
+                    f["completion_group"] = option_group
+
     # Add field_notes from checklist items to corresponding fields
     # Match by order (first checklist item with field_notes -> first field, etc.)
     if checklist_items:

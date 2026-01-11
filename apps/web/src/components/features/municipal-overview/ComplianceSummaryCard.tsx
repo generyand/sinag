@@ -32,6 +32,8 @@ interface ComplianceSummaryCardProps {
   data: MunicipalComplianceSummary | null | undefined;
   isLoading?: boolean;
   onFilterChange?: (filter: string) => void;
+  /** Currently active filter from the pipeline */
+  activeFilter?: string;
 }
 
 interface StatCardProps {
@@ -188,6 +190,7 @@ export function ComplianceSummaryCard({
   data,
   isLoading,
   onFilterChange,
+  activeFilter = "all",
 }: ComplianceSummaryCardProps) {
   const hasData = data && data.total_barangays > 0;
 
@@ -408,85 +411,94 @@ export function ComplianceSummaryCard({
                 <div className="flex items-stretch gap-1 overflow-x-auto pb-2 -mx-2 px-2">
                   <WorkflowStage
                     label="Not Started"
-                    count={data.workflow_breakdown.not_started}
+                    count={data.workflow_breakdown.not_started ?? 0}
                     color="text-slate-600"
                     bgColor="bg-slate-50"
                     borderColor="border-slate-200"
-                    percentage={getStagePercentage(data.workflow_breakdown.not_started)}
+                    percentage={getStagePercentage(data.workflow_breakdown.not_started ?? 0)}
                     description="Barangays that haven't begun their assessment yet."
                     icon={<FileQuestion className="h-4 w-4" />}
+                    isActive={activeFilter === "not_started"}
                     onClick={() => onFilterChange?.("not_started")}
                   />
                   <StageConnector />
                   <WorkflowStage
                     label="Draft"
-                    count={data.workflow_breakdown.draft}
+                    count={data.workflow_breakdown.draft ?? 0}
                     color="text-blue-600"
                     bgColor="bg-blue-50"
                     borderColor="border-blue-200"
-                    percentage={getStagePercentage(data.workflow_breakdown.draft)}
+                    percentage={getStagePercentage(data.workflow_breakdown.draft ?? 0)}
                     description="Assessment started but not yet submitted by BLGU."
                     icon={<FilePen className="h-4 w-4" />}
+                    isActive={activeFilter === "draft"}
                     onClick={() => onFilterChange?.("draft")}
                   />
                   <StageConnector />
                   <WorkflowStage
                     label="Submitted"
-                    count={data.workflow_breakdown.submitted}
+                    count={data.workflow_breakdown.submitted ?? 0}
                     color="text-cyan-600"
                     bgColor="bg-cyan-50"
                     borderColor="border-cyan-200"
-                    percentage={getStagePercentage(data.workflow_breakdown.submitted)}
+                    percentage={getStagePercentage(data.workflow_breakdown.submitted ?? 0)}
                     description="Submitted by BLGU, awaiting assessor review."
                     icon={<Send className="h-4 w-4" />}
+                    isActive={activeFilter === "submitted"}
                     onClick={() => onFilterChange?.("submitted")}
                   />
                   <StageConnector />
                   <WorkflowStage
                     label="In Review"
-                    count={data.workflow_breakdown.in_review}
+                    count={data.workflow_breakdown.in_review ?? 0}
                     color="text-indigo-600"
                     bgColor="bg-indigo-50"
                     borderColor="border-indigo-200"
-                    percentage={getStagePercentage(data.workflow_breakdown.in_review)}
+                    percentage={getStagePercentage(data.workflow_breakdown.in_review ?? 0)}
                     description="Being reviewed by an assessor."
                     icon={<Eye className="h-4 w-4" />}
+                    isActive={activeFilter === "in_review"}
                     onClick={() => onFilterChange?.("in_review")}
                   />
                   <StageConnector />
                   <WorkflowStage
                     label="Validation"
-                    count={data.workflow_breakdown.awaiting_validation}
+                    count={data.workflow_breakdown.awaiting_validation ?? 0}
                     color="text-purple-600"
                     bgColor="bg-purple-50"
                     borderColor="border-purple-200"
-                    percentage={getStagePercentage(data.workflow_breakdown.awaiting_validation)}
+                    percentage={getStagePercentage(
+                      data.workflow_breakdown.awaiting_validation ?? 0
+                    )}
                     description="Awaiting validator to determine pass/fail."
                     icon={<ClipboardCheck className="h-4 w-4" />}
+                    isActive={activeFilter === "awaiting_validation"}
                     onClick={() => onFilterChange?.("awaiting_validation")}
                   />
                   <StageConnector />
                   <WorkflowStage
                     label="Approval"
-                    count={data.workflow_breakdown.awaiting_approval}
+                    count={data.workflow_breakdown.awaiting_approval ?? 0}
                     color="text-amber-600"
                     bgColor="bg-amber-50"
                     borderColor="border-amber-200"
-                    percentage={getStagePercentage(data.workflow_breakdown.awaiting_approval)}
+                    percentage={getStagePercentage(data.workflow_breakdown.awaiting_approval ?? 0)}
                     description="Awaiting MLGOO final approval."
                     icon={<Stamp className="h-4 w-4" />}
+                    isActive={activeFilter === "awaiting_approval"}
                     onClick={() => onFilterChange?.("awaiting_approval")}
                   />
                   <StageConnector />
                   <WorkflowStage
                     label="Completed"
-                    count={data.workflow_breakdown.completed}
+                    count={data.workflow_breakdown.completed ?? 0}
                     color="text-green-600"
                     bgColor="bg-green-50"
                     borderColor="border-green-200"
-                    percentage={getStagePercentage(data.workflow_breakdown.completed)}
+                    percentage={getStagePercentage(data.workflow_breakdown.completed ?? 0)}
                     description="Assessment finalized with pass/fail result."
                     icon={<CheckCircle2 className="h-4 w-4" />}
+                    isActive={activeFilter === "completed"}
                     onClick={() => onFilterChange?.("completed")}
                   />
                 </div>
@@ -494,57 +506,59 @@ export function ComplianceSummaryCard({
                 {/* Pipeline Distribution Bar */}
                 <div className="space-y-1.5">
                   <div className="relative h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
-                    {data.workflow_breakdown.not_started > 0 && (
+                    {(data.workflow_breakdown.not_started ?? 0) > 0 && (
                       <div
                         className="h-full bg-slate-300 transition-all duration-500"
                         style={{
-                          width: `${getStagePercentage(data.workflow_breakdown.not_started)}%`,
+                          width: `${getStagePercentage(data.workflow_breakdown.not_started ?? 0)}%`,
                         }}
                       />
                     )}
-                    {data.workflow_breakdown.draft > 0 && (
+                    {(data.workflow_breakdown.draft ?? 0) > 0 && (
                       <div
                         className="h-full bg-blue-300 transition-all duration-500"
-                        style={{ width: `${getStagePercentage(data.workflow_breakdown.draft)}%` }}
+                        style={{
+                          width: `${getStagePercentage(data.workflow_breakdown.draft ?? 0)}%`,
+                        }}
                       />
                     )}
-                    {data.workflow_breakdown.submitted > 0 && (
+                    {(data.workflow_breakdown.submitted ?? 0) > 0 && (
                       <div
                         className="h-full bg-cyan-300 transition-all duration-500"
                         style={{
-                          width: `${getStagePercentage(data.workflow_breakdown.submitted)}%`,
+                          width: `${getStagePercentage(data.workflow_breakdown.submitted ?? 0)}%`,
                         }}
                       />
                     )}
-                    {data.workflow_breakdown.in_review > 0 && (
+                    {(data.workflow_breakdown.in_review ?? 0) > 0 && (
                       <div
                         className="h-full bg-indigo-300 transition-all duration-500"
                         style={{
-                          width: `${getStagePercentage(data.workflow_breakdown.in_review)}%`,
+                          width: `${getStagePercentage(data.workflow_breakdown.in_review ?? 0)}%`,
                         }}
                       />
                     )}
-                    {data.workflow_breakdown.awaiting_validation > 0 && (
+                    {(data.workflow_breakdown.awaiting_validation ?? 0) > 0 && (
                       <div
                         className="h-full bg-purple-400 transition-all duration-500"
                         style={{
-                          width: `${getStagePercentage(data.workflow_breakdown.awaiting_validation)}%`,
+                          width: `${getStagePercentage(data.workflow_breakdown.awaiting_validation ?? 0)}%`,
                         }}
                       />
                     )}
-                    {data.workflow_breakdown.awaiting_approval > 0 && (
+                    {(data.workflow_breakdown.awaiting_approval ?? 0) > 0 && (
                       <div
                         className="h-full bg-amber-400 transition-all duration-500"
                         style={{
-                          width: `${getStagePercentage(data.workflow_breakdown.awaiting_approval)}%`,
+                          width: `${getStagePercentage(data.workflow_breakdown.awaiting_approval ?? 0)}%`,
                         }}
                       />
                     )}
-                    {data.workflow_breakdown.completed > 0 && (
+                    {(data.workflow_breakdown.completed ?? 0) > 0 && (
                       <div
                         className="h-full bg-green-500 transition-all duration-500"
                         style={{
-                          width: `${getStagePercentage(data.workflow_breakdown.completed)}%`,
+                          width: `${getStagePercentage(data.workflow_breakdown.completed ?? 0)}%`,
                         }}
                       />
                     )}
@@ -554,23 +568,23 @@ export function ComplianceSummaryCard({
                 {/* Insights & Rework indicator */}
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Bottleneck insight */}
-                  {data.workflow_breakdown.not_started > data.total_barangays * 0.5 && (
+                  {(data.workflow_breakdown.not_started ?? 0) > data.total_barangays * 0.5 && (
                     <Badge
                       variant="outline"
                       className="text-xs border-slate-300 text-slate-700 bg-slate-50"
                     >
                       <AlertTriangle className="h-3 w-3 mr-1" />
-                      {data.workflow_breakdown.not_started} barangays haven&apos;t started
+                      {data.workflow_breakdown.not_started ?? 0} barangays haven&apos;t started
                     </Badge>
                   )}
-                  {data.workflow_breakdown.rework > 0 && (
+                  {(data.workflow_breakdown.rework ?? 0) > 0 && (
                     <Badge
                       variant="outline"
                       className="text-xs border-orange-300 text-orange-700 bg-orange-50 cursor-pointer hover:bg-orange-100"
                       onClick={() => onFilterChange?.("rework")}
                     >
                       <RotateCcw className="h-3 w-3 mr-1" />
-                      {data.workflow_breakdown.rework} in rework
+                      {data.workflow_breakdown.rework ?? 0} in rework
                     </Badge>
                   )}
                 </div>
@@ -661,14 +675,14 @@ export function ComplianceSummaryCard({
                   {data.stalled_assessments} Stalled
                 </Badge>
               )}
-              {data.workflow_breakdown?.rework > 0 && (
+              {(data.workflow_breakdown?.rework ?? 0) > 0 && (
                 <Badge
                   variant="outline"
                   className="flex items-center gap-1 rounded-sm border-orange-300 text-orange-700 cursor-pointer hover:bg-orange-50"
                   onClick={() => onFilterChange?.("rework")}
                 >
                   <RotateCcw className="h-3 w-3" aria-hidden="true" />
-                  {data.workflow_breakdown.rework} In Rework
+                  {data.workflow_breakdown?.rework ?? 0} In Rework
                 </Badge>
               )}
             </div>
