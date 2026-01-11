@@ -2,6 +2,10 @@
 # SQLAlchemy models for assessment-related tables
 
 from datetime import datetime
+
+# Total number of governance areas in the SGLGB framework
+# Used for per-area assessor approval workflow
+TOTAL_GOVERNANCE_AREAS = 6
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -356,14 +360,18 @@ class Assessment(Base):
     # ==========================================================================
     def all_areas_approved(self) -> bool:
         """
-        Check if all 6 governance areas are approved by assessors.
+        Check if all governance areas are approved by assessors.
 
         Returns:
-            True if all 6 areas are approved, False otherwise
+            True if all areas are approved, False otherwise
         """
         if not self.area_assessor_approved:
             return False
-        return all(self.area_assessor_approved.get(str(i), False) for i in range(1, 7))
+        # TOTAL_GOVERNANCE_AREAS is 6 (governance area IDs 1-6)
+        return all(
+            self.area_assessor_approved.get(str(i), False)
+            for i in range(1, TOTAL_GOVERNANCE_AREAS + 1)
+        )
 
     def get_area_status(self, governance_area_id: int) -> str:
         """

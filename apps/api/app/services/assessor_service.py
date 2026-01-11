@@ -1153,6 +1153,21 @@ class AssessorService:
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
 
+        # Verify assessment is in a valid status for area approval
+        # Valid statuses: SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK
+        valid_statuses = (
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.SUBMITTED_FOR_REVIEW,
+            AssessmentStatus.IN_REVIEW,
+            AssessmentStatus.REWORK,
+        )
+        if assessment.status not in valid_statuses:
+            raise ValueError(
+                f"Assessment is in '{assessment.status.value}' status. "
+                f"Area approval is only allowed for assessments in SUBMITTED, "
+                f"SUBMITTED_FOR_REVIEW, IN_REVIEW, or REWORK status."
+            )
+
         # Check current area status
         area_status = assessment.get_area_status(governance_area_id)
         if area_status == "approved":
@@ -1263,6 +1278,21 @@ class AssessorService:
         assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
+
+        # Verify assessment is in a valid status for area rework request
+        # Valid statuses: SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW
+        # Note: REWORK status means rework was already requested globally
+        valid_statuses = (
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.SUBMITTED_FOR_REVIEW,
+            AssessmentStatus.IN_REVIEW,
+        )
+        if assessment.status not in valid_statuses:
+            raise ValueError(
+                f"Assessment is in '{assessment.status.value}' status. "
+                f"Area rework request is only allowed for assessments in SUBMITTED, "
+                f"SUBMITTED_FOR_REVIEW, or IN_REVIEW status."
+            )
 
         # Check if rework round has already been used
         if assessment.rework_round_used:
@@ -1879,68 +1909,26 @@ class AssessorService:
             assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
 
         elif is_assessor:
-            # ===== PHASE 1: ASSESSORS (Table Assessment) =====
-            # Can finalize from SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK, or SUBMITTED statuses
-            # SUBMITTED status occurs when BLGU resubmits after rework
-            if assessment.status not in (
-                AssessmentStatus.SUBMITTED_FOR_REVIEW,
-                AssessmentStatus.IN_REVIEW,
-                AssessmentStatus.REWORK,
-                AssessmentStatus.SUBMITTED,
-            ):
-                raise ValueError("Cannot finalize assessment in its current status")
-
-            # For assessors: Check if ALL responses have checklist data or comments
-            # (Assessors fill checklists/comments, not validation_status)
-            unreviewed_responses = []
-            for response in assessment.responses:
-                response_data = response.response_data or {}
-
-                # Check for assessor validation data (assessor_val_ prefix)
-                has_assessor_checklist = any(
-                    key.startswith("assessor_val_") for key in response_data.keys()
-                )
-
-                # Check for feedback comments in the feedback_comments relationship
-                has_feedback_comments = len(response.feedback_comments) > 0
-
-                # Debug logging for each response
-                self.logger.info(
-                    f"[FINALIZE CHECK] Response {response.id}: "
-                    f"has_assessor_checklist={has_assessor_checklist}, "
-                    f"has_feedback_comments={has_feedback_comments}, "
-                    f"response_data_keys={list(response_data.keys())}"
-                )
-
-                # Response must have either checklist data or feedback comments
-                if not (has_assessor_checklist or has_feedback_comments):
-                    unreviewed_responses.append(response.id)
-
-            if unreviewed_responses:
-                self.logger.error(
-                    f"[FINALIZE FAILED] Cannot finalize assessment {assessment_id}. "
-                    f"Unreviewed response IDs: {unreviewed_responses}"
-                )
-                raise ValueError(
-                    f"Cannot finalize assessment. Unreviewed response IDs: {unreviewed_responses}"
-                )
-
-            # All assessor reviews complete - move to Phase 2 (Table Validation)
-            assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
-            # Track which assessor completed the review
-            assessment.reviewed_by = assessor.id
-
-            # IMPORTANT: Keep ALL assessor checklist data for validators to review
-            # Validators need to see what the assessor marked, even for reworked indicators
-            # They can override the assessor's decisions if needed
-            # DO NOT clear validation_status or checklist data here
-
-            # HOWEVER, we MUST clear the 'requires_rework' flag.
-            # If the assessor is finalizing, it means they are satisfied with the current state (or waived issues).
-            # If we don't clear this, these flags will persist and cause "Zombie Rework" items
-            # to appear if the assessment is later returned for Calibration (Phase 2).
-            for response in assessment.responses:
-                response.requires_rework = False
+            # ===== PHASE 1: ASSESSORS (Per-Area Approval) =====
+            # After workflow restructuring (Jan 2026), assessors are area-specific.
+            # Each of the 6 assessors reviews their assigned governance area and uses
+            # the per-area approve endpoint: POST /assessments/{id}/areas/{area_id}/approve
+            #
+            # The legacy finalize_assessment() endpoint should NOT be used by assessors
+            # as it would bypass the per-area approval workflow and create inconsistent state.
+            #
+            # When all 6 areas are approved via approve_area(), the assessment automatically
+            # transitions to AWAITING_FINAL_VALIDATION for the validator to review.
+            self.logger.warning(
+                f"[FINALIZE BLOCKED] Assessor {assessor.id} attempted to use legacy "
+                f"finalize_assessment() for assessment {assessment_id}. "
+                f"Assessors should use approve_area() endpoint instead."
+            )
+            raise ValueError(
+                "Assessors should use the per-area approval endpoint. "
+                "Please use POST /assessor/assessments/{id}/areas/{area_id}/approve "
+                "to approve your governance area."
+            )
 
         self.logger.info("[FINALIZE DEBUG] Validation checks passed. Committing to DB...")
 
