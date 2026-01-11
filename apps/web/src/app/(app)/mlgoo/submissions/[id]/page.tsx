@@ -31,50 +31,50 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
-    getGetCapdevAssessmentsAssessmentIdQueryKey,
-    useGetAssessmentsList,
-    useGetCapdevAssessmentsAssessmentId,
-    useGetMlgooAssessmentsAssessmentId,
-    usePatchMlgooAssessmentResponsesResponseIdOverrideStatus,
-    usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
-    usePostCapdevAssessmentsAssessmentIdRegenerate,
-    usePostMlgooAssessmentsAssessmentIdApprove,
-    usePostMlgooAssessmentsAssessmentIdRecalibrateByMov
+  getGetCapdevAssessmentsAssessmentIdQueryKey,
+  useGetAssessmentsList,
+  useGetCapdevAssessmentsAssessmentId,
+  useGetMlgooAssessmentsAssessmentId,
+  usePatchMlgooAssessmentResponsesResponseIdOverrideStatus,
+  usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
+  usePostCapdevAssessmentsAssessmentIdRegenerate,
+  usePostMlgooAssessmentsAssessmentIdApprove,
+  usePostMlgooAssessmentsAssessmentIdRecalibrateByMov,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-    AlertCircle,
-    AlertTriangle,
-    ArrowLeft,
-    Award,
-    Calendar,
-    CheckCircle,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
-    ChevronUp,
-    Clock,
-    Eye,
-    FileCheck,
-    FileText,
-    LayoutDashboard,
-    ListChecks,
-    Loader2,
-    RotateCcw,
-    TrendingUp,
-    Upload,
-    X,
-    XCircle
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Award,
+  Calendar,
+  CheckCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Clock,
+  Eye,
+  FileCheck,
+  FileText,
+  LayoutDashboard,
+  ListChecks,
+  Loader2,
+  RotateCcw,
+  TrendingUp,
+  Upload,
+  X,
+  XCircle,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -132,17 +132,19 @@ function VerdictResultCard({ isPassed }: { isPassed: boolean }) {
 }
 
 // Completion Progress Card for DRAFT assessments
+// Shows indicator completion based on is_completed flag (form filled + required MOVs)
+// This aligns with the geographic map's completion calculation
 function CompletionProgressCard({
-  indicatorsWithMov,
+  completedIndicators,
   totalIndicators,
   totalMovFiles,
 }: {
-  indicatorsWithMov: number;
+  completedIndicators: number;
   totalIndicators: number;
   totalMovFiles: number;
 }) {
   const percentage =
-    totalIndicators > 0 ? Math.round((indicatorsWithMov / totalIndicators) * 100) : 0;
+    totalIndicators > 0 ? Math.round((completedIndicators / totalIndicators) * 100) : 0;
 
   // Determine color based on percentage
   const getProgressColor = () => {
@@ -167,12 +169,12 @@ function CompletionProgressCard({
   };
 
   const getStatusMessage = () => {
-    if (percentage === 100) return "All indicators have MOV uploads";
+    if (percentage === 100) return "All indicators complete";
     if (percentage >= 80) return "Almost complete - just a few more to go";
     if (percentage >= 50) return "Good progress - over halfway there";
-    if (percentage >= 25) return "Getting started - keep uploading";
-    if (percentage > 0) return "Early stage - many indicators need MOVs";
-    return "No MOVs uploaded yet";
+    if (percentage >= 25) return "Getting started - keep going";
+    if (percentage > 0) return "Early stage - many indicators need completion";
+    return "No indicators completed yet";
   };
 
   return (
@@ -195,7 +197,7 @@ function CompletionProgressCard({
               <Upload className={`w-6 h-6 ${getTextColor()}`} />
             </div>
             <div>
-              <h3 className={`text-sm font-semibold ${getTextColor()}`}>MOV Upload Progress</h3>
+              <h3 className={`text-sm font-semibold ${getTextColor()}`}>Indicator Completion</h3>
               <p className="text-xs text-gray-500">{getStatusMessage()}</p>
             </div>
           </div>
@@ -204,7 +206,7 @@ function CompletionProgressCard({
           <div className="flex-1 lg:max-w-md">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-medium text-gray-600">
-                {indicatorsWithMov} of {totalIndicators} indicators
+                {completedIndicators} of {totalIndicators} indicators
               </span>
               <span className={`text-sm font-bold ${getTextColor()}`}>{percentage}%</span>
             </div>
@@ -214,7 +216,7 @@ function CompletionProgressCard({
               aria-valuenow={percentage}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={`MOV upload progress: ${percentage}% complete, ${indicatorsWithMov} of ${totalIndicators} indicators have uploads`}
+              aria-label={`Indicator completion: ${percentage}% complete, ${completedIndicators} of ${totalIndicators} indicators`}
             >
               <div
                 className={`absolute inset-y-0 left-0 ${getProgressColor()} rounded-full transition-all duration-500 ease-out`}
@@ -230,8 +232,8 @@ function CompletionProgressCard({
                 <FileCheck className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-gray-900">{indicatorsWithMov}</p>
-                <p className="text-xs text-gray-500">With MOVs</p>
+                <p className="text-lg font-bold text-gray-900">{completedIndicators}</p>
+                <p className="text-xs text-gray-500">Completed</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -286,27 +288,34 @@ export default function SubmissionDetailsPage() {
   const { data: allSubmissions } = useGetAssessmentsList({});
 
   // Compute previous and next submission IDs
-  const { prevSubmissionId, nextSubmissionId, currentIndex, totalSubmissions } = React.useMemo(() => {
-    if (!allSubmissions || !Array.isArray(allSubmissions)) {
-      return { prevSubmissionId: null, nextSubmissionId: null, currentIndex: -1, totalSubmissions: 0 };
-    }
+  const { prevSubmissionId, nextSubmissionId, currentIndex, totalSubmissions } =
+    React.useMemo(() => {
+      if (!allSubmissions || !Array.isArray(allSubmissions)) {
+        return {
+          prevSubmissionId: null,
+          nextSubmissionId: null,
+          currentIndex: -1,
+          totalSubmissions: 0,
+        };
+      }
 
-    const sortedSubmissions = [...allSubmissions].sort((a: any, b: any) => {
-      // Sort by barangay name alphabetically for consistent navigation
-      const nameA = a.barangay_name || "";
-      const nameB = b.barangay_name || "";
-      return nameA.localeCompare(nameB);
-    });
+      const sortedSubmissions = [...allSubmissions].sort((a: any, b: any) => {
+        // Sort by barangay name alphabetically for consistent navigation
+        const nameA = a.barangay_name || "";
+        const nameB = b.barangay_name || "";
+        return nameA.localeCompare(nameB);
+      });
 
-    const currentIdx = sortedSubmissions.findIndex((s: any) => s.id === assessmentId);
-    
-    return {
-      prevSubmissionId: currentIdx > 0 ? sortedSubmissions[currentIdx - 1].id : null,
-      nextSubmissionId: currentIdx < sortedSubmissions.length - 1 ? sortedSubmissions[currentIdx + 1].id : null,
-      currentIndex: currentIdx,
-      totalSubmissions: sortedSubmissions.length,
-    };
-  }, [allSubmissions, assessmentId]);
+      const currentIdx = sortedSubmissions.findIndex((s: any) => s.id === assessmentId);
+
+      return {
+        prevSubmissionId: currentIdx > 0 ? sortedSubmissions[currentIdx - 1].id : null,
+        nextSubmissionId:
+          currentIdx < sortedSubmissions.length - 1 ? sortedSubmissions[currentIdx + 1].id : null,
+        currentIndex: currentIdx,
+        totalSubmissions: sortedSubmissions.length,
+      };
+    }, [allSubmissions, assessmentId]);
 
   // Track previous CapDev status for notifications
   const prevCapDevStatusRef = React.useRef<string | null>(null);
@@ -673,10 +682,11 @@ export default function SubmissionDetailsPage() {
     assessment.overall_score ??
     (totalIndicators > 0 ? Math.round((totalPass / totalIndicators) * 100) : 0);
 
-  // Calculate MOV completion progress (for DRAFT assessments)
-  // Note: This runs after data is loaded, so no useMemo needed - calculation is fast
+  // Calculate indicator completion progress (for DRAFT assessments)
+  // Uses is_completed flag which checks: form filled + required MOVs uploaded
+  // This aligns with the geographic map's completion calculation
   const isDraft = assessment.status === "DRAFT";
-  let indicatorsWithMov = 0;
+  let completedIndicators = 0;
   let totalMovFiles = 0;
   let allIndicatorsCount = 0;
 
@@ -685,8 +695,8 @@ export default function SubmissionDetailsPage() {
       allIndicatorsCount++;
       const movCount = (ind.mov_files || []).length;
       totalMovFiles += movCount;
-      if (movCount > 0) {
-        indicatorsWithMov++;
+      if (ind.is_completed) {
+        completedIndicators++;
       }
     }
   }
@@ -823,7 +833,9 @@ export default function SubmissionDetailsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => prevSubmissionId && router.push(`/mlgoo/submissions/${prevSubmissionId}`)}
+                  onClick={() =>
+                    prevSubmissionId && router.push(`/mlgoo/submissions/${prevSubmissionId}`)
+                  }
                   disabled={!prevSubmissionId}
                   className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
                   title="Previous submission"
@@ -834,7 +846,9 @@ export default function SubmissionDetailsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => nextSubmissionId && router.push(`/mlgoo/submissions/${nextSubmissionId}`)}
+                  onClick={() =>
+                    nextSubmissionId && router.push(`/mlgoo/submissions/${nextSubmissionId}`)
+                  }
                   disabled={!nextSubmissionId}
                   className="rounded-sm border-[var(--border)] hover:bg-[var(--hover)] disabled:opacity-50"
                   title="Next submission"
@@ -932,7 +946,7 @@ export default function SubmissionDetailsPage() {
           {/* Completion Progress Card - Only for DRAFT assessments */}
           {isDraft && (
             <CompletionProgressCard
-              indicatorsWithMov={indicatorsWithMov}
+              completedIndicators={completedIndicators}
               totalIndicators={allIndicatorsCount}
               totalMovFiles={totalMovFiles}
             />

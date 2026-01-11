@@ -31,6 +31,10 @@ export interface SubmissionUIModel {
   /** @deprecated Use `reviewers` instead. Kept for backward compatibility. */
   assignedValidators: ReviewerInfo[];
   lastUpdated: string;
+  /** Number of governance areas approved by assessors (0-6) */
+  areasApprovedCount: number;
+  /** Per-area assessor approval status: {"1": true, "2": false, ...} */
+  areaApprovalStatus: Record<string, boolean>;
 }
 
 /**
@@ -54,6 +58,10 @@ interface ApiAssessment {
     role?: "assessor" | "validator";
     governance_area_id?: number;
   }>;
+  /** Per-area assessor approval status: {"1": true, "2": false, ...} */
+  area_assessor_approved?: Record<string, boolean>;
+  /** Number of governance areas approved by assessors (0-6) */
+  areas_approved_count?: number;
 }
 
 /**
@@ -69,6 +77,8 @@ export function transformAssessmentToUI(assessment: ApiAssessment): SubmissionUI
     reviewers,
     assignedValidators: reviewers, // Backward compatibility
     lastUpdated: formatLastUpdated(assessment.updated_at),
+    areasApprovedCount: assessment.areas_approved_count ?? 0,
+    areaApprovalStatus: assessment.area_assessor_approved ?? {},
   };
 }
 
@@ -288,4 +298,94 @@ export function filterSubmissionsBySearch(
   return submissions.filter((submission) =>
     submission.barangayName.toLowerCase().includes(lowerQuery)
   );
+}
+
+/**
+ * Short names for the 6 governance areas (used in tooltips and compact displays).
+ */
+export const GOVERNANCE_AREA_SHORT_NAMES: Record<number, string> = {
+  1: "Financial Admin",
+  2: "Disaster Prep",
+  3: "Peace & Order",
+  4: "Social Protection",
+  5: "Business-Friendliness",
+  6: "Environmental Mgmt",
+};
+
+/**
+ * Validator display status for the Reviewers & Progress column.
+ */
+export interface ValidatorDisplayStatus {
+  text: string;
+  className: string;
+}
+
+/**
+ * Determines the validator status display based on assessment workflow state.
+ *
+ * Logic:
+ * - Draft: "Unassigned" (gray, italic)
+ * - Completed/Validated: "Complete" (green)
+ * - Awaiting MLGOO Approval: "Awaiting MLGOO" (purple)
+ * - MLGOO RE-Calibration: "RE-Calibration" (purple)
+ * - Awaiting Final Validation (6/6 areas approved): "Awaiting Validation" (blue)
+ * - In Review / Needs Rework / Submitted (< 6 areas): "Awaiting Assessors" (gray, italic)
+ */
+export function getValidatorDisplayStatus(submission: SubmissionUIModel): ValidatorDisplayStatus {
+  const { areasApprovedCount, currentStatus } = submission;
+
+  // Draft state - no one assigned yet
+  if (currentStatus === "Draft") {
+    return { text: "Unassigned", className: "italic text-[var(--muted-foreground)]" };
+  }
+
+  // Final completed states
+  if (currentStatus === "Completed" || currentStatus === "Validated") {
+    return { text: "Complete", className: "text-green-600" };
+  }
+
+  // MLGOO approval stage
+  if (currentStatus === "Awaiting MLGOO Approval") {
+    return { text: "Awaiting MLGOO", className: "text-purple-600" };
+  }
+
+  // MLGOO RE-Calibration (special rework from MLGOO)
+  if (currentStatus === "MLGOO RE-Calibration") {
+    return { text: "RE-Calibration", className: "text-purple-600" };
+  }
+
+  // Awaiting Final Validation (all 6 assessors done)
+  if (currentStatus === "Awaiting Final Validation") {
+    return { text: "Awaiting Validation", className: "text-blue-600" };
+  }
+
+  // Still in assessor phase (In Review, Needs Rework, Submitted for Review)
+  if (areasApprovedCount < 6) {
+    return { text: "Awaiting Assessors", className: "italic text-[var(--muted-foreground)]" };
+  }
+
+  // Fallback for any edge cases with 6/6 areas approved
+  return { text: "Awaiting Validation", className: "text-blue-600" };
+}
+
+/**
+ * Gets the breakdown of approved vs missing governance areas for tooltip display.
+ */
+export function getAreasBreakdown(areaApprovalStatus: Record<string, boolean>): {
+  approved: string[];
+  missing: string[];
+} {
+  const approved: string[] = [];
+  const missing: string[] = [];
+
+  for (let i = 1; i <= 6; i++) {
+    const areaName = GOVERNANCE_AREA_SHORT_NAMES[i];
+    if (areaApprovalStatus[String(i)]) {
+      approved.push(areaName);
+    } else {
+      missing.push(areaName);
+    }
+  }
+
+  return { approved, missing };
 }

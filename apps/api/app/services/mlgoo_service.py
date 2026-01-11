@@ -867,6 +867,7 @@ class MLGOOService:
                 if response and response.validation_status
                 else None,
                 "assessor_remarks": response.assessor_remarks if response else None,
+                "is_completed": response.is_completed if response else False,
                 "is_recalibration_target": bool(
                     assessment.mlgoo_recalibration_indicator_ids
                     and indicator.id in assessment.mlgoo_recalibration_indicator_ids

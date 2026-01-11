@@ -7,11 +7,12 @@ import {
   SubmissionsEmptyState,
   SubmissionsMobileList,
   SubmissionsSkeleton,
+  getAreasBreakdown,
   getProgressBarColor,
   getStatusConfig,
+  getValidatorDisplayStatus,
   useSubmissionsData,
   useSubmissionsFilters,
-  type ReviewerInfo,
   type SortableColumn,
   type SubmissionUIModel,
 } from "@/components/features/submissions";
@@ -29,6 +30,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
 import {
   AlertTriangle,
+  Check,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -44,143 +46,70 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
- * Governance area icon mapping by ID.
+ * Mini-dashboard display for reviewers and progress.
+ * Row 1: Assessors progress (X/6) with tooltip showing area breakdown
+ * Row 2: Validator status based on assessment phase
  */
-const GOVERNANCE_AREA_ICONS: Record<number, string> = {
-  1: "/Assessment_Areas/financialAdmin.png",
-  2: "/Assessment_Areas/disasterPreparedness.png",
-  3: "/Assessment_Areas/safetyPeaceAndOrder.png",
-  4: "/Assessment_Areas/socialProtectAndSensitivity.png",
-  5: "/Assessment_Areas/businessFriendliness.png",
-  6: "/Assessment_Areas/environmentalManagement.png",
-};
+function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel }) {
+  const { areasApprovedCount, areaApprovalStatus } = submission;
+  const isComplete = areasApprovedCount === 6;
 
-/**
- * Governance area names by ID.
- */
-const GOVERNANCE_AREA_NAMES: Record<number, string> = {
-  1: "Financial Administration",
-  2: "Disaster Preparedness",
-  3: "Safety, Peace and Order",
-  4: "Social Protection",
-  5: "Business-Friendliness",
-  6: "Environmental Management",
-};
-
-/**
- * Compact stacked avatar display for reviewers.
- * Shows first 4 avatars with overlap, then "+N" for overflow.
- * Validators show governance area icons, assessors show purple avatar.
- * Hover tooltip shows full list of reviewers.
- */
-function ReviewerAvatars({
-  reviewers,
-  maxVisible = 4,
-}: {
-  reviewers: ReviewerInfo[];
-  maxVisible?: number;
-}) {
-  if (reviewers.length === 0) {
-    return <span className="text-sm text-[var(--muted-foreground)] italic">No reviewers yet</span>;
-  }
-
-  const visibleReviewers = reviewers.slice(0, maxVisible);
-  const overflowCount = reviewers.length - maxVisible;
-
-  const getRoleLabel = (reviewer: ReviewerInfo) => {
-    switch (reviewer.role) {
-      case "assessor":
-        return "Assessor";
-      case "validator":
-        return "Validator";
-      default:
-        return "Reviewer";
-    }
-  };
-
-  const tooltipContent = (
-    <div className="space-y-1.5 text-xs">
-      <div className="font-semibold text-[var(--foreground)] border-b border-[var(--border)] pb-1 mb-1">
-        Reviewers ({reviewers.length})
-      </div>
-      {reviewers.map((reviewer) => (
-        <div key={reviewer.id} className="flex items-center gap-2">
-          {reviewer.role === "validator" && reviewer.governanceAreaId ? (
-            <img
-              src={GOVERNANCE_AREA_ICONS[reviewer.governanceAreaId]}
-              alt={GOVERNANCE_AREA_NAMES[reviewer.governanceAreaId]}
-              className="w-5 h-5 rounded-full object-cover"
-            />
-          ) : (
-            <span
-              className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold ${
-                reviewer.role === "assessor"
-                  ? "bg-gradient-to-br from-purple-500 to-purple-600"
-                  : "bg-gradient-to-br from-gray-400 to-gray-500"
-              }`}
-            >
-              {reviewer.avatar.charAt(0)}
-            </span>
-          )}
-          <span className="text-[var(--foreground)]">{reviewer.name}</span>
-        </div>
-      ))}
-    </div>
-  );
+  // Use shared utility functions
+  const validatorDisplay = getValidatorDisplayStatus(submission);
+  const { approved, missing } = getAreasBreakdown(areaApprovalStatus);
 
   return (
-    <TooltipProvider>
-      <Tooltip delayDuration={200}>
-        <TooltipTrigger asChild>
-          <div className="flex items-center -space-x-2 cursor-pointer">
-            {visibleReviewers.map((reviewer, index) => (
-              <div
-                key={reviewer.id}
-                className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm ring-2 ring-[var(--background)] overflow-hidden"
-                style={{ zIndex: maxVisible - index }}
-                aria-label={`${getRoleLabel(reviewer)}: ${reviewer.name}`}
-                title={`${getRoleLabel(reviewer)}: ${reviewer.name}`}
+    <div className="flex flex-col gap-1.5">
+      {/* Row 1: Assessors Progress */}
+      <TooltipProvider>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 text-sm cursor-pointer">
+              <span className="font-semibold text-[var(--foreground)]">Assessors:</span>
+              <span
+                className={isComplete ? "text-green-600 font-medium" : "text-[var(--foreground)]"}
               >
-                {reviewer.role === "validator" && reviewer.governanceAreaId ? (
-                  <img
-                    src={GOVERNANCE_AREA_ICONS[reviewer.governanceAreaId]}
-                    alt={GOVERNANCE_AREA_NAMES[reviewer.governanceAreaId]}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className={`w-full h-full flex items-center justify-center text-white text-xs font-bold ${
-                      reviewer.role === "assessor"
-                        ? "bg-gradient-to-br from-purple-500 to-purple-600"
-                        : "bg-gradient-to-br from-gray-400 to-gray-500"
-                    }`}
-                  >
-                    {reviewer.avatar}
-                  </div>
-                )}
-              </div>
-            ))}
-            {overflowCount > 0 && (
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[var(--muted)] text-[var(--muted-foreground)] ring-2 ring-[var(--background)] shadow-sm"
-                style={{ zIndex: 0 }}
-                aria-label={`${overflowCount} more reviewers`}
-                title={`${overflowCount} more reviewers`}
-              >
-                +{overflowCount}
-              </div>
-            )}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent
-          side="bottom"
-          align="start"
-          className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-xs"
-        >
-          {tooltipContent}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+                {areasApprovedCount}/6
+              </span>
+              {isComplete ? (
+                <span className="inline-flex items-center gap-1 text-green-600">
+                  <Check className="h-3.5 w-3.5" />
+                  Complete
+                </span>
+              ) : (
+                <span className="text-[var(--muted-foreground)]">Submitted</span>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="bottom"
+            align="start"
+            className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-xs"
+          >
+            <div className="space-y-2 text-xs">
+              {approved.length > 0 && (
+                <div>
+                  <span className="font-semibold text-green-600">Reviewed:</span>
+                  <span className="ml-1 text-[var(--foreground)]">{approved.join(", ")}</span>
+                </div>
+              )}
+              {missing.length > 0 && (
+                <div>
+                  <span className="font-semibold text-amber-600">Missing:</span>
+                  <span className="ml-1 text-[var(--foreground)]">{missing.join(", ")}</span>
+                </div>
+              )}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Row 2: Validator Status */}
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-semibold text-[var(--foreground)]">Validator:</span>
+        <span className={validatorDisplay.className}>{validatorDisplay.text}</span>
+      </div>
+    </div>
   );
 }
 
@@ -510,7 +439,7 @@ export default function AdminSubmissionsPage() {
                         </th>
                         <th role="columnheader" className="px-6 py-4 text-left">
                           <div className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                            Reviewers
+                            Reviewers & Progress
                           </div>
                         </th>
                         <th
@@ -584,7 +513,7 @@ export default function AdminSubmissionsPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <ReviewerAvatars reviewers={submission.reviewers} />
+                              <ReviewersProgressColumn submission={submission} />
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm text-[var(--muted-foreground)]">

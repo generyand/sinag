@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Eye, Loader2, Send } from "lucide-react";
-import type { SubmissionUIModel } from "./utils/dataTransformers";
+import { Check, Eye, Loader2, Send } from "lucide-react";
+import { getValidatorDisplayStatus, type SubmissionUIModel } from "./utils/dataTransformers";
 import { getProgressBarColor, getStatusConfig } from "./utils/statusConfig";
 
 interface SubmissionsMobileCardProps {
@@ -25,6 +25,7 @@ export function SubmissionsMobileCard({
   const statusConfig = getStatusConfig(submission.currentStatus);
   const StatusIcon = statusConfig.icon;
   const progressColor = getProgressBarColor(submission.overallProgress);
+  const validatorDisplay = getValidatorDisplayStatus(submission);
 
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 shadow-sm">
@@ -65,34 +66,36 @@ export function SubmissionsMobileCard({
       </div>
 
       {/* Meta info */}
-      <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-        <div>
-          <span className="text-[var(--muted-foreground)] block mb-0.5">Validators</span>
-          <div className="flex items-center gap-1.5">
-            {submission.assignedValidators.length > 0 ? (
-              submission.assignedValidators.slice(0, 3).map((validator) => (
-                <div
-                  key={validator.id}
-                  role="img"
-                  aria-label={`Validator: ${validator.name}`}
-                  title={validator.name}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm"
-                >
-                  {validator.avatar}
-                </div>
-              ))
-            ) : (
-              <span className="text-[var(--muted-foreground)] italic">None assigned</span>
-            )}
-            {submission.assignedValidators.length > 3 && (
-              <span className="text-xs text-[var(--muted-foreground)]">
-                +{submission.assignedValidators.length - 3}
-              </span>
-            )}
-          </div>
+      <div className="space-y-2 mb-4 text-sm">
+        {/* Assessors Progress */}
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-[var(--foreground)]">Assessors:</span>
+          <span
+            className={
+              submission.areasApprovedCount === 6
+                ? "text-green-600 font-medium"
+                : "text-[var(--foreground)]"
+            }
+          >
+            {submission.areasApprovedCount}/6
+          </span>
+          {submission.areasApprovedCount === 6 ? (
+            <span className="inline-flex items-center gap-1 text-green-600">
+              <Check className="h-3.5 w-3.5" />
+              Complete
+            </span>
+          ) : (
+            <span className="text-[var(--muted-foreground)]">Submitted</span>
+          )}
         </div>
-        <div>
-          <span className="text-[var(--muted-foreground)] block mb-0.5">Last Updated</span>
+        {/* Validator Status */}
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-[var(--foreground)]">Validator:</span>
+          <span className={validatorDisplay.className}>{validatorDisplay.text}</span>
+        </div>
+        {/* Last Updated */}
+        <div className="flex items-center gap-2">
+          <span className="text-[var(--muted-foreground)]">Updated:</span>
           <span className="text-[var(--foreground)]">{submission.lastUpdated}</span>
         </div>
       </div>
