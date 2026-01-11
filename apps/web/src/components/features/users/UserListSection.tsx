@@ -3,9 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUsers } from "@/hooks/useUsers";
+import { useAuthStore } from "@/store/useAuthStore";
 import type { User, UserListResponse } from "@sinag/shared";
+import { useDeleteUsersUserId } from "@sinag/shared";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { UserForm } from "./UserForm";
 import { UserManagementSkeleton } from "./UserManagementSkeleton";
 import UserManagementTable from "./UserManagementTable";
@@ -26,14 +29,33 @@ export default function UserListSection() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-  const { data, isLoading, error } = useUsers({
+  const { data, isLoading, error, refetch } = useUsers({
     page: 1,
     size: 100, // Fetch up to 100 users to show all users
   }) as {
     data?: UserListResponse;
     isLoading: boolean;
     error: unknown;
+    refetch: () => void;
   };
+
+  // Get current user to prevent self-deletion
+  const currentUser = useAuthStore((state) => state.user);
+
+  // Delete user mutation
+  const deleteUserMutation = useDeleteUsersUserId({
+    mutation: {
+      onSuccess: () => {
+        toast.success("User deactivated successfully");
+        refetch();
+      },
+      onError: (error) => {
+        const errorMessage =
+          error?.detail?.[0]?.msg || error?.detail || "Failed to deactivate user";
+        toast.error(errorMessage);
+      },
+    },
+  });
 
   // Filter and paginate users - now using debounced search query
   const filteredAndPaginatedUsers = useMemo(() => {
@@ -75,6 +97,13 @@ export default function UserListSection() {
     setIsFormOpen(false);
     setEditingUser(null);
   }, []);
+
+  const handleDeleteUser = useCallback(
+    (user: User) => {
+      deleteUserMutation.mutate({ userId: user.id });
+    },
+    [deleteUserMutation]
+  );
 
   // Memoize stats calculations to prevent unnecessary recalculations
   const stats = useMemo(() => {
@@ -277,6 +306,9 @@ export default function UserListSection() {
           <UserManagementTable
             users={filteredAndPaginatedUsers.users}
             onEditUser={handleEditUser}
+            onDeleteUser={handleDeleteUser}
+            currentUserId={currentUser?.id}
+            isDeleting={deleteUserMutation.isPending}
           />
 
           {/* Pagination Controls */}

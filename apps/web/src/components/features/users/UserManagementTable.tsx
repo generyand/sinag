@@ -1,8 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import type { User } from "@sinag/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Building, Users, Phone, Shield, KeyRound } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Edit, Trash2, Building, Users, Phone, Shield, KeyRound } from "lucide-react";
 import { useBarangays } from "@/hooks/useBarangays";
 import { useGovernanceAreas } from "@/hooks/useGovernanceAreas";
 import type { Barangay, GovernanceArea } from "@sinag/shared";
@@ -10,6 +20,9 @@ import type { Barangay, GovernanceArea } from "@sinag/shared";
 interface UserManagementTableProps {
   users: User[];
   onEditUser?: (user: User) => void;
+  onDeleteUser?: (user: User) => void;
+  currentUserId?: number;
+  isDeleting?: boolean;
 }
 
 function humanizeRole(role: string) {
@@ -33,11 +46,15 @@ const UserCard = React.memo(
   ({
     user,
     onEditUser,
+    onDeleteClick,
+    isCurrentUser,
     barangayMap,
     governanceAreaMap,
   }: {
     user: User;
     onEditUser?: (user: User) => void;
+    onDeleteClick?: (user: User) => void;
+    isCurrentUser?: boolean;
     barangayMap: Map<number, string>;
     governanceAreaMap: Map<number, string>;
   }) => {
@@ -199,7 +216,7 @@ const UserCard = React.memo(
           </div>
 
           {/* Actions */}
-          <div className="flex items-center flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -209,6 +226,18 @@ const UserCard = React.memo(
             >
               <Edit className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
               Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDeleteClick?.(user)}
+              disabled={isCurrentUser}
+              className="bg-[var(--background)] hover:bg-[var(--analytics-danger-bg)] border-[var(--border)] hover:border-[var(--analytics-danger-border)] text-[var(--foreground)] hover:text-[var(--analytics-danger-text)] rounded-sm text-xs font-medium transition-all duration-200 h-8 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={`Delete user ${user.name}`}
+              title={isCurrentUser ? "You cannot delete your own account" : undefined}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+              Delete
             </Button>
           </div>
         </div>
@@ -222,7 +251,14 @@ UserCard.displayName = "UserCard";
 const UserManagementTable = React.memo(function UserManagementTable({
   users,
   onEditUser,
+  onDeleteUser,
+  currentUserId,
+  isDeleting,
 }: UserManagementTableProps) {
+  // State for delete confirmation dialog
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   // Fetch barangays and governance areas data
   const { data: barangaysData } = useBarangays();
   const { data: governanceAreasData } = useGovernanceAreas();
@@ -241,30 +277,84 @@ const UserManagementTable = React.memo(function UserManagementTable({
     [governanceAreas]
   );
 
-  return (
-    <div className="space-y-2" role="list" aria-label="User accounts">
-      {users.map((user) => (
-        <UserCard
-          key={user.id}
-          user={user}
-          onEditUser={onEditUser}
-          barangayMap={barangayMap}
-          governanceAreaMap={governanceAreaMap}
-        />
-      ))}
+  // Handle delete button click - opens confirmation dialog
+  const handleDeleteClick = React.useCallback((user: User) => {
+    setUserToDelete(user);
+    setIsDeleteDialogOpen(true);
+  }, []);
 
-      {users.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-[var(--muted)]/20 rounded-sm flex items-center justify-center mx-auto mb-4">
-            <Users className="h-8 w-8 text-[var(--muted-foreground)]" aria-hidden="true" />
+  // Handle confirm delete
+  const handleConfirmDelete = React.useCallback(() => {
+    if (userToDelete && onDeleteUser) {
+      onDeleteUser(userToDelete);
+    }
+    setIsDeleteDialogOpen(false);
+    setUserToDelete(null);
+  }, [userToDelete, onDeleteUser]);
+
+  // Handle cancel delete
+  const handleCancelDelete = React.useCallback(() => {
+    setIsDeleteDialogOpen(false);
+    setUserToDelete(null);
+  }, []);
+
+  return (
+    <>
+      <div className="space-y-2" role="list" aria-label="User accounts">
+        {users.map((user) => (
+          <UserCard
+            key={user.id}
+            user={user}
+            onEditUser={onEditUser}
+            onDeleteClick={handleDeleteClick}
+            isCurrentUser={currentUserId === user.id}
+            barangayMap={barangayMap}
+            governanceAreaMap={governanceAreaMap}
+          />
+        ))}
+
+        {users.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-[var(--muted)]/20 rounded-sm flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-[var(--muted-foreground)]" aria-hidden="true" />
+            </div>
+            <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">No users found</h3>
+            <p className="text-[var(--muted-foreground)]">
+              Get started by adding your first user account.
+            </p>
           </div>
-          <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">No users found</h3>
-          <p className="text-[var(--muted-foreground)]">
-            Get started by adding your first user account.
-          </p>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="bg-[var(--card)] border-[var(--border)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[var(--foreground)]">Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--muted-foreground)]">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-[var(--foreground)]">{userToDelete?.name}</span>?
+              This will deactivate their account and they will no longer be able to log in.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={handleCancelDelete}
+              className="bg-[var(--background)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--muted)]/20"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-[var(--analytics-danger-bg)] text-[var(--analytics-danger-text)] border border-[var(--analytics-danger-border)] hover:bg-red-600 hover:text-white"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 });
 
