@@ -1713,6 +1713,24 @@ class AssessorService:
         assessment.calibration_count += 1  # Legacy: still increment for backwards compatibility
         assessment.calibration_round_used = True  # Mark calibration round as used
 
+        # Populate calibrated_area_ids with the governance area IDs of flagged indicators
+        # This is CRITICAL for submit_for_calibration_review to properly clear feedback_comments:
+        # - The cleanup logic at assessments.py:1668 filters by: r.indicator.governance_area_id in calibrated_area_ids
+        # - Without this, the filter returns empty and OLD validator feedback persists in the UI
+        # - This causes the "auto-checked checklist" bug where old "Validator's Findings" remain visible
+        from sqlalchemy.orm.attributes import flag_modified
+
+        calibrated_area_ids: list[int] = list(
+            set(
+                r.indicator.governance_area_id
+                for r in flagged_responses
+                if r.indicator is not None and r.indicator.governance_area_id is not None
+            )
+        )
+        assessment.calibrated_area_ids = calibrated_area_ids
+        flag_modified(assessment, "calibrated_area_ids")  # Ensure SQLAlchemy tracks the JSON change
+        self.logger.info(f"[CALIBRATION] Set calibrated_area_ids: {calibrated_area_ids}")
+
         # Mark flagged indicators for rework
         # These are the indicators the BLGU needs to correct and re-upload
         calibrated_count = 0
