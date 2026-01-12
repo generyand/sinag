@@ -1045,13 +1045,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     }
   };
 
-  const handleFileClick = () => {
-    // On mobile, auto-switch to validation tab when file is clicked
-    if (window.innerWidth < 768) {
-      setMobileTab("validation");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
@@ -1211,7 +1204,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                   separationLabel="After Rework"
                   onAnnotationCreated={handleAnnotationCreated}
                   onAnnotationDeleted={handleAnnotationDeleted}
-                  onFileClick={handleFileClick}
                 />
               </div>
             )}
@@ -1306,7 +1298,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                       separationLabel="After Rework"
                       onAnnotationCreated={handleAnnotationCreated}
                       onAnnotationDeleted={handleAnnotationDeleted}
-                      onFileClick={handleFileClick}
                     />
                   </div>
                 )}
@@ -1369,7 +1360,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 separationLabel="After Rework"
                 onAnnotationCreated={handleAnnotationCreated}
                 onAnnotationDeleted={handleAnnotationDeleted}
-                onFileClick={handleFileClick}
               />
             </div>
 

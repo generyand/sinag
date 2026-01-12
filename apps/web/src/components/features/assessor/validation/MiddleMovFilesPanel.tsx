@@ -152,8 +152,6 @@ interface MiddleMovFilesPanelProps {
     movFileId: number,
     remainingCountForFile: number
   ) => void;
-  /** Callback when a file is clicked for preview (for mobile tab switching) */
-  onFileClick?: () => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -166,7 +164,6 @@ export function MiddleMovFilesPanel({
   separationLabel = "After Calibration",
   onAnnotationCreated,
   onAnnotationDeleted,
-  onFileClick,
 }: MiddleMovFilesPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
@@ -294,10 +291,9 @@ export function MiddleMovFilesPanel({
 
   const handlePreview = (file: any) => {
     // Set selected file for preview (works for both PDF and images)
+    // The modal opens on top of the current view without any tab navigation
     setSelectedFile(file);
     setIsAnnotating(true);
-    // Call onFileClick callback for mobile tab switching
-    onFileClick?.();
   };
 
   const handleDownload = async (file: any) => {
@@ -606,134 +602,137 @@ export function MiddleMovFilesPanel({
       {/* File Preview Modal (PDF with annotations or Image) */}
       {isAnnotating && selectedFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-[85vw] max-w-[1400px] h-[90vh] flex flex-row p-4 overflow-hidden border border-slate-200 dark:border-slate-700">
-            {/* Left: File Viewer */}
-            <div className="flex-1 flex flex-col min-w-0 mr-4">
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700 mb-3">
-                <div className="flex-1 min-w-0 mr-4 overflow-hidden">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate cursor-default">
-                          {selectedFile.file_name}
-                        </h2>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-[500px] break-words">
-                        <p>{selectedFile.file_name}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {selectedFile.file_type === "application/pdf"
-                      ? "Select text to add highlight and comment"
-                      : "Image preview"}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={closeAnnotationModal}
-                  className="shrink-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
+          {/* Mobile: Full screen, Desktop: Centered modal */}
+          <div className="bg-white dark:bg-slate-900 rounded-none md:rounded-lg shadow-xl w-full md:w-[85vw] md:max-w-[1400px] h-full md:h-[90vh] flex flex-col p-3 md:p-4 overflow-hidden md:border border-slate-200 dark:border-slate-700">
+            {/* Header - Always visible */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700 mb-3 shrink-0">
+              <div className="flex-1 min-w-0 mr-4 overflow-hidden">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <h2 className="text-sm md:text-base font-semibold text-slate-900 dark:text-slate-100 truncate cursor-default">
+                        {selectedFile.file_name}
+                      </h2>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-[500px] break-words">
+                      <p>{selectedFile.file_name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <p className="text-xs text-slate-500 dark:text-slate-400 hidden md:block">
+                  {selectedFile.file_type === "application/pdf"
+                    ? "Select text to add highlight and comment"
+                    : "Image preview"}
+                </p>
               </div>
-
-              {/* File Content - Uses signed URLs for secure access */}
-              <div className="flex-1 relative overflow-hidden bg-slate-100 dark:bg-slate-950/50 rounded-sm">
-                <SecureFileContent
-                  file={selectedFile}
-                  annotationsLoading={annotationsLoading}
-                  pdfAnnotations={pdfAnnotations}
-                  imageAnnotations={imageAnnotations}
-                  onAddAnnotation={handleAddAnnotation}
-                  onDeleteAnnotation={handleDeleteAnnotationFromPdf}
-                />
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeAnnotationModal}
+                className="shrink-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
 
-            {/* Right: Comments Sidebar - Fixed width, won't shrink */}
-            {selectedFile.file_type === "application/pdf" ? (
-              // PDF Annotations Sidebar
-              <div className="w-72 shrink-0 flex flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
-                <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                  Comments ({pdfAnnotations.length})
-                </h3>
-                <div className="flex-1 overflow-y-auto space-y-3">
-                  {pdfAnnotations.length === 0 ? (
-                    <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
-                      No comments yet. Select text to add a highlight with a comment.
-                    </div>
-                  ) : (
-                    pdfAnnotations.map((ann, idx) => (
-                      <div
-                        key={ann.id}
-                        className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-                      >
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
-                            #{idx + 1}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
-                            className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
-                          {ann.comment || "(No comment)"}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Page {ann.page + 1}
-                        </p>
-                      </div>
-                    ))
-                  )}
+            {/* Content Area - Responsive layout */}
+            <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+              {/* File Viewer - Full width on mobile, flexible on desktop */}
+              <div className="flex-1 flex flex-col min-w-0 min-h-0 md:mr-4">
+                <div className="flex-1 relative overflow-hidden bg-slate-100 dark:bg-slate-950/50 rounded-sm">
+                  <SecureFileContent
+                    file={selectedFile}
+                    annotationsLoading={annotationsLoading}
+                    pdfAnnotations={pdfAnnotations}
+                    imageAnnotations={imageAnnotations}
+                    onAddAnnotation={handleAddAnnotation}
+                    onDeleteAnnotation={handleDeleteAnnotationFromPdf}
+                  />
                 </div>
               </div>
-            ) : selectedFile.file_type?.startsWith("image/") ? (
-              // Image Annotations Sidebar
-              <div className="w-72 shrink-0 flex flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
-                <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                  Annotations ({imageAnnotations.length})
-                </h3>
-                <div className="flex-1 overflow-y-auto space-y-3">
-                  {imageAnnotations.length === 0 ? (
-                    <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
-                      No annotations yet. Draw a rectangle on the image and add a comment.
-                    </div>
-                  ) : (
-                    imageAnnotations.map((ann, idx) => (
-                      <div
-                        key={ann.id}
-                        className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-                      >
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
-                            #{idx + 1}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
-                            className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                          {ann.comment || "(No comment)"}
-                        </p>
+
+              {/* Comments Sidebar - Hidden on mobile, visible on desktop */}
+              {selectedFile.file_type === "application/pdf" ? (
+                // PDF Annotations Sidebar
+                <div className="hidden md:flex w-72 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
+                  <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                    Comments ({pdfAnnotations.length})
+                  </h3>
+                  <div className="flex-1 overflow-y-auto space-y-3">
+                    {pdfAnnotations.length === 0 ? (
+                      <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
+                        No comments yet. Select text to add a highlight with a comment.
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      pdfAnnotations.map((ann, idx) => (
+                        <div
+                          key={ann.id}
+                          className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                        >
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
+                              #{idx + 1}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
+                              className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
+                            {ann.comment || "(No comment)"}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Page {ann.page + 1}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : selectedFile.file_type?.startsWith("image/") ? (
+                // Image Annotations Sidebar
+                <div className="hidden md:flex w-72 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
+                  <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                    Annotations ({imageAnnotations.length})
+                  </h3>
+                  <div className="flex-1 overflow-y-auto space-y-3">
+                    {imageAnnotations.length === 0 ? (
+                      <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
+                        No annotations yet. Draw a rectangle on the image and add a comment.
+                      </div>
+                    ) : (
+                      imageAnnotations.map((ann, idx) => (
+                        <div
+                          key={ann.id}
+                          className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                        >
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
+                              #{idx + 1}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
+                              className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {ann.comment || "(No comment)"}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       )}
