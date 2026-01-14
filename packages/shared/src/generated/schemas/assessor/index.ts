@@ -39,9 +39,14 @@ export interface AssessorQueueItem {
   governance_area_id?: AssessorQueueItemGovernanceAreaId;
   governance_area_name?: AssessorQueueItemGovernanceAreaName;
   area_status?: AssessorQueueItemAreaStatus;
+  global_status?: AssessorQueueItemGlobalStatus;
+  submission_type?: AssessorQueueItemSubmissionType;
   is_resubmission?: boolean;
   areas_in_rework?: AssessorQueueItemAreasInRework;
   rework_round_used?: boolean;
+  rework_submitted_at?: AssessorQueueItemReworkSubmittedAt;
+  is_calibration_rework?: boolean;
+  pending_calibrations_count?: number;
 }
 
 
@@ -58,6 +63,12 @@ export type AssessorQueueItemAreasInRework = number[] | null;
 
 
 /**
+ * AssessorQueueItemGlobalStatus
+ */
+export type AssessorQueueItemGlobalStatus = string | null;
+
+
+/**
  * AssessorQueueItemGovernanceAreaId
  */
 export type AssessorQueueItemGovernanceAreaId = number | null;
@@ -70,9 +81,21 @@ export type AssessorQueueItemGovernanceAreaName = string | null;
 
 
 /**
+ * AssessorQueueItemReworkSubmittedAt
+ */
+export type AssessorQueueItemReworkSubmittedAt = string | null;
+
+
+/**
  * AssessorQueueItemSubmissionDate
  */
 export type AssessorQueueItemSubmissionDate = string | null;
+
+
+/**
+ * AssessorQueueItemSubmissionType
+ */
+export type AssessorQueueItemSubmissionType = string | null;
 
 
 /**

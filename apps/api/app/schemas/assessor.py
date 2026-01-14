@@ -13,7 +13,7 @@ class AssessorQueueItem(BaseModel):
     assessment_id: int
     barangay_name: str
     submission_date: datetime | None
-    status: str
+    status: str  # Per-area status for assessors (SUBMITTED, IN_REVIEW, REWORK, APPROVED)
     updated_at: datetime
     area_progress: int = 0  # Progress percentage (0-100) of indicators reviewed
 
@@ -21,14 +21,26 @@ class AssessorQueueItem(BaseModel):
     governance_area_id: int | None = None
     governance_area_name: str | None = None
     area_status: str | None = None  # draft, submitted, in_review, rework, approved
+
+    # NEW: Global assessment status (for reference)
+    global_status: str | None = None  # Overall assessment status
+
+    # NEW: Submission type for Issue #5
+    submission_type: str | None = None  # first_submission, rework_pending, rework_resubmission
     is_resubmission: bool = False
 
     # Compiled rework info (for BLGU visibility)
     areas_in_rework: list[int] | None = None
     rework_round_used: bool = False
+    rework_submitted_at: datetime | None = None
+
+    # Calibration fields
+    is_calibration_rework: bool = False
+    pending_calibrations_count: int = 0
 
     class Config:
         from_attributes = True
+
 
 
 class ValidationRequest(BaseModel):
