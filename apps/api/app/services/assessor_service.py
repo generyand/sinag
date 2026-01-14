@@ -461,7 +461,9 @@ class AssessorService:
                 db=db,
                 assessment_id=response.assessment_id,
                 indicator_id=indicator.id if indicator else 0,
-                indicator_code=indicator.indicator_code if indicator and indicator.indicator_code else "N/A",
+                indicator_code=indicator.indicator_code
+                if indicator and indicator.indicator_code
+                else "N/A",
                 indicator_name=indicator.name if indicator else "Unknown",
                 action=ActivityAction.INDICATOR_REVIEWED.value,
                 user_id=assessor.id,
