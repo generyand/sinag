@@ -251,7 +251,9 @@ class AssessorService:
                     # NEW: Include raw area status for frontend filtering
                     "area_status": area_status,
                     # NEW: Include global assessment status for reference
-                    "global_status": a.status.value if hasattr(a.status, "value") else str(a.status),
+                    "global_status": a.status.value
+                    if hasattr(a.status, "value")
+                    else str(a.status),
                     "updated_at": a.updated_at,
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,

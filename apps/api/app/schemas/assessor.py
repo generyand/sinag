@@ -42,7 +42,6 @@ class AssessorQueueItem(BaseModel):
         from_attributes = True
 
 
-
 class ValidationRequest(BaseModel):
     """Request schema for validating an assessment response."""
 
