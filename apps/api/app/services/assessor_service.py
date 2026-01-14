@@ -212,7 +212,7 @@ class AssessorService:
             if is_assessor:
                 # Get the area-specific status for the assessor's assigned area
                 area_status = a.get_area_status(assessor.assessor_area_id)
-                
+
                 # Map area status to display-friendly status
                 # - "draft" or "submitted" without area-specific rework = "SUBMITTED" (awaiting review)
                 # - "in_review" = "IN_REVIEW"
@@ -231,7 +231,7 @@ class AssessorService:
                 # Validators see global status (all areas are approved at this point)
                 display_status = a.status.value if hasattr(a.status, "value") else str(a.status)
                 area_status = None  # Not applicable for validators
-            
+
             # Determine submission type: first submission or rework resubmission
             # This helps differentiate between brand new submissions vs reworked ones
             if a.rework_submitted_at is not None:
@@ -240,7 +240,7 @@ class AssessorService:
                 submission_type = "rework_pending"
             else:
                 submission_type = "first_submission"
-            
+
             items.append(
                 {
                     "assessment_id": a.id,
@@ -1394,7 +1394,7 @@ class AssessorService:
         #
         # Per user request: Send per-area notifications immediately, not waiting for all 6 assessors.
         # This enables faster turnaround for BLGUs.
-        
+
         # Check if all areas have made a decision (approved or rework)
         all_areas_decided = True
         any_rework = False
@@ -1405,7 +1405,7 @@ class AssessorService:
                 all_areas_decided = False
             if status == "rework":
                 any_rework = True
-        
+
         # Only update global status if ALL areas have made their decision
         if all_areas_decided and any_rework:
             if assessment.status != AssessmentStatus.REWORK:
@@ -1430,7 +1430,7 @@ class AssessorService:
         # This triggers notification to BLGU for this specific area's rework
         try:
             from app.services.notification_service import notification_service
-            
+
             # Queue immediate per-area rework notification
             notification_service.queue_per_area_rework_notification(
                 db=db,
