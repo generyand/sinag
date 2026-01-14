@@ -28,6 +28,14 @@ ACTION_LABELS = {
     ActivityAction.RECALIBRATION_REQUESTED.value: "Recalibration Requested",
     ActivityAction.RECALIBRATION_SUBMITTED.value: "Recalibration Submitted",
     ActivityAction.COMPLETED.value: "Assessment Completed",
+    # NEW: Indicator-level action labels
+    ActivityAction.INDICATOR_SUBMITTED.value: "Indicator Submitted",
+    ActivityAction.INDICATOR_REVIEWED.value: "Indicator Reviewed",
+    ActivityAction.INDICATOR_VALIDATED.value: "Indicator Validated",
+    ActivityAction.INDICATOR_FLAGGED_REWORK.value: "Indicator Flagged for Rework",
+    ActivityAction.INDICATOR_FLAGGED_CALIBRATION.value: "Indicator Flagged for Calibration",
+    ActivityAction.MOV_UPLOADED.value: "MOV Uploaded",
+    ActivityAction.MOV_ANNOTATED.value: "MOV Annotated",
 }
 
 
@@ -81,6 +89,63 @@ class AssessmentActivityService:
         db.refresh(activity)
 
         return activity
+
+    def log_indicator_activity(
+        self,
+        db: Session,
+        assessment_id: int,
+        indicator_id: int,
+        indicator_code: str,
+        indicator_name: str,
+        action: str,
+        user_id: int | None = None,
+        governance_area_id: int | None = None,
+        governance_area_name: str | None = None,
+        extra_data: dict[str, Any] | None = None,
+    ) -> AssessmentActivity:
+        """
+        Log an indicator-level activity event.
+
+        This provides more specific tracking of what indicators were
+        submitted, reviewed, validated, or flagged by users.
+
+        Args:
+            db: Database session
+            assessment_id: ID of the assessment
+            indicator_id: ID of the indicator
+            indicator_code: Indicator code (e.g., "1.1.1")
+            indicator_name: Indicator name
+            action: Action type (INDICATOR_SUBMITTED, INDICATOR_REVIEWED, etc.)
+            user_id: ID of the user performing the action
+            governance_area_id: Optional governance area ID
+            governance_area_name: Optional governance area name
+            extra_data: Additional context data
+
+        Returns:
+            AssessmentActivity: Created activity record
+        """
+        # Build indicator context
+        context = {
+            "indicator_id": indicator_id,
+            "indicator_code": indicator_code,
+            "indicator_name": indicator_name,
+            **({"governance_area_id": governance_area_id} if governance_area_id else {}),
+            **({"governance_area_name": governance_area_name} if governance_area_name else {}),
+            **(extra_data or {}),
+        }
+
+        # Generate description with indicator details
+        action_label = ACTION_LABELS.get(action, action.replace("_", " ").title())
+        description = f"{action_label}: {indicator_code} - {indicator_name}"
+
+        return self.log_activity(
+            db=db,
+            assessment_id=assessment_id,
+            action=action,
+            user_id=user_id,
+            extra_data=context,
+            description=description,
+        )
 
     def get_activities(
         self,

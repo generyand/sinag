@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ActivityAction(str, Enum):
     """Enum for assessment activity actions."""
 
+    # Assessment-level actions
     CREATED = "created"
     SUBMITTED = "submitted"
     REVIEW_STARTED = "review_started"
@@ -25,6 +26,15 @@ class ActivityAction(str, Enum):
     RECALIBRATION_REQUESTED = "recalibration_requested"
     RECALIBRATION_SUBMITTED = "recalibration_submitted"
     COMPLETED = "completed"
+
+    # Indicator-level actions (NEW: for more specific tracking)
+    INDICATOR_SUBMITTED = "indicator_submitted"  # BLGU submits indicator response
+    INDICATOR_REVIEWED = "indicator_reviewed"  # Assessor reviews indicator
+    INDICATOR_VALIDATED = "indicator_validated"  # Validator validates indicator
+    INDICATOR_FLAGGED_REWORK = "indicator_flagged_rework"  # Assessor flags for rework
+    INDICATOR_FLAGGED_CALIBRATION = "indicator_flagged_calibration"  # Validator flags
+    MOV_UPLOADED = "mov_uploaded"  # BLGU or Assessor uploads MOV
+    MOV_ANNOTATED = "mov_annotated"  # Assessor annotates MOV
 
 
 # ============================================================================

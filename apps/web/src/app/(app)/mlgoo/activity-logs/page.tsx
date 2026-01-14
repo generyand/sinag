@@ -1,44 +1,44 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Filter,
-  History,
-  Loader2,
-  RefreshCw,
-  Search,
-  User,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { format } from "date-fns";
+import {
+    ArrowLeft,
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    Filter,
+    History,
+    Loader2,
+    RefreshCw,
+    Search,
+    User,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
 
 // Action type to label and color mapping
 const ACTION_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -84,6 +84,42 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; bgColor: str
   },
   completed: { label: "Completed", color: "text-emerald-700", bgColor: "bg-emerald-100" },
   created: { label: "Created", color: "text-gray-700", bgColor: "bg-gray-100" },
+  // NEW: Indicator-level action configs
+  indicator_submitted: {
+    label: "Indicator Submitted",
+    color: "text-blue-700",
+    bgColor: "bg-blue-50",
+  },
+  indicator_reviewed: {
+    label: "Indicator Reviewed",
+    color: "text-purple-700",
+    bgColor: "bg-purple-50",
+  },
+  indicator_validated: {
+    label: "Indicator Validated",
+    color: "text-green-700",
+    bgColor: "bg-green-50",
+  },
+  indicator_flagged_rework: {
+    label: "Indicator Flagged for Rework",
+    color: "text-orange-700",
+    bgColor: "bg-orange-50",
+  },
+  indicator_flagged_calibration: {
+    label: "Indicator Flagged for Calibration",
+    color: "text-amber-700",
+    bgColor: "bg-amber-50",
+  },
+  mov_uploaded: {
+    label: "MOV Uploaded",
+    color: "text-cyan-700",
+    bgColor: "bg-cyan-50",
+  },
+  mov_annotated: {
+    label: "MOV Annotated",
+    color: "text-teal-700",
+    bgColor: "bg-teal-50",
+  },
 };
 
 interface Activity {
@@ -108,7 +144,7 @@ export default function ActivityLogsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   const fetchActivities = useCallback(async () => {
     setIsLoading(true);
@@ -259,6 +295,7 @@ export default function ActivityLogsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Actions</SelectItem>
+                    {/* Assessment-level actions */}
                     <SelectItem value="submitted">Submitted</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="rework_requested">Rework Requested</SelectItem>
@@ -269,6 +306,14 @@ export default function ActivityLogsPage() {
                     <SelectItem value="validation_completed">Validation Completed</SelectItem>
                     <SelectItem value="recalibration_requested">Recalibration Requested</SelectItem>
                     <SelectItem value="recalibration_submitted">Recalibration Submitted</SelectItem>
+                    {/* Indicator-level actions (NEW) */}
+                    <SelectItem value="indicator_submitted">📋 Indicator Submitted</SelectItem>
+                    <SelectItem value="indicator_reviewed">📋 Indicator Reviewed</SelectItem>
+                    <SelectItem value="indicator_validated">📋 Indicator Validated</SelectItem>
+                    <SelectItem value="indicator_flagged_rework">📋 Indicator Flagged Rework</SelectItem>
+                    <SelectItem value="indicator_flagged_calibration">📋 Indicator Flagged Calibration</SelectItem>
+                    <SelectItem value="mov_uploaded">📁 MOV Uploaded</SelectItem>
+                    <SelectItem value="mov_annotated">📁 MOV Annotated</SelectItem>
                   </SelectContent>
                 </Select>
 

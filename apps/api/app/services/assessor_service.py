@@ -448,6 +448,36 @@ class AssessorService:
 
         db.commit()
 
+        # Log indicator-level activity for more specific tracking
+        try:
+            from app.schemas.assessment_activity import ActivityAction
+            from app.services.assessment_activity_service import assessment_activity_service
+
+            # Get indicator details for logging
+            indicator = response.indicator
+            governance_area = indicator.governance_area if indicator else None
+
+            assessment_activity_service.log_indicator_activity(
+                db=db,
+                assessment_id=response.assessment_id,
+                indicator_id=indicator.id if indicator else 0,
+                indicator_code=indicator.code if indicator and indicator.code else "N/A",
+                indicator_name=indicator.name if indicator else "Unknown",
+                action=ActivityAction.INDICATOR_REVIEWED.value,
+                user_id=assessor.id,
+                governance_area_id=governance_area.id if governance_area else None,
+                governance_area_name=governance_area.name if governance_area else None,
+                extra_data={
+                    "validation_status": validation_status.value if validation_status else None,
+                    "has_remarks": bool(assessor_remarks),
+                    "has_public_comment": bool(public_comment),
+                    "flagged_for_calibration": flagged_for_calibration,
+                },
+            )
+        except Exception as e:
+            # Don't fail the validation if logging fails
+            self.logger.warning(f"Failed to log indicator review activity: {e}")
+
         return {
             "success": True,
             "message": "Assessment response validated successfully",
