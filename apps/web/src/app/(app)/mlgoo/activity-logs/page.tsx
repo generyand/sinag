@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/input";
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
+    SelectLabel,
+    SelectSeparator,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
@@ -134,6 +137,41 @@ interface Activity {
   to_status: string | null;
 }
 
+// Assessment-level action types
+const ASSESSMENT_ACTIONS = [
+  "submitted",
+  "approved",
+  "rework_requested",
+  "rework_submitted",
+  "review_started",
+  "review_completed",
+  "calibration_requested",
+  "calibration_submitted",
+  "validation_started",
+  "validation_completed",
+  "recalibration_requested",
+  "recalibration_submitted",
+  "completed",
+  "created",
+];
+
+// Indicator-level action types
+const INDICATOR_ACTIONS = [
+  "indicator_submitted",
+  "indicator_reviewed",
+  "indicator_validated",
+  "indicator_flagged_rework",
+  "indicator_flagged_calibration",
+  "mov_uploaded",
+  "mov_annotated",
+];
+
+interface ActionCount {
+  action: string;
+  count: number;
+  label: string;
+}
+
 export default function ActivityLogsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
@@ -146,13 +184,24 @@ export default function ActivityLogsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Separate counts for indicator vs assessment activities
+  const [indicatorCount, setIndicatorCount] = useState(0);
+  const [assessmentCount, setAssessmentCount] = useState(0);
+  const [actionCounts, setActionCounts] = useState<ActionCount[]>([]);
+
   const fetchActivities = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
       params.append("skip", String((currentPage - 1) * itemsPerPage));
       params.append("limit", String(itemsPerPage));
-      if (actionFilter && actionFilter !== "all") {
+
+      // Handle special filter values for grouped actions
+      if (actionFilter === "all_assessment") {
+        ASSESSMENT_ACTIONS.forEach((action) => params.append("actions", action));
+      } else if (actionFilter === "all_indicator") {
+        INDICATOR_ACTIONS.forEach((action) => params.append("actions", action));
+      } else if (actionFilter && actionFilter !== "all") {
         params.append("action", actionFilter);
       }
 
@@ -168,11 +217,37 @@ export default function ActivityLogsPage() {
     }
   }, [currentPage, actionFilter, itemsPerPage]);
 
+  // Fetch summary counts for badges
+  const fetchSummary = useCallback(async () => {
+    try {
+      const response = await api.get("/api/v1/assessment-activities/summary");
+      const data = response.data;
+      const byAction: ActionCount[] = data.by_action || [];
+      setActionCounts(byAction);
+
+      // Calculate indicator vs assessment counts
+      let indicatorTotal = 0;
+      let assessmentTotal = 0;
+      byAction.forEach((item: ActionCount) => {
+        if (INDICATOR_ACTIONS.includes(item.action)) {
+          indicatorTotal += item.count;
+        } else {
+          assessmentTotal += item.count;
+        }
+      });
+      setIndicatorCount(indicatorTotal);
+      setAssessmentCount(assessmentTotal);
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchActivities();
+      fetchSummary();
     }
-  }, [isAuthenticated, fetchActivities]);
+  }, [isAuthenticated, fetchActivities, fetchSummary]);
 
   // Client-side search filtering (since API search would require additional implementation)
   const filteredActivities = activities.filter((activity) => {
@@ -224,6 +299,7 @@ export default function ActivityLogsPage() {
 
   const handleRefresh = () => {
     fetchActivities();
+    fetchSummary();
   };
 
   if (!isAuthenticated) {
@@ -295,25 +371,35 @@ export default function ActivityLogsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Actions</SelectItem>
-                    {/* Assessment-level actions */}
-                    <SelectItem value="submitted">Submitted</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rework_requested">Rework Requested</SelectItem>
-                    <SelectItem value="rework_submitted">Rework Submitted</SelectItem>
-                    <SelectItem value="review_completed">Review Completed</SelectItem>
-                    <SelectItem value="calibration_requested">Calibration Requested</SelectItem>
-                    <SelectItem value="calibration_submitted">Calibration Submitted</SelectItem>
-                    <SelectItem value="validation_completed">Validation Completed</SelectItem>
-                    <SelectItem value="recalibration_requested">Recalibration Requested</SelectItem>
-                    <SelectItem value="recalibration_submitted">Recalibration Submitted</SelectItem>
-                    {/* Indicator-level actions (NEW) */}
-                    <SelectItem value="indicator_submitted">📋 Indicator Submitted</SelectItem>
-                    <SelectItem value="indicator_reviewed">📋 Indicator Reviewed</SelectItem>
-                    <SelectItem value="indicator_validated">📋 Indicator Validated</SelectItem>
-                    <SelectItem value="indicator_flagged_rework">📋 Indicator Flagged Rework</SelectItem>
-                    <SelectItem value="indicator_flagged_calibration">📋 Indicator Flagged Calibration</SelectItem>
-                    <SelectItem value="mov_uploaded">📁 MOV Uploaded</SelectItem>
-                    <SelectItem value="mov_annotated">📁 MOV Annotated</SelectItem>
+                    <SelectItem value="all_assessment" className="font-medium text-blue-600">All Assessment Actions</SelectItem>
+                    <SelectItem value="all_indicator" className="font-medium text-purple-600">All Indicator Actions</SelectItem>
+
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="font-semibold text-blue-600">Assessment Actions</SelectLabel>
+                      <SelectItem value="submitted">Submitted</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="rework_requested">Rework Requested</SelectItem>
+                      <SelectItem value="rework_submitted">Rework Submitted</SelectItem>
+                      <SelectItem value="review_completed">Review Completed</SelectItem>
+                      <SelectItem value="calibration_requested">Calibration Requested</SelectItem>
+                      <SelectItem value="calibration_submitted">Calibration Submitted</SelectItem>
+                      <SelectItem value="validation_completed">Validation Completed</SelectItem>
+                      <SelectItem value="recalibration_requested">Recalibration Requested</SelectItem>
+                      <SelectItem value="recalibration_submitted">Recalibration Submitted</SelectItem>
+                    </SelectGroup>
+
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="font-semibold text-purple-600">Indicator Actions</SelectLabel>
+                      <SelectItem value="indicator_submitted">Indicator Submitted</SelectItem>
+                      <SelectItem value="indicator_reviewed">Indicator Reviewed</SelectItem>
+                      <SelectItem value="indicator_validated">Indicator Validated</SelectItem>
+                      <SelectItem value="indicator_flagged_rework">Indicator Flagged Rework</SelectItem>
+                      <SelectItem value="indicator_flagged_calibration">Indicator Flagged Calibration</SelectItem>
+                      <SelectItem value="mov_uploaded">MOV Uploaded</SelectItem>
+                      <SelectItem value="mov_annotated">MOV Annotated</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
 
@@ -348,12 +434,20 @@ export default function ActivityLogsPage() {
           {/* Activity Table */}
           <Card className="border border-[var(--border)]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
                 <Calendar className="h-5 w-5" />
                 Recent Activities
-                <Badge variant="secondary" className="ml-2">
-                  {totalCount} entries
-                </Badge>
+                <div className="flex items-center gap-2 ml-2">
+                  <Badge variant="secondary">
+                    {actionFilter === "all" ? assessmentCount + indicatorCount : totalCount} total
+                  </Badge>
+                  <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                    {assessmentCount} assessment
+                  </Badge>
+                  <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
+                    {indicatorCount} indicator
+                  </Badge>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -383,7 +477,7 @@ export default function ActivityLogsPage() {
                           <TableHead className="w-[150px]">Action</TableHead>
                           <TableHead>Barangay</TableHead>
                           <TableHead>User</TableHead>
-                          <TableHead className="w-[200px]">Status Change</TableHead>
+                          <TableHead>Details</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -434,7 +528,11 @@ export default function ActivityLogsPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {activity.from_status || activity.to_status ? (
+                                {activity.description ? (
+                                  <span className="text-sm text-[var(--foreground)]">
+                                    {activity.description}
+                                  </span>
+                                ) : activity.from_status || activity.to_status ? (
                                   <div className="flex items-center gap-2 text-sm">
                                     <span className="text-[var(--muted-foreground)]">
                                       {activity.from_status?.replace(/_/g, " ") || "-"}

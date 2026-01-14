@@ -156,6 +156,7 @@ class AssessmentActivityService:
         user_id: int | None = None,
         barangay_id: int | None = None,
         action: str | None = None,
+        actions: list[str] | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> tuple[list[AssessmentActivity], int]:
@@ -169,7 +170,8 @@ class AssessmentActivityService:
             assessment_id: Filter by assessment ID
             user_id: Filter by user ID
             barangay_id: Filter by barangay ID (via assessment's BLGU user)
-            action: Filter by action type
+            action: Filter by single action type
+            actions: Filter by multiple action types (OR logic)
             start_date: Filter from date (inclusive)
             end_date: Filter to date (inclusive)
 
@@ -197,7 +199,10 @@ class AssessmentActivityService:
                 .filter(User.barangay_id == barangay_id)
             )
 
-        if action:
+        # Support both single action and multiple actions
+        if actions:
+            query = query.filter(AssessmentActivity.action.in_(actions))
+        elif action:
             query = query.filter(AssessmentActivity.action == action)
 
         if start_date:
