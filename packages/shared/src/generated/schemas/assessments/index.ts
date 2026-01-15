@@ -1688,13 +1688,9 @@ user_id?: number | null;
  */
 barangay_id?: number | null;
 /**
- * Filter by single action type
+ * Filter by action type
  */
 action?: string | null;
-/**
- * Filter by multiple action types
- */
-actions?: string[] | null;
 /**
  * Filter from date
  */
