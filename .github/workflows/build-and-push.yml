@@ -167,6 +167,7 @@ jobs:
             NEXT_PUBLIC_API_V1_URL=${{ vars.NEXT_PUBLIC_API_V1_URL }}
             NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_MAINTENANCE_MODE=${{ vars.NEXT_PUBLIC_MAINTENANCE_MODE }}
 
       - name: Output build info
         run: |
@@ -174,6 +175,7 @@ jobs:
           echo "- **API URL:** ${{ vars.NEXT_PUBLIC_API_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **API V1 URL:** ${{ vars.NEXT_PUBLIC_API_V1_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Supabase URL:** ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Maintenance Mode:** ${{ vars.NEXT_PUBLIC_MAINTENANCE_MODE || 'false' }}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # Build Web image for PRODUCTION environment
@@ -233,6 +235,7 @@ jobs:
             NEXT_PUBLIC_API_V1_URL=${{ vars.NEXT_PUBLIC_API_V1_URL }}
             NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_MAINTENANCE_MODE=${{ vars.NEXT_PUBLIC_MAINTENANCE_MODE }}
 
       - name: Output build info
         run: |
@@ -240,6 +243,7 @@ jobs:
           echo "- **API URL:** ${{ vars.NEXT_PUBLIC_API_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **API V1 URL:** ${{ vars.NEXT_PUBLIC_API_V1_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Supabase URL:** ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Maintenance Mode:** ${{ vars.NEXT_PUBLIC_MAINTENANCE_MODE || 'false' }}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # Summary job - runs after all images are built
