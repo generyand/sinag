@@ -293,6 +293,70 @@ class NotificationService:
             send_email=True,
         )
 
+    def queue_per_area_rework_notification(
+        self,
+        db: Session,
+        assessment: Assessment,
+        governance_area_id: int,
+        governance_area_name: str,
+        assessor: User,
+        comments: str,
+    ) -> Notification | None:
+        """
+        Send immediate per-area rework notification to BLGU.
+
+        This enables faster turnaround - BLGUs are notified immediately when
+        an assessor flags their governance area for rework, rather than waiting
+        for all 6 assessors to complete their reviews.
+
+        Args:
+            db: Database session
+            assessment: Assessment object
+            governance_area_id: Governance area flagged for rework
+            governance_area_name: Name of the governance area
+            assessor: Assessor who requested the rework
+            comments: Rework comments from assessor
+
+        Returns:
+            Created Notification object or None if BLGU user not found
+        """
+        if not assessment.blgu_user_id:
+            self.logger.warning(
+                f"Cannot send per-area rework notification: Assessment {assessment.id} has no BLGU user"
+            )
+            return None
+
+        # Get barangay name for the notification message
+        barangay_name = "your barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Build notification message with area-specific details
+        title = f"Rework Required: {governance_area_name}"
+        message = (
+            f"The assessor for '{governance_area_name}' has flagged your {barangay_name} submission for rework. "
+            f"Please review the feedback and make the necessary corrections.\n\n"
+            f"Assessor Comments: {comments}"
+        )
+
+        notification = self.create_notification(
+            db=db,
+            recipient_id=assessment.blgu_user_id,
+            notification_type=NotificationType.REWORK_REQUESTED,
+            title=title,
+            message=message,
+            assessment_id=assessment.id,
+            governance_area_id=governance_area_id,
+            send_email=True,
+        )
+
+        self.logger.info(
+            f"Sent per-area rework notification for area {governance_area_id} ({governance_area_name}) "
+            f"to BLGU user {assessment.blgu_user_id} for assessment {assessment.id}"
+        )
+
+        return notification
+
     def notify_specific_validator(
         self,
         db: Session,

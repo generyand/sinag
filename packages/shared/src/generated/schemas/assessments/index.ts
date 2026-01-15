@@ -1730,9 +1730,13 @@ user_id?: number | null;
  */
 barangay_id?: number | null;
 /**
- * Filter by action type
+ * Filter by single action type
  */
 action?: string | null;
+/**
+ * Filter by multiple action types
+ */
+actions?: string[] | null;
 /**
  * Filter from date
  */

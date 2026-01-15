@@ -69,7 +69,7 @@ def create_test_data_for_rework(db_session: Session) -> dict:
         email=f"assessor_rework_{timestamp}@test.com",
         name="Assessor Rework",
         role=UserRole.ASSESSOR,
-        governance_area_id=governance_area.id,
+        assessor_area_id=governance_area.id,  # Fixed: was governance_area_id
         hashed_password="hashed_password",
         is_active=True,  # Required for authentication to work
     )

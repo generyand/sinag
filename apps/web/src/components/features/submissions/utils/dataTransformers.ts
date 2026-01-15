@@ -113,7 +113,7 @@ function determineDisplayStatus(assessment: ApiAssessment): string {
  * - IN_REVIEW: 50% (being reviewed by assessor)
  * - REWORK: 50% (sent back for corrections, still in review phase)
  * - AWAITING_FINAL_VALIDATION: 75% (assessor done, awaiting validators)
- * - AWAITING_MLGOO_APPROVAL: 90% (validators done, awaiting final approval)
+ * - AWAITING_MLGOO_APPROVAL: 95% (validators done, awaiting final approval)
  * - COMPLETED/VALIDATED: 100% (fully complete)
  *
  * Note: This is purely workflow progress, NOT compliance/pass rate.
@@ -128,15 +128,9 @@ function calculateProgress(assessment: ApiAssessment): number {
     return 100;
   }
 
-  // Check compliance status - if already marked compliant, show 100%
-  if (
-    assessment.final_compliance_status === "COMPLIANT" ||
-    assessment.final_compliance_status === "PASSED"
-  ) {
-    return 100;
-  }
-
   // Return workflow-based progress
+  // NOTE: Compliance status (PASSED/FAILED) does not affect workflow progress.
+  // An assessment can be determined as PASSED but still needs MLGOO final approval.
   return getProgressFallbackByStatus(assessment.status);
 }
 
@@ -149,7 +143,7 @@ function calculateProgress(assessment: ApiAssessment): number {
  * 3. IN_REVIEW (50%) - Assessor reviewing
  * 4. REWORK (50%) - Sent back for fixes (same stage as review)
  * 5. AWAITING_FINAL_VALIDATION (75%) - Assessor done, validators reviewing
- * 6. AWAITING_MLGOO_APPROVAL (90%) - Validators done, MLGOO final review
+ * 6. AWAITING_MLGOO_APPROVAL (95%) - Validators done, MLGOO final review
  * 7. COMPLETED (100%) - Fully approved
  */
 function getProgressFallbackByStatus(status: string): number {
@@ -161,7 +155,7 @@ function getProgressFallbackByStatus(status: string): number {
     [AssessmentStatus.REWORK]: 50,
     [AssessmentStatus.NEEDS_REWORK]: 50,
     [AssessmentStatus.AWAITING_FINAL_VALIDATION]: 75,
-    [AssessmentStatus.AWAITING_MLGOO_APPROVAL]: 90,
+    [AssessmentStatus.AWAITING_MLGOO_APPROVAL]: 95,
     [AssessmentStatus.COMPLETED]: 100,
     [AssessmentStatus.VALIDATED]: 100,
   };

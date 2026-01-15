@@ -25,6 +25,10 @@ export interface BarangaySubmission {
     | "completed";
   lastUpdated: string;
   assignedTo?: string;
+  // NEW: Submission type for Issue #5 - distinguish first submissions from reworks
+  submissionType?: "first_submission" | "rework_pending" | "rework_resubmission";
+  // NEW: Global assessment status for reference
+  globalStatus?: string;
 }
 
 export interface SubmissionsFilter {

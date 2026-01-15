@@ -45,7 +45,8 @@ async def get_activities(
     assessment_id: int | None = Query(None, description="Filter by assessment ID"),
     user_id: int | None = Query(None, description="Filter by user ID"),
     barangay_id: int | None = Query(None, description="Filter by barangay ID"),
-    action: str | None = Query(None, description="Filter by action type"),
+    action: str | None = Query(None, description="Filter by single action type"),
+    actions: list[str] | None = Query(None, description="Filter by multiple action types"),
     start_date: datetime | None = Query(None, description="Filter from date"),
     end_date: datetime | None = Query(None, description="Filter to date"),
     db: Session = Depends(get_db),
@@ -60,7 +61,8 @@ async def get_activities(
     - `assessment_id`: Filter by specific assessment
     - `user_id`: Filter by user who performed the action
     - `barangay_id`: Filter by barangay
-    - `action`: Filter by action type (submitted, approved, etc.)
+    - `action`: Filter by single action type (submitted, approved, etc.)
+    - `actions`: Filter by multiple action types (e.g., actions=submitted&actions=approved)
     - `start_date`, `end_date`: Filter by date range
 
     **Returns:**
@@ -74,6 +76,7 @@ async def get_activities(
         user_id=user_id,
         barangay_id=barangay_id,
         action=action,
+        actions=actions,
         start_date=start_date,
         end_date=end_date,
     )

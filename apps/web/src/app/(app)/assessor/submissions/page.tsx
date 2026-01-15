@@ -1,7 +1,7 @@
 "use client";
 
 import { KPICards, SubmissionsFilters, SubmissionsTable } from "@/components/features/submissions";
-import { useAssessorQueue, useAssessorAnalytics } from "@/hooks/useAssessor";
+import { useAssessorAnalytics, useAssessorQueue } from "@/hooks/useAssessor";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import {
   BarangaySubmission,
@@ -12,34 +12,46 @@ import {
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-// Map API status to UI areaStatus
+// Map API per-area status to UI areaStatus
+// UPDATED: The API now returns per-area status for assessors (Issue #4 fix)
+// Possible values: SUBMITTED, IN_REVIEW, REWORK, APPROVED
 function mapStatusToAreaStatus(status: string): BarangaySubmission["areaStatus"] {
-  const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes("submitted") || normalizedStatus.includes("review")) {
+  const normalizedStatus = status.toUpperCase();
+
+  // Per-area status values from API
+  if (normalizedStatus === "SUBMITTED" || normalizedStatus === "IN_REVIEW") {
     return "awaiting_review";
   }
-  if (normalizedStatus.includes("rework")) {
+  if (normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK") {
     return "needs_rework";
   }
-  if (normalizedStatus.includes("validated")) {
+  if (normalizedStatus === "APPROVED") {
+    return "validated"; // Assessor approved their area
+  }
+  if (normalizedStatus === "AWAITING_FINAL_VALIDATION" || normalizedStatus === "VALIDATED") {
     return "validated";
   }
   return "in_progress";
 }
 
-// Map API status to UI overallStatus
+// Map API per-area status to UI overallStatus
+// UPDATED: Uses per-area status for assessors
 function mapStatusToOverallStatus(status: string): BarangaySubmission["overallStatus"] {
-  const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes("submitted") || normalizedStatus.includes("review")) {
+  const normalizedStatus = status.toUpperCase();
+
+  if (normalizedStatus === "SUBMITTED" || normalizedStatus === "IN_REVIEW") {
     return "submitted";
   }
-  if (normalizedStatus.includes("rework")) {
+  if (normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK") {
     return "needs_rework";
   }
-  if (normalizedStatus.includes("validated")) {
+  if (normalizedStatus === "APPROVED") {
     return "validated";
   }
-  if (normalizedStatus.includes("draft")) {
+  if (normalizedStatus === "AWAITING_FINAL_VALIDATION" || normalizedStatus === "VALIDATED") {
+    return "validated";
+  }
+  if (normalizedStatus === "DRAFT") {
     return "draft";
   }
   return "under_review";
@@ -61,6 +73,7 @@ export default function AssessorSubmissionsPage() {
     if (!queueData || queueLoading) return null;
 
     // Map queue items to BarangaySubmission
+    // UPDATED: Now includes submissionType and globalStatus for Issue #5
     const submissions: BarangaySubmission[] = queueData.map((item) => ({
       id: item.assessment_id.toString(),
       barangayName: item.barangay_name || "Unknown",
@@ -68,6 +81,10 @@ export default function AssessorSubmissionsPage() {
       areaStatus: mapStatusToAreaStatus(item.status),
       overallStatus: mapStatusToOverallStatus(item.status),
       lastUpdated: item.updated_at,
+      // NEW: Include submission type for Issue #5 filtering
+      submissionType: item.submission_type as BarangaySubmission["submissionType"],
+      // NEW: Include global status for reference
+      globalStatus: item.global_status,
     }));
 
     // Calculate KPIs from queue data + analytics data

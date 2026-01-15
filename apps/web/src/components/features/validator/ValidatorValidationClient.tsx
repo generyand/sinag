@@ -678,13 +678,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }
   };
 
-  const handleFileClick = () => {
-    // On mobile, auto-switch to validation tab when file is clicked
-    if (window.innerWidth < 768) {
-      setMobileTab("validation");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
@@ -829,7 +822,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       }));
                     }
                   }}
-                  onFileClick={handleFileClick}
                 />
               </div>
             )}
@@ -943,7 +935,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                           }));
                         }
                       }}
-                      onFileClick={handleFileClick}
                     />
                   </div>
                 )}
@@ -1025,7 +1016,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     }));
                   }
                 }}
-                onFileClick={handleFileClick}
               />
             </div>
 
