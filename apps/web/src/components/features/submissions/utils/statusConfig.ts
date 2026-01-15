@@ -135,3 +135,37 @@ export const STATUS_FILTER_OPTIONS = [
   { value: "rework", label: "Needs Rework" },
   { value: "draft", label: "Draft" },
 ] as const;
+
+/**
+ * Statuses that should be clickable to view rework/calibration details.
+ * These statuses indicate that there are items requiring attention.
+ */
+export const CLICKABLE_STATUSES = [
+  "Needs Rework",
+  "MLGOO RE-Calibration",
+  "Awaiting Final Validation",
+] as const;
+
+/**
+ * Determines if a status badge should be clickable.
+ * Clickable statuses navigate to the detailed assessment view.
+ */
+export function isStatusClickable(status: string): boolean {
+  return CLICKABLE_STATUSES.includes(status as (typeof CLICKABLE_STATUSES)[number]);
+}
+
+/**
+ * Gets a tooltip message for clickable status badges.
+ */
+export function getStatusClickTooltip(status: string): string | null {
+  switch (status) {
+    case "Needs Rework":
+      return "Click to view indicators marked for rework";
+    case "MLGOO RE-Calibration":
+      return "Click to view calibration details";
+    case "Awaiting Final Validation":
+      return "Click to view validation progress";
+    default:
+      return null;
+  }
+}

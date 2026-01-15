@@ -3,7 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Check, Eye, Loader2, Send } from "lucide-react";
 import { getValidatorDisplayStatus, type SubmissionUIModel } from "./utils/dataTransformers";
-import { getProgressBarColor, getStatusConfig } from "./utils/statusConfig";
+import {
+  getProgressBarColor,
+  getStatusConfig,
+  getStatusClickTooltip,
+  isStatusClickable,
+} from "./utils/statusConfig";
 
 interface SubmissionsMobileCardProps {
   submission: SubmissionUIModel;
@@ -34,16 +39,32 @@ export function SubmissionsMobileCard({
         <h3 className="font-semibold text-[var(--foreground)] text-base">
           Brgy. {submission.barangayName}
         </h3>
-        <div
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium shrink-0"
-          style={{
-            backgroundColor: statusConfig.bgColor,
-            color: statusConfig.textColor,
-          }}
-        >
-          <StatusIcon className="h-3 w-3" aria-hidden="true" />
-          {submission.currentStatus}
-        </div>
+        {isStatusClickable(submission.currentStatus) ? (
+          <button
+            onClick={() => onView(submission)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium shrink-0 cursor-pointer transition-all duration-200 hover:opacity-80 hover:ring-2 hover:ring-offset-1 hover:ring-current"
+            style={{
+              backgroundColor: statusConfig.bgColor,
+              color: statusConfig.textColor,
+            }}
+            aria-label={`${submission.currentStatus} - Click to view details`}
+            title={getStatusClickTooltip(submission.currentStatus) ?? undefined}
+          >
+            <StatusIcon className="h-3 w-3" aria-hidden="true" />
+            {submission.currentStatus}
+          </button>
+        ) : (
+          <div
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium shrink-0"
+            style={{
+              backgroundColor: statusConfig.bgColor,
+              color: statusConfig.textColor,
+            }}
+          >
+            <StatusIcon className="h-3 w-3" aria-hidden="true" />
+            {submission.currentStatus}
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}

@@ -10,7 +10,9 @@ import {
   getAreasBreakdown,
   getProgressBarColor,
   getStatusConfig,
+  getStatusClickTooltip,
   getValidatorDisplayStatus,
+  isStatusClickable,
   useSubmissionsData,
   useSubmissionsFilters,
   type SortableColumn,
@@ -506,17 +508,45 @@ export default function AdminSubmissionsPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div
-                                id={`status-${submission.id}`}
-                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-medium"
-                                style={{
-                                  backgroundColor: statusConfig.bgColor,
-                                  color: statusConfig.textColor,
-                                }}
-                              >
-                                <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                                {submission.currentStatus}
-                              </div>
+                              {isStatusClickable(submission.currentStatus) ? (
+                                <TooltipProvider>
+                                  <Tooltip delayDuration={200}>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        id={`status-${submission.id}`}
+                                        onClick={() => handleViewDetails(submission)}
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-medium cursor-pointer transition-all duration-200 hover:opacity-80 hover:ring-2 hover:ring-offset-1 hover:ring-current"
+                                        style={{
+                                          backgroundColor: statusConfig.bgColor,
+                                          color: statusConfig.textColor,
+                                        }}
+                                        aria-label={`${submission.currentStatus} - Click to view details`}
+                                      >
+                                        <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                                        {submission.currentStatus}
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                      side="bottom"
+                                      className="bg-[var(--card)] border border-[var(--border)] shadow-lg px-3 py-2 text-xs"
+                                    >
+                                      {getStatusClickTooltip(submission.currentStatus)}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : (
+                                <div
+                                  id={`status-${submission.id}`}
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-medium"
+                                  style={{
+                                    backgroundColor: statusConfig.bgColor,
+                                    color: statusConfig.textColor,
+                                  }}
+                                >
+                                  <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                                  {submission.currentStatus}
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4">
                               <ReviewersProgressColumn submission={submission} />
