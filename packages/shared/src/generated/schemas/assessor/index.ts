@@ -36,6 +36,7 @@ export interface AssessorQueueItem {
   status: string;
   updated_at: string;
   area_progress?: number;
+  re_review_progress?: number;
   governance_area_id?: AssessorQueueItemGovernanceAreaId;
   governance_area_name?: AssessorQueueItemGovernanceAreaName;
   area_status?: AssessorQueueItemAreaStatus;

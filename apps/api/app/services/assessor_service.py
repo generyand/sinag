@@ -207,6 +207,36 @@ class AssessorService:
 
             area_progress = round((reviewed_count / total_count * 100) if total_count > 0 else 0)
 
+            # Calculate re-review progress for rework resubmissions
+            # This tracks how many indicators have been re-reviewed AFTER BLGU resubmitted
+            re_review_progress = 0
+            if a.rework_submitted_at is not None:
+                if is_assessor:
+                    # Count responses reviewed AFTER rework_submitted_at
+                    re_reviewed_count = sum(
+                        1
+                        for r in area_responses
+                        if r.response_data
+                        and any(k.startswith("assessor_val_") for k in r.response_data.keys())
+                        and r.updated_at
+                        and r.updated_at >= a.rework_submitted_at
+                    )
+                    re_review_progress = round(
+                        (re_reviewed_count / total_count * 100) if total_count > 0 else 0
+                    )
+                else:
+                    # Validator: count responses validated AFTER rework_submitted_at
+                    re_reviewed_count = sum(
+                        1
+                        for r in area_responses
+                        if r.validation_status is not None
+                        and r.updated_at
+                        and r.updated_at >= a.rework_submitted_at
+                    )
+                    re_review_progress = round(
+                        (re_reviewed_count / total_count * 100) if total_count > 0 else 0
+                    )
+
             # FIX Issue #4: Return per-area status for assessors instead of global status
             # This ensures each assessor only sees status relevant to their governance area
             if is_assessor:
@@ -258,6 +288,8 @@ class AssessorService:
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
                     "area_progress": area_progress,
+                    # NEW: Re-review progress for rework resubmissions
+                    "re_review_progress": re_review_progress,
                     # NEW: Submission type for Issue #5 (distinguish first vs rework)
                     "submission_type": submission_type,
                     # NEW: Rework-related fields for better context

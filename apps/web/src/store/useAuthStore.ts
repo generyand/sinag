@@ -185,7 +185,19 @@ export const useAuthStore = create<AuthState>()(
       // - ASSESSOR is now area-specific (with assessor_area_id)
       // - VALIDATOR is now system-wide (no area required)
       // - Field renamed from validator_area_id to assessor_area_id
-      version: 4, // Increment version to force reset after workflow restructuring
+      version: 4,
+      migrate: (persistedState, version) => {
+        // Force reset for versions < 4 due to workflow restructuring
+        if (version < 4) {
+          return {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            mustChangePassword: false,
+          };
+        }
+        return persistedState as AuthState;
+      },
     }
   )
 );

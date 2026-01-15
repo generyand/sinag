@@ -1,5 +1,6 @@
 import { AssessmentStatus } from "@sinag/shared";
 import { Clock, CheckCircle, AlertTriangle, XCircle, type LucideIcon } from "lucide-react";
+import type { UnifiedStatus } from "@/types/submissions";
 
 export interface StatusConfig {
   label: string;
@@ -168,4 +169,110 @@ export function getStatusClickTooltip(status: string): string | null {
     default:
       return null;
   }
+}
+
+// ============================================================================
+// Unified Status Configuration for Assessor/Validator Dashboard
+// ============================================================================
+
+export interface UnifiedStatusConfig {
+  label: string;
+  bgColor: string;
+  textColor: string;
+  actionLabel: string;
+  actionVariant: "default" | "outline" | "ghost";
+  actionColorClass: string;
+}
+
+/**
+ * Unified status display and action configuration for Assessor/Validator dashboard.
+ * Maps UnifiedStatus values to UI presentation and action button styling.
+ */
+export const UNIFIED_STATUS_CONFIG: Record<UnifiedStatus, UnifiedStatusConfig> = {
+  awaiting_assessment: {
+    label: "Awaiting Assessment",
+    bgColor: "var(--kpi-blue-bg)",
+    textColor: "var(--kpi-blue-text)",
+    actionLabel: "Start Review",
+    actionVariant: "default",
+    actionColorClass:
+      "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white",
+  },
+  assessment_in_progress: {
+    label: "Assessment In Progress",
+    bgColor: "var(--kpi-blue-bg)",
+    textColor: "var(--kpi-blue-text)",
+    actionLabel: "Continue Review",
+    actionVariant: "outline",
+    actionColorClass: "border-2 border-blue-600 text-blue-600 hover:bg-blue-50",
+  },
+  sent_for_rework: {
+    label: "Sent for Rework",
+    bgColor: "var(--muted)",
+    textColor: "var(--text-muted)",
+    actionLabel: "View",
+    actionVariant: "ghost",
+    actionColorClass: "text-[var(--text-muted)] hover:text-[var(--foreground)]",
+  },
+  awaiting_re_review: {
+    label: "Awaiting Re-Review",
+    bgColor: "var(--kpi-orange-bg)",
+    textColor: "var(--kpi-orange-text)",
+    actionLabel: "Re-Review",
+    actionVariant: "default",
+    actionColorClass:
+      "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white",
+  },
+  re_assessment_in_progress: {
+    label: "Re-Assessment in Progress",
+    bgColor: "var(--kpi-orange-bg)",
+    textColor: "var(--kpi-orange-text)",
+    actionLabel: "Resume Re-Review",
+    actionVariant: "outline",
+    actionColorClass: "border-2 border-orange-500 text-orange-500 hover:bg-orange-50",
+  },
+  reviewed: {
+    label: "Reviewed",
+    bgColor: "var(--kpi-green-bg)",
+    textColor: "var(--kpi-green-text)",
+    actionLabel: "View",
+    actionVariant: "ghost",
+    actionColorClass: "text-[var(--text-muted)] hover:text-[var(--foreground)]",
+  },
+};
+
+/**
+ * Filter options for unified status in Assessor/Validator dashboard.
+ */
+export const UNIFIED_STATUS_FILTER_OPTIONS = [
+  {
+    value: "awaiting_assessment",
+    label: "Awaiting Assessment",
+    color: "bg-blue-100 text-blue-800",
+  },
+  {
+    value: "assessment_in_progress",
+    label: "Assessment In Progress",
+    color: "bg-blue-100 text-blue-800",
+  },
+  { value: "sent_for_rework", label: "Sent for Rework", color: "bg-gray-100 text-gray-800" },
+  {
+    value: "awaiting_re_review",
+    label: "Awaiting Re-Review",
+    color: "bg-orange-100 text-orange-800",
+  },
+  {
+    value: "re_assessment_in_progress",
+    label: "Re-Assessment in Progress",
+    color: "bg-orange-100 text-orange-800",
+  },
+  { value: "reviewed", label: "Reviewed", color: "bg-green-100 text-green-800" },
+] as const;
+
+/**
+ * Gets the unified status configuration for a given status.
+ * Falls back to awaiting_assessment if status is not found.
+ */
+export function getUnifiedStatusConfig(status: UnifiedStatus): UnifiedStatusConfig {
+  return UNIFIED_STATUS_CONFIG[status] ?? UNIFIED_STATUS_CONFIG["awaiting_assessment"];
 }

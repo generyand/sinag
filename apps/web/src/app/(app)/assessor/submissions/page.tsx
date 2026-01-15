@@ -8,53 +8,53 @@ import {
   SubmissionsData,
   SubmissionsFilter,
   SubmissionsKPI,
+  UnifiedStatus,
 } from "@/types/submissions";
+import { AssessorQueueItem } from "@sinag/shared";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-// Map API per-area status to UI areaStatus
-// UPDATED: The API now returns per-area status for assessors (Issue #4 fix)
-// Possible values: SUBMITTED, IN_REVIEW, REWORK, APPROVED
-function mapStatusToAreaStatus(status: string): BarangaySubmission["areaStatus"] {
-  const normalizedStatus = status.toUpperCase();
+/**
+ * Maps API data to unified status for assessor dashboard.
+ *
+ * Logic:
+ * 1. If area_status = "approved" → "reviewed"
+ * 2. If submission_type = "rework_pending" → "sent_for_rework"
+ * 3. If submission_type = "rework_resubmission":
+ *    - re_review_progress = 0 → "awaiting_re_review"
+ *    - re_review_progress > 0 → "re_assessment_in_progress"
+ * 4. If first_submission:
+ *    - area_progress = 0 → "awaiting_assessment"
+ *    - area_progress > 0 → "assessment_in_progress"
+ */
+function mapToUnifiedStatus(item: AssessorQueueItem): UnifiedStatus {
+  const areaStatus = item.area_status?.toLowerCase();
 
-  // Per-area status values from API
-  if (normalizedStatus === "SUBMITTED" || normalizedStatus === "IN_REVIEW") {
-    return "awaiting_review";
+  // Check if already reviewed/approved
+  if (areaStatus === "approved") {
+    return "reviewed";
   }
-  if (normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK") {
-    return "needs_rework";
-  }
-  if (normalizedStatus === "APPROVED") {
-    return "validated"; // Assessor approved their area
-  }
-  if (normalizedStatus === "AWAITING_FINAL_VALIDATION" || normalizedStatus === "VALIDATED") {
-    return "validated";
-  }
-  return "in_progress";
-}
 
-// Map API per-area status to UI overallStatus
-// UPDATED: Uses per-area status for assessors
-function mapStatusToOverallStatus(status: string): BarangaySubmission["overallStatus"] {
-  const normalizedStatus = status.toUpperCase();
+  // Check submission type for rework states
+  if (item.submission_type === "rework_pending") {
+    return "sent_for_rework";
+  }
 
-  if (normalizedStatus === "SUBMITTED" || normalizedStatus === "IN_REVIEW") {
-    return "submitted";
+  if (item.submission_type === "rework_resubmission") {
+    // Re-submission from BLGU - check re-review progress
+    const reReviewProgress = item.re_review_progress ?? 0;
+    if (reReviewProgress === 0) {
+      return "awaiting_re_review";
+    }
+    return "re_assessment_in_progress";
   }
-  if (normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK") {
-    return "needs_rework";
+
+  // First submission - check area progress
+  const areaProgress = item.area_progress ?? 0;
+  if (areaProgress === 0) {
+    return "awaiting_assessment";
   }
-  if (normalizedStatus === "APPROVED") {
-    return "validated";
-  }
-  if (normalizedStatus === "AWAITING_FINAL_VALIDATION" || normalizedStatus === "VALIDATED") {
-    return "validated";
-  }
-  if (normalizedStatus === "DRAFT") {
-    return "draft";
-  }
-  return "under_review";
+  return "assessment_in_progress";
 }
 
 export default function AssessorSubmissionsPage() {
@@ -73,29 +73,34 @@ export default function AssessorSubmissionsPage() {
     if (!queueData || queueLoading) return null;
 
     // Map queue items to BarangaySubmission
-    // UPDATED: Now includes submissionType and globalStatus for Issue #5
+    // UPDATED: Now uses unified status (combining areaStatus and overallStatus)
     const submissions: BarangaySubmission[] = queueData.map((item) => ({
       id: item.assessment_id.toString(),
       barangayName: item.barangay_name || "Unknown",
       areaProgress: item.area_progress ?? 0, // Progress from API
-      areaStatus: mapStatusToAreaStatus(item.status),
-      overallStatus: mapStatusToOverallStatus(item.status),
+      unifiedStatus: mapToUnifiedStatus(item),
+      reReviewProgress: item.re_review_progress,
       lastUpdated: item.updated_at,
-      // NEW: Include submission type for Issue #5 filtering
       submissionType: item.submission_type as BarangaySubmission["submissionType"],
-      // NEW: Include global status for reference
       globalStatus: item.global_status,
     }));
 
     // Calculate KPIs from queue data + analytics data
+    // Updated to use unified status values
     const kpi: SubmissionsKPI = {
-      awaitingReview: submissions.filter((s) => s.areaStatus === "awaiting_review").length,
-      inRework: submissions.filter((s) => s.areaStatus === "needs_rework").length,
+      awaitingReview: submissions.filter(
+        (s) => s.unifiedStatus === "awaiting_assessment" || s.unifiedStatus === "awaiting_re_review"
+      ).length,
+      // inRework tracks items sent for rework or being re-assessed (excludes awaiting_re_review to avoid double-counting)
+      inRework: submissions.filter(
+        (s) =>
+          s.unifiedStatus === "sent_for_rework" || s.unifiedStatus === "re_assessment_in_progress"
+      ).length,
       // Use analytics data for validated count (historical count of finalized/validated assessments)
       validated:
         analyticsData?.workflow?.counts_by_status?.VALIDATED ||
         analyticsData?.workflow?.counts_by_status?.AWAITING_FINAL_VALIDATION ||
-        0,
+        submissions.filter((s) => s.unifiedStatus === "reviewed").length,
       // Use analytics data for average review time (convert days to integer)
       avgReviewTime: analyticsData?.workflow?.avg_time_to_first_review
         ? Math.round(analyticsData.workflow.avg_time_to_first_review)
@@ -122,9 +127,9 @@ export default function AssessorSubmissionsPage() {
       );
     }
 
-    // Apply status filter
+    // Apply status filter using unified status
     if (filters.status.length > 0) {
-      filtered = filtered.filter((submission) => filters.status.includes(submission.areaStatus));
+      filtered = filtered.filter((submission) => filters.status.includes(submission.unifiedStatus));
     }
 
     return filtered;
