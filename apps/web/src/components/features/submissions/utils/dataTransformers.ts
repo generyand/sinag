@@ -19,6 +19,18 @@ export interface ReviewerInfo {
 }
 
 /**
+ * Information about an area that was sent for rework by an assessor.
+ */
+export interface AreaReworkInfo {
+  governanceAreaId: number;
+  governanceAreaName: string;
+  assessorId: number;
+  assessorName: string;
+  reworkRequestedAt?: string;
+  reworkComments?: string;
+}
+
+/**
  * UI representation of a submission for the table view.
  */
 export interface SubmissionUIModel {
@@ -35,6 +47,8 @@ export interface SubmissionUIModel {
   areasApprovedCount: number;
   /** Per-area assessor approval status: {"1": true, "2": false, ...} */
   areaApprovalStatus: Record<string, boolean>;
+  /** Areas that have been sent for rework with assessor details */
+  areaReworkInfo: AreaReworkInfo[];
 }
 
 /**
@@ -62,6 +76,15 @@ interface ApiAssessment {
   area_assessor_approved?: Record<string, boolean>;
   /** Number of governance areas approved by assessors (0-6) */
   areas_approved_count?: number;
+  /** Areas that have been sent for rework with assessor details */
+  area_rework_info?: Array<{
+    governance_area_id: number;
+    governance_area_name: string;
+    assessor_id: number;
+    assessor_name: string;
+    rework_requested_at?: string;
+    rework_comments?: string;
+  }>;
 }
 
 /**
@@ -79,7 +102,26 @@ export function transformAssessmentToUI(assessment: ApiAssessment): SubmissionUI
     lastUpdated: formatLastUpdated(assessment.updated_at),
     areasApprovedCount: assessment.areas_approved_count ?? 0,
     areaApprovalStatus: assessment.area_assessor_approved ?? {},
+    areaReworkInfo: transformAreaReworkInfo(assessment.area_rework_info),
   };
+}
+
+/**
+ * Transforms area rework info from API format to UI format.
+ */
+function transformAreaReworkInfo(reworkInfo?: ApiAssessment["area_rework_info"]): AreaReworkInfo[] {
+  if (!reworkInfo || !Array.isArray(reworkInfo)) {
+    return [];
+  }
+
+  return reworkInfo.map((info) => ({
+    governanceAreaId: info.governance_area_id,
+    governanceAreaName: info.governance_area_name,
+    assessorId: info.assessor_id,
+    assessorName: info.assessor_name,
+    reworkRequestedAt: info.rework_requested_at,
+    reworkComments: info.rework_comments,
+  }));
 }
 
 /**

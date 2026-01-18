@@ -96,7 +96,10 @@ graph TD
     S --> T[Status: REWORK + is_mlgoo_recalibration=true]
     T --> U[BLGU Addresses RE-calibration]
     U --> V[BLGU Resubmits]
-    V --> P
+    V --> VA[Status: AWAITING_FINAL_VALIDATION]
+    VA --> VB[Validator Reviews RE-calibration]
+    VB --> VC[Validator Finalizes]
+    VC --> P
     R -->|Approved| W[MLGOO Approves]
     W --> X[Status: COMPLETED]
 ```
@@ -409,7 +412,10 @@ If MLGOO identifies issues after validator review, they can request RE-calibrati
    - Stores `mlgoo_recalibration_comments` (guidance for BLGU)
 4. **BLGU Receives Notification**: Dashboard shows RE-calibration details
 5. **BLGU Addresses Issues**: Only specified indicators are unlocked
-6. **BLGU Resubmits**: Assessment returns to `AWAITING_MLGOO_APPROVAL`
+6. **BLGU Resubmits**: Assessment goes to `AWAITING_FINAL_VALIDATION` for Validator re-review
+7. **Validator Reviews**: Validator reviews the recalibrated indicators
+8. **Validator Finalizes**: After approval, assessment returns to `AWAITING_MLGOO_APPROVAL`
+9. **MLGOO Final Review**: MLGOO can now approve the assessment
 
 **RE-Calibration Limit:**
 
@@ -448,17 +454,17 @@ When MLGOO is satisfied with the assessment:
 
 ## Assessment Status Flow
 
-| Status                                   | Description                         | Who Can See                | Next Actions                                       |
-| ---------------------------------------- | ----------------------------------- | -------------------------- | -------------------------------------------------- |
-| `DRAFT`                                  | BLGU is filling out                 | BLGU only                  | Submit                                             |
-| `SUBMITTED`                              | Submitted for review                | Assessors                  | Review, Send Rework, or Finalize                   |
-| `IN_REVIEW`                              | Assessor reviewing                  | Assessors                  | Continue review                                    |
-| `REWORK`                                 | Needs revision                      | BLGU, Assessors/Validators | BLGU revises and resubmits                         |
-| `REWORK` + `is_calibration_rework=true`  | Calibration needed                  | BLGU, Validator            | BLGU addresses specific area, submits to Validator |
-| `REWORK` + `is_mlgoo_recalibration=true` | MLGOO RE-calibration                | BLGU, MLGOO                | BLGU addresses MLGOO issues, resubmits             |
-| `AWAITING_FINAL_VALIDATION`              | Ready for validator                 | Validators                 | Determine Pass/Fail, Calibrate, or Finalize        |
-| `AWAITING_MLGOO_APPROVAL`                | Validators done, awaiting MLGOO     | MLGOO, BLGU                | MLGOO approves or requests RE-calibration          |
-| `COMPLETED`                              | Validation complete, MLGOO approved | All                        | View final results                                 |
+| Status                                   | Description                         | Who Can See                | Next Actions                                        |
+| ---------------------------------------- | ----------------------------------- | -------------------------- | --------------------------------------------------- |
+| `DRAFT`                                  | BLGU is filling out                 | BLGU only                  | Submit                                              |
+| `SUBMITTED`                              | Submitted for review                | Assessors                  | Review, Send Rework, or Finalize                    |
+| `IN_REVIEW`                              | Assessor reviewing                  | Assessors                  | Continue review                                     |
+| `REWORK`                                 | Needs revision                      | BLGU, Assessors/Validators | BLGU revises and resubmits                          |
+| `REWORK` + `is_calibration_rework=true`  | Calibration needed                  | BLGU, Validator            | BLGU addresses specific area, submits to Validator  |
+| `REWORK` + `is_mlgoo_recalibration=true` | MLGOO RE-calibration                | BLGU, MLGOO                | BLGU addresses MLGOO issues, resubmits to Validator |
+| `AWAITING_FINAL_VALIDATION`              | Ready for validator                 | Validators                 | Determine Pass/Fail, Calibrate, or Finalize         |
+| `AWAITING_MLGOO_APPROVAL`                | Validators done, awaiting MLGOO     | MLGOO, BLGU                | MLGOO approves or requests RE-calibration           |
+| `COMPLETED`                              | Validation complete, MLGOO approved | All                        | View final results                                  |
 
 ### Calibration vs. Rework vs. RE-Calibration
 
@@ -467,7 +473,7 @@ When MLGOO is satisfied with the assessment:
 | **Who triggers**   | Assessor              | Validator                          | MLGOO                           |
 | **When triggered** | During initial review | During final validation            | During MLGOO approval           |
 | **Scope**          | Any indicators        | Only Validator's governance area   | Any indicators (MLGOO selected) |
-| **Returns to**     | All Assessors         | Same Validator                     | MLGOO                           |
+| **Returns to**     | All Assessors         | Same Validator                     | Validator, then MLGOO           |
 | **Limit**          | 1 per assessment      | 1 per governance area              | 1 per assessment                |
 | **AI Summary**     | Yes (rework_summary)  | Yes (calibration_summary per area) | No (uses comments)              |
 | **Field flag**     | `rework_count = 1`    | `is_calibration_rework = true`     | `is_mlgoo_recalibration = true` |

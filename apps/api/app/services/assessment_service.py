@@ -2015,7 +2015,11 @@ class AssessmentService:
             )
 
             # Update assessment status
-            assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
+            # MLGOO recalibration resubmission goes to Validator for re-review
+            if is_mlgoo_recalibration_resubmission:
+                assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+            else:
+                assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
             assessment.submitted_at = datetime.utcnow()
 
             # Set specific resubmission timestamps for timeline tracking
@@ -2041,11 +2045,25 @@ class AssessmentService:
                 assessment.mlgoo_recalibration_submitted_at = datetime.utcnow()
 
             # CRITICAL: If resubmitting after rework, clear checklist data for reworked indicators
-            # This ensures assessors review them with clean checklists
+            # This ensures assessors/validators review them with clean checklists
             if is_resubmission:
+                # Get recalibration indicator IDs for MLGOO recalibration
+                recalibration_indicator_ids = (
+                    set(assessment.mlgoo_recalibration_indicator_ids or [])
+                    if is_mlgoo_recalibration_resubmission
+                    else set()
+                )
+
                 for response in assessment.responses:
-                    if response.requires_rework:
-                        # Clear validation_status for fresh review
+                    # For MLGOO recalibration: clear validation_status for recalibrated indicators
+                    # For regular rework: clear validation_status for requires_rework indicators
+                    should_clear = (
+                        response.requires_rework
+                        or response.indicator_id in recalibration_indicator_ids
+                    )
+
+                    if should_clear:
+                        # Clear validation_status for fresh Validator review
                         response.validation_status = None
 
                         # NOTE: Do NOT reset is_completed here!
@@ -2061,9 +2079,19 @@ class AssessmentService:
                                 for k, v in response.response_data.items()
                                 if not k.startswith("assessor_val_")
                             }
-                        self.logger.info(
-                            f"[RESUBMISSION] Cleared checklist for response {response.id} (requires_rework=True)"
-                        )
+
+                        if (
+                            is_mlgoo_recalibration_resubmission
+                            and response.indicator_id in recalibration_indicator_ids
+                        ):
+                            self.logger.info(
+                                f"[MLGOO RECALIBRATION] Cleared validation_status for response {response.id} "
+                                f"(indicator {response.indicator_id}) for Validator re-review"
+                            )
+                        elif response.requires_rework:
+                            self.logger.info(
+                                f"[RESUBMISSION] Cleared checklist for response {response.id} (requires_rework=True)"
+                            )
 
             db.commit()
             db.refresh(assessment)
@@ -2079,18 +2107,22 @@ class AssessmentService:
                 if is_mlgoo_recalibration_resubmission:
                     action = "recalibration_submitted"
                     from_status = AssessmentStatus.REWORK.value
-                    description = "RE-calibration resubmission"
+                    to_status = AssessmentStatus.AWAITING_FINAL_VALIDATION.value
+                    description = "RE-calibration resubmission - awaiting Validator review"
                 elif is_calibration_resubmission:
                     action = "calibration_submitted"
                     from_status = AssessmentStatus.REWORK.value
+                    to_status = AssessmentStatus.SUBMITTED_FOR_REVIEW.value
                     description = "Calibration resubmission"
                 elif is_rework_resubmission:
                     action = "rework_submitted"
                     from_status = AssessmentStatus.REWORK.value
+                    to_status = AssessmentStatus.SUBMITTED_FOR_REVIEW.value
                     description = "Rework resubmission"
                 else:
                     action = "submitted"
                     from_status = AssessmentStatus.DRAFT.value
+                    to_status = AssessmentStatus.SUBMITTED_FOR_REVIEW.value
                     description = "Assessment submitted"
 
                 assessment_activity_service.log_activity(
@@ -2099,7 +2131,7 @@ class AssessmentService:
                     action=action,
                     user_id=assessment.blgu_user_id,
                     from_status=from_status,
-                    to_status=AssessmentStatus.SUBMITTED_FOR_REVIEW.value,
+                    to_status=to_status,
                     extra_data={"barangay_name": barangay_name},
                     description=description,
                 )
@@ -2133,7 +2165,19 @@ class AssessmentService:
 
             # Trigger notification based on submission type
             try:
-                if assessment.is_calibration_rework and assessment.calibration_validator_id:
+                if is_mlgoo_recalibration_resubmission:
+                    # MLGOO Recalibration: BLGU resubmits -> All Validators (for re-review)
+                    # Validators will finalize and move to AWAITING_MLGOO_APPROVAL
+                    from app.workers.notifications import (
+                        send_mlgoo_recalibration_resubmission_notification,
+                    )
+
+                    send_mlgoo_recalibration_resubmission_notification.delay(assessment_id)
+                    self.logger.info(
+                        f"Triggered MLGOO recalibration resubmission notification to all Validators "
+                        f"for assessment {assessment_id}"
+                    )
+                elif assessment.is_calibration_rework and assessment.calibration_validator_id:
                     # Notification #6: BLGU resubmits after calibration -> Same Validator
                     from app.workers.notifications import (
                         send_calibration_resubmission_notification,
@@ -3483,10 +3527,77 @@ class AssessmentService:
                     "areas_approved_count": sum(
                         1 for v in (assessment.area_assessor_approved or {}).values() if v
                     ),
+                    # Per-area rework info (which assessors sent for rework)
+                    "area_rework_info": self._get_area_rework_info(
+                        db, assessment.area_submission_status
+                    ),
                 }
             )
 
         return assessment_list
+
+    def _get_area_rework_info(
+        self, db: Session, area_submission_status: dict | None
+    ) -> list[dict[str, Any]]:
+        """
+        Extract rework information from area_submission_status.
+
+        Returns a list of areas that are in rework status with assessor details.
+
+        Args:
+            db: Database session
+            area_submission_status: The area_submission_status JSON from the assessment
+
+        Returns:
+            List of dicts with area rework info including assessor names
+        """
+        if not area_submission_status:
+            return []
+
+        # Governance area names for display
+        area_names = {
+            "1": "Financial Administration",
+            "2": "Disaster Preparedness",
+            "3": "Peace and Order",
+            "4": "Social Protection",
+            "5": "Business-Friendliness",
+            "6": "Environmental Management",
+        }
+
+        rework_areas = []
+        assessor_ids = set()
+
+        # First pass: collect all assessor IDs that sent for rework
+        for area_id, area_data in area_submission_status.items():
+            if isinstance(area_data, dict) and area_data.get("status") == "rework":
+                assessor_id = area_data.get("assessor_id")
+                if assessor_id:
+                    assessor_ids.add(assessor_id)
+
+        # Batch fetch assessor names
+        assessor_map = {}
+        if assessor_ids:
+            assessors = db.query(User.id, User.name).filter(User.id.in_(assessor_ids)).all()
+            assessor_map = {a.id: a.name for a in assessors}
+
+        # Second pass: build rework info with assessor names
+        for area_id, area_data in area_submission_status.items():
+            if isinstance(area_data, dict) and area_data.get("status") == "rework":
+                assessor_id = area_data.get("assessor_id")
+                assessor_name = assessor_map.get(assessor_id, "Unknown Assessor")
+
+                rework_areas.append(
+                    {
+                        "governance_area_id": int(area_id),
+                        "governance_area_name": area_names.get(area_id, f"Area {area_id}"),
+                        "assessor_id": assessor_id,
+                        "assessor_name": assessor_name,
+                        "rework_requested_at": area_data.get("rework_requested_at"),
+                        "rework_comments": area_data.get("rework_comments"),
+                    }
+                )
+
+        return rework_areas
 
 
 # Create service instance

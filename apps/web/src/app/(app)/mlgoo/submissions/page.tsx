@@ -3,6 +3,7 @@
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
 import {
   ActiveFilterPills,
+  NeedsReworkPopover,
   STATUS_FILTER_OPTIONS,
   SubmissionsEmptyState,
   SubmissionsMobileList,
@@ -508,7 +509,13 @@ export default function AdminSubmissionsPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              {isStatusClickable(submission.currentStatus) ? (
+                              {submission.currentStatus === "Needs Rework" ? (
+                                /* Needs Rework: Show popover with assessor details */
+                                <NeedsReworkPopover
+                                  submission={submission}
+                                  statusConfig={statusConfig}
+                                />
+                              ) : isStatusClickable(submission.currentStatus) ? (
                                 <TooltipProvider>
                                   <Tooltip delayDuration={200}>
                                     <TooltipTrigger asChild>

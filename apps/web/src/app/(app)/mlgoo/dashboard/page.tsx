@@ -3,6 +3,7 @@
 import {
   AdminDashboardSkeleton,
   DashboardHeader,
+  LiveUpdatesCarousel,
   MunicipalProgressChart,
   TopReworkReasonsCard,
 } from "@/components/features/dashboard";
@@ -155,6 +156,11 @@ export default function AdminDashboardPage() {
         {/* Simplified KPI Cards with Hero Action */}
         <section className="mb-4 sm:mb-6" aria-label="Key Performance Indicators">
           <SimplifiedKPICards data={dashboardData.kpiData} />
+        </section>
+
+        {/* Live Updates Carousel */}
+        <section className="mb-4 sm:mb-6" aria-label="Live Assessment Updates">
+          <LiveUpdatesCarousel />
         </section>
 
         {/* Main Content: Progress Chart + Quick Actions */}

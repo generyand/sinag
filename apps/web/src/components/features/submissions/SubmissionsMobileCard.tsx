@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Check, Eye, Loader2, Send } from "lucide-react";
+import { NeedsReworkPopover } from "./NeedsReworkPopover";
 import { getValidatorDisplayStatus, type SubmissionUIModel } from "./utils/dataTransformers";
 import {
   getProgressBarColor,
@@ -39,7 +40,10 @@ export function SubmissionsMobileCard({
         <h3 className="font-semibold text-[var(--foreground)] text-base">
           Brgy. {submission.barangayName}
         </h3>
-        {isStatusClickable(submission.currentStatus) ? (
+        {submission.currentStatus === "Needs Rework" ? (
+          /* Needs Rework: Show popover with assessor details */
+          <NeedsReworkPopover submission={submission} statusConfig={statusConfig} />
+        ) : isStatusClickable(submission.currentStatus) ? (
           <button
             onClick={() => onView(submission)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium shrink-0 cursor-pointer transition-all duration-200 hover:opacity-80 hover:ring-2 hover:ring-offset-1 hover:ring-current"

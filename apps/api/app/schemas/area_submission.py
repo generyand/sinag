@@ -89,3 +89,22 @@ class CompiledReworkSummary(BaseModel):
     areas: list[dict]  # List of areas with rework details
     rework_round_used: bool
     total_areas_in_rework: int
+
+
+class AreaReworkInfoResponse(BaseModel):
+    """
+    Information about a governance area that was sent for rework by an assessor.
+
+    Used in the MLGOO submissions list to show which assessors flagged areas for rework.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    governance_area_id: int = Field(..., ge=1, le=6, description="Governance area ID (1-6)")
+    governance_area_name: str = Field(..., description="Human-readable governance area name")
+    assessor_id: int = Field(..., description="ID of the assessor who sent for rework")
+    assessor_name: str = Field(..., description="Name of the assessor who sent for rework")
+    rework_requested_at: datetime | None = Field(
+        None, description="Timestamp when rework was requested"
+    )
+    rework_comments: str | None = Field(None, description="Comments from the assessor")

@@ -482,12 +482,33 @@ class AssessorService:
 
         # Log indicator-level activity for more specific tracking
         try:
+            # Import ActivityAction here to avoid circular dependency with assessment_activity schemas
             from app.schemas.assessment_activity import ActivityAction
-            from app.services.assessment_activity_service import assessment_activity_service
 
             # Get indicator details for logging
             indicator = response.indicator
             governance_area = indicator.governance_area if indicator else None
+
+            # Get barangay name from the assessment's BLGU user
+            assessment = response.assessment
+            barangay_name = None
+            if assessment and assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            # Resolve year placeholders in indicator name (e.g., {JUL_TO_SEP_CURRENT_YEAR})
+            indicator_name = indicator.name if indicator else "Unknown"
+            if indicator_name and assessment:
+                year_resolver = get_year_resolver(db, assessment.assessment_year)
+                indicator_name = year_resolver.resolve_string(indicator_name) or indicator_name
+
+            # Determine if user is a validator or assessor using explicit role check
+            # Validators (VALIDATOR role) have system-wide access; assessors are area-specific
+            is_validator = assessor.role == UserRole.VALIDATOR
+            action = (
+                ActivityAction.INDICATOR_VALIDATED.value
+                if is_validator
+                else ActivityAction.INDICATOR_REVIEWED.value
+            )
 
             assessment_activity_service.log_indicator_activity(
                 db=db,
@@ -496,8 +517,8 @@ class AssessorService:
                 indicator_code=indicator.indicator_code
                 if indicator and indicator.indicator_code
                 else "N/A",
-                indicator_name=indicator.name if indicator else "Unknown",
-                action=ActivityAction.INDICATOR_REVIEWED.value,
+                indicator_name=indicator_name,
+                action=action,
                 user_id=assessor.id,
                 governance_area_id=governance_area.id if governance_area else None,
                 governance_area_name=governance_area.name if governance_area else None,
@@ -506,6 +527,8 @@ class AssessorService:
                     "has_remarks": bool(assessor_remarks),
                     "has_public_comment": bool(public_comment),
                     "flagged_for_calibration": flagged_for_calibration,
+                    "barangay_name": barangay_name,
+                    "reviewer_type": "validator" if is_validator else "assessor",
                 },
             )
         except Exception as e:

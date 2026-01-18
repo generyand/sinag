@@ -110,7 +110,9 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
                   ) : (
                     <span className="hidden sm:inline">No assessments require your action</span>
                   )}
-                  {!hasActionsRequired && <span className="sm:hidden">All assessments handled</span>}
+                  {!hasActionsRequired && (
+                    <span className="sm:hidden">All assessments handled</span>
+                  )}
                 </h2>
                 <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-1.5">
                   {hasActionsRequired
@@ -127,7 +129,9 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
                   : "bg-green-500 text-white hover:bg-green-600"
               )}
             >
-              <span className="text-sm sm:text-base">{hasActionsRequired ? "Review Now" : "View All"}</span>
+              <span className="text-sm sm:text-base">
+                {hasActionsRequired ? "Review Now" : "View All"}
+              </span>
               <ArrowRight className="h-4 w-4" />
             </div>
           </div>
@@ -150,7 +154,9 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
                 <div className="absolute top-0 right-0 w-16 h-16 bg-white/30 rounded-full -translate-y-8 translate-x-8" />
                 <CardContent className="p-4 sm:p-5 relative z-10">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs sm:text-sm font-semibold text-gray-700">Submission Progress</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700">
+                      Submission Progress
+                    </span>
                     <div className="p-2 bg-blue-500 rounded-sm">
                       <TrendingUp className="h-4 w-4 text-white" />
                     </div>
@@ -180,7 +186,7 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
           </Tooltip>
         </TooltipProvider>
 
-        {/* Pipeline Health - Combined */}
+        {/* Review Status - Combined */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -196,16 +202,22 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
                 <div className="absolute top-0 right-0 w-16 h-16 bg-white/30 rounded-full -translate-y-8 translate-x-8" />
                 <CardContent className="p-4 sm:p-5 relative z-10">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs sm:text-sm font-semibold text-gray-700">Pipeline Health</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700">
+                      Review Status
+                    </span>
                     <div className="p-2 bg-purple-500 rounded-sm">
                       <Clock className="h-4 w-4 text-white" />
                     </div>
                   </div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-2xl sm:text-3xl font-bold text-gray-900">{pipelineCount}</span>
+                    <span className="text-2xl sm:text-3xl font-bold text-gray-900">
+                      {pipelineCount}
+                    </span>
                     <span className="text-base sm:text-lg text-gray-500">in review</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-3">Assessments being processed</p>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3">
+                    Assessments being processed
+                  </p>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs">
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-indigo-400" />
@@ -252,7 +264,9 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
                 <div className="absolute top-0 right-0 w-16 h-16 bg-white/30 rounded-full -translate-y-8 translate-x-8" />
                 <CardContent className="p-4 sm:p-5 relative z-10">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs sm:text-sm font-semibold text-gray-700">Assessment Results</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700">
+                      Assessment Results
+                    </span>
                     <div
                       className={cn(
                         "p-2 rounded-sm",
@@ -263,7 +277,9 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
                     </div>
                   </div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-2xl sm:text-3xl font-bold text-gray-900">{completed}</span>
+                    <span className="text-2xl sm:text-3xl font-bold text-gray-900">
+                      {completed}
+                    </span>
                     <span className="text-base sm:text-lg text-gray-500">completed</span>
                   </div>
                   <p className="text-xs sm:text-sm text-gray-600 mb-3">
