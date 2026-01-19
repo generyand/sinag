@@ -358,6 +358,24 @@ class Assessment(Base):
     # ==========================================================================
     # Per-Area Submission Helper Methods
     # ==========================================================================
+    def has_pending_area_rework(self) -> bool:
+        """
+        Check if any governance area has pending rework status.
+
+        This is used to detect rework resubmission in the per-area workflow,
+        where a single assessor can send their area for rework before all 6 areas
+        have made a decision (in which case rework_requested_at would still be None).
+
+        Returns:
+            True if any area has status="rework", False otherwise
+        """
+        if not self.area_submission_status:
+            return False
+        return any(
+            isinstance(data, dict) and data.get("status") == "rework"
+            for data in self.area_submission_status.values()
+        )
+
     def all_areas_approved(self) -> bool:
         """
         Check if all governance areas are approved by assessors.

@@ -847,10 +847,18 @@ class AssessorService:
                 if assessment.rework_requested_at
                 else None,
                 "rework_count": assessment.rework_count,
+                "rework_round_used": assessment.rework_round_used,
                 "calibration_count": assessment.calibration_count,
                 "calibrated_area_ids": assessment.calibrated_area_ids or [],
                 "calibration_requested_at": assessment.calibration_requested_at.isoformat() + "Z"
                 if assessment.calibration_requested_at
+                else None,
+                # Per-area status tracking (for disabling buttons when area is rework/approved)
+                "area_submission_status": assessment.area_submission_status or {},
+                "area_assessor_approved": assessment.area_assessor_approved or {},
+                # Assessor's own area status (for quick lookup)
+                "my_area_status": assessment.get_area_status(assessor.assessor_area_id)
+                if assessor.assessor_area_id
                 else None,
                 "blgu_user": {
                     "id": assessment.blgu_user.id,

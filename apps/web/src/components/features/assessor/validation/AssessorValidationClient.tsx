@@ -319,6 +319,17 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   );
 
   const reworkCount: number = core.rework_count ?? 0;
+  // rework_round_used is the authoritative field for per-area workflow (assessors)
+  // It's set to true when ANY area is sent for rework
+  const reworkRoundUsed: boolean = core.rework_round_used ?? false;
+
+  // Per-area status for the current assessor's governance area
+  // Values: "draft", "submitted", "in_review", "rework", "approved"
+  const myAreaStatus: string | null = (core?.my_area_status ?? null) as string | null;
+
+  // Check if the area is "locked" (already sent for rework or approved)
+  // When locked, disable Save/Rework/Approve buttons for assessors
+  const isAreaLocked: boolean = myAreaStatus === "rework" || myAreaStatus === "approved";
 
   // Get timestamps for MOV file separation (new vs old files)
   // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
@@ -1118,8 +1129,15 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={isSaving || isAssessorWithoutArea}
+              disabled={isSaving || isAssessorWithoutArea || (isAssessor && isAreaLocked)}
               className="text-xs sm:text-sm px-2 sm:px-4"
+              title={
+                isAssessor && isAreaLocked
+                  ? myAreaStatus === "rework"
+                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                    : "Area is already reviewed and approved."
+                  : undefined
+              }
             >
               <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save as Draft"}</span>
               <span className="sm:hidden">Save</span>
@@ -1422,8 +1440,15 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={isSaving}
+              disabled={isSaving || (isAssessor && isAreaLocked)}
               className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
+              title={
+                isAssessor && isAreaLocked
+                  ? myAreaStatus === "rework"
+                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                    : "Area is already reviewed and approved."
+                  : undefined
+              }
             >
               {isSaving ? "Saving..." : "Save as Draft"}
             </Button>
@@ -1436,16 +1461,23 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 onClick={() => setShowReworkConfirm(true)}
                 disabled={
                   !hasIndicatorsFlaggedForRework ||
-                  reworkCount !== 0 ||
+                  reworkRoundUsed ||
+                  isAreaLocked ||
                   reworkMut.isPending ||
                   areaReworkMut.isPending
                 }
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
-                  !hasIndicatorsFlaggedForRework
-                    ? "Toggle 'Flag for Rework' on at least one indicator to send for rework"
-                    : undefined
+                  isAreaLocked
+                    ? myAreaStatus === "rework"
+                      ? "Area is already sent for rework. Waiting for BLGU to resubmit."
+                      : "Area is already reviewed and approved."
+                    : reworkRoundUsed
+                      ? "Rework round has already been used for this assessment. Only one rework round is allowed."
+                      : !hasIndicatorsFlaggedForRework
+                        ? "Toggle 'Flag for Rework' on at least one indicator to send for rework"
+                        : undefined
                 }
               >
                 {reworkMut.isPending || areaReworkMut.isPending ? (
@@ -1538,10 +1570,20 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={!allReviewed || finalizeMut.isPending || areaApproveMut.isPending}
+                disabled={
+                  !allReviewed || isAreaLocked || finalizeMut.isPending || areaApproveMut.isPending
+                }
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
-                title={!allReviewed ? "Review all indicators before approving" : undefined}
+                title={
+                  isAreaLocked
+                    ? myAreaStatus === "rework"
+                      ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                      : "Area is already reviewed and approved."
+                    : !allReviewed
+                      ? "Review all indicators before approving"
+                      : undefined
+                }
               >
                 <span className="hidden sm:inline">Approve Area and Send to Validator</span>
                 <span className="sm:hidden">Approve</span>

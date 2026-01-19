@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * @deprecated This component is no longer used in production.
+ * Use AssessorValidationClient instead, which supports the per-area workflow.
+ * This file is kept for backward compatibility with existing tests.
+ */
+
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
 import { Button } from "@/components/ui/button";
@@ -50,6 +56,8 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
   const assessmentId: number = data.assessment_id ?? core.id ?? 0;
   const reworkCount: number = core.rework_count ?? 0;
+  // rework_round_used is the authoritative field for per-area workflow
+  const reworkRoundUsed: boolean = core.rework_round_used ?? false;
 
   // Get timestamps for MOV file separation (new vs old files)
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
@@ -442,8 +450,9 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
               type="button"
               onClick={onSendRework}
               disabled={
-                // Enabled if: all reviewed AND reworkCount == 0 AND any Fail AND no missing required comments
+                // Enabled if: all reviewed AND rework not used AND any Fail AND no missing required comments
                 !allReviewed ||
+                reworkRoundUsed ||
                 reworkCount !== 0 ||
                 !anyFail ||
                 missingRequiredComments > 0 ||

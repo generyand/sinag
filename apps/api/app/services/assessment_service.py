@@ -1998,9 +1998,12 @@ class AssessmentService:
 
         if validation_result.is_valid:
             # Check if this is a resubmission after rework/calibration
+            # Use helper method to detect per-area rework status
+            # This handles the case where a single assessor sends their area for rework
+            # before all 6 areas have made a decision (rework_requested_at would be None)
             is_rework_resubmission = (
-                assessment.rework_requested_at is not None and not assessment.is_calibration_rework
-            )
+                assessment.rework_requested_at is not None or assessment.has_pending_area_rework()
+            ) and not assessment.is_calibration_rework
             is_calibration_resubmission = (
                 assessment.is_calibration_rework and assessment.calibration_requested_at is not None
             )
@@ -2072,6 +2075,12 @@ class AssessmentService:
                         # to show indicators as incomplete even when all MOVs are uploaded.
                         # Assessor review status is tracked via validation_status.
 
+                        # Clear assessor remarks for fresh re-review
+                        # This ensures assessors start with clean notes when BLGU resubmits
+                        # Each indicator belongs to a specific governance area, so this only
+                        # affects the assessor assigned to that area (not other assessors)
+                        response.assessor_remarks = None
+
                         # Clear assessor checklist data (assessor_val_ prefix)
                         if response.response_data:
                             response.response_data = {
@@ -2085,12 +2094,13 @@ class AssessmentService:
                             and response.indicator_id in recalibration_indicator_ids
                         ):
                             self.logger.info(
-                                f"[MLGOO RECALIBRATION] Cleared validation_status for response {response.id} "
+                                f"[MLGOO RECALIBRATION] Cleared validation_status and assessor_remarks for response {response.id} "
                                 f"(indicator {response.indicator_id}) for Validator re-review"
                             )
                         elif response.requires_rework:
                             self.logger.info(
-                                f"[RESUBMISSION] Cleared checklist for response {response.id} (requires_rework=True)"
+                                f"[RESUBMISSION] Cleared checklist and assessor_remarks for response {response.id} "
+                                f"(requires_rework=True) - AWAITING RE-REVIEW"
                             )
 
             db.commit()
