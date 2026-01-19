@@ -10,6 +10,7 @@ import type { CalibrationSummaryResponse } from '../system';
 import type { ProgressSummary } from '../common';
 import type { GovernanceAreaProgress } from '../common';
 import type { GovernanceAreaDetailItem } from '../common';
+import type { ReworkCalibrationSummary } from '../common';
 import type { GovernanceAreaBreakdown } from '../common';
 import type { AppSchemasYearConfigUserNested } from '../users';
 
@@ -417,6 +418,7 @@ export interface AssessmentDetailResponse {
   mlgoo_approved_at: AssessmentDetailResponseMlgooApprovedAt;
   grace_period_expires_at: AssessmentDetailResponseGracePeriodExpiresAt;
   is_locked_for_deadline: boolean;
+  rework_calibration_summary?: AssessmentDetailResponseReworkCalibrationSummary;
 }
 
 
@@ -520,6 +522,12 @@ export type AssessmentDetailResponseMlgooRecalibrationSubmittedAt = string | nul
  * AssessmentDetailResponseOverallScore
  */
 export type AssessmentDetailResponseOverallScore = number | null;
+
+
+/**
+ * AssessmentDetailResponseReworkCalibrationSummary
+ */
+export type AssessmentDetailResponseReworkCalibrationSummary = ReworkCalibrationSummary | null;
 
 
 /**

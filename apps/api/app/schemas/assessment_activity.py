@@ -36,6 +36,15 @@ class ActivityAction(str, Enum):
     MOV_UPLOADED = "mov_uploaded"  # BLGU or Assessor uploads MOV
     MOV_ANNOTATED = "mov_annotated"  # Assessor annotates MOV
 
+    # Compliance actions (BLGU addresses flagged indicators)
+    INDICATOR_REWORK_COMPLIANCE = "indicator_rework_compliance"  # BLGU complies with rework
+    INDICATOR_CALIBRATION_COMPLIANCE = (
+        "indicator_calibration_compliance"  # BLGU complies with calibration
+    )
+    INDICATOR_RECALIBRATION_COMPLIANCE = (
+        "indicator_recalibration_compliance"  # BLGU complies with recalibration
+    )
+
 
 # ============================================================================
 # Assessment Activity Schemas

@@ -166,6 +166,79 @@ class MOVFileItem(BaseModel):
     uploaded_at: str | None = None
 
 
+class MOVAnnotationItem(BaseModel):
+    """MOV annotation details for feedback display."""
+
+    id: int
+    mov_file_id: int
+    mov_filename: str
+    mov_file_type: str
+    annotation_type: str  # 'pdfRect' or 'imageRect'
+    page: int | None = None
+    rect: dict[str, Any] | None = None
+    rects: list[dict[str, Any]] | None = None
+    comment: str
+    assessor_id: int
+    assessor_name: str
+    created_at: str | None
+
+
+class FeedbackCommentItem(BaseModel):
+    """Feedback comment from assessor/validator."""
+
+    id: int
+    comment: str
+    comment_type: str
+    assessor_id: int
+    assessor_name: str
+    created_at: str | None
+
+
+class ReworkCalibrationIndicatorItem(BaseModel):
+    """Indicator with rework/calibration feedback details."""
+
+    indicator_id: int
+    indicator_name: str
+    indicator_code: str | None
+    governance_area_id: int
+    governance_area_name: str
+    status: str  # 'rework' or 'calibration' or 'mlgoo_recalibration'
+    validation_status: str | None
+    feedback_comments: list[FeedbackCommentItem] = Field(default_factory=list)
+    mov_annotations: list[MOVAnnotationItem] = Field(default_factory=list)
+
+
+class PendingCalibrationItem(BaseModel):
+    """Details of a pending calibration request."""
+
+    validator_id: int
+    validator_name: str
+    governance_area_id: int
+    governance_area_name: str
+    requested_at: str | None
+    comments: str | None = None
+
+
+class ReworkCalibrationSummary(BaseModel):
+    """Summary of all rework/calibration requests for an assessment."""
+
+    has_rework: bool = False
+    has_calibration: bool = False
+    has_mlgoo_recalibration: bool = False
+    # Assessor rework info
+    rework_requested_by_id: int | None = None
+    rework_requested_by_name: str | None = None
+    rework_comments: str | None = None
+    # Validator calibration info
+    calibration_validator_id: int | None = None
+    calibration_validator_name: str | None = None
+    calibration_comments: str | None = None
+    # Pending calibrations (parallel calibration support)
+    pending_calibrations: list[PendingCalibrationItem] = Field(default_factory=list)
+    # Indicators being reworked/calibrated with their feedback
+    rework_indicators: list[ReworkCalibrationIndicatorItem] = Field(default_factory=list)
+
+
 class IndicatorDetailItem(BaseModel):
     """Indicator details within a governance area."""
 
@@ -176,7 +249,9 @@ class IndicatorDetailItem(BaseModel):
     validation_status: str | None
     assessor_remarks: str | None
     is_completed: bool  # Completion status (form filled + required MOVs uploaded)
-    is_recalibration_target: bool
+    is_recalibration_target: bool  # True if MLGOO flagged for recalibration
+    requires_rework: bool = False  # True if assessor flagged for rework
+    flagged_for_calibration: bool = False  # True if validator flagged for calibration
     mov_files: list[MOVFileItem] = Field(default_factory=list)
 
 
@@ -228,6 +303,8 @@ class AssessmentDetailResponse(BaseModel):
     mlgoo_approved_at: str | None
     grace_period_expires_at: str | None
     is_locked_for_deadline: bool
+    # Rework/Calibration summary (detailed info for display)
+    rework_calibration_summary: ReworkCalibrationSummary | None = None
 
     class Config:
         from_attributes = True

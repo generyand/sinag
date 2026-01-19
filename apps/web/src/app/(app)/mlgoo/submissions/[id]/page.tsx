@@ -26,6 +26,7 @@ type MovFile = {
 };
 
 import { CapDevInsightsCard } from "@/components/features/capdev";
+import { ReworkCalibrationSummarySection } from "@/components/features/mlgoo";
 import { SecureFileViewer } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +51,7 @@ import {
   usePostCapdevAssessmentsAssessmentIdRegenerate,
   usePostMlgooAssessmentsAssessmentIdApprove,
   usePostMlgooAssessmentsAssessmentIdRecalibrateByMov,
+  type IndicatorDetailItem,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -1564,6 +1566,14 @@ export default function SubmissionDetailsPage() {
             </div>
 
             <TabsContent value="overview" className="space-y-6">
+              {/* Rework/Calibration Summary Section */}
+              <ReworkCalibrationSummarySection
+                summary={assessment.rework_calibration_summary}
+                reworkRequestedAt={assessment.rework_requested_at}
+                calibrationRequestedAt={assessment.calibration_requested_at}
+                mlgooRecalibrationComments={assessment.mlgoo_recalibration_comments}
+              />
+
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-white dark:bg-slate-800/50 rounded-sm shadow border border-gray-200 dark:border-slate-700">
@@ -1807,16 +1817,25 @@ export default function SubmissionDetailsPage() {
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="divide-y divide-gray-100 dark:divide-slate-700">
-                        {(ga.indicators || []).map((indicator: any) => {
+                        {(ga.indicators || []).map((indicator: IndicatorDetailItem) => {
                           const isRecalibrationTarget = indicator.is_recalibration_target;
+                          const requiresRework = indicator.requires_rework;
+                          const flaggedForCalibration = indicator.flagged_for_calibration;
                           const status = indicator.validation_status?.toUpperCase();
                           const movFiles: MovFile[] = indicator.mov_files || [];
                           const isExpanded = expandedIndicators.has(indicator.indicator_id);
+
+                          // Determine background color based on status flags
+                          const getBgClass = () => {
+                            if (isRecalibrationTarget)
+                              return "bg-purple-50/30 dark:bg-purple-900/20";
+                            if (requiresRework) return "bg-orange-50/30 dark:bg-orange-900/20";
+                            if (flaggedForCalibration) return "bg-amber-50/30 dark:bg-amber-900/20";
+                            return "";
+                          };
+
                           return (
-                            <div
-                              key={indicator.indicator_id}
-                              className={`${isRecalibrationTarget ? "bg-purple-50/30 dark:bg-purple-900/20" : ""}`}
-                            >
+                            <div key={indicator.indicator_id} className={getBgClass()}>
                               {/* Indicator Header */}
                               <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition-colors">
                                 <div className="flex-1 space-y-2">
@@ -1831,10 +1850,29 @@ export default function SubmissionDetailsPage() {
                                           assessment.cycle_year
                                         )}
                                       </p>
-                                      {isRecalibrationTarget && (
-                                        <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
-                                          <RotateCcw className="h-3.5 w-3.5" />
-                                          Recalibration Target
+                                      {/* Status badges for rework/calibration/recalibration */}
+                                      {(requiresRework ||
+                                        flaggedForCalibration ||
+                                        isRecalibrationTarget) && (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                          {requiresRework && (
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-xs font-semibold border border-orange-200 dark:border-orange-800">
+                                              <AlertTriangle className="h-3.5 w-3.5" />
+                                              Needs Rework
+                                            </div>
+                                          )}
+                                          {flaggedForCalibration && (
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-semibold border border-amber-200 dark:border-amber-800">
+                                              <AlertCircle className="h-3.5 w-3.5" />
+                                              Calibration Target
+                                            </div>
+                                          )}
+                                          {isRecalibrationTarget && (
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800">
+                                              <RotateCcw className="h-3.5 w-3.5" />
+                                              Recalibration Target
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -1877,12 +1915,12 @@ export default function SubmissionDetailsPage() {
                                   )}
 
                                   {/* Status Badge with Override Dropdown (only if AWAITING_MLGOO_APPROVAL) */}
-                                  {isAwaitingApproval ? (
+                                  {isAwaitingApproval && indicator.response_id ? (
                                     <Select
                                       value={status || "PENDING"}
                                       onValueChange={(value) =>
                                         handleOverrideStatus(
-                                          indicator.response_id,
+                                          indicator.response_id!,
                                           value as "PASS" | "FAIL" | "CONDITIONAL"
                                         )
                                       }

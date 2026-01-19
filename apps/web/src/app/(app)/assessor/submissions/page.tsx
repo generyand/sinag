@@ -35,6 +35,13 @@ function mapToUnifiedStatus(item: AssessorQueueItem): UnifiedStatus {
     return "reviewed";
   }
 
+  // FIX: Handle area-specific rework status (per-area workflow)
+  // When an assessor sends their area for rework, area_status becomes "rework"
+  // This should show "Sent for Rework" to prevent double-rework attempts
+  if (areaStatus === "rework") {
+    return "sent_for_rework";
+  }
+
   // Check submission type for rework states
   if (item.submission_type === "rework_pending") {
     return "sent_for_rework";

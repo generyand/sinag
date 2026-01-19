@@ -82,6 +82,61 @@ export type FlaggedMovFileItemComment = string | null;
 
 
 /**
+ * MOVAnnotationItem
+ */
+export interface MOVAnnotationItem {
+  id: number;
+  mov_file_id: number;
+  mov_filename: string;
+  mov_file_type: string;
+  annotation_type: string;
+  page?: MOVAnnotationItemPage;
+  rect?: MOVAnnotationItemRect;
+  rects?: MOVAnnotationItemRects;
+  comment: string;
+  assessor_id: number;
+  assessor_name: string;
+  created_at: MOVAnnotationItemCreatedAt;
+}
+
+
+/**
+ * MOVAnnotationItemCreatedAt
+ */
+export type MOVAnnotationItemCreatedAt = string | null;
+
+
+/**
+ * MOVAnnotationItemPage
+ */
+export type MOVAnnotationItemPage = number | null;
+
+
+/**
+ * MOVAnnotationItemRect
+ */
+export type MOVAnnotationItemRect = MOVAnnotationItemRectAnyOf | null;
+
+
+/**
+ * MOVAnnotationItemRectAnyOf
+ */
+export type MOVAnnotationItemRectAnyOf = { [key: string]: unknown };
+
+
+/**
+ * MOVAnnotationItemRects
+ */
+export type MOVAnnotationItemRects = MOVAnnotationItemRectsAnyOfItem[] | null;
+
+
+/**
+ * MOVAnnotationItemRectsAnyOfItem
+ */
+export type MOVAnnotationItemRectsAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * MOVCreate
  */
 export interface MOVCreate {

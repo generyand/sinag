@@ -2135,6 +2135,58 @@ class AssessmentService:
                     extra_data={"barangay_name": barangay_name},
                     description=description,
                 )
+
+                # Log individual indicator-level compliance activities
+                # This tracks which indicators the BLGU addressed in their resubmission
+                if is_resubmission:
+                    from app.schemas.assessment_activity import ActivityAction
+
+                    # Determine which indicators were addressed based on resubmission type
+                    recalibration_indicator_ids = set(
+                        assessment.mlgoo_recalibration_indicator_ids or []
+                    )
+
+                    for response in assessment.responses:
+                        indicator = response.indicator
+                        if not indicator:
+                            continue
+
+                        # Determine if this indicator was addressed
+                        compliance_action = None
+                        if (
+                            is_mlgoo_recalibration_resubmission
+                            and response.indicator_id in recalibration_indicator_ids
+                        ):
+                            compliance_action = (
+                                ActivityAction.INDICATOR_RECALIBRATION_COMPLIANCE.value
+                            )
+                        elif is_calibration_resubmission and response.requires_rework:
+                            compliance_action = (
+                                ActivityAction.INDICATOR_CALIBRATION_COMPLIANCE.value
+                            )
+                        elif is_rework_resubmission and response.requires_rework:
+                            compliance_action = ActivityAction.INDICATOR_REWORK_COMPLIANCE.value
+
+                        if compliance_action:
+                            governance_area = indicator.governance_area
+                            assessment_activity_service.log_indicator_activity(
+                                db=db,
+                                assessment_id=assessment_id,
+                                indicator_id=indicator.id,
+                                indicator_code=indicator.indicator_code,
+                                indicator_name=indicator.name,  # SQLAlchemy model uses 'name'
+                                action=compliance_action,
+                                user_id=assessment.blgu_user_id,
+                                governance_area_id=(
+                                    governance_area.id if governance_area else None
+                                ),
+                                governance_area_name=(
+                                    governance_area.name if governance_area else None
+                                ),
+                                extra_data={
+                                    "barangay_name": barangay_name,
+                                },
+                            )
             except Exception as e:
                 self.logger.error(f"Failed to log submission activity: {e}")
 

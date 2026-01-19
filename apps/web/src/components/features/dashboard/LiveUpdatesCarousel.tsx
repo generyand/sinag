@@ -5,23 +5,45 @@ import { cn } from "@/lib/utils";
 import { AssessmentActivityResponse, useGetAssessmentActivities } from "@sinag/shared";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 /** Action type configuration with icon, label, and color */
 const ACTION_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
+  // Assessment-level actions
   submitted: { icon: "📤", label: "Submitted", color: "blue" },
   approved: { icon: "✅", label: "Approved", color: "green" },
   review_started: { icon: "👁", label: "Review Started", color: "purple" },
   rework_requested: { icon: "🔄", label: "Rework Requested", color: "orange" },
+  rework_submitted: { icon: "📤", label: "Rework Submitted", color: "blue" },
+  review_completed: { icon: "✓", label: "Review Completed", color: "green" },
   validation_completed: { icon: "✓", label: "Validated", color: "green" },
   validation_started: { icon: "🔍", label: "Validation Started", color: "purple" },
   mlgoo_approved: { icon: "🏆", label: "MLGOO Approved", color: "green" },
   calibration_requested: { icon: "⚖️", label: "Calibration", color: "amber" },
+  calibration_submitted: { icon: "📤", label: "Calibration Submitted", color: "blue" },
   recalibration_requested: { icon: "🔄", label: "Re-calibration", color: "amber" },
+  recalibration_submitted: { icon: "📤", label: "Re-calibration Submitted", color: "blue" },
+  completed: { icon: "🏆", label: "Completed", color: "green" },
   area_approved: { icon: "✅", label: "Area Approved", color: "green" },
   area_rework_requested: { icon: "🔄", label: "Area Rework", color: "orange" },
   created: { icon: "📝", label: "Created", color: "gray" },
   updated: { icon: "📝", label: "Updated", color: "gray" },
+  // Indicator-level actions
+  indicator_submitted: { icon: "📋", label: "Indicator Submitted", color: "blue" },
+  indicator_reviewed: { icon: "📋", label: "Indicator Reviewed", color: "purple" },
+  indicator_validated: { icon: "✓", label: "Indicator Validated", color: "green" },
+  indicator_flagged_rework: { icon: "🚩", label: "Flagged for Rework", color: "orange" },
+  indicator_flagged_calibration: { icon: "🚩", label: "Flagged for Calibration", color: "amber" },
+  mov_uploaded: { icon: "📎", label: "MOV Uploaded", color: "blue" },
+  mov_annotated: { icon: "✏️", label: "MOV Annotated", color: "purple" },
+  // Compliance actions
+  indicator_rework_compliance: { icon: "✅", label: "Rework Compliance", color: "green" },
+  indicator_calibration_compliance: { icon: "✅", label: "Calibration Compliance", color: "green" },
+  indicator_recalibration_compliance: {
+    icon: "✅",
+    label: "Re-calibration Compliance",
+    color: "green",
+  },
 };
 
 /** Get configuration for an action type, with fallback */
@@ -81,11 +103,36 @@ function formatTimeAgo(dateString: string): string {
   }
 }
 
-/** Single activity card in the carousel */
-function ActivityCard({ activity }: { activity: AssessmentActivityResponse }) {
+/** Truncate a string to a maximum length with ellipsis */
+function truncate(str: string, maxLength: number): string {
+  return str.length > maxLength ? str.substring(0, maxLength) + "..." : str;
+}
+
+/** Pattern to match indicator codes like "6.3.1 - Description" */
+const INDICATOR_PATTERN = /(\d+\.\d+(?:\.\d+)?)\s*[-–]\s*(.+)/;
+
+/** Extract indicator code from description (e.g., "6.3.1" from "Indicator Reviewed: 6.3.1 - ...") */
+function extractIndicatorInfo(description: string | null | undefined): string | null {
+  if (!description) return null;
+  const match = description.match(INDICATOR_PATTERN);
+  if (match) {
+    const code = match[1];
+    const name = match[2].trim();
+    return `${code} - ${truncate(name, 30)}`;
+  }
+  return truncate(description, 40);
+}
+
+/** Single activity card in the carousel (memoized to prevent unnecessary re-renders) */
+const ActivityCard = memo(function ActivityCard({
+  activity,
+}: {
+  activity: AssessmentActivityResponse;
+}) {
   const config = getActionConfig(activity.action);
   const colors = getColorClasses(config.color);
   const timeAgo = formatTimeAgo(activity.created_at);
+  const indicatorInfo = extractIndicatorInfo(activity.description);
 
   return (
     <div
@@ -94,6 +141,7 @@ function ActivityCard({ activity }: { activity: AssessmentActivityResponse }) {
         colors.bg,
         colors.border
       )}
+      title={activity.description || undefined}
     >
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg">{config.icon}</span>
@@ -105,12 +153,20 @@ function ActivityCard({ activity }: { activity: AssessmentActivityResponse }) {
         <p className="text-sm font-medium text-gray-900 truncate">
           {activity.barangay_name || "Unknown Barangay"}
         </p>
-        <p className="text-xs text-gray-600 truncate">{activity.user_name || "System"}</p>
+        <p className="text-xs text-gray-600 truncate" title={activity.user_email || undefined}>
+          {activity.user_name || "System"}
+        </p>
+        {activity.user_email && (
+          <p className="text-xs text-gray-400 truncate">{activity.user_email}</p>
+        )}
+        {indicatorInfo && (
+          <p className="text-xs text-gray-500 truncate font-medium">{indicatorInfo}</p>
+        )}
         <p className="text-xs text-gray-400">{timeAgo}</p>
       </div>
     </div>
   );
-}
+});
 
 /** Empty state when no activities are available */
 function EmptyState() {
@@ -181,10 +237,12 @@ export function LiveUpdatesCarousel() {
 
   // Navigation handlers
   const goToPrev = useCallback(() => {
+    if (activities.length === 0) return;
     setActiveIndex((prev) => (prev - 1 + activities.length) % activities.length);
   }, [activities.length]);
 
   const goToNext = useCallback(() => {
+    if (activities.length === 0) return;
     setActiveIndex((prev) => (prev + 1) % activities.length);
   }, [activities.length]);
 

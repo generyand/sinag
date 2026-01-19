@@ -36,6 +36,10 @@ ACTION_LABELS = {
     ActivityAction.INDICATOR_FLAGGED_CALIBRATION.value: "Indicator Flagged for Calibration",
     ActivityAction.MOV_UPLOADED.value: "MOV Uploaded",
     ActivityAction.MOV_ANNOTATED.value: "MOV Annotated",
+    # Compliance action labels
+    ActivityAction.INDICATOR_REWORK_COMPLIANCE.value: "Indicator Rework Addressed",
+    ActivityAction.INDICATOR_CALIBRATION_COMPLIANCE.value: "Indicator Calibration Addressed",
+    ActivityAction.INDICATOR_RECALIBRATION_COMPLIANCE.value: "Indicator Recalibration Addressed",
 }
 
 

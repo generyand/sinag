@@ -73,7 +73,7 @@ const mlgooNavigation = [
 const blguNavigation = [
   { name: "Dashboard", href: "/blgu/dashboard", icon: "home" },
   { name: "My Assessments", href: "/blgu/assessments", icon: "clipboard" },
-  { name: "Analytics", href: "/blgu/analytics", icon: "chart" },
+  { name: "Insights", href: "/blgu/analytics", icon: "chart" },
   { name: "Profile", href: "/blgu/profile", icon: "user" },
 ];
 

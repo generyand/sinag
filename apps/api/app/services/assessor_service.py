@@ -1475,6 +1475,15 @@ class AssessorService:
         }
         flag_modified(assessment, "area_submission_status")
 
+        # FIX: Mark rework round as used when ANY area is sent for rework
+        # This ensures:
+        # 1. submission_type calculation returns "rework_pending" instead of "first_submission"
+        # 2. Frontend correctly shows "Sent for Rework" status
+        # 3. Prevents double-rework attempts at the backend validation level
+        if not assessment.rework_round_used:
+            assessment.rework_round_used = True
+            flag_modified(assessment, "rework_round_used")
+
         # FIX Issue #3: Do NOT immediately change global assessment status!
         # The assessor is only flagging their area for rework - other assessors may still
         # be reviewing or approving their areas. We only change global status when:
@@ -1683,6 +1692,7 @@ class AssessorService:
         # 1. MOV annotations (always triggers rework - file-level feedback)
         # 2. Manual "Flag for Rework" toggle (assessor_manual_rework_flag in response_data)
         # NOTE: Comments alone do NOT trigger rework - only annotations or explicit flag
+        flagged_indicators: list[dict] = []  # Track indicators for activity logging
         for response in assessment.responses:
             has_mov_annotations = (
                 response.indicator_id in annotations_by_indicator
@@ -1714,6 +1724,15 @@ class AssessorService:
                         if not k.startswith("assessor_val_")
                     }
 
+                # Track indicator for individual logging
+                flagged_indicators.append(
+                    {
+                        "response": response,
+                        "has_annotations": has_mov_annotations,
+                        "has_manual_flag": has_manual_rework_flag,
+                    }
+                )
+
                 self.logger.info(
                     f"[SEND REWORK] Cleared checklist data for response {response.id} (indicator {response.indicator_id})"
                 )
@@ -1742,6 +1761,32 @@ class AssessorService:
                 },
                 description=f"Rework requested by {assessor.name}",
             )
+
+            # Log individual indicator-level activities for each flagged indicator
+            from app.schemas.assessment_activity import ActivityAction
+
+            for flagged in flagged_indicators:
+                response = flagged["response"]
+                indicator = response.indicator
+                if indicator:
+                    governance_area = indicator.governance_area
+                    assessment_activity_service.log_indicator_activity(
+                        db=db,
+                        assessment_id=assessment_id,
+                        indicator_id=indicator.id,
+                        indicator_code=indicator.indicator_code,
+                        indicator_name=indicator.name,  # SQLAlchemy model uses 'name'
+                        action=ActivityAction.INDICATOR_FLAGGED_REWORK.value,
+                        user_id=assessor.id,  # type: ignore
+                        governance_area_id=governance_area.id if governance_area else None,
+                        governance_area_name=governance_area.name if governance_area else None,
+                        extra_data={
+                            "barangay_name": barangay_name,
+                            "has_annotations": flagged["has_annotations"],
+                            "has_manual_flag": flagged["has_manual_flag"],
+                            "flagged_by": assessor.name,
+                        },
+                    )
         except Exception as e:
             self.logger.error(f"Failed to log rework activity: {e}")
 
@@ -1973,6 +2018,29 @@ class AssessorService:
                 },
                 description=f"Calibration requested by {validator.name} for {calibrated_count} indicator(s)",
             )
+
+            # Log individual indicator-level activities for each calibrated indicator
+            from app.schemas.assessment_activity import ActivityAction
+
+            for response in flagged_responses:
+                indicator = response.indicator
+                if indicator:
+                    governance_area = indicator.governance_area
+                    assessment_activity_service.log_indicator_activity(
+                        db=db,
+                        assessment_id=assessment_id,
+                        indicator_id=indicator.id,
+                        indicator_code=indicator.indicator_code,
+                        indicator_name=indicator.name,  # SQLAlchemy model uses 'name'
+                        action=ActivityAction.INDICATOR_FLAGGED_CALIBRATION.value,
+                        user_id=validator.id,  # type: ignore
+                        governance_area_id=governance_area.id if governance_area else None,
+                        governance_area_name=governance_area.name if governance_area else None,
+                        extra_data={
+                            "barangay_name": barangay_name,
+                            "flagged_by": validator.name,
+                        },
+                    )
         except Exception as e:
             self.logger.error(f"Failed to log calibration activity: {e}")
 
