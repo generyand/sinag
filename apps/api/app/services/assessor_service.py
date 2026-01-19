@@ -264,9 +264,15 @@ class AssessorService:
 
             # Determine submission type: first submission or rework resubmission
             # This helps differentiate between brand new submissions vs reworked ones
+            # FIX: Use per-area status for assessors instead of global rework_round_used flag
+            # This ensures each assessor only sees "rework_pending" for their own area
             if a.rework_submitted_at is not None:
                 submission_type = "rework_resubmission"
-            elif a.rework_round_used:
+            elif is_assessor and area_status == "rework":
+                # Assessors: use per-area status (only show rework_pending for their area)
+                submission_type = "rework_pending"
+            elif not is_assessor and a.rework_round_used:
+                # Validators: use global flag (they see status across all areas)
                 submission_type = "rework_pending"
             else:
                 submission_type = "first_submission"

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubmissionsKPI } from "@/types/submissions";
-import { Clock, CheckCircle, AlertCircle, FileText } from "lucide-react";
+import { CheckCircle, AlertCircle, FileText } from "lucide-react";
 
 interface KPICardsProps {
   kpi: SubmissionsKPI;
@@ -11,7 +11,7 @@ interface KPICardsProps {
 export function KPICards({ kpi }: KPICardsProps) {
   return (
     <div
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+      className="grid grid-cols-1 md:grid-cols-3 gap-4"
       role="list"
       aria-label="Key Performance Indicators"
     >
@@ -171,50 +171,6 @@ export function KPICards({ kpi }: KPICardsProps) {
               ></div>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Average Review Time */}
-      <Card
-        className="border-[var(--border)] hover:shadow-md transition-all duration-300 group"
-        style={{
-          background: `linear-gradient(to bottom right, var(--kpi-purple-from), var(--kpi-purple-to))`,
-        }}
-        role="listitem"
-      >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm font-semibold" style={{ color: "var(--kpi-purple-text)" }}>
-            Average Review Time
-          </CardTitle>
-          <div
-            className="p-2 rounded-sm group-hover:scale-110 transition-transform duration-200"
-            style={{ backgroundColor: "var(--kpi-purple-bg)" }}
-            aria-hidden="true"
-          >
-            <Clock className="h-4 w-4" style={{ color: "var(--kpi-purple-text)" }} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div
-            className="text-3xl font-bold mb-1"
-            style={{ color: "var(--kpi-purple-text)" }}
-            aria-label={`Average review time: ${kpi.avgReviewTime} days per submission`}
-          >
-            {kpi.avgReviewTime}
-          </div>
-          <p className="text-xs font-medium opacity-70" style={{ color: "var(--kpi-purple-text)" }}>
-            Days per submission
-          </p>
-          <div className="mt-2 flex items-center space-x-1">
-            <div
-              className="w-1 h-1 rounded-full animate-pulse"
-              style={{ backgroundColor: "var(--kpi-purple-progress)" }}
-              aria-hidden="true"
-            ></div>
-            <span className="text-xs opacity-70" style={{ color: "var(--kpi-purple-text)" }}>
-              Real-time metric
-            </span>
-          </div>
         </CardContent>
       </Card>
     </div>

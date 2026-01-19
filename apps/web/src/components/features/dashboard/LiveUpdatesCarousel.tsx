@@ -21,8 +21,8 @@ const ACTION_CONFIG: Record<string, { icon: string; label: string; color: string
   mlgoo_approved: { icon: "🏆", label: "MLGOO Approved", color: "green" },
   calibration_requested: { icon: "⚖️", label: "Calibration", color: "amber" },
   calibration_submitted: { icon: "📤", label: "Calibration Submitted", color: "blue" },
-  recalibration_requested: { icon: "🔄", label: "Re-calibration", color: "amber" },
-  recalibration_submitted: { icon: "📤", label: "Re-calibration Submitted", color: "blue" },
+  recalibration_requested: { icon: "🔄", label: "Recalibration", color: "amber" },
+  recalibration_submitted: { icon: "📤", label: "Recalibration Submitted", color: "blue" },
   completed: { icon: "🏆", label: "Completed", color: "green" },
   area_approved: { icon: "✅", label: "Area Approved", color: "green" },
   area_rework_requested: { icon: "🔄", label: "Area Rework", color: "orange" },
@@ -41,7 +41,7 @@ const ACTION_CONFIG: Record<string, { icon: string; label: string; color: string
   indicator_calibration_compliance: { icon: "✅", label: "Calibration Compliance", color: "green" },
   indicator_recalibration_compliance: {
     icon: "✅",
-    label: "Re-calibration Compliance",
+    label: "Recalibration Compliance",
     color: "green",
   },
 };

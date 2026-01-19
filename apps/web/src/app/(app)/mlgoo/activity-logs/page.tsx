@@ -5,39 +5,39 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectSeparator,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { format } from "date-fns";
 import {
-    ArrowLeft,
-    Calendar,
-    ChevronLeft,
-    ChevronRight,
-    Download,
-    Filter,
-    History,
-    Loader2,
-    RefreshCw,
-    Search,
-    User,
+  ArrowLeft,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Filter,
+  History,
+  Loader2,
+  RefreshCw,
+  Search,
+  User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -123,6 +123,22 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; bgColor: str
     color: "text-teal-700",
     bgColor: "bg-teal-50",
   },
+  // Compliance actions (BLGU addresses flagged indicators)
+  indicator_rework_compliance: {
+    label: "Rework Compliance",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+  },
+  indicator_calibration_compliance: {
+    label: "Calibration Compliance",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+  },
+  indicator_recalibration_compliance: {
+    label: "Recalibration Compliance",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+  },
 };
 
 interface Activity {
@@ -164,6 +180,10 @@ const INDICATOR_ACTIONS = [
   "indicator_flagged_calibration",
   "mov_uploaded",
   "mov_annotated",
+  // Compliance actions
+  "indicator_rework_compliance",
+  "indicator_calibration_compliance",
+  "indicator_recalibration_compliance",
 ];
 
 interface ActionCount {
@@ -371,12 +391,18 @@ export default function ActivityLogsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Actions</SelectItem>
-                    <SelectItem value="all_assessment" className="font-medium text-blue-600">All Assessment Actions</SelectItem>
-                    <SelectItem value="all_indicator" className="font-medium text-purple-600">All Indicator Actions</SelectItem>
+                    <SelectItem value="all_assessment" className="font-medium text-blue-600">
+                      All Assessment Actions
+                    </SelectItem>
+                    <SelectItem value="all_indicator" className="font-medium text-purple-600">
+                      All Indicator Actions
+                    </SelectItem>
 
                     <SelectSeparator />
                     <SelectGroup>
-                      <SelectLabel className="font-semibold text-blue-600">Assessment Actions</SelectLabel>
+                      <SelectLabel className="font-semibold text-blue-600">
+                        Assessment Actions
+                      </SelectLabel>
                       <SelectItem value="submitted">Submitted</SelectItem>
                       <SelectItem value="approved">Approved</SelectItem>
                       <SelectItem value="rework_requested">Rework Requested</SelectItem>
@@ -385,20 +411,44 @@ export default function ActivityLogsPage() {
                       <SelectItem value="calibration_requested">Calibration Requested</SelectItem>
                       <SelectItem value="calibration_submitted">Calibration Submitted</SelectItem>
                       <SelectItem value="validation_completed">Validation Completed</SelectItem>
-                      <SelectItem value="recalibration_requested">Recalibration Requested</SelectItem>
-                      <SelectItem value="recalibration_submitted">Recalibration Submitted</SelectItem>
+                      <SelectItem value="recalibration_requested">
+                        Recalibration Requested
+                      </SelectItem>
+                      <SelectItem value="recalibration_submitted">
+                        Recalibration Submitted
+                      </SelectItem>
                     </SelectGroup>
 
                     <SelectSeparator />
                     <SelectGroup>
-                      <SelectLabel className="font-semibold text-purple-600">Indicator Actions</SelectLabel>
+                      <SelectLabel className="font-semibold text-purple-600">
+                        Indicator Actions
+                      </SelectLabel>
                       <SelectItem value="indicator_submitted">Indicator Submitted</SelectItem>
                       <SelectItem value="indicator_reviewed">Indicator Reviewed</SelectItem>
                       <SelectItem value="indicator_validated">Indicator Validated</SelectItem>
-                      <SelectItem value="indicator_flagged_rework">Indicator Flagged Rework</SelectItem>
-                      <SelectItem value="indicator_flagged_calibration">Indicator Flagged Calibration</SelectItem>
+                      <SelectItem value="indicator_flagged_rework">
+                        Indicator Flagged for Rework
+                      </SelectItem>
+                      <SelectItem value="indicator_flagged_calibration">
+                        Indicator Flagged for Calibration
+                      </SelectItem>
                       <SelectItem value="mov_uploaded">MOV Uploaded</SelectItem>
                       <SelectItem value="mov_annotated">MOV Annotated</SelectItem>
+                    </SelectGroup>
+
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="font-semibold text-emerald-600">
+                        Compliance Actions
+                      </SelectLabel>
+                      <SelectItem value="indicator_rework_compliance">Rework Compliance</SelectItem>
+                      <SelectItem value="indicator_calibration_compliance">
+                        Calibration Compliance
+                      </SelectItem>
+                      <SelectItem value="indicator_recalibration_compliance">
+                        Recalibration Compliance
+                      </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
