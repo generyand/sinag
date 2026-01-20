@@ -207,31 +207,54 @@ class AssessorService:
 
             area_progress = round((reviewed_count / total_count * 100) if total_count > 0 else 0)
 
-            # Calculate re-review progress for rework resubmissions
+            # Calculate re-review progress for rework/calibration resubmissions
             # This tracks how many indicators have been re-reviewed AFTER BLGU resubmitted
             re_review_progress = 0
-            if a.rework_submitted_at is not None:
-                if is_assessor:
-                    # Count responses reviewed AFTER rework_submitted_at
-                    re_reviewed_count = sum(
-                        1
-                        for r in area_responses
-                        if r.response_data
-                        and any(k.startswith("assessor_val_") for k in r.response_data.keys())
-                        and r.updated_at
-                        and r.updated_at >= a.rework_submitted_at
-                    )
-                    re_review_progress = round(
-                        (re_reviewed_count / total_count * 100) if total_count > 0 else 0
-                    )
-                else:
-                    # Validator: count responses validated AFTER rework_submitted_at
+
+            # For assessors: extract area_data once for reuse in re_review_progress and submission_type
+            area_data: dict[str, Any] = {}
+            if is_assessor and a.area_submission_status:
+                area_data = a.area_submission_status.get(str(assessor.assessor_area_id), {})
+
+            if is_assessor:
+                # Use the area's submitted_at timestamp if it was resubmitted after rework
+                if area_data.get("resubmitted_after_rework", False):
+                    resubmit_timestamp_str = area_data.get("submitted_at")
+                    if resubmit_timestamp_str:
+                        # Parse the ISO timestamp
+                        try:
+                            resubmit_timestamp = datetime.fromisoformat(
+                                resubmit_timestamp_str.replace("Z", "+00:00")
+                            )
+                            # Make it timezone-naive for comparison (DB stores naive timestamps)
+                            resubmit_timestamp = resubmit_timestamp.replace(tzinfo=None)
+                            re_reviewed_count = sum(
+                                1
+                                for r in area_responses
+                                if r.response_data
+                                and any(
+                                    k.startswith("assessor_val_") for k in r.response_data.keys()
+                                )
+                                and r.updated_at
+                                and r.updated_at >= resubmit_timestamp
+                            )
+                            re_review_progress = round(
+                                (re_reviewed_count / total_count * 100) if total_count > 0 else 0
+                            )
+                        except (ValueError, TypeError) as e:
+                            logger.warning(
+                                f"Failed to parse submitted_at timestamp for assessment {a.id}, "
+                                f"area {assessor.assessor_area_id}: {e}"
+                            )
+            else:
+                # Validator: use calibration_submitted_at for progress tracking
+                if a.calibration_submitted_at is not None:
                     re_reviewed_count = sum(
                         1
                         for r in area_responses
                         if r.validation_status is not None
                         and r.updated_at
-                        and r.updated_at >= a.rework_submitted_at
+                        and r.updated_at >= a.calibration_submitted_at
                     )
                     re_review_progress = round(
                         (re_reviewed_count / total_count * 100) if total_count > 0 else 0
@@ -266,16 +289,27 @@ class AssessorService:
             # This helps differentiate between brand new submissions vs reworked ones
             # FIX: Use per-area status for assessors instead of global rework_round_used flag
             # This ensures each assessor only sees "rework_pending" for their own area
-            if a.rework_submitted_at is not None:
-                submission_type = "rework_resubmission"
-            elif is_assessor and area_status == "rework":
-                # Assessors: use per-area status (only show rework_pending for their area)
-                submission_type = "rework_pending"
-            elif not is_assessor and a.rework_round_used:
-                # Validators: use global flag (they see status across all areas)
-                submission_type = "rework_pending"
+            if is_assessor:
+                # For assessors: reuse area_data extracted earlier
+                if area_data.get("resubmitted_after_rework", False):
+                    # BLGU has resubmitted for this area after rework request
+                    submission_type = "rework_resubmission"
+                elif area_status == "rework":
+                    # Assessor has sent this area for rework, awaiting BLGU resubmission
+                    submission_type = "rework_pending"
+                else:
+                    submission_type = "first_submission"
             else:
-                submission_type = "first_submission"
+                # For validators: use calibration status (not assessor rework)
+                # Validators request "calibration" which is tracked separately
+                if a.calibration_submitted_at is not None:
+                    # BLGU has resubmitted after calibration request
+                    submission_type = "rework_resubmission"
+                elif a.is_calibration_rework:
+                    # Validator has requested calibration, awaiting BLGU resubmission
+                    submission_type = "rework_pending"
+                else:
+                    submission_type = "first_submission"
 
             items.append(
                 {
