@@ -408,27 +408,71 @@ class Assessment(Base):
 
     def can_assessor_request_rework(self) -> bool:
         """
-        Check if assessors can still request rework for this assessment.
+        DEPRECATED: Use can_area_request_rework() for per-area rework checking.
 
-        Rework can only be requested once. After the rework round is used,
-        assessors can only approve.
+        This method checks the global rework_round_used flag, which is kept
+        for backward compatibility but doesn't reflect the per-area rework logic.
 
         Returns:
-            True if rework can be requested, False otherwise
+            True if no area has used rework yet, False otherwise
         """
         return not self.rework_round_used
 
-    def can_validator_request_calibration(self) -> bool:
+    def can_area_request_rework(self, governance_area_id: int) -> bool:
         """
-        Check if the validator can still request calibration for this assessment.
+        Check if a specific governance area can still request rework.
 
-        Calibration can only be requested once per assessment.
-        After the calibration round is used, validator can only approve.
+        Each of the 6 governance areas gets its own independent rework round.
+        An area can only request rework once.
+
+        Args:
+            governance_area_id: The governance area ID (1-6)
 
         Returns:
-            True if calibration can be requested, False otherwise
+            True if this area can request rework, False if already used
+        """
+        if not self.area_submission_status:
+            return True  # No tracking yet, can request
+        area_data = self.area_submission_status.get(str(governance_area_id), {})
+        return not area_data.get("rework_used", False)
+
+    def can_validator_request_calibration(self) -> bool:
+        """
+        DEPRECATED: Use can_area_request_calibration() for per-area calibration checking.
+
+        This method checks the global calibration_round_used flag, which is kept
+        for backward compatibility but doesn't reflect the per-area calibration logic.
+
+        Returns:
+            True if no area has been calibrated yet, False otherwise
         """
         return not self.calibration_round_used
+
+    def can_area_request_calibration(self, governance_area_id: int) -> bool:
+        """
+        Check if a specific governance area can still be calibrated.
+
+        Each of the 6 governance areas can only be calibrated once.
+
+        Args:
+            governance_area_id: The governance area ID (1-6)
+
+        Returns:
+            True if this area can be calibrated, False if already calibrated
+        """
+        calibrated_areas = self.calibrated_area_ids or []
+        return governance_area_id not in calibrated_areas
+
+    def get_uncalibrated_area_ids(self) -> list[int]:
+        """
+        Get list of governance area IDs that have NOT been calibrated yet.
+
+        Returns:
+            Sorted list of governance area IDs (1-6) that can still be calibrated
+        """
+        calibrated = set(self.calibrated_area_ids or [])
+        all_areas = set(range(1, TOTAL_GOVERNANCE_AREAS + 1))
+        return sorted(all_areas - calibrated)
 
     def get_areas_in_rework(self) -> list[int]:
         """

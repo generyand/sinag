@@ -56,8 +56,9 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
   const assessmentId: number = data.assessment_id ?? core.id ?? 0;
   const reworkCount: number = core.rework_count ?? 0;
-  // rework_round_used is the authoritative field for per-area workflow
-  const reworkRoundUsed: boolean = core.rework_round_used ?? false;
+  // Per-area rework tracking: each of the 6 governance areas gets its own independent rework round
+  // my_area_rework_used is True only if THIS assessor's area has used its rework round
+  const myAreaReworkUsed: boolean = (core.my_area_rework_used ?? false) as boolean;
 
   // Get timestamps for MOV file separation (new vs old files)
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
@@ -450,9 +451,9 @@ export function ValidationWorkspace({ assessment }: ValidationWorkspaceProps) {
               type="button"
               onClick={onSendRework}
               disabled={
-                // Enabled if: all reviewed AND rework not used AND any Fail AND no missing required comments
+                // Enabled if: all reviewed AND this area's rework not used AND any Fail AND no missing required comments
                 !allReviewed ||
-                reworkRoundUsed ||
+                myAreaReworkUsed ||
                 reworkCount !== 0 ||
                 !anyFail ||
                 missingRequiredComments > 0 ||

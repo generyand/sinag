@@ -37,6 +37,10 @@ class AssessorQueueItem(BaseModel):
     rework_round_used: bool = False
     rework_submitted_at: datetime | None = None
 
+    # Per-area rework tracking (for per-area workflow)
+    # True if THIS assessor's governance area has used its rework round
+    my_area_rework_used: bool = False
+
     # Calibration fields
     is_calibration_rework: bool = False
     pending_calibrations_count: int = 0

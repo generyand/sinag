@@ -278,9 +278,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
   const statusText: string = core?.status ?? core?.assessment_status ?? "";
 
-  // Check if calibration has already been used for this assessment (1 round limit)
-  // After workflow restructuring: validators are system-wide, calibration is per-assessment
-  const calibrationAlreadyUsed: boolean = (core?.calibration_round_used ?? false) as boolean;
+  // Per-area calibration tracking: each governance area can only be calibrated ONCE
+  // calibrated_area_ids contains the IDs of areas that have already been calibrated
+  // Type-safe extraction: ensure array of numbers (handles potential string/number mismatches from JSON)
+  const calibratedAreaIds: number[] = ((core?.calibrated_area_ids ?? []) as (number | string)[])
+    .map(Number)
+    .filter((n) => !isNaN(n));
+  // Check if ALL 6 governance areas have been calibrated (no more areas left to calibrate)
+  const TOTAL_GOVERNANCE_AREAS = 6;
+  const allAreasCalibrated: boolean = calibratedAreaIds.length >= TOTAL_GOVERNANCE_AREAS;
 
   // Get timestamps for MOV file separation (new vs old files)
   // These are passed to MiddleMovFilesPanel which determines per-indicator which timestamp to use
@@ -1096,22 +1102,24 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               onClick={() => setShowCalibrationConfirm(true)}
               disabled={
                 calibrateMut.isPending ||
-                calibrationAlreadyUsed ||
+                allAreasCalibrated ||
                 !Object.values(calibrationFlags).some((v) => v === true)
               }
               className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
               style={{
                 background:
-                  calibrationAlreadyUsed || !Object.values(calibrationFlags).some((v) => v === true)
+                  allAreasCalibrated || !Object.values(calibrationFlags).some((v) => v === true)
                     ? "var(--muted)"
                     : "var(--cityscape-yellow)",
               }}
               title={
-                calibrationAlreadyUsed
-                  ? "Calibration has already been used for this assessment (max 1 per assessment)"
+                allAreasCalibrated
+                  ? "All governance areas have already been calibrated (max 1 calibration per area)"
                   : !Object.values(calibrationFlags).some((v) => v === true)
                     ? "Flag at least one indicator for calibration using the toggle"
-                    : undefined
+                    : calibratedAreaIds.length > 0
+                      ? `${calibratedAreaIds.length} area(s) already calibrated. Only flag indicators from uncalibrated areas.`
+                      : undefined
               }
             >
               {calibrateMut.isPending ? (
@@ -1139,10 +1147,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   <span className="hidden sm:inline">Submitting...</span>
                   <span className="sm:hidden">Processing...</span>
                 </>
-              ) : calibrationAlreadyUsed ? (
+              ) : allAreasCalibrated ? (
                 <>
-                  <span className="hidden sm:inline">Calibration Used</span>
-                  <span className="sm:hidden">Used</span>
+                  <span className="hidden sm:inline">All Areas Calibrated</span>
+                  <span className="sm:hidden">All Used</span>
                 </>
               ) : (
                 <>

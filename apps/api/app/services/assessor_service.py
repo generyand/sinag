@@ -335,6 +335,10 @@ class AssessorService:
                     # NEW: Rework-related fields for better context
                     "rework_round_used": a.rework_round_used,
                     "rework_submitted_at": a.rework_submitted_at,
+                    # Per-area rework tracking: True if THIS assessor's area has used its rework round
+                    "my_area_rework_used": area_data.get("rework_used", False)
+                    if is_assessor
+                    else False,
                 }
             )
 
@@ -894,6 +898,12 @@ class AssessorService:
                 "my_area_status": assessment.get_area_status(assessor.assessor_area_id)
                 if assessor.assessor_area_id
                 else None,
+                # Per-area rework tracking: True if THIS assessor's area has used its rework round
+                "my_area_rework_used": (assessment.area_submission_status or {})
+                .get(str(assessor.assessor_area_id), {})
+                .get("rework_used", False)
+                if assessor.assessor_area_id
+                else False,
                 "blgu_user": {
                     "id": assessment.blgu_user.id,
                     "name": assessment.blgu_user.name,
@@ -1483,11 +1493,14 @@ class AssessorService:
                 f"SUBMITTED_FOR_REVIEW, or IN_REVIEW status."
             )
 
-        # Check if rework round has already been used
-        if assessment.rework_round_used:
+        # Check if rework round has already been used FOR THIS AREA (per-area rework logic)
+        # Each of the 6 governance areas gets its own independent rework round
+        area_key = str(governance_area_id)
+        area_data = (assessment.area_submission_status or {}).get(area_key, {})
+        if area_data.get("rework_used", False):
             raise ValueError(
-                "Rework round has already been used for this assessment. "
-                "Only one rework round is allowed."
+                "Rework round has already been used for this governance area. "
+                "Each area is only allowed one rework round."
             )
 
         # Check current area status
@@ -1510,24 +1523,26 @@ class AssessorService:
         governance_area_name = governance_area.name if governance_area else "Unknown"
 
         # Update area status to rework
-        area_key = str(governance_area_id)
+        # Note: area_key is already defined above when checking per-area rework usage
         if assessment.area_submission_status is None:
             assessment.area_submission_status = {}
 
         now = datetime.utcnow()
+        # Preserve existing area data and add/update rework fields
+        existing_area_data = assessment.area_submission_status.get(area_key, {})
         assessment.area_submission_status[area_key] = {
+            **existing_area_data,  # Preserve any existing data
             "status": "rework",
             "rework_requested_at": now.isoformat(),
             "rework_comments": comments,
             "assessor_id": assessor.id,
+            "rework_used": True,  # Mark this area's rework round as used
         }
         flag_modified(assessment, "area_submission_status")
 
-        # FIX: Mark rework round as used when ANY area is sent for rework
-        # This ensures:
-        # 1. submission_type calculation returns "rework_pending" instead of "first_submission"
-        # 2. Frontend correctly shows "Sent for Rework" status
-        # 3. Prevents double-rework attempts at the backend validation level
+        # Keep global rework_round_used for backward compatibility (analytics/statistics)
+        # Note: The actual per-area rework blocking is now done via area_data["rework_used"]
+        # This global flag just indicates that at least one area has used its rework round
         if not assessment.rework_round_used:
             assessment.rework_round_used = True
             flag_modified(assessment, "rework_round_used")
@@ -1947,13 +1962,6 @@ class AssessorService:
                 "(after all 6 governance areas are approved by assessors)"
             )
 
-        # Check if calibration round has already been used (1 round limit)
-        if assessment.calibration_round_used:
-            raise ValueError(
-                "Calibration has already been used for this assessment. "
-                "Only one calibration round is allowed."
-            )
-
         # Validator must have at least one indicator flagged for calibration
         flagged_responses = [r for r in assessment.responses if r.flagged_for_calibration]
 
@@ -1961,6 +1969,29 @@ class AssessorService:
             raise ValueError(
                 "At least one indicator must be flagged for calibration. "
                 "Use the 'Flag for Calibration' toggle on indicators that need corrections."
+            )
+
+        # Get the governance area IDs of the flagged indicators
+        requested_area_ids: set[int] = set(
+            r.indicator.governance_area_id
+            for r in flagged_responses
+            if r.indicator is not None and r.indicator.governance_area_id is not None
+        )
+
+        # Check if any of these areas have ALREADY been calibrated (per-area calibration logic)
+        # Each governance area can only be calibrated ONCE
+        already_calibrated = set(assessment.calibrated_area_ids or [])
+        areas_already_used = requested_area_ids.intersection(already_calibrated)
+
+        if areas_already_used:
+            # Get area names for better error message
+            area_names = []
+            for area_id in areas_already_used:
+                area = db.query(GovernanceArea).filter(GovernanceArea.id == area_id).first()
+                area_names.append(area.name if area else f"Area {area_id}")
+            raise ValueError(
+                f"Calibration has already been used for the following governance area(s): {', '.join(area_names)}. "
+                f"Each governance area can only be calibrated once."
             )
 
         # CRITICAL: Flag the JSON column as modified so SQLAlchemy detects the change
@@ -1994,25 +2025,30 @@ class AssessorService:
         assessment.is_calibration_rework = True
         assessment.calibration_validator_id = validator.id
         assessment.calibration_count += 1  # Legacy: still increment for backwards compatibility
-        assessment.calibration_round_used = True  # Mark calibration round as used
+        # Keep global calibration_round_used for backward compatibility (analytics/statistics)
+        # Note: The actual per-area calibration blocking is done via calibrated_area_ids
+        # This global flag just indicates that at least one area has been calibrated
+        if not assessment.calibration_round_used:
+            assessment.calibration_round_used = True
 
-        # Populate calibrated_area_ids with the governance area IDs of flagged indicators
-        # This is CRITICAL for submit_for_calibration_review to properly clear feedback_comments:
+        # Update calibrated_area_ids by APPENDING the governance area IDs of flagged indicators
+        # This is CRITICAL for:
+        # 1. Per-area calibration tracking - each area can only be calibrated ONCE
+        # 2. submit_for_calibration_review to properly clear feedback_comments
         # - The cleanup logic at assessments.py:1668 filters by: r.indicator.governance_area_id in calibrated_area_ids
-        # - Without this, the filter returns empty and OLD validator feedback persists in the UI
-        # - This causes the "auto-checked checklist" bug where old "Validator's Findings" remain visible
         from sqlalchemy.orm.attributes import flag_modified
 
-        calibrated_area_ids: list[int] = list(
-            set(
-                r.indicator.governance_area_id
-                for r in flagged_responses
-                if r.indicator is not None and r.indicator.governance_area_id is not None
-            )
-        )
-        assessment.calibrated_area_ids = calibrated_area_ids
+        # Note: requested_area_ids and already_calibrated are calculated above in the per-area validation check
+        new_calibrated_area_ids: list[int] = list(requested_area_ids)
+
+        # Append to existing calibrated_area_ids (reuse already_calibrated set from validation check)
+        all_calibrated = already_calibrated.union(requested_area_ids)
+        assessment.calibrated_area_ids = sorted(all_calibrated)  # Sort for consistent ordering
         flag_modified(assessment, "calibrated_area_ids")  # Ensure SQLAlchemy tracks the JSON change
-        self.logger.info(f"[CALIBRATION] Set calibrated_area_ids: {calibrated_area_ids}")
+        self.logger.info(
+            f"[CALIBRATION] Updated calibrated_area_ids: {assessment.calibrated_area_ids} "
+            f"(newly calibrated: {new_calibrated_area_ids})"
+        )
 
         # Mark flagged indicators for rework
         # These are the indicators the BLGU needs to correct and re-upload

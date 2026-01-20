@@ -46,6 +46,7 @@ export interface AssessorQueueItem {
   areas_in_rework?: AssessorQueueItemAreasInRework;
   rework_round_used?: boolean;
   rework_submitted_at?: AssessorQueueItemReworkSubmittedAt;
+  my_area_rework_used?: boolean;
   is_calibration_rework?: boolean;
   pending_calibrations_count?: number;
 }

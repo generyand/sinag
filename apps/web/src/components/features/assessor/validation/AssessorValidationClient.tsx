@@ -319,9 +319,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   );
 
   const reworkCount: number = core.rework_count ?? 0;
-  // rework_round_used is the authoritative field for per-area workflow (assessors)
-  // It's set to true when ANY area is sent for rework
-  const reworkRoundUsed: boolean = core.rework_round_used ?? false;
+  // Per-area rework tracking: each of the 6 governance areas gets its own independent rework round
+  // my_area_rework_used is True only if THIS assessor's area has used its rework round
+  const myAreaReworkUsed: boolean = (core.my_area_rework_used ?? false) as boolean;
 
   // Per-area status for the current assessor's governance area
   // Values: "draft", "submitted", "in_review", "rework", "approved"
@@ -1461,7 +1461,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 onClick={() => setShowReworkConfirm(true)}
                 disabled={
                   !hasIndicatorsFlaggedForRework ||
-                  reworkRoundUsed ||
+                  myAreaReworkUsed ||
                   isAreaLocked ||
                   reworkMut.isPending ||
                   areaReworkMut.isPending
@@ -1473,8 +1473,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     ? myAreaStatus === "rework"
                       ? "Area is already sent for rework. Waiting for BLGU to resubmit."
                       : "Area is already reviewed and approved."
-                    : reworkRoundUsed
-                      ? "Rework round has already been used for this assessment. Only one rework round is allowed."
+                    : myAreaReworkUsed
+                      ? "Rework round has already been used for this governance area. Each area is only allowed one rework round."
                       : !hasIndicatorsFlaggedForRework
                         ? "Toggle 'Flag for Rework' on at least one indicator to send for rework"
                         : undefined
