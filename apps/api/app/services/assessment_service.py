@@ -2036,7 +2036,8 @@ class AssessmentService:
                     for area_key, area_data in assessment.area_submission_status.items():
                         if isinstance(area_data, dict) and area_data.get("status") == "rework":
                             area_data["status"] = "submitted"
-                            area_data["resubmitted_at"] = datetime.utcnow().isoformat()
+                            area_data["resubmitted_after_rework"] = True
+                            area_data["submitted_at"] = datetime.utcnow().isoformat()
                             self.logger.info(
                                 f"[REWORK RESUBMISSION] Reset area {area_key} status from 'rework' to 'submitted'"
                             )
