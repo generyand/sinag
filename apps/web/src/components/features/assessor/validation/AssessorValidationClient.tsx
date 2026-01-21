@@ -1,5 +1,12 @@
 "use client";
 
+// TODO: TEMPORARY CHANGES - Remove before production
+// The following button validations have been temporarily disabled for testing:
+// - Save Draft: isAreaLocked check removed
+// - Send for Rework: hasIndicatorsFlaggedForRework, myAreaReworkUsed, isAreaLocked checks removed
+// - Approve: allReviewed, isAreaLocked checks removed
+// See lines ~1443, ~1463, ~1570 for the specific changes
+
 import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
@@ -1440,7 +1447,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={isSaving || (isAssessor && isAreaLocked)}
+              disabled={isSaving} // TEMPORARY: Removed isAreaLocked check
               className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
               title={
                 isAssessor && isAreaLocked
@@ -1459,13 +1466,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
-                disabled={
-                  !hasIndicatorsFlaggedForRework ||
-                  myAreaReworkUsed ||
-                  isAreaLocked ||
-                  reworkMut.isPending ||
-                  areaReworkMut.isPending
-                }
+                disabled={reworkMut.isPending || areaReworkMut.isPending} // TEMPORARY: Removed business logic checks (hasIndicatorsFlaggedForRework, myAreaReworkUsed, isAreaLocked)
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
@@ -1570,9 +1571,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={
-                  !allReviewed || isAreaLocked || finalizeMut.isPending || areaApproveMut.isPending
-                }
+                disabled={finalizeMut.isPending || areaApproveMut.isPending} // TEMPORARY: Removed business logic checks (allReviewed, isAreaLocked)
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
                 title={

@@ -136,12 +136,7 @@ export const useAuthStore = create<AuthState>()(
                 isAuthenticated: true,
                 mustChangePassword: state.mustChangePassword || false,
               });
-              console.log("Auth state hydrated successfully");
-            } else {
-              console.log("No valid auth data found in storage");
             }
-          } else {
-            console.log("No auth storage found");
           }
         } catch (error) {
           console.error("Error hydrating auth state:", error);
