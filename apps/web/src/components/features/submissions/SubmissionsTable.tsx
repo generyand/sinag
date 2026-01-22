@@ -110,7 +110,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
             e.stopPropagation();
             onSubmissionClick(submission);
           }}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 rounded-sm"
+          className="relative z-10 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-sm"
           aria-label={`Start review for ${submission.barangayName}`}
         >
           <Play className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -129,7 +129,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
             e.stopPropagation();
             onSubmissionClick(submission);
           }}
-          className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 rounded-sm"
+          className="relative z-10 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-sm"
           aria-label={`Continue review for ${submission.barangayName}`}
         >
           <Clock className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -147,7 +147,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
             e.stopPropagation();
             onSubmissionClick(submission);
           }}
-          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 rounded-sm"
+          className="relative z-10 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-sm"
           aria-label={`Re-review submission for ${submission.barangayName}`}
         >
           <Play className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -165,7 +165,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
           e.stopPropagation();
           onSubmissionClick(submission);
         }}
-        className="text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] transition-all duration-200 transform hover:scale-105 rounded-sm"
+        className="relative z-10 text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] transition-colors duration-200 rounded-sm"
         aria-label={`View submission for ${submission.barangayName}`}
       >
         <Eye className="h-4 w-4 mr-2" aria-hidden="true" />
