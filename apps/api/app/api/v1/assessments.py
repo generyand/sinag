@@ -1490,11 +1490,14 @@ def resubmit_assessment(
             detail="You can only resubmit your own assessments",
         )
 
-    # Check assessment status is REWORK
-    if assessment.status != AssessmentStatus.REWORK:
+    # Check assessment status is REWORK or has pending area reworks (per-area workflow)
+    # In the per-area workflow, assessment may be in SUBMITTED status while individual areas are in "rework"
+    has_pending_area_rework = assessment.has_pending_area_rework()
+    if assessment.status != AssessmentStatus.REWORK and not has_pending_area_rework:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment must be in REWORK status to resubmit. Current status: {assessment.status.value}",
+            detail=f"Assessment must be in REWORK status or have pending area reworks to resubmit. "
+            f"Current status: {assessment.status.value}",
         )
 
     # Check if this is an MLGOO RE-calibration (distinct from assessor rework)
@@ -1535,8 +1538,26 @@ def resubmit_assessment(
             f"Flagged MOV files: {assessment.mlgoo_recalibration_mov_file_ids}"
         )
     else:
-        assessment.status = AssessmentStatus.SUBMITTED
+        # Set to SUBMITTED_FOR_REVIEW for assessor re-review (consistent with submit_assessment)
+        assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
         assessment.submitted_at = datetime.utcnow()
+        assessment.rework_submitted_at = datetime.utcnow()
+
+        # CRITICAL: Reset area statuses from "rework" back to "submitted"
+        # This allows assessors to re-review and approve areas after BLGU resubmits
+        if assessment.area_submission_status:
+            from sqlalchemy.orm.attributes import flag_modified
+
+            for area_key, area_data in assessment.area_submission_status.items():
+                if isinstance(area_data, dict) and area_data.get("status") == "rework":
+                    area_data["status"] = "submitted"
+                    area_data["resubmitted_after_rework"] = True
+                    area_data["submitted_at"] = datetime.utcnow().isoformat()
+                    logger.info(
+                        f"[RESUBMIT] Reset area {area_key} status from 'rework' to 'submitted' "
+                        f"for assessment {assessment_id}"
+                    )
+            flag_modified(assessment, "area_submission_status")
 
     db.commit()
     db.refresh(assessment)
