@@ -173,6 +173,13 @@ export function useCurrentAssessment() {
       governanceAreaId: areaId.toString(),
       status: (() => {
         const isCompleted = (indicator.response as any)?.is_completed === true;
+        const requiresRework = (indicator.response as any)?.requires_rework === true;
+
+        // Prioritize rework status - if assessor requested rework, show that status
+        if (requiresRework) {
+          return "needs_rework" as const;
+        }
+
         return indicator.response
           ? isCompleted
             ? ("completed" as const)
