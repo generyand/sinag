@@ -1380,10 +1380,25 @@ class AssessorService:
         # Allow "draft" status because area_submission_status may not be initialized yet
         # When assessment is SUBMITTED but area hasn't been explicitly tracked,
         # get_area_status() returns "draft" - this is valid for approval
+        # Also allow "rework" status if BLGU has resubmitted (check resubmitted_after_rework flag
+        # OR rework_submitted_at timestamp for backwards compatibility with old data)
+        area_data = (assessment.area_submission_status or {}).get(str(governance_area_id), {})
+        has_resubmitted_flag = area_data.get("resubmitted_after_rework", False)
+        has_rework_submitted_at = assessment.rework_submitted_at is not None
+
         if area_status not in ("draft", "submitted", "in_review"):
-            raise ValueError(
-                f"Area is in '{area_status}' status. Can only approve areas in 'draft', 'submitted', or 'in_review' status."
-            )
+            # Allow approval if area was in rework but BLGU has resubmitted
+            if area_status == "rework" and (has_resubmitted_flag or has_rework_submitted_at):
+                self.logger.info(
+                    f"Allowing approval for area {governance_area_id} in 'rework' status "
+                    f"because BLGU has resubmitted (resubmitted_after_rework={has_resubmitted_flag}, "
+                    f"rework_submitted_at={assessment.rework_submitted_at})"
+                )
+            else:
+                raise ValueError(
+                    f"Area is in '{area_status}' status. Can only approve areas in 'draft', 'submitted', or 'in_review' status. "
+                    f"If the BLGU has resubmitted, please ensure the area status has been updated."
+                )
 
         # Get governance area name
         governance_area = (
