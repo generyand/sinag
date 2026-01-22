@@ -9,6 +9,27 @@ import type { WorkflowMetrics } from '../common';
 import type { AssessorAnalyticsResponseAssessmentPeriod } from '../assessments';
 
 /**
+ * AreaAssessorStatus
+ */
+export interface AreaAssessorStatus {
+  /** Governance area ID (1-6) */
+  governance_area_id: number;
+  /** Governance area name */
+  governance_area_name: string;
+  /** Name of the assessor assigned to this area (null if none assigned) */
+  assessor_name?: AreaAssessorStatusAssessorName;
+  /** True if assessor has approved this area, False if still pending or not yet reviewed */
+  is_assessed: boolean;
+}
+
+
+/**
+ * AreaAssessorStatusAssessorName
+ */
+export type AreaAssessorStatusAssessorName = string | null;
+
+
+/**
  * AssessorAnalyticsResponse
  */
 export interface AssessorAnalyticsResponse {
@@ -98,6 +119,12 @@ export type AssessorQueueItemSubmissionDate = string | null;
  * AssessorQueueItemSubmissionType
  */
 export type AssessorQueueItemSubmissionType = string | null;
+
+
+/**
+ * BLGUDashboardResponseAreaAssessorStatus
+ */
+export type BLGUDashboardResponseAreaAssessorStatus = AreaAssessorStatus[] | null;
 
 
 /**

@@ -1011,6 +1011,44 @@ def get_blgu_dashboard(
                 else None,
             }
 
+    # =========================================================================
+    # Area Assessor Status - Show BLGU which assessors have reviewed their areas
+    # Only populated when assessment is beyond DRAFT status (submitted for review)
+    # =========================================================================
+    area_assessor_status = None
+    if assessment.status != AssessmentStatus.DRAFT:
+        # Get all governance areas
+        all_governance_areas_for_status = db.query(GovernanceArea).order_by(GovernanceArea.id).all()
+
+        # Get all assessors (users with ASSESSOR role assigned to governance areas)
+        assessors_by_area = {}
+        assessors = (
+            db.query(User)
+            .filter(User.role == UserRole.ASSESSOR, User.assessor_area_id.isnot(None))
+            .all()
+        )
+        for assessor in assessors:
+            assessors_by_area[assessor.assessor_area_id] = assessor
+
+        # Get the area approval status from the assessment
+        area_approval_status = assessment.area_assessor_approved or {}
+
+        # Build the status list
+        area_assessor_status = []
+        for ga in all_governance_areas_for_status:
+            assessor = assessors_by_area.get(ga.id)
+            # Check if this area has been approved
+            is_assessed = area_approval_status.get(str(ga.id), False)
+
+            area_assessor_status.append(
+                {
+                    "governance_area_id": ga.id,
+                    "governance_area_name": ga.name,
+                    "assessor_name": assessor.name if assessor else None,
+                    "is_assessed": is_assessed,
+                }
+            )
+
     # Epic 5.0: Return status and rework tracking fields
     return {
         "assessment_id": assessment_id,
@@ -1054,6 +1092,7 @@ def get_blgu_dashboard(
         "incomplete_indicators": incomplete_indicators,
         "completion_percentage": round(completion_percentage, 2),
         "governance_areas": governance_areas_list,
+        "area_assessor_status": area_assessor_status,  # Per-area assessor review status
         "rework_comments": rework_comments,
         "rework_submitted_at": assessment.rework_submitted_at.isoformat() + "Z"
         if assessment.rework_submitted_at

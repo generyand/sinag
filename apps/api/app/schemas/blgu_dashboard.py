@@ -151,6 +151,24 @@ class AISummary(BaseModel):
     )
 
 
+class AreaAssessorStatus(BaseModel):
+    """
+    Assessor status for a single governance area.
+
+    Shows BLGU users which assessors have reviewed their assessment per area.
+    """
+
+    governance_area_id: int = Field(..., description="Governance area ID (1-6)")
+    governance_area_name: str = Field(..., description="Governance area name")
+    assessor_name: str | None = Field(
+        None, description="Name of the assessor assigned to this area (null if none assigned)"
+    )
+    is_assessed: bool = Field(
+        ...,
+        description="True if assessor has approved this area, False if still pending or not yet reviewed",
+    )
+
+
 class IndicatorItem(BaseModel):
     """
     Individual indicator with completion status.
@@ -324,6 +342,12 @@ class BLGUDashboardResponse(BaseModel):
     )
     governance_areas: list[GovernanceAreaGroup] = Field(
         ..., description="Indicators grouped by governance area"
+    )
+    area_assessor_status: list[AreaAssessorStatus] | None = Field(
+        None,
+        description="Status of assessor reviews per governance area. "
+        "Shows which assessors have assessed/approved each area. "
+        "Only populated when assessment is SUBMITTED or beyond.",
     )
     rework_comments: list[ReworkComment] | None = Field(
         None,

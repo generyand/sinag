@@ -23,6 +23,7 @@ import {
   VerdictSection,
   PhaseTimeline,
   AssessmentProgress,
+  AssessorStatusPanel,
 } from "@/components/features/blgu-phases";
 import { useGetBlguDashboardAssessmentId, useGetAssessmentsMyAssessment } from "@sinag/shared";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -244,6 +245,18 @@ export default function BLGUDashboardPage() {
                 />
               </div>
 
+              {/* Assessor Review Status - Only show when assessment is submitted or beyond */}
+              {dashboardData.status !== "DRAFT" && (dashboardData as any).area_assessor_status && (
+                <div
+                  className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-4"
+                  data-tour="assessor-status"
+                >
+                  <AssessorStatusPanel
+                    areaAssessorStatus={(dashboardData as any).area_assessor_status}
+                  />
+                </div>
+              )}
+
               {/* Phase Timeline */}
               <div
                 className="bg-[var(--card)] rounded-lg border border-[var(--border)] p-4"
@@ -282,6 +295,22 @@ export default function BLGUDashboardPage() {
                 isAutoSubmitted={dashboardData.is_auto_submitted ?? false}
               />
             </div>
+
+            {/* Mobile Assessor Status - Collapsible */}
+            {dashboardData.status !== "DRAFT" && (dashboardData as any).area_assessor_status && (
+              <div className="lg:hidden" data-tour="assessor-status">
+                <details className="bg-[var(--card)] rounded-lg border border-[var(--border)]">
+                  <summary className="p-4 cursor-pointer font-medium text-[var(--foreground)]">
+                    View Assessor Review Status
+                  </summary>
+                  <div className="px-4 pb-4">
+                    <AssessorStatusPanel
+                      areaAssessorStatus={(dashboardData as any).area_assessor_status}
+                    />
+                  </div>
+                </details>
+              </div>
+            )}
 
             {/* Mobile Timeline - Collapsible */}
             <div className="lg:hidden" data-tour="phase-timeline">

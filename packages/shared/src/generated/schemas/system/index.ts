@@ -12,6 +12,7 @@ import type { ApprovalQueueItem } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
+import type { BLGUDashboardResponseAreaAssessorStatus } from '../assessor';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationMovFileIds } from '../movs';
@@ -271,6 +272,8 @@ export interface BLGUDashboardResponse {
   completion_percentage: number;
   /** Indicators grouped by governance area */
   governance_areas: GovernanceAreaGroup[];
+  /** Status of assessor reviews per governance area. Shows which assessors have assessed/approved each area. Only populated when assessment is SUBMITTED or beyond. */
+  area_assessor_status?: BLGUDashboardResponseAreaAssessorStatus;
   /** Assessor feedback comments if assessment needs rework (null otherwise) */
   rework_comments?: BLGUDashboardResponseReworkComments;
   /** MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations) */
