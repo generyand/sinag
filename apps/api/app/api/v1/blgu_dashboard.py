@@ -1032,6 +1032,8 @@ def get_blgu_dashboard(
 
         # Get the area approval status from the assessment
         area_approval_status = assessment.area_assessor_approved or {}
+        # Get the area submission status (includes rework, submitted, etc.)
+        area_submission_status = assessment.area_submission_status or {}
 
         # Build the status list
         area_assessor_status = []
@@ -1039,6 +1041,9 @@ def get_blgu_dashboard(
             assessor = assessors_by_area.get(ga.id)
             # Check if this area has been approved
             is_assessed = area_approval_status.get(str(ga.id), False)
+            # Get the area status (rework, approved, submitted, in_review, etc.)
+            area_data = area_submission_status.get(str(ga.id), {})
+            area_status = area_data.get("status") if isinstance(area_data, dict) else None
 
             area_assessor_status.append(
                 {
@@ -1046,6 +1051,7 @@ def get_blgu_dashboard(
                     "governance_area_name": ga.name,
                     "assessor_name": assessor.name if assessor else None,
                     "is_assessed": is_assessed,
+                    "status": area_status,
                 }
             )
 

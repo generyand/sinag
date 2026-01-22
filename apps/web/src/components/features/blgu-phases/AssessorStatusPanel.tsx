@@ -12,7 +12,7 @@
  * - A cross if the assessor hasn't yet approved
  */
 
-import { Check, X, Users } from "lucide-react";
+import { Check, X, Users, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AreaAssessorStatus {
@@ -20,6 +20,7 @@ interface AreaAssessorStatus {
   governance_area_name: string;
   assessor_name: string | null;
   is_assessed: boolean;
+  status?: string | null;
 }
 
 interface AssessorStatusPanelProps {
@@ -75,50 +76,64 @@ export function AssessorStatusPanel({ areaAssessorStatus, className }: AssessorS
 
       {/* Assessor list */}
       <div className="space-y-2">
-        {areaAssessorStatus.map((area) => (
-          <div
-            key={area.governance_area_id}
-            className={cn(
-              "flex items-center justify-between gap-2 py-1.5 px-2 rounded-md transition-colors",
-              area.is_assessed
-                ? "bg-green-50 dark:bg-green-950/20"
-                : "bg-gray-50 dark:bg-gray-800/30"
-            )}
-          >
-            {/* Area info */}
-            <div className="flex-1 min-w-0">
-              <p
-                className={cn(
-                  "text-xs font-medium truncate",
-                  area.is_assessed
-                    ? "text-green-700 dark:text-green-300"
-                    : "text-[var(--foreground)]"
-                )}
-                title={area.governance_area_name}
-              >
-                {area.governance_area_name}
-              </p>
-              {area.assessor_name && (
-                <p className="text-[10px] text-[var(--text-secondary)] truncate">
-                  {area.assessor_name}
-                </p>
-              )}
-            </div>
+        {areaAssessorStatus.map((area) => {
+          // Determine the display state: approved, rework, or pending
+          const isRework = area.status === "rework";
+          const isApproved = area.is_assessed;
 
-            {/* Status icon */}
-            <div className="flex-shrink-0">
-              {area.is_assessed ? (
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                </div>
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                  <X className="w-3 h-3 text-gray-500 dark:text-gray-400" strokeWidth={3} />
-                </div>
+          return (
+            <div
+              key={area.governance_area_id}
+              className={cn(
+                "flex items-center justify-between gap-2 py-1.5 px-2 rounded-md transition-colors",
+                isApproved
+                  ? "bg-green-50 dark:bg-green-950/20"
+                  : isRework
+                    ? "bg-yellow-50 dark:bg-yellow-950/20"
+                    : "bg-gray-50 dark:bg-gray-800/30"
               )}
+            >
+              {/* Area info */}
+              <div className="flex-1 min-w-0">
+                <p
+                  className={cn(
+                    "text-xs font-medium truncate",
+                    isApproved
+                      ? "text-green-700 dark:text-green-300"
+                      : isRework
+                        ? "text-yellow-700 dark:text-yellow-300"
+                        : "text-[var(--foreground)]"
+                  )}
+                  title={area.governance_area_name}
+                >
+                  {area.governance_area_name}
+                </p>
+                {area.assessor_name && (
+                  <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                    {area.assessor_name}
+                  </p>
+                )}
+              </div>
+
+              {/* Status icon */}
+              <div className="flex-shrink-0">
+                {isApproved ? (
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                  </div>
+                ) : isRework ? (
+                  <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center">
+                    <RotateCcw className="w-3 h-3 text-white" strokeWidth={3} />
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                    <X className="w-3 h-3 text-gray-500 dark:text-gray-400" strokeWidth={3} />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Completion message */}

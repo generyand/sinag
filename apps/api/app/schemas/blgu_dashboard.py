@@ -167,6 +167,10 @@ class AreaAssessorStatus(BaseModel):
         ...,
         description="True if assessor has approved this area, False if still pending or not yet reviewed",
     )
+    status: str | None = Field(
+        None,
+        description="Area submission status: 'approved', 'rework', 'submitted', 'in_review', or null if pending",
+    )
 
 
 class IndicatorItem(BaseModel):
@@ -356,6 +360,14 @@ class BLGUDashboardResponse(BaseModel):
     mov_annotations_by_indicator: dict[int, list[dict[str, Any]]] | None = Field(
         None,
         description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)",
+    )
+
+    # Epic 5.0: Track which rework indicators have been addressed by BLGU
+    addressed_indicator_ids: list[int] | None = Field(
+        None,
+        description="List of indicator IDs that have been addressed after rework was requested. "
+        "An indicator is considered 'addressed' when BLGU uploads new MOV files after rework_requested_at. "
+        "Use this (not is_complete) to determine if an indicator is 'Fixed' in the rework workflow.",
     )
 
     # AI-generated summary for rework/calibration guidance

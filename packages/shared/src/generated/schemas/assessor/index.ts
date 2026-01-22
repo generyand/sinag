@@ -20,6 +20,8 @@ export interface AreaAssessorStatus {
   assessor_name?: AreaAssessorStatusAssessorName;
   /** True if assessor has approved this area, False if still pending or not yet reviewed */
   is_assessed: boolean;
+  /** Area submission status: 'approved', 'rework', 'submitted', 'in_review', or null if pending */
+  status?: AreaAssessorStatusStatus;
 }
 
 
@@ -27,6 +29,12 @@ export interface AreaAssessorStatus {
  * AreaAssessorStatusAssessorName
  */
 export type AreaAssessorStatusAssessorName = string | null;
+
+
+/**
+ * AreaAssessorStatusStatus
+ */
+export type AreaAssessorStatusStatus = string | null;
 
 
 /**

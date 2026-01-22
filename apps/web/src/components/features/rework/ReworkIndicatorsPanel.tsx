@@ -91,6 +91,10 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
   const failedIndicators = useMemo<FailedIndicator[]>(() => {
     const indicatorMap = new Map<number, FailedIndicator>();
 
+    // Get addressed indicator IDs from backend - these are indicators where
+    // BLGU uploaded new files AFTER rework was requested
+    const addressedIds = new Set<number>((dashboardData as any).addressed_indicator_ids || []);
+
     // Helper function to find indicator in governance areas (including children)
     const findIndicator = (indicatorId: number) => {
       // Recursive search through indicator tree
@@ -130,7 +134,10 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     };
 
     // For MLGOO RE-CALIBRATION: Show indicators that have flagged files OR are explicitly selected
-    if (isMlgooRecalibration && (mlgooRecalibrationIndicatorIds.length > 0 || mlgooRecalibrationMovFileIds.length > 0)) {
+    if (
+      isMlgooRecalibration &&
+      (mlgooRecalibrationIndicatorIds.length > 0 || mlgooRecalibrationMovFileIds.length > 0)
+    ) {
       // First, handle explicitly selected indicators (by indicator ID)
       mlgooRecalibrationIndicatorIds.forEach((indicatorId) => {
         const indicator = findIndicator(indicatorId);
@@ -141,6 +148,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
             governance_area_id: indicator.governance_area_id,
             governance_area_name: indicator.governance_area_name,
             is_complete: indicator.is_complete,
+            is_addressed: addressedIds.has(indicatorId),
             comments: [],
             annotations: [],
             total_feedback_items: 0,
@@ -156,7 +164,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
       // the flagged files belong to
       if (mlgooRecalibrationMovFileIds.length > 0) {
         // Search all governance areas to find indicators with the flagged files
-        const flaggedFileIds = new Set(mlgooRecalibrationMovFileIds.map(f => f.mov_file_id));
+        const flaggedFileIds = new Set(mlgooRecalibrationMovFileIds.map((f) => f.mov_file_id));
 
         // Check mov_annotations_by_indicator for file-to-indicator mapping
         // Also iterate through all indicators to check if they have flagged files
@@ -187,6 +195,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
                     governance_area_id: area.governance_area_id,
                     governance_area_name: area.governance_area_name,
                     is_complete: indicator.is_complete,
+                    is_addressed: addressedIds.has(indicatorId),
                     comments: [],
                     annotations: [],
                     total_feedback_items: mlgooRecalibrationMovFileIds.length,
@@ -241,6 +250,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
               governance_area_id: calibratedArea.governance_area_id,
               governance_area_name: calibratedArea.governance_area_name,
               is_complete: indicator.is_complete,
+              is_addressed: addressedIds.has(indicator.indicator_id),
               comments: [],
               annotations: [],
               total_feedback_items: 0,
@@ -267,6 +277,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
                 governance_area_id: indicator.governance_area_id,
                 governance_area_name: indicator.governance_area_name,
                 is_complete: indicator.is_complete,
+                is_addressed: addressedIds.has(indicatorId),
                 comments: [],
                 annotations: [],
                 total_feedback_items: 0,
@@ -296,6 +307,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
               governance_area_id: indicator.governance_area_id,
               governance_area_name: indicator.governance_area_name,
               is_complete: indicator.is_complete,
+              is_addressed: addressedIds.has(comment.indicator_id),
               comments: [],
               annotations: [],
               total_feedback_items: 0,
@@ -323,6 +335,7 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
                 governance_area_id: indicator.governance_area_id,
                 governance_area_name: indicator.governance_area_name,
                 is_complete: indicator.is_complete,
+                is_addressed: addressedIds.has(indicatorId),
                 comments: [],
                 annotations: [],
                 total_feedback_items: 0,
@@ -358,10 +371,11 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     mlgooRecalibrationMovFileIds,
   ]);
 
-  // Compute progress
+  // Compute progress - use is_addressed (new file uploaded after rework)
+  // instead of is_complete to determine if an indicator is truly "Fixed"
   const progress = useMemo(() => {
     const total = failedIndicators.length;
-    const fixed = failedIndicators.filter((f) => f.is_complete).length;
+    const fixed = failedIndicators.filter((f) => f.is_addressed).length;
     return {
       total,
       fixed,
@@ -426,8 +440,9 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     return null; // No failed indicators
   }
 
-  // Find the first incomplete indicator for the "Start Fixing" button
-  const firstIncompleteIndicator = failedIndicators.find((f) => !f.is_complete);
+  // Find the first un-addressed indicator for the "Start Fixing" button
+  // An indicator is addressed when BLGU uploads new files after rework was requested
+  const firstIncompleteIndicator = failedIndicators.find((f) => !f.is_addressed);
 
   return (
     <Card className="border-2 border-orange-300 dark:border-orange-700 bg-gradient-to-br from-orange-50 via-white to-orange-50/30 dark:from-orange-950/30 dark:via-gray-900 dark:to-orange-950/20 shadow-lg">
@@ -609,7 +624,8 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
         {Array.from(failedByArea.entries()).map(([areaId, indicators]) => {
           const isExpanded = expandedAreas.has(areaId);
           const areaName = indicators[0]?.governance_area_name || `Area ${areaId}`;
-          const areaFixed = indicators.filter((i) => i.is_complete).length;
+          // Use is_addressed (new file uploaded after rework) instead of is_complete
+          const areaFixed = indicators.filter((i) => i.is_addressed).length;
           const areaProgress = indicators.length > 0 ? (areaFixed / indicators.length) * 100 : 0;
 
           return (

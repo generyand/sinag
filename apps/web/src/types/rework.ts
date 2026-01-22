@@ -35,6 +35,13 @@ export interface FailedIndicator {
   governance_area_name: string;
   is_complete: boolean;
 
+  /**
+   * Whether this indicator has been "addressed" by BLGU.
+   * An indicator is addressed when BLGU uploads new MOV files AFTER rework was requested.
+   * Use this (not is_complete) to determine if an indicator is "Fixed" in the rework workflow.
+   */
+  is_addressed: boolean;
+
   // Assessor feedback
   comments: ReworkComment[];
   annotations: MOVAnnotationWithFile[];

@@ -137,6 +137,12 @@ export type BBIResultResponseSubIndicatorResultsAnyOfItem = { [key: string]: unk
 
 
 /**
+ * BLGUDashboardResponseAddressedIndicatorIds
+ */
+export type BLGUDashboardResponseAddressedIndicatorIds = number[] | null;
+
+
+/**
  * BLGUDashboardResponseMlgooRecalibrationIndicatorIds
  */
 export type BLGUDashboardResponseMlgooRecalibrationIndicatorIds = number[] | null;
