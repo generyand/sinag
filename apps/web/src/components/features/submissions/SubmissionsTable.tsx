@@ -4,16 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { BarangaySubmission, UnifiedStatus } from "@/types/submissions";
-import { UNIFIED_STATUS_CONFIG } from "./utils/statusConfig";
 import { Clock, Eye, Play } from "lucide-react";
+import { UNIFIED_STATUS_CONFIG } from "./utils/statusConfig";
 
 interface SubmissionsTableProps {
   submissions: BarangaySubmission[];
@@ -69,7 +69,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
           e.stopPropagation();
           onSubmissionClick(submission);
         }}
-        className={`${config.actionColorClass} shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 rounded-sm`}
+        className={`relative z-10 ${config.actionColorClass} shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-sm`}
         aria-label={`${config.actionLabel} for ${submission.barangayName}`}
       >
         <Icon className="h-4 w-4 mr-2" aria-hidden="true" />
