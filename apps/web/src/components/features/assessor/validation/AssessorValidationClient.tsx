@@ -338,6 +338,18 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // When locked, disable Save/Rework/Approve buttons for assessors
   const isAreaLocked: boolean = myAreaStatus === "rework" || myAreaStatus === "approved";
 
+  // Track if any action is in progress to disable all buttons
+  // This prevents users from clicking other buttons while an action is processing
+  const isAnyActionPending: boolean =
+    isSaving ||
+    areaApproveMut.isPending ||
+    areaReworkMut.isPending ||
+    finalizeMut.isPending ||
+    reworkMut.isPending;
+
+  // Check if area has been successfully approved (to disable buttons after success)
+  const isAreaApproved: boolean = myAreaStatus === "approved";
+
   // Get timestamps for MOV file separation (new vs old files)
   // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
@@ -1447,7 +1459,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={isSaving} // TEMPORARY: Removed isAreaLocked check
+              disabled={isAnyActionPending || isAreaApproved}
               className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
               title={
                 isAssessor && isAreaLocked
@@ -1493,7 +1505,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
-                disabled={reworkMut.isPending || areaReworkMut.isPending} // TEMPORARY: Removed business logic checks (hasIndicatorsFlaggedForRework, myAreaReworkUsed, isAreaLocked)
+                disabled={isAnyActionPending || isAreaApproved}
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
@@ -1549,7 +1561,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
-                disabled={!allReviewed || !anyFail || reworkCount !== 0 || reworkMut.isPending}
+                disabled={isAnyActionPending || !allReviewed || !anyFail || reworkCount !== 0}
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
@@ -1598,7 +1610,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={finalizeMut.isPending || areaApproveMut.isPending} // TEMPORARY: Removed business logic checks (allReviewed, isAreaLocked)
+                disabled={isAnyActionPending || isAreaApproved}
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
                 title={
@@ -1651,7 +1663,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={!allReviewed || (anyFail && reworkCount === 0) || finalizeMut.isPending}
+                disabled={isAnyActionPending || !allReviewed || (anyFail && reworkCount === 0)}
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
                 title={
