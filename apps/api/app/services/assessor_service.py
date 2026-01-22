@@ -1380,19 +1380,30 @@ class AssessorService:
         # Allow "draft" status because area_submission_status may not be initialized yet
         # When assessment is SUBMITTED but area hasn't been explicitly tracked,
         # get_area_status() returns "draft" - this is valid for approval
-        # Also allow "rework" status if BLGU has resubmitted (check resubmitted_after_rework flag
-        # OR rework_submitted_at timestamp for backwards compatibility with old data)
+        # Also allow "rework" status if BLGU has resubmitted - detected by:
+        # 1. resubmitted_after_rework flag in area_submission_status
+        # 2. rework_submitted_at timestamp on assessment
+        # 3. Assessment is in SUBMITTED/SUBMITTED_FOR_REVIEW status (implies resubmission for old data)
         area_data = (assessment.area_submission_status or {}).get(str(governance_area_id), {})
         has_resubmitted_flag = area_data.get("resubmitted_after_rework", False)
         has_rework_submitted_at = assessment.rework_submitted_at is not None
+        # For old data: if assessment is in SUBMITTED/SUBMITTED_FOR_REVIEW but area is "rework",
+        # it means BLGU resubmitted but area_status wasn't updated (old code bug)
+        assessment_implies_resubmission = assessment.status in (
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.SUBMITTED_FOR_REVIEW,
+        )
 
         if area_status not in ("draft", "submitted", "in_review"):
             # Allow approval if area was in rework but BLGU has resubmitted
-            if area_status == "rework" and (has_resubmitted_flag or has_rework_submitted_at):
+            if area_status == "rework" and (
+                has_resubmitted_flag or has_rework_submitted_at or assessment_implies_resubmission
+            ):
                 self.logger.info(
                     f"Allowing approval for area {governance_area_id} in 'rework' status "
                     f"because BLGU has resubmitted (resubmitted_after_rework={has_resubmitted_flag}, "
-                    f"rework_submitted_at={assessment.rework_submitted_at})"
+                    f"rework_submitted_at={assessment.rework_submitted_at}, "
+                    f"assessment_status={assessment.status.value})"
                 )
             else:
                 raise ValueError(
