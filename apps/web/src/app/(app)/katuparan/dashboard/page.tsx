@@ -36,6 +36,7 @@ import {
   Cell,
 } from "recharts";
 import { AxiosError } from "axios";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
@@ -293,6 +294,27 @@ const MOCK_HEATMAP_DATA = {
 // =============================================================================
 
 /**
+ * Resolves year placeholders in indicator names using the assessment cycle year.
+ */
+function resolveYearPlaceholders(text: string, year: number): string {
+  const prevYear = year - 1;
+  return text
+    .replace(/\{CURRENT_YEAR\}/g, String(year))
+    .replace(/\{PREVIOUS_YEAR\}/g, String(prevYear))
+    .replace(/\{CY_CURRENT_YEAR\}/g, `CY ${year}`)
+    .replace(/\{CY_PREVIOUS_YEAR\}/g, `CY ${prevYear}`)
+    .replace(/\{JUL_TO_SEP_CURRENT_YEAR\}/g, `July-September ${year}`)
+    .replace(/\{JUL_SEP_CURRENT_YEAR\}/g, `July-September ${year}`)
+    .replace(/\{JAN_TO_OCT_CURRENT_YEAR\}/g, `January to October ${year}`)
+    .replace(/\{JAN_OCT_CURRENT_YEAR\}/g, `January to October ${year}`)
+    .replace(/\{Q1_Q3_CURRENT_YEAR\}/g, `1st to 3rd quarter of CY ${year}`)
+    .replace(/\{DEC_31_CURRENT_YEAR\}/g, `December 31, ${year}`)
+    .replace(/\{DEC_31_PREVIOUS_YEAR\}/g, `December 31, ${prevYear}`)
+    .replace(/\{MARCH_CURRENT_YEAR\}/g, `March ${year}`)
+    .replace(/\{OCT_31_CURRENT_YEAR\}/g, `October 31, ${year}`);
+}
+
+/**
  * Katuparan Center Dashboard Page
  *
  * Municipal SGLGB Overview - Primary landing page for external stakeholders
@@ -317,6 +339,8 @@ export default function KatuparanDashboardPage() {
       },
     }
   );
+
+  const effectiveYear = useEffectiveYear() ?? new Date().getFullYear();
 
   // Fetch geographic heatmap data separately
   const { data: heatmapData, isLoading: heatmapLoading } = useGetExternalAnalyticsGeographicHeatmap(
@@ -494,7 +518,7 @@ export default function KatuparanDashboardPage() {
                   <Target className="h-5 w-5 text-primary" />
                   <CardTitle>Municipal SGLGB Status</CardTitle>
                 </div>
-                <CardDescription>CY {new Date().getFullYear()} Assessment Results</CardDescription>
+                <CardDescription>CY {effectiveYear} Assessment Results</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -589,7 +613,19 @@ export default function KatuparanDashboardPage() {
                         outerRadius={80}
                         paddingAngle={2}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent, x, y }) => (
+                          <text
+                            x={x}
+                            y={y}
+                            fill="#374151"
+                            fontSize={12}
+                            fontWeight={500}
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                          >
+                            {`${name} ${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        )}
                       >
                         {pieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -749,7 +785,9 @@ export default function KatuparanDashboardPage() {
                           #{index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm mb-1">{indicator.indicator_name}</h4>
+                          <h4 className="font-semibold text-sm mb-1">
+                            {resolveYearPlaceholders(indicator.indicator_name, effectiveYear)}
+                          </h4>
                           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <XCircle className="h-4 w-4 text-red-500" />

@@ -100,7 +100,7 @@ const validatorNavigation = [
 
 const katuparanNavigation = [
   { name: "Dashboard", href: "/katuparan/dashboard", icon: "home" },
-  { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
+  // { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
   { name: "Profile", href: "/katuparan/profile", icon: "user" },
 ];
 

@@ -8,6 +8,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.cache import CACHE_TTL_EXTERNAL_ANALYTICS, cache
+from app.core.year_resolver import get_year_resolver
 from app.db.enums import AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
@@ -462,17 +463,26 @@ class ExternalAnalyticsService:
             .all()
         )
 
+        # Resolve year placeholders in indicator names
+        try:
+            year = int(assessment_cycle) if assessment_cycle else None
+        except (ValueError, TypeError):
+            year = None
+        year_resolver = get_year_resolver(db, year)
+
         top_failing = []
         for r in results:
             failure_percentage = (
                 (r.failure_count / r.total_assessed * 100) if r.total_assessed > 0 else 0.0
             )
 
+            resolved_name = year_resolver.resolve_string(r.name) or r.name
+
             top_failing.append(
                 TopFailingIndicator(
                     indicator_id=r.id,
                     indicator_code=r.indicator_code or "",
-                    indicator_name=r.name,
+                    indicator_name=resolved_name,
                     governance_area_code=r.code,
                     failure_count=r.failure_count,
                     total_assessed=r.total_assessed,
