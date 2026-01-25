@@ -28,7 +28,11 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Only fetch detail when expanded
-  const { data: detail, isLoading, error } = useReviewHistoryDetail({
+  const {
+    data: detail,
+    isLoading,
+    error,
+  } = useReviewHistoryDetail({
     assessmentId: item.assessment_id,
     enabled: isExpanded,
   });
@@ -38,8 +42,7 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
     console.error("Failed to load review history detail:", error);
   }
 
-  const outcomeBadgeVariant =
-    item.final_compliance_status === "PASSED" ? "default" : "destructive";
+  const outcomeBadgeVariant = item.final_compliance_status === "PASSED" ? "default" : "destructive";
 
   const handleRowClick = () => {
     setIsExpanded(!isExpanded);
@@ -86,13 +89,9 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
 
         {/* Barangay */}
         <TableCell>
-          <div className="font-medium text-[var(--foreground)] text-sm">
-            {item.barangay_name}
-          </div>
+          <div className="font-medium text-[var(--foreground)] text-sm">{item.barangay_name}</div>
           {item.municipality_name && (
-            <div className="text-xs text-[var(--text-muted)]">
-              {item.municipality_name}
-            </div>
+            <div className="text-xs text-[var(--text-muted)]">{item.municipality_name}</div>
           )}
         </TableCell>
 
@@ -113,7 +112,14 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
         {/* Outcome */}
         <TableCell>
           {item.final_compliance_status ? (
-            <Badge variant={outcomeBadgeVariant} className="text-xs">
+            <Badge
+              variant={outcomeBadgeVariant}
+              className={cn(
+                "text-xs",
+                item.final_compliance_status === "PASSED" &&
+                  "bg-green-600 dark:bg-green-600 text-white"
+              )}
+            >
               {item.final_compliance_status}
             </Badge>
           ) : (
@@ -127,9 +133,7 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
             <span className="text-green-600 dark:text-green-400 font-medium">
               {item.pass_count}P
             </span>
-            <span className="text-red-600 dark:text-red-400 font-medium">
-              {item.fail_count}F
-            </span>
+            <span className="text-red-600 dark:text-red-400 font-medium">{item.fail_count}F</span>
             {(item.conditional_count ?? 0) > 0 && (
               <span className="text-yellow-600 dark:text-yellow-400 font-medium">
                 {item.conditional_count}C
@@ -142,13 +146,19 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
         <TableCell className="hidden lg:table-cell">
           <div className="flex items-center gap-1">
             {item.was_reworked && (
-              <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800">
+              <Badge
+                variant="outline"
+                className="text-xs bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800"
+              >
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Rework
               </Badge>
             )}
             {item.was_calibrated && (
-              <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800">
+              <Badge
+                variant="outline"
+                className="text-xs bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800"
+              >
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 Cal
               </Badge>
@@ -164,7 +174,11 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
       {isExpanded && (
         <TableRow className="hover:bg-transparent">
           <TableCell colSpan={7} className="p-0">
-            <ReviewHistoryDetail detail={detail} isLoading={isLoading} error={error instanceof Error ? error : null} />
+            <ReviewHistoryDetail
+              detail={detail}
+              isLoading={isLoading}
+              error={error instanceof Error ? error : null}
+            />
           </TableCell>
         </TableRow>
       )}

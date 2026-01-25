@@ -197,13 +197,42 @@ export default function BLGUAssessmentsPage() {
   // Show locked banner if assessment is not editable
   // Status values are now lowercase with hyphens (e.g., "submitted-for-review", "validated")
   const normalizedStatus = (assessment.status || "").toLowerCase();
-  const isLocked =
-    normalizedStatus === "submitted" ||
-    normalizedStatus === "submitted-for-review" ||
-    normalizedStatus === "in-review" ||
+
+  // Per-area workflow: Check if ALL areas are submitted (none in "draft")
+  // The banner should only show "Assessment Submitted" when ALL 6 areas have been submitted,
+  // not when just ONE area is submitted
+
+  const typedAreaStatusData = areaStatusData as {
+    area_submission_status?: Record<string, { status?: string }>;
+  } | null;
+  const hasPerAreaTracking = Boolean(
+    typedAreaStatusData?.area_submission_status &&
+    Object.keys(typedAreaStatusData.area_submission_status).length > 0
+  );
+
+  // Check if any area is still in "draft" status
+  const hasAnyDraftArea = hasPerAreaTracking
+    ? Object.values(typedAreaStatusData?.area_submission_status || {}).some(
+        (areaData) => areaData?.status === "draft" || !areaData?.status
+      )
+    : false;
+
+  // Assessment is fully locked only when:
+  // 1. Status is in a locked state (submitted, validated, etc.) AND
+  // 2. Either it's legacy workflow (no per-area tracking) OR all areas are submitted (no drafts)
+  const isFullySubmitted =
+    (normalizedStatus === "submitted" ||
+      normalizedStatus === "submitted-for-review" ||
+      normalizedStatus === "in-review") &&
+    (!hasPerAreaTracking || !hasAnyDraftArea);
+
+  // Always show locked banner for these statuses (past the submission phase)
+  const isPastSubmission =
     normalizedStatus === "awaiting-final-validation" ||
     normalizedStatus === "validated" ||
     normalizedStatus === "completed";
+
+  const isLocked = isFullySubmitted || isPastSubmission;
 
   // Get selected indicator
   const selectedIndicatorData = selectedIndicatorId

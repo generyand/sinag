@@ -1573,25 +1573,36 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 onClick={() => setShowReworkConfirm(true)}
                 disabled={
                   isAnyActionPending ||
-                  isAreaApproved ||
+                  isAreaLocked ||
                   !allReviewed ||
                   !hasIndicatorsFlaggedForRework ||
                   myAreaReworkUsed
                 }
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
-                style={{ background: "var(--cityscape-yellow)" }}
+                style={{
+                  background:
+                    isAnyActionPending ||
+                    isAreaLocked ||
+                    !allReviewed ||
+                    !hasIndicatorsFlaggedForRework ||
+                    myAreaReworkUsed
+                      ? "var(--muted)"
+                      : "var(--cityscape-yellow)",
+                }}
                 title={
-                  isAreaApproved
-                    ? "Area is already approved."
-                    : isAreaLocked && myAreaStatus === "rework"
-                      ? "Area is already sent for rework. Waiting for BLGU to resubmit."
-                      : !allReviewed
-                        ? "Review all indicators before sending for rework."
-                        : !hasIndicatorsFlaggedForRework
-                          ? "Toggle 'Send for Rework' on at least one MOV file to enable this button."
-                          : myAreaReworkUsed
-                            ? "Rework round has already been used for this governance area. Each area is only allowed one rework round."
-                            : undefined
+                  isAnyActionPending
+                    ? "An action is in progress. Please wait."
+                    : myAreaStatus === "approved"
+                      ? "Area is already approved."
+                      : myAreaStatus === "rework"
+                        ? "Area is already sent for rework. Waiting for BLGU to resubmit."
+                        : !allReviewed
+                          ? "Review all indicators before sending for rework."
+                          : !hasIndicatorsFlaggedForRework
+                            ? "Toggle 'Send for Rework' on at least one MOV file to enable this button."
+                            : myAreaReworkUsed
+                              ? "Rework round has already been used for this governance area. Each area is only allowed one rework round."
+                              : undefined
                 }
               >
                 {reworkMut.isPending || areaReworkMut.isPending ? (
@@ -1686,27 +1697,32 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 onClick={() => setShowFinalizeConfirm(true)}
                 disabled={
                   isAnyActionPending ||
-                  isAreaApproved ||
+                  isAreaLocked ||
                   !allReviewed ||
                   hasIndicatorsFlaggedForRework
                 }
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{
                   background:
-                    !allReviewed || hasIndicatorsFlaggedForRework
+                    isAnyActionPending ||
+                    isAreaLocked ||
+                    !allReviewed ||
+                    hasIndicatorsFlaggedForRework
                       ? "var(--muted)"
                       : "var(--success)",
                 }}
                 title={
-                  isAreaApproved
-                    ? "Area is already approved."
-                    : isAreaLocked && myAreaStatus === "rework"
-                      ? "Area is sent for rework. Waiting for BLGU to resubmit."
-                      : !allReviewed
-                        ? "Review all indicators before approving."
-                        : hasIndicatorsFlaggedForRework
-                          ? "Cannot approve while MOV files are flagged for rework. Remove all rework flags or use 'Compile and Send for Rework' instead."
-                          : undefined
+                  isAnyActionPending
+                    ? "An action is in progress. Please wait."
+                    : myAreaStatus === "approved"
+                      ? "Area is already approved."
+                      : myAreaStatus === "rework"
+                        ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                        : !allReviewed
+                          ? "Review all indicators before approving."
+                          : hasIndicatorsFlaggedForRework
+                            ? "Cannot approve while MOV files are flagged for rework. Remove all rework flags or use 'Compile and Send for Rework' instead."
+                            : undefined
                 }
               >
                 {finalizeMut.isPending || areaApproveMut.isPending ? (

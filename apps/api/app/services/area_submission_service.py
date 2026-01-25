@@ -8,10 +8,11 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.db.enums import AssessmentStatus
+from app.db.enums import AssessmentStatus, NotificationType
 from app.db.models.assessment import Assessment
 from app.db.models.governance_area import GovernanceArea
 from app.db.models.user import User
+from app.services.notification_service import notification_service
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +119,31 @@ class AreaSubmissionService:
             f"(barangay: {user.barangay_id})"
         )
 
+        # Send per-area notification to assessor(s) assigned to this governance area
+        # This is more targeted than the legacy "notify all assessors" approach
+        try:
+            barangay_name = "Unknown Barangay"
+            if user.barangay:
+                barangay_name = user.barangay.name
+
+            notifications = notification_service.notify_assessors_for_governance_area(
+                db=db,
+                notification_type=NotificationType.NEW_SUBMISSION,
+                title=f"New Submission: {barangay_name}",
+                message=f"A new submission for '{governance_area.name}' is ready for your review.",
+                governance_area_id=governance_area_id,
+                assessment_id=assessment_id,
+            )
+            db.commit()
+
+            logger.info(
+                f"Sent per-area NEW_SUBMISSION notification to {len(notifications)} assessor(s) "
+                f"for governance area {governance_area_id} ({governance_area.name})"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send per-area notification: {e}")
+            # Don't fail the submission if notification fails
+
         return {
             "success": True,
             "message": f"Area '{governance_area.name}' submitted for review",
@@ -208,6 +234,30 @@ class AreaSubmissionService:
             f"BLGU resubmitted area {governance_area_id} for assessment {assessment_id} "
             f"(barangay: {user.barangay_id})"
         )
+
+        # Send per-area resubmission notification to assessor(s) assigned to this governance area
+        try:
+            barangay_name = "Unknown Barangay"
+            if user.barangay:
+                barangay_name = user.barangay.name
+
+            notifications = notification_service.notify_assessors_for_governance_area(
+                db=db,
+                notification_type=NotificationType.REWORK_RESUBMITTED,
+                title=f"Rework Resubmission: {barangay_name}",
+                message=f"'{governance_area.name}' has been resubmitted after rework and is ready for your review.",
+                governance_area_id=governance_area_id,
+                assessment_id=assessment_id,
+            )
+            db.commit()
+
+            logger.info(
+                f"Sent per-area REWORK_RESUBMITTED notification to {len(notifications)} assessor(s) "
+                f"for governance area {governance_area_id} ({governance_area.name})"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send per-area resubmission notification: {e}")
+            # Don't fail the resubmission if notification fails
 
         return {
             "success": True,

@@ -156,19 +156,29 @@ class AssessorService:
                 area_status = a.get_area_status(assessor.assessor_area_id)
                 if area_status == "approved":
                     continue  # Skip - assessor already approved their area
-                # Only skip "draft" areas if the overall assessment is NOT in a submitted/rework status
-                # This handles:
-                # 1. Legacy workflow where BLGUs submit the entire assessment at once
-                # 2. Reverted assessments where area_submission_status was reset to "draft"
-                # (area_submission_status might not be populated, defaulting to "draft")
-                if area_status == "draft" and a.status not in (
-                    AssessmentStatus.SUBMITTED,
-                    AssessmentStatus.SUBMITTED_FOR_REVIEW,
-                    AssessmentStatus.IN_REVIEW,
-                    AssessmentStatus.REWORK,  # Include REWORK - reverted assessments
-                    AssessmentStatus.NEEDS_REWORK,  # Legacy rework status
-                ):
-                    continue  # Skip - BLGU hasn't submitted this area yet
+
+                # Per-area submission workflow logic:
+                # Distinguish between legacy workflow and new per-area workflow
+                has_per_area_tracking = bool(a.area_submission_status)
+
+                if has_per_area_tracking:
+                    # NEW PER-AREA WORKFLOW: area_submission_status is populated
+                    # Only show assessments where THIS assessor's area is submitted/in_review/rework
+                    # Skip if the assessor's specific area is still "draft" (not submitted yet)
+                    if area_status == "draft":
+                        continue  # Skip - BLGU hasn't submitted THIS area yet
+                else:
+                    # LEGACY WORKFLOW: area_submission_status is None/empty
+                    # This handles older assessments submitted before per-area tracking was implemented
+                    # Only skip if the overall assessment is NOT in a submitted/rework status
+                    if area_status == "draft" and a.status not in (
+                        AssessmentStatus.SUBMITTED,
+                        AssessmentStatus.SUBMITTED_FOR_REVIEW,
+                        AssessmentStatus.IN_REVIEW,
+                        AssessmentStatus.REWORK,  # Include REWORK - reverted assessments
+                        AssessmentStatus.NEEDS_REWORK,  # Legacy rework status
+                    ):
+                        continue  # Skip - BLGU hasn't submitted yet (legacy mode)
 
             # For validators: Check calibration status
             if is_validator:
