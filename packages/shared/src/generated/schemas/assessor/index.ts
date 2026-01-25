@@ -213,6 +213,69 @@ export type IndicatorDetailItemAssessorRemarks = string | null;
 
 
 /**
+ * MOVAssessorFeedbackResponse
+ */
+export interface MOVAssessorFeedbackResponse {
+  mov_file_id: number;
+  assessor_notes?: MOVAssessorFeedbackResponseAssessorNotes;
+  flagged_for_rework?: boolean;
+  flagged_by_assessor_id?: MOVAssessorFeedbackResponseFlaggedByAssessorId;
+  flagged_at?: MOVAssessorFeedbackResponseFlaggedAt;
+}
+
+
+/**
+ * MOVAssessorFeedbackResponseAssessorNotes
+ */
+export type MOVAssessorFeedbackResponseAssessorNotes = string | null;
+
+
+/**
+ * MOVAssessorFeedbackResponseFlaggedAt
+ */
+export type MOVAssessorFeedbackResponseFlaggedAt = string | null;
+
+
+/**
+ * MOVAssessorFeedbackResponseFlaggedByAssessorId
+ */
+export type MOVAssessorFeedbackResponseFlaggedByAssessorId = number | null;
+
+
+/**
+ * MOVAssessorFeedbackUpdate
+ */
+export interface MOVAssessorFeedbackUpdate {
+  assessor_notes?: MOVAssessorFeedbackUpdateAssessorNotes;
+  flagged_for_rework?: MOVAssessorFeedbackUpdateFlaggedForRework;
+}
+
+
+/**
+ * MOVAssessorFeedbackUpdateAssessorNotes
+ */
+export type MOVAssessorFeedbackUpdateAssessorNotes = string | null;
+
+
+/**
+ * MOVAssessorFeedbackUpdateFlaggedForRework
+ */
+export type MOVAssessorFeedbackUpdateFlaggedForRework = boolean | null;
+
+
+/**
+ * MOVFileResponseAssessorNotes
+ */
+export type MOVFileResponseAssessorNotes = string | null;
+
+
+/**
+ * MOVFileResponseFlaggedByAssessorId
+ */
+export type MOVFileResponseFlaggedByAssessorId = number | null;
+
+
+/**
  * ReviewHistoryFeedbackCommentAssessorRole
  */
 export type ReviewHistoryFeedbackCommentAssessorRole = string | null;

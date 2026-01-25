@@ -1,44 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
-import { classifyError } from "@/lib/error-utils";
-import { Assessment, AssessmentValidation } from "@/types/assessment";
-import {
-  usePostAssessmentsAssessmentIdResubmit,
-  usePostAssessmentsAssessmentIdSubmit,
-  usePostAssessmentsAssessmentIdSubmitForCalibration,
-} from "@sinag/shared";
-import {
-  AlertCircle,
-  CheckCircle,
-  CheckCircle2,
-  Clock,
-  Info,
-  Loader2,
-  Send,
-} from "lucide-react";
+import { AreaStatusType, Assessment, AssessmentValidation } from "@/types/assessment";
+import { AlertCircle, CheckCircle, Clock, Info, Send } from "lucide-react";
+
+interface AreaSubmissionStatusData {
+  area_submission_status: Record<string, { status: AreaStatusType } | unknown>;
+  area_assessor_approved: Record<string, boolean>;
+  all_areas_approved: boolean;
+}
 
 interface AssessmentHeaderProps {
   assessment: Assessment;
   validation: AssessmentValidation;
   isCalibrationRework?: boolean;
   calibrationGovernanceAreaName?: string;
-  calibrationGovernanceAreaNames?: string[]; // Support multiple areas
-  reworkSubmittedAt?: string | null; // When BLGU already resubmitted after rework
-  calibrationSubmittedAt?: string | null; // When BLGU already resubmitted after calibration
+  calibrationGovernanceAreaNames?: string[];
+  areaStatusData?: AreaSubmissionStatusData | null;
 }
 
 export function AssessmentHeader({
@@ -47,8 +24,7 @@ export function AssessmentHeader({
   isCalibrationRework = false,
   calibrationGovernanceAreaName,
   calibrationGovernanceAreaNames = [],
-  reworkSubmittedAt,
-  calibrationSubmittedAt,
+  areaStatusData,
 }: AssessmentHeaderProps) {
   // Combine legacy single name with new multiple names array
   const allCalibrationAreaNames =
@@ -57,147 +33,6 @@ export function AssessmentHeader({
       : calibrationGovernanceAreaName
         ? [calibrationGovernanceAreaName]
         : [];
-  const { toast } = useToast();
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
-  // Use Epic 5.0 submit endpoint (POST /assessments/{id}/submit)
-  const submitMutation = usePostAssessmentsAssessmentIdSubmit({
-    mutation: {
-      onSuccess: (data) => {
-        toast({
-          title: "Assessment Submitted",
-          description: `Your assessment was successfully submitted on ${new Date(
-            data.submitted_at
-          ).toLocaleString()}. It is now locked for editing.`,
-          variant: "default",
-        });
-        // Redirect to dashboard after a short delay for toast to be visible
-        setTimeout(() => {
-          window.location.href = "/blgu/dashboard";
-        }, 1500);
-      },
-      onError: (error: any) => {
-        const errorInfo = classifyError(error);
-
-        let title = "Submission Failed";
-        let description = "Please try again. If the problem persists, contact your MLGOO-DILG.";
-
-        if (errorInfo.type === "network") {
-          title = "Unable to submit";
-          description = "Check your internet connection and try again. Your work has been saved.";
-        } else if (errorInfo.type === "auth") {
-          title = "Session expired";
-          description = "Please log in again to submit your assessment.";
-        } else if (errorInfo.type === "validation") {
-          title = "Cannot submit assessment";
-          description = errorInfo.message;
-        }
-
-        toast({
-          title,
-          description,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  // Use different endpoint for resubmit during REWORK status
-  const resubmitMutation = usePostAssessmentsAssessmentIdResubmit({
-    mutation: {
-      onSuccess: (data) => {
-        toast({
-          title: "Assessment Resubmitted",
-          description: `Your assessment was successfully resubmitted on ${new Date(
-            data.resubmitted_at
-          ).toLocaleString()}.`,
-          variant: "default",
-        });
-        setTimeout(() => {
-          window.location.href = "/blgu/dashboard";
-        }, 1500);
-      },
-      onError: (error: any) => {
-        const errorInfo = classifyError(error);
-
-        let title = "Resubmission Failed";
-        let description = "Please try again. If the problem persists, contact your MLGOO-DILG.";
-
-        if (errorInfo.type === "network") {
-          title = "Unable to resubmit";
-          description = "Check your internet connection and try again. Your work has been saved.";
-        } else if (errorInfo.type === "auth") {
-          title = "Session expired";
-          description = "Please log in again to resubmit your assessment.";
-        } else if (errorInfo.type === "validation") {
-          title = "Cannot resubmit assessment";
-          description = errorInfo.message;
-        }
-
-        toast({
-          title,
-          description,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  // Use calibration-specific endpoint when submitting after Validator calibration
-  const calibrationMutation = usePostAssessmentsAssessmentIdSubmitForCalibration({
-    mutation: {
-      onSuccess: (data) => {
-        toast({
-          title: "Calibration Submitted",
-          description: `Your calibration was successfully submitted on ${new Date(
-            data.resubmitted_at
-          ).toLocaleString()}.`,
-          variant: "default",
-        });
-        setTimeout(() => {
-          window.location.href = "/blgu/dashboard";
-        }, 1500);
-      },
-      onError: (error: any) => {
-        const errorInfo = classifyError(error);
-
-        let title = "Calibration Submission Failed";
-        let description = "Please try again. If the problem persists, contact your MLGOO-DILG.";
-
-        if (errorInfo.type === "network") {
-          title = "Unable to submit calibration";
-          description = "Check your internet connection and try again. Your work has been saved.";
-        } else if (errorInfo.type === "auth") {
-          title = "Session expired";
-          description = "Please log in again to submit your calibration.";
-        } else if (errorInfo.type === "validation") {
-          title = "Cannot submit calibration";
-          description = errorInfo.message;
-        }
-
-        toast({
-          title,
-          description,
-          variant: "destructive",
-        });
-      },
-    },
-  });
-
-  const isReworkStatus =
-    assessment.status.toLowerCase() === "rework" ||
-    assessment.status.toLowerCase() === "needs-rework";
-
-  // Check if already resubmitted (button should be locked)
-  const hasAlreadyResubmitted = isCalibrationRework
-    ? !!calibrationSubmittedAt
-    : !!reworkSubmittedAt;
-
-  // Check if assessment is in an editable state (can be submitted)
-  const isEditableStatus =
-    assessment.status.toLowerCase() === "draft" ||
-    assessment.status.toLowerCase() === "rework" ||
-    assessment.status.toLowerCase() === "needs-rework";
 
   const getStatusIcon = () => {
     switch (assessment.status.toLowerCase()) {
@@ -243,29 +78,33 @@ export function AssessmentHeader({
     }
   };
 
-  const getTooltipContent = () => {
-    if (validation.missingIndicators.length > 0) {
-      return (
-        <div>
-          <p className="font-medium mb-2">Incomplete indicators:</p>
-          <ul className="text-sm space-y-1">
-            {validation.missingIndicators.slice(0, 3).map((indicator, index) => (
-              <li key={index}>• {indicator}</li>
-            ))}
-            {validation.missingIndicators.length > 3 && (
-              <li>• ... and {validation.missingIndicators.length - 3} more</li>
-            )}
-          </ul>
-        </div>
-      );
-    }
-
-    return "Please complete all indicators before submitting.";
-  };
-
   const progressPercentage = Math.round(
     (assessment.completedIndicators / assessment.totalIndicators) * 100
   );
+
+  // Count submitted/approved areas from area status data
+  const getAreasSubmittedCount = () => {
+    if (!areaStatusData?.area_submission_status) return 0;
+    let count = 0;
+    for (const [, status] of Object.entries(areaStatusData.area_submission_status)) {
+      if (status && typeof status === "object" && "status" in status) {
+        const areaStatus = (status as { status: AreaStatusType }).status;
+        if (areaStatus === "submitted" || areaStatus === "in_review" || areaStatus === "approved") {
+          count++;
+        }
+      }
+    }
+    return count;
+  };
+
+  const getAreasApprovedCount = () => {
+    if (!areaStatusData?.area_assessor_approved) return 0;
+    return Object.values(areaStatusData.area_assessor_approved).filter(Boolean).length;
+  };
+
+  const areasSubmitted = getAreasSubmittedCount();
+  const areasApproved = getAreasApprovedCount();
+  const totalAreas = 6;
 
   const getStatusConfig = () => {
     switch (assessment.status.toLowerCase()) {
@@ -348,7 +187,7 @@ export function AssessmentHeader({
                   {getStatusText()}
                 </div>
                 <span className="text-sm text-[var(--text-secondary)]">
-                  • {new Date(assessment.createdAt).getFullYear()} Assessment
+                  * {new Date(assessment.createdAt).getFullYear()} Assessment
                 </span>
               </div>
 
@@ -359,12 +198,12 @@ export function AssessmentHeader({
                 </span>
               </h1>
               <p className="mt-2 text-lg text-[var(--text-secondary)]">
-                Manage and complete your SGLGB assessment indicators and requirements.
+                Complete each governance area and submit it individually for review.
               </p>
             </div>
           </div>
 
-          {/* Right side - Stats and Actions */}
+          {/* Right side - Stats */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 xl:pl-8 xl:border-l border-[var(--border)]">
             {/* Progress Stats */}
             <div className="flex items-center gap-8">
@@ -390,63 +229,48 @@ export function AssessmentHeader({
                   Completion
                 </div>
               </div>
+
+              {/* Areas Submitted Counter */}
+              {areaStatusData && (
+                <>
+                  <div className="w-px h-12 bg-[var(--border)]"></div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold tabular-nums">
+                      <span
+                        className={
+                          areasApproved === totalAreas
+                            ? "text-green-600"
+                            : areasSubmitted > 0
+                              ? "text-purple-600"
+                              : "text-[var(--foreground)]"
+                        }
+                      >
+                        {areasApproved > 0 ? areasApproved : areasSubmitted}
+                      </span>
+                      <span className="text-lg text-[var(--text-secondary)] font-medium">
+                        /{totalAreas}
+                      </span>
+                    </div>
+                    <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mt-1">
+                      {areasApproved > 0 ? "Areas Approved" : "Areas Submitted"}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Submit Button - Only show when assessment is in editable state */}
-            {isEditableStatus ? (
-              hasAlreadyResubmitted ? (
-                // Show "Already Resubmitted" message when BLGU has already resubmitted
-                <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
-                  <CheckCircle className="h-5 w-5 mr-3" />
-                  {isCalibrationRework ? "Calibration Submitted" : "Resubmitted"}
-                </div>
-              ) : (
-                <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-block">
-                      <Button
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={
-                          !validation.isComplete ||
-                          submitMutation.isPending ||
-                          resubmitMutation.isPending ||
-                          calibrationMutation.isPending
-                        }
-                        className="h-14 px-8 text-base font-semibold bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                      >
-                        {submitMutation.isPending ||
-                        resubmitMutation.isPending ||
-                        calibrationMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="h-5 w-5 mr-3" />
-                            {isReworkStatus
-                              ? isCalibrationRework
-                                ? "Submit Calibration"
-                                : "Resubmit"
-                              : "Submit Assessment"}
-                          </>
-                        )}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!validation.isComplete && (
-                    <TooltipContent side="bottom" className="max-w-xs">
-                      {getTooltipContent()}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-              )
-            ) : (
+            {/* Status Summary Badge */}
+            {areaStatusData && areasApproved === totalAreas && (
               <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg min-w-[200px]">
                 <CheckCircle className="h-5 w-5 mr-3" />
-                Submitted
+                All Areas Approved
+              </div>
+            )}
+
+            {areaStatusData && areasSubmitted === totalAreas && areasApproved < totalAreas && (
+              <div className="h-14 px-8 flex items-center justify-center text-base font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg min-w-[200px]">
+                <Send className="h-5 w-5 mr-3" />
+                All Areas Submitted
               </div>
             )}
           </div>
@@ -469,98 +293,14 @@ export function AssessmentHeader({
           {!validation.isComplete && validation.missingIndicators.length > 0 && (
             <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
               <Info className="h-5 w-5 flex-shrink-0" />
-              <span>You have {validation.missingIndicators.length} incomplete indicators.</span>
+              <span>
+                You have {validation.missingIndicators.length} incomplete indicators. Complete each
+                governance area to enable its submit button.
+              </span>
             </div>
           )}
         </div>
       </div>
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              {isReworkStatus
-                ? isCalibrationRework
-                  ? "Submit Calibration?"
-                  : "Resubmit Assessment?"
-                : "Submit Assessment for Review?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3 pt-2">
-                <p className="text-sm text-muted-foreground">
-                  Are you sure you want to submit this assessment? Once submitted:
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>Your assessment will be locked for editing</li>
-                  <li>An assessor will review your submission</li>
-                  <li>
-                    You will only be able to edit if the assessor requests rework (one rework cycle
-                    allowed)
-                  </li>
-                </ul>
-                <div className="flex items-start gap-2 p-3 bg-muted rounded-md mt-3">
-                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    Please ensure all information is accurate before submitting.
-                  </span>
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={
-                submitMutation.isPending ||
-                resubmitMutation.isPending ||
-                calibrationMutation.isPending
-              }
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (isReworkStatus) {
-                  if (isCalibrationRework) {
-                    calibrationMutation.mutate({
-                      assessmentId: parseInt(assessment.id),
-                    });
-                  } else {
-                    resubmitMutation.mutate({
-                      assessmentId: parseInt(assessment.id),
-                    });
-                  }
-                } else {
-                  submitMutation.mutate({
-                    assessmentId: parseInt(assessment.id),
-                  });
-                }
-              }}
-              disabled={
-                submitMutation.isPending ||
-                resubmitMutation.isPending ||
-                calibrationMutation.isPending
-              }
-              className="bg-[var(--foreground)] hover:bg-[var(--foreground)]/90 text-[var(--background)] font-semibold shadow-md hover:shadow-lg"
-            >
-              {submitMutation.isPending ||
-              resubmitMutation.isPending ||
-              calibrationMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Confirm Submit
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

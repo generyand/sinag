@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.db.enums import UserRole
 from app.db.models.user import User
 from app.schemas import (
     AnnotationCreate,
@@ -19,7 +20,12 @@ from app.schemas import (
     ValidationRequest,
     ValidationResponse,
 )
-from app.schemas.assessor import ReviewHistoryDetail, ReviewHistoryResponse
+from app.schemas.assessor import (
+    MOVAssessorFeedbackResponse,
+    MOVAssessorFeedbackUpdate,
+    ReviewHistoryDetail,
+    ReviewHistoryResponse,
+)
 from app.schemas.municipal_insights import MunicipalOverviewDashboard
 from app.services import annotation_service, assessor_service, intelligence_service
 
@@ -450,20 +456,25 @@ async def get_validator_dashboard(
     current_user: User = Depends(deps.get_current_area_assessor_user),
 ):
     """
-    Get comprehensive assessor dashboard data for their governance area.
+    Get comprehensive dashboard data for assessors and validators.
 
-    After workflow restructuring: ASSESSORs are area-specific.
-    This endpoint provides assessor-specific analytics that mirror the MLGOO
-    municipal overview but filtered by the assessor's assigned governance area.
+    **For VALIDATORS (system-wide access):**
+    - See ALL assessments across all 6 governance areas
+    - Aggregated compliance summary, area performance, failing indicators
+    - Allows validators to coordinate offline within their cluster
 
-    **Access:** ASSESSOR role users with area assignment only
+    **For ASSESSORS (area-specific access):**
+    - See assessments filtered by their assigned governance area
+    - Area-specific analytics mirroring the MLGOO municipal overview
+
+    **Access:** VALIDATOR role OR ASSESSOR role with area assignment
 
     Returns all dashboard sections in a single request:
-    - Compliance summary (pass/fail counts, rates) for their governance area
-    - Governance area performance (limited to their area)
-    - Top failing indicators in their area
-    - Aggregated CapDev summary for their area
-    - Barangay status list (barangays with responses in their area)
+    - Compliance summary (pass/fail counts, rates)
+    - Governance area performance
+    - Top failing indicators
+    - Aggregated CapDev summary
+    - Barangay status list
 
     Args:
         year: Optional year filter (e.g., 2024, 2025)
@@ -475,11 +486,17 @@ async def get_validator_dashboard(
         Assessor dashboard with all sections filtered by governance area
     """
     try:
-        # Ensure user has assessor_area_id (area-specific after workflow restructuring)
-        if current_user.assessor_area_id is None:
+        # Validators have system-wide access (assessor_area_id = None)
+        # Assessors have area-specific access (assessor_area_id = 1-6)
+        is_validator = current_user.role == UserRole.VALIDATOR
+        is_assessor = (
+            current_user.role == UserRole.ASSESSOR and current_user.assessor_area_id is not None
+        )
+
+        if not (is_validator or is_assessor):
             raise HTTPException(
                 status_code=403,
-                detail="This endpoint is only available for assessors with an assigned governance area",
+                detail="This endpoint is only available for validators or assessors with an assigned governance area",
             )
 
         dashboard = assessor_service.get_validator_dashboard(
@@ -772,6 +789,96 @@ async def delete_annotation(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete annotation: {str(e)}")
+
+
+# =============================================================================
+# Per-MOV Assessor Feedback Endpoints (Epic 6.0)
+# =============================================================================
+
+
+@router.patch(
+    "/movs/{mov_file_id}/feedback",
+    response_model=MOVAssessorFeedbackResponse,
+    tags=["assessor"],
+    summary="Update per-MOV assessor feedback",
+)
+async def update_mov_assessor_feedback(
+    mov_file_id: int,
+    feedback: MOVAssessorFeedbackUpdate,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_assessor_user),
+):
+    """
+    Update assessor notes and rework flag for a specific MOV file.
+
+    Assessors can add general notes about a MOV file and flag it for rework.
+    The rework flag auto-toggles ON when notes are added, but can be manually
+    toggled OFF by the assessor.
+
+    **Path Parameters:**
+    - mov_file_id: ID of the MOV file to update
+
+    **Request Body:**
+    - assessor_notes: Optional general notes about this MOV
+    - flagged_for_rework: Optional flag indicating MOV needs rework
+
+    **Returns:** Updated MOV assessor feedback
+
+    **Raises:**
+    - 404: MOV file not found
+    - 403: User not authorized to update this MOV
+    """
+    try:
+        result = assessor_service.update_mov_assessor_feedback(
+            db=db,
+            mov_file_id=mov_file_id,
+            assessor_id=current_assessor.id,
+            assessor_notes=feedback.assessor_notes,
+            flagged_for_rework=feedback.flagged_for_rework,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update MOV feedback: {str(e)}")
+
+
+@router.get(
+    "/movs/{mov_file_id}/feedback",
+    response_model=MOVAssessorFeedbackResponse,
+    tags=["assessor"],
+    summary="Get per-MOV assessor feedback",
+)
+async def get_mov_assessor_feedback(
+    mov_file_id: int,
+    db: Session = Depends(deps.get_db),
+    current_assessor: User = Depends(deps.get_current_assessor_user),
+):
+    """
+    Get assessor feedback for a specific MOV file.
+
+    Returns the assessor notes and rework flag for the specified MOV file.
+
+    **Path Parameters:**
+    - mov_file_id: ID of the MOV file
+
+    **Returns:** MOV assessor feedback data
+
+    **Raises:**
+    - 404: MOV file not found
+    """
+    try:
+        result = assessor_service.get_mov_assessor_feedback(
+            db=db,
+            mov_file_id=mov_file_id,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get MOV feedback: {str(e)}")
 
 
 # =============================================================================

@@ -1,8 +1,9 @@
 "use client";
 
 import { getGovernanceAreaLogo } from "@/lib/governance-area-logos";
-import { GovernanceArea, Indicator } from "@/types/assessment";
+import { AreaStatusType, GovernanceArea, Indicator } from "@/types/assessment";
 import { AlertCircle, Building2, CheckCircle, ChevronRight, Circle, Folder } from "lucide-react";
+import { AreaSubmitButton } from "./AreaSubmitButton";
 import Image from "next/image";
 
 // BBI indicator codes per DILG MC 2024-417
@@ -23,6 +24,11 @@ interface AssessmentTreeNodeProps {
     total: number;
     percentage: number;
   };
+  // Per-area submission props (only for area type)
+  assessmentId?: string;
+  areaStatus?: AreaStatusType;
+  assessmentStatus?: string;
+  onAreaSubmitSuccess?: () => void;
 }
 
 export function AssessmentTreeNode({
@@ -35,6 +41,10 @@ export function AssessmentTreeNode({
   onClick,
   level = 0,
   progress,
+  assessmentId,
+  areaStatus = "draft",
+  assessmentStatus,
+  onAreaSubmitSuccess,
 }: AssessmentTreeNodeProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -192,10 +202,24 @@ export function AssessmentTreeNode({
             </span>
             {progress && (
               <span
-                className={`text-xs ${isActive ? "text-[var(--foreground)]/70" : "text-[var(--text-secondary)]"} flex-shrink-0 ml-auto`}
+                className={`text-xs ${isActive ? "text-[var(--foreground)]/70" : "text-[var(--text-secondary)]"} flex-shrink-0`}
               >
                 {progress.completed}/{progress.total}
               </span>
+            )}
+            {/* Per-area submit button */}
+            {assessmentId && onAreaSubmitSuccess && (
+              <div className="flex-shrink-0 ml-auto">
+                <AreaSubmitButton
+                  assessmentId={assessmentId}
+                  governanceAreaId={(item as GovernanceArea).id}
+                  governanceAreaName={(item as GovernanceArea).name}
+                  areaStatus={areaStatus}
+                  isComplete={progress?.percentage === 100}
+                  assessmentStatus={assessmentStatus || "draft"}
+                  onSubmitSuccess={onAreaSubmitSuccess}
+                />
+              </div>
             )}
           </>
         ) : (

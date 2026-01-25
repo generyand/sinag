@@ -641,10 +641,20 @@ class MOVFile(Base):
         DateTime, nullable=True, index=True
     )  # Soft delete support
 
+    # Per-MOV Assessor Feedback (Epic 6.0)
+    # Assessor can add general notes and flag individual MOVs for rework
+    assessor_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    flagged_for_rework: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    flagged_by_assessor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    flagged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     # Relationships
     assessment = relationship("Assessment", back_populates="mov_files")
     indicator = relationship("Indicator", back_populates="mov_files")
     uploader = relationship("User", foreign_keys=[uploaded_by])
+    flagged_by = relationship("User", foreign_keys=[flagged_by_assessor_id])
 
 
 class FeedbackComment(Base):

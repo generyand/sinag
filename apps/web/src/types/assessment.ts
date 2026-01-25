@@ -24,6 +24,19 @@ export type ComplianceAnswer = "yes" | "no" | "na";
 
 export type IndicatorStatus = "not_started" | "completed" | "needs_rework";
 
+export type AreaStatusType = "draft" | "submitted" | "in_review" | "rework" | "approved";
+
+export interface AreaSubmissionStatus {
+  status: AreaStatusType;
+  submitted_at?: string;
+  approved_at?: string;
+  rework_requested_at?: string;
+  rework_comments?: string;
+  resubmitted_at?: string;
+  assessor_id?: number;
+  is_resubmission?: boolean;
+}
+
 export interface GovernanceArea {
   id: string;
   name: string;

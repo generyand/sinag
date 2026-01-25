@@ -425,3 +425,56 @@ export function getAreasBreakdown(areaApprovalStatus: Record<string, boolean>): 
 
   return { approved, missing };
 }
+
+/**
+ * Area breakdown with assessor information for display.
+ */
+export interface AreaWithAssessor {
+  areaId: number;
+  areaName: string;
+  assessorName?: string;
+}
+
+/**
+ * Gets the breakdown of approved vs missing governance areas with assessor names.
+ * Shows which assessor has submitted their review for each area.
+ */
+export function getAreasBreakdownWithAssessors(
+  areaApprovalStatus: Record<string, boolean>,
+  reviewers: ReviewerInfo[]
+): {
+  approved: AreaWithAssessor[];
+  missing: AreaWithAssessor[];
+} {
+  const approved: AreaWithAssessor[] = [];
+  const missing: AreaWithAssessor[] = [];
+
+  // Create a map of governance area ID to assessor info
+  const areaToAssessor = new Map<number, ReviewerInfo>();
+  for (const reviewer of reviewers) {
+    if (reviewer.role === "assessor" && reviewer.governanceAreaId) {
+      areaToAssessor.set(reviewer.governanceAreaId, reviewer);
+    }
+  }
+
+  for (let i = 1; i <= 6; i++) {
+    const areaName = GOVERNANCE_AREA_SHORT_NAMES[i];
+    const assessor = areaToAssessor.get(i);
+
+    if (areaApprovalStatus[String(i)]) {
+      approved.push({
+        areaId: i,
+        areaName,
+        assessorName: assessor?.name,
+      });
+    } else {
+      missing.push({
+        areaId: i,
+        areaName,
+        assessorName: assessor?.name,
+      });
+    }
+  }
+
+  return { approved, missing };
+}

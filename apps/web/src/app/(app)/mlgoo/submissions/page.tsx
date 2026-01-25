@@ -8,7 +8,7 @@ import {
   SubmissionsEmptyState,
   SubmissionsMobileList,
   SubmissionsSkeleton,
-  getAreasBreakdown,
+  getAreasBreakdownWithAssessors,
   getProgressBarColor,
   getStatusConfig,
   getStatusClickTooltip,
@@ -50,16 +50,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 /**
  * Mini-dashboard display for reviewers and progress.
- * Row 1: Assessors progress (X/6) with tooltip showing area breakdown
+ * Row 1: Assessors progress (X/6) with tooltip showing area breakdown and assessor names
  * Row 2: Validator status based on assessment phase
  */
 function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel }) {
-  const { areasApprovedCount, areaApprovalStatus } = submission;
+  const { areasApprovedCount, areaApprovalStatus, reviewers } = submission;
   const isComplete = areasApprovedCount === 6;
 
   // Use shared utility functions
   const validatorDisplay = getValidatorDisplayStatus(submission);
-  const { approved, missing } = getAreasBreakdown(areaApprovalStatus);
+  const { approved, missing } = getAreasBreakdownWithAssessors(areaApprovalStatus, reviewers);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -91,21 +91,41 @@ function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel
           <TooltipContent
             side="bottom"
             align="start"
-            className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-xs"
+            className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-sm"
           >
-            <div className="space-y-2 text-xs">
+            <div className="space-y-3 text-xs">
               {approved.length > 0 && (
                 <div>
-                  <span className="font-semibold text-green-600 dark:text-green-400">
-                    Reviewed:
-                  </span>
-                  <span className="ml-1 text-[var(--foreground)]">{approved.join(", ")}</span>
+                  <div className="font-semibold text-green-600 dark:text-green-400 mb-1.5">
+                    Reviewed ({approved.length}):
+                  </div>
+                  <ul className="space-y-1 ml-2">
+                    {approved.map((area) => (
+                      <li key={area.areaId} className="text-[var(--foreground)]">
+                        <span className="font-medium">{area.areaName}</span>
+                        {area.assessorName && (
+                          <span className="text-[var(--muted-foreground)]">
+                            {" "}
+                            — {area.assessorName}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
               {missing.length > 0 && (
                 <div>
-                  <span className="font-semibold text-amber-600 dark:text-amber-400">Missing:</span>
-                  <span className="ml-1 text-[var(--foreground)]">{missing.join(", ")}</span>
+                  <div className="font-semibold text-amber-600 dark:text-amber-400 mb-1.5">
+                    Missing ({missing.length}):
+                  </div>
+                  <ul className="space-y-1 ml-2">
+                    {missing.map((area) => (
+                      <li key={area.areaId} className="text-[var(--foreground)]">
+                        {area.areaName}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

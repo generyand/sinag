@@ -14,9 +14,12 @@ import {
 } from "@/components/features/assessments/tree-navigation";
 import { useAssessmentValidation, useCurrentAssessment } from "@/hooks/useAssessment";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useGetBlguDashboardAssessmentId } from "@sinag/shared";
+import {
+  useGetAssessmentsAssessmentIdAreaStatus,
+  useGetBlguDashboardAssessmentId,
+} from "@sinag/shared";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function BLGUAssessmentsPage() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -26,7 +29,7 @@ export default function BLGUAssessmentsPage() {
   const router = useRouter();
 
   // Fetch MOV annotations for rework workflow
-  const { data: dashboardData } = useGetBlguDashboardAssessmentId(
+  const { data: dashboardData, refetch: refetchDashboard } = useGetBlguDashboardAssessmentId(
     assessment ? parseInt(assessment.id) : 0,
     undefined,
     {
@@ -35,6 +38,20 @@ export default function BLGUAssessmentsPage() {
       } as any,
     }
   );
+
+  // Fetch per-area submission status
+  const { data: areaStatusData, refetch: refetchAreaStatus } =
+    useGetAssessmentsAssessmentIdAreaStatus(assessment ? parseInt(assessment.id) : 0, {
+      query: {
+        enabled: !!assessment?.id,
+      } as any,
+    });
+
+  // Handler for when an area is successfully submitted
+  const handleAreaSubmitSuccess = useCallback(() => {
+    refetchAreaStatus();
+    refetchDashboard();
+  }, [refetchAreaStatus, refetchDashboard]);
 
   // Epic 5.0: Trust the backend's completion count
   // The backend correctly tracks is_completed for indicators during rework.
@@ -224,8 +241,7 @@ export default function BLGUAssessmentsPage() {
             calibrationGovernanceAreaNames={(
               (dashboardData as any)?.calibration_governance_areas || []
             ).map((a: any) => a.governance_area_name)}
-            reworkSubmittedAt={(dashboardData as any)?.rework_submitted_at}
-            calibrationSubmittedAt={(dashboardData as any)?.calibration_submitted_at}
+            areaStatusData={areaStatusData as any}
           />
         </div>
       </header>
@@ -241,6 +257,8 @@ export default function BLGUAssessmentsPage() {
             assessment={assessment}
             selectedIndicatorId={selectedIndicatorId}
             onIndicatorSelect={handleIndicatorSelect}
+            areaStatusData={areaStatusData as any}
+            onAreaSubmitSuccess={handleAreaSubmitSuccess}
           />
         </nav>
 
@@ -273,7 +291,10 @@ export default function BLGUAssessmentsPage() {
 
       {/* Mobile: Floating Action Button - Only show when an indicator is selected */}
       {selectedIndicatorId && (
-        <MobileNavButton progress={progressPercentage} onClick={() => setIsMobileDrawerOpen(true)} />
+        <MobileNavButton
+          progress={progressPercentage}
+          onClick={() => setIsMobileDrawerOpen(true)}
+        />
       )}
     </div>
   );

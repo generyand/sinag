@@ -4,6 +4,8 @@
 // 🏷️  Based on FastAPI tag: "movs"
 
 import type { FlaggedMovFileItemIndicatorCode } from '../indicators';
+import type { MOVFileResponseAssessorNotes } from '../assessor';
+import type { MOVFileResponseFlaggedByAssessorId } from '../assessor';
 import type { NotificationResult } from '../notifications';
 
 /**
@@ -222,6 +224,10 @@ export interface MOVFileResponse {
   uploaded_at: MOVFileResponseUploadedAt;
   deleted_at?: MOVFileResponseDeletedAt;
   field_id?: MOVFileResponseFieldId;
+  assessor_notes?: MOVFileResponseAssessorNotes;
+  flagged_for_rework?: boolean;
+  flagged_by_assessor_id?: MOVFileResponseFlaggedByAssessorId;
+  flagged_at?: MOVFileResponseFlaggedAt;
 }
 
 
@@ -235,6 +241,12 @@ export type MOVFileResponseDeletedAt = string | null;
  * MOVFileResponseFieldId
  */
 export type MOVFileResponseFieldId = string | null;
+
+
+/**
+ * MOVFileResponseFlaggedAt
+ */
+export type MOVFileResponseFlaggedAt = string | null;
 
 
 /**

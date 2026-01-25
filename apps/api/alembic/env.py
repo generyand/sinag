@@ -3,7 +3,7 @@ import sys
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 
 # Add the parent directory to sys.path so we can import our app
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -78,6 +78,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # Set a longer statement timeout for migrations (5 minutes)
+        # This is needed for ALTER TABLE operations on larger tables in remote DB
+        connection.execute(text("SET statement_timeout = '300s'"))
+        connection.commit()
+
         context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():

@@ -1163,6 +1163,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               size="sm"
               type="button"
               onClick={() => {
+                // Check if any indicators are flagged for calibration
+                const hasCalibrationFlags = Object.values(calibrationFlags).some((v) => v === true);
+                if (hasCalibrationFlags) {
+                  toast.warning("Cannot finalize with calibration flags", {
+                    description:
+                      "Remove all calibration flags or use 'Submit for Calibration' instead.",
+                    duration: 5000,
+                  });
+                  return;
+                }
                 // Check if compliance overview is completed (all validation_status confirmed)
                 if (!allConfirmed) {
                   toast.warning("Complete Compliance Overview", {
@@ -1180,13 +1190,23 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 }
                 setShowFinalizeConfirm(true);
               }}
-              disabled={finalizeMut.isPending}
+              disabled={
+                finalizeMut.isPending || Object.values(calibrationFlags).some((v) => v === true)
+              }
               className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
-              style={{ background: allConfirmed ? "var(--success)" : "var(--muted)" }}
+              style={{
+                background: Object.values(calibrationFlags).some((v) => v === true)
+                  ? "var(--muted)"
+                  : allConfirmed
+                    ? "var(--success)"
+                    : "var(--muted)",
+              }}
               title={
-                !allConfirmed
-                  ? `Complete Compliance Overview first (${confirmedCount}/${total} confirmed)`
-                  : undefined
+                Object.values(calibrationFlags).some((v) => v === true)
+                  ? "Cannot finalize while indicators are flagged for calibration. Remove all calibration flags or use 'Submit for Calibration' instead."
+                  : !allConfirmed
+                    ? `Complete Compliance Overview first (${confirmedCount}/${total} confirmed)`
+                    : undefined
               }
             >
               {finalizeMut.isPending ? (

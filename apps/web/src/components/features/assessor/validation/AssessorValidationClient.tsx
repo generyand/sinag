@@ -484,11 +484,21 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             const hasLocalComments =
               form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
 
-            // Only check OLD persisted data if NOT requiring rework
+            // Check if indicator has new MOV files uploaded after rework request
+            // If BLGU uploaded new files, the assessor needs to review them fresh
+            const hasNewMovsAfterRework =
+              reworkRequestedAt &&
+              ((resp.movs as any[]) || []).some((mov: any) => {
+                const uploadedAt = mov.uploaded_at;
+                if (!uploadedAt) return false;
+                return new Date(uploadedAt) > new Date(reworkRequestedAt);
+              });
+
+            // Only check OLD persisted data if NOT requiring rework AND no new MOVs uploaded after rework
             let hasPersistedChecklistData = false;
             let hasPersistedComments = false;
 
-            if (!resp.requires_rework) {
+            if (!resp.requires_rework && !hasNewMovsAfterRework) {
               // Check backend response_data for persisted checklist data
               // Check both assessor_val_ and validator_val_ prefixes
               const responseData = (resp as AnyRecord).response_data || {};
@@ -515,13 +525,17 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             // BUT: If requires_rework is true, the flag was used to SEND for rework - it doesn't mean "completed"
             const hasReworkFlag = resp.id in reworkFlags;
 
-            // IMPORTANT: If requires_rework is true, we're WAITING for BLGU to respond
-            // The rework flag means we flagged it FOR rework, not that we've completed reviewing it
+            // IMPORTANT: Indicator needs re-review if:
+            // 1. requires_rework is true (assessor flagged it, waiting for BLGU), OR
+            // 2. BLGU uploaded new MOVs after rework (needs fresh assessor review)
             const isWaitingForBlgu = resp.requires_rework === true;
+            const needsReReview = isWaitingForBlgu || hasNewMovsAfterRework;
 
             console.log(`[Status Calc] Response ${resp.id}:`, {
               requires_rework: resp.requires_rework,
               isWaitingForBlgu,
+              hasNewMovsAfterRework,
+              needsReReview,
               hasChecklistData,
               hasLocalComments,
               hasPersistedComments,
@@ -529,10 +543,10 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               hasReworkFlag,
             });
 
-            // If indicator is waiting for BLGU (requires_rework=true), show as needs_rework
-            // unless assessor has done NEW work in this session (local checklist/comments)
-            if (isWaitingForBlgu) {
-              // Only show as completed if assessor did NEW work after BLGU resubmitted
+            // If indicator needs re-review (requires_rework=true OR has new MOVs after rework),
+            // show as needs_rework unless assessor has done NEW work in this session
+            if (needsReReview) {
+              // Only show as completed if assessor did NEW checklist work after BLGU uploaded
               if (hasChecklistData || hasLocalComments) {
                 status = "completed";
                 console.log(
@@ -541,7 +555,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               } else {
                 status = "needs_rework";
                 console.log(
-                  `[Status Calc] Response ${resp.id} → 'needs_rework' (waiting for BLGU)`
+                  `[Status Calc] Response ${resp.id} → 'needs_rework' (needs assessor re-review)`
                 );
               }
             }
@@ -581,7 +595,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           return area;
         }),
     };
-  }, [responses, checklistData, form, dataUpdatedAt, reworkFlags]); // Add dataUpdatedAt to force recalc when data refetches
+  }, [responses, checklistData, form, dataUpdatedAt, reworkFlags, reworkRequestedAt]); // Add dataUpdatedAt to force recalc when data refetches, reworkRequestedAt for new MOV detection
 
   // Conditional returns AFTER all hooks to maintain hook order
   if (isLoading) {
@@ -1610,17 +1624,21 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={isAnyActionPending || isAreaApproved}
+                disabled={isAnyActionPending || isAreaApproved || hasIndicatorsFlaggedForRework}
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
-                style={{ background: "var(--success)" }}
+                style={{
+                  background: hasIndicatorsFlaggedForRework ? "var(--muted)" : "var(--success)",
+                }}
                 title={
-                  isAreaLocked
-                    ? myAreaStatus === "rework"
-                      ? "Area is sent for rework. Waiting for BLGU to resubmit."
-                      : "Area is already reviewed and approved."
-                    : !allReviewed
-                      ? "Review all indicators before approving"
-                      : undefined
+                  hasIndicatorsFlaggedForRework
+                    ? "Cannot approve area while indicators are flagged for rework. Remove all rework flags or use 'Compile and Send for Rework' instead."
+                    : isAreaLocked
+                      ? myAreaStatus === "rework"
+                        ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                        : "Area is already reviewed and approved."
+                      : !allReviewed
+                        ? "Review all indicators before approving"
+                        : undefined
                 }
               >
                 {finalizeMut.isPending || areaApproveMut.isPending ? (

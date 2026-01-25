@@ -577,7 +577,13 @@ class MOVFileResponse(BaseModel):
     deleted_at: datetime | None = None
     field_id: str | None = None
 
-    @field_serializer("uploaded_at", "deleted_at")
+    # Per-MOV assessor feedback fields (Epic 6.0)
+    assessor_notes: str | None = None
+    flagged_for_rework: bool = False
+    flagged_by_assessor_id: int | None = None
+    flagged_at: datetime | None = None
+
+    @field_serializer("uploaded_at", "deleted_at", "flagged_at")
     def serialize_datetime(self, dt: datetime | None, _info) -> str | None:
         """Serialize datetime to ISO format with Z suffix for UTC."""
         if dt is None:
