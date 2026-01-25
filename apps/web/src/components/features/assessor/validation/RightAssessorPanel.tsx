@@ -1665,7 +1665,7 @@ export function RightAssessorPanel({
                         </div>
                         <Textarea
                           {...register(`${key}.publicComment` as const)}
-                          placeholder="Provide clear, actionable feedback for BLGU to address for rework."
+                          placeholder="Add notes or feedback about this indicator..."
                           className={errorsFor ? "border-red-500" : undefined}
                         />
                         {errorsFor ? (
