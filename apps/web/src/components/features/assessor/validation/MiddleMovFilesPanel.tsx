@@ -3,7 +3,6 @@
 import { FileList } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
@@ -769,29 +768,26 @@ export function MiddleMovFilesPanel({
                           />
                         </div>
 
-                        {/* Flag for Rework Toggle */}
-                        <div className="flex items-center justify-between p-3 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                          <div className="flex items-center gap-2">
-                            <AlertTriangle
-                              className={`h-4 w-4 ${flaggedForRework ? "text-orange-500" : "text-slate-400"}`}
-                            />
-                            <Label
-                              htmlFor="flag-rework"
-                              className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
-                            >
-                              Flag for Rework
-                            </Label>
-                          </div>
-                          <Switch
-                            id="flag-rework"
-                            checked={flaggedForRework}
-                            onCheckedChange={handleFlagChange}
-                          />
-                        </div>
+                        {/* Flag for Rework Toggle Button */}
+                        <Button
+                          type="button"
+                          variant={flaggedForRework ? "destructive" : "outline"}
+                          size="sm"
+                          className={`w-full justify-start gap-2 ${
+                            flaggedForRework
+                              ? ""
+                              : "border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-800 dark:hover:text-orange-200"
+                          }`}
+                          onClick={() => handleFlagChange(!flaggedForRework)}
+                        >
+                          <AlertTriangle className="h-4 w-4" />
+                          {flaggedForRework ? "Flagged for Rework" : "Flag for Rework"}
+                        </Button>
 
                         {flaggedForRework && (
                           <p className="text-xs text-orange-600 dark:text-orange-400">
-                            This MOV will be marked for BLGU to revise
+                            This MOV will be marked for BLGU to revise. Click again to remove the
+                            flag.
                           </p>
                         )}
 
