@@ -2,13 +2,22 @@
 
 import { FileList } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
-import { FileIcon, Loader2, X } from "lucide-react";
+import {
+  getGetAssessorMovsMovFileIdFeedbackQueryKey,
+  useGetAssessorMovsMovFileIdFeedback,
+  usePatchAssessorMovsMovFileIdFeedback,
+} from "@sinag/shared";
+import { AlertTriangle, FileIcon, Loader2, Save, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
+import toast from "react-hot-toast";
 
 // Dynamically import PdfAnnotator to avoid SSR issues
 const PdfAnnotator = dynamic(() => import("@/components/shared/PdfAnnotator"), {
@@ -288,6 +297,81 @@ export function MiddleMovFilesPanel({
     createAnnotation,
     deleteAnnotation,
   } = useMovAnnotations(selectedFile?.id || null);
+
+  // State for per-MOV assessor feedback
+  const [assessorNotes, setAssessorNotes] = React.useState("");
+  const [flaggedForRework, setFlaggedForRework] = React.useState(false);
+  const [feedbackDirty, setFeedbackDirty] = React.useState(false);
+
+  // Fetch existing feedback when a file is selected
+  const movFileId = selectedFile?.id || 0;
+  const { data: feedbackData, isLoading: feedbackLoading } = useGetAssessorMovsMovFileIdFeedback(
+    movFileId,
+    {
+      query: {
+        queryKey: getGetAssessorMovsMovFileIdFeedbackQueryKey(movFileId),
+        enabled: !!selectedFile?.id && isAnnotating,
+        staleTime: 0, // Always refetch when opening
+      },
+    }
+  );
+
+  // Update feedback mutation
+  const updateFeedbackMutation = usePatchAssessorMovsMovFileIdFeedback({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Feedback saved");
+        setFeedbackDirty(false);
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to save feedback");
+      },
+    },
+  });
+
+  // Sync local state with fetched data
+  React.useEffect(() => {
+    if (feedbackData) {
+      setAssessorNotes(feedbackData.assessor_notes || "");
+      setFlaggedForRework(feedbackData.flagged_for_rework || false);
+      setFeedbackDirty(false);
+    }
+  }, [feedbackData]);
+
+  // Reset feedback state when closing modal
+  React.useEffect(() => {
+    if (!isAnnotating) {
+      setAssessorNotes("");
+      setFlaggedForRework(false);
+      setFeedbackDirty(false);
+    }
+  }, [isAnnotating]);
+
+  // Auto-toggle flag when notes are added
+  const handleNotesChange = (value: string) => {
+    setAssessorNotes(value);
+    setFeedbackDirty(true);
+    // Auto-enable flag when notes are added (if not already enabled)
+    if (value.trim() && !flaggedForRework) {
+      setFlaggedForRework(true);
+    }
+  };
+
+  const handleFlagChange = (checked: boolean) => {
+    setFlaggedForRework(checked);
+    setFeedbackDirty(true);
+  };
+
+  const handleSaveFeedback = () => {
+    if (!selectedFile?.id) return;
+    updateFeedbackMutation.mutate({
+      movFileId: selectedFile.id,
+      data: {
+        assessor_notes: assessorNotes || null,
+        flagged_for_rework: flaggedForRework,
+      },
+    });
+  };
 
   const handlePreview = (file: any) => {
     // Set selected file for preview (works for both PDF and images)
@@ -652,55 +736,128 @@ export function MiddleMovFilesPanel({
               </div>
 
               {/* Comments Sidebar - Hidden on mobile, visible on desktop */}
-              {selectedFile.file_type === "application/pdf" ? (
-                // PDF Annotations Sidebar
-                <div className="hidden md:flex w-72 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
-                  <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                    Comments ({pdfAnnotations.length})
-                  </h3>
-                  <div className="flex-1 overflow-y-auto space-y-3">
-                    {pdfAnnotations.length === 0 ? (
-                      <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
-                        No comments yet. Select text to add a highlight with a comment.
+              {(selectedFile.file_type === "application/pdf" ||
+                selectedFile.file_type?.startsWith("image/")) && (
+                <div className="hidden md:flex w-80 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
+                  {/* Assessor Feedback Section */}
+                  <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 className="font-semibold text-sm mb-3 text-slate-900 dark:text-slate-100">
+                      Assessor Feedback
+                    </h3>
+
+                    {feedbackLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-500">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading...
                       </div>
                     ) : (
-                      pdfAnnotations.map((ann, idx) => (
-                        <div
-                          key={ann.id}
-                          className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-                        >
-                          <div className="flex items-start gap-2 mb-2">
-                            <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
-                              #{idx + 1}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
-                              className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
-                            {ann.comment || "(No comment)"}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Page {ann.page + 1}
-                          </p>
+                      <div className="space-y-4">
+                        {/* Assessor's Notes */}
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="assessor-notes"
+                            className="text-xs font-medium text-slate-700 dark:text-slate-300"
+                          >
+                            Assessor&apos;s Notes
+                          </Label>
+                          <Textarea
+                            id="assessor-notes"
+                            placeholder="Add notes about this MOV..."
+                            value={assessorNotes}
+                            onChange={(e) => handleNotesChange(e.target.value)}
+                            className="min-h-[80px] text-sm resize-none"
+                          />
                         </div>
-                      ))
+
+                        {/* Flag for Rework Toggle */}
+                        <div className="flex items-center justify-between p-3 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle
+                              className={`h-4 w-4 ${flaggedForRework ? "text-orange-500" : "text-slate-400"}`}
+                            />
+                            <Label
+                              htmlFor="flag-rework"
+                              className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+                            >
+                              Flag for Rework
+                            </Label>
+                          </div>
+                          <Switch
+                            id="flag-rework"
+                            checked={flaggedForRework}
+                            onCheckedChange={handleFlagChange}
+                          />
+                        </div>
+
+                        {flaggedForRework && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400">
+                            This MOV will be marked for BLGU to revise
+                          </p>
+                        )}
+
+                        {/* Save Button */}
+                        <Button
+                          onClick={handleSaveFeedback}
+                          disabled={!feedbackDirty || updateFeedbackMutation.isPending}
+                          size="sm"
+                          className="w-full"
+                        >
+                          {updateFeedbackMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Save className="h-4 w-4 mr-2" />
+                          )}
+                          Save Feedback
+                        </Button>
+                      </div>
                     )}
                   </div>
-                </div>
-              ) : selectedFile.file_type?.startsWith("image/") ? (
-                // Image Annotations Sidebar
-                <div className="hidden md:flex w-72 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
+
+                  {/* Annotations Section */}
                   <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                    Annotations ({imageAnnotations.length})
+                    {selectedFile.file_type === "application/pdf" ? "Comments" : "Annotations"} (
+                    {selectedFile.file_type === "application/pdf"
+                      ? pdfAnnotations.length
+                      : imageAnnotations.length}
+                    )
                   </h3>
                   <div className="flex-1 overflow-y-auto space-y-3">
-                    {imageAnnotations.length === 0 ? (
+                    {selectedFile.file_type === "application/pdf" ? (
+                      // PDF Annotations
+                      pdfAnnotations.length === 0 ? (
+                        <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
+                          No comments yet. Select text to add a highlight with a comment.
+                        </div>
+                      ) : (
+                        pdfAnnotations.map((ann, idx) => (
+                          <div
+                            key={ann.id}
+                            className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                          >
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
+                                #{idx + 1}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
+                                className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
+                              {ann.comment || "(No comment)"}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Page {ann.page + 1}
+                            </p>
+                          </div>
+                        ))
+                      )
+                    ) : // Image Annotations
+                    imageAnnotations.length === 0 ? (
                       <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
                         No annotations yet. Draw a rectangle on the image and add a comment.
                       </div>
@@ -731,7 +888,7 @@ export function MiddleMovFilesPanel({
                     )}
                   </div>
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
         </div>
