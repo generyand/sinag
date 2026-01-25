@@ -2,7 +2,15 @@
 
 import { getGovernanceAreaLogo } from "@/lib/governance-area-logos";
 import { AreaStatusType, GovernanceArea, Indicator } from "@/types/assessment";
-import { AlertCircle, Building2, CheckCircle, ChevronRight, Circle, Folder } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Building2,
+  CheckCircle,
+  ChevronRight,
+  Circle,
+  Folder,
+} from "lucide-react";
 import { AreaSubmitButton } from "./AreaSubmitButton";
 import Image from "next/image";
 
@@ -136,6 +144,8 @@ export function AssessmentTreeNode({
     switch (indicator.status) {
       case "completed":
         return <CheckCircle className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />;
+      case "flagged_for_rework":
+        return <AlertTriangle className="h-3.5 w-3.5 text-orange-500" aria-hidden="true" />;
       case "needs_rework":
         return <AlertCircle className="h-3.5 w-3.5 text-orange-500" aria-hidden="true" />;
       default:

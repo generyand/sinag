@@ -209,6 +209,41 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     }
   };
 
+  // Callback when assessor saves MOV feedback with rework flag - update state for progress indicator
+  const handleReworkFlagSaved = (responseId: number, movFileId: number, flagged: boolean) => {
+    console.log(
+      "[AssessorValidationClient] handleReworkFlagSaved:",
+      responseId,
+      "movFileId:",
+      movFileId,
+      "flagged:",
+      flagged
+    );
+    setReworkFlags((prev) => {
+      if (flagged) {
+        // Add file to the set for this response
+        const existingSet = prev[responseId] || new Set();
+        const newSet = new Set(existingSet);
+        newSet.add(movFileId);
+        return { ...prev, [responseId]: newSet };
+      } else {
+        // Remove file from the set
+        const existingSet = prev[responseId];
+        if (!existingSet) return prev;
+
+        const newSet = new Set(existingSet);
+        newSet.delete(movFileId);
+
+        // If set is now empty, remove the entry entirely
+        if (newSet.size === 0) {
+          const { [responseId]: _, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [responseId]: newSet };
+      }
+    });
+  };
+
   // Set initial expandedId when data loads
   useEffect(() => {
     if (data && expandedId === null) {
@@ -548,10 +583,18 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             if (needsReReview) {
               // Only show as completed if assessor did NEW checklist work after BLGU uploaded
               if (hasChecklistData || hasLocalComments) {
-                status = "completed";
-                console.log(
-                  `[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`
-                );
+                // Check if any MOV is flagged for rework - show different status
+                if (hasReworkFlag) {
+                  status = "flagged_for_rework";
+                  console.log(
+                    `[Status Calc] Response ${resp.id} → 'flagged_for_rework' (has rework flag)`
+                  );
+                } else {
+                  status = "completed";
+                  console.log(
+                    `[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`
+                  );
+                }
               } else {
                 status = "needs_rework";
                 console.log(
@@ -567,8 +610,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               hasPersistedChecklistData ||
               hasReworkFlag
             ) {
-              status = "completed";
-              console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
+              // Differentiate between flagged for rework vs completed (BLGU complied)
+              if (hasReworkFlag) {
+                status = "flagged_for_rework";
+                console.log(
+                  `[Status Calc] Response ${resp.id} → 'flagged_for_rework' (has MOV flagged for rework)`
+                );
+              } else {
+                status = "completed";
+                console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
+              }
             }
           }
 
@@ -1255,6 +1306,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                   separationLabel="After Rework"
                   onAnnotationCreated={handleAnnotationCreated}
                   onAnnotationDeleted={handleAnnotationDeleted}
+                  onReworkFlagSaved={handleReworkFlagSaved}
                 />
               </div>
             )}

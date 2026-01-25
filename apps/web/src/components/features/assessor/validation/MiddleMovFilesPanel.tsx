@@ -161,6 +161,8 @@ interface MiddleMovFilesPanelProps {
     movFileId: number,
     remainingCountForFile: number
   ) => void;
+  /** Callback when rework flag is saved (for updating progress indicator) */
+  onReworkFlagSaved?: (responseId: number, movFileId: number, flagged: boolean) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -173,6 +175,7 @@ export function MiddleMovFilesPanel({
   separationLabel = "After Calibration",
   onAnnotationCreated,
   onAnnotationDeleted,
+  onReworkFlagSaved,
 }: MiddleMovFilesPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
@@ -319,9 +322,17 @@ export function MiddleMovFilesPanel({
   // Update feedback mutation
   const updateFeedbackMutation = usePatchAssessorMovsMovFileIdFeedback({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         toast.success("Feedback saved");
         setFeedbackDirty(false);
+        // Notify parent about rework flag change for progress indicator update
+        if (expandedId && onReworkFlagSaved) {
+          onReworkFlagSaved(
+            expandedId,
+            variables.movFileId,
+            variables.data.flagged_for_rework ?? false
+          );
+        }
       },
       onError: (error: any) => {
         toast.error(error?.message || "Failed to save feedback");

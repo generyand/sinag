@@ -22,7 +22,7 @@ export type AssessmentStatus =
 
 export type ComplianceAnswer = "yes" | "no" | "na";
 
-export type IndicatorStatus = "not_started" | "completed" | "needs_rework";
+export type IndicatorStatus = "not_started" | "completed" | "needs_rework" | "flagged_for_rework";
 
 export type AreaStatusType = "draft" | "submitted" | "in_review" | "rework" | "approved";
 
