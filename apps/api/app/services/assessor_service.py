@@ -95,14 +95,20 @@ class AssessorService:
         is_validator = assessor.role == UserRole.VALIDATOR
 
         if is_assessor:
-            # Assessors: Show all submitted assessments, then filter by area status in Python loop
+            # Assessors: Show assessments where their area might be ready for review
             # NOTE: We removed Indicator.governance_area_id filter here because:
             # 1. Assessments with no responses would have NULL indicator_id, excluding them
             # 2. Assessments with responses only in other areas would be excluded
-            # 3. The proper filtering by area status happens below in the Python loop (lines 150-156)
+            # 3. The proper filtering by area status happens below in the Python loop
+            #
+            # CRITICAL FIX: Include DRAFT status for per-area workflow
+            # In per-area workflow, overall status stays DRAFT until ALL 6 areas are submitted
+            # But individual areas can be submitted while status is still DRAFT
+            # The Python loop below filters by per-area status to show only relevant assessments
             query = query.filter(
                 Assessment.status.in_(
                     [
+                        AssessmentStatus.DRAFT,  # Per-area workflow: status stays DRAFT until all areas submitted
                         AssessmentStatus.SUBMITTED,
                         AssessmentStatus.IN_REVIEW,
                         AssessmentStatus.REWORK,

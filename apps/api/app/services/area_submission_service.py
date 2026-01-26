@@ -107,10 +107,51 @@ class AreaSubmissionService:
         flag_modified(assessment, "area_submission_status")
         flag_modified(assessment, "area_assessor_approved")
 
-        # Update overall assessment status if first submission
-        if assessment.status == AssessmentStatus.DRAFT:
-            assessment.status = AssessmentStatus.SUBMITTED
+        # CRITICAL FIX: Set submitted_at when FIRST area is submitted
+        # This allows the assessment to appear in assessor queues (which filter by submitted_at IS NOT NULL)
+        # The per-area filtering in assessor_service.py will ensure only the correct assessor sees it
+        if assessment.submitted_at is None:
             assessment.submitted_at = now
+            logger.info(
+                f"First area ({governance_area_id}) submitted for assessment {assessment_id}. "
+                f"Setting submitted_at timestamp."
+            )
+
+        # Check if ALL 6 governance areas are now submitted
+        # Only change overall assessment status to SUBMITTED when all areas are submitted
+        all_areas_submitted = self._check_all_areas_submitted(assessment)
+
+        if all_areas_submitted:
+            # All 6 areas are submitted - update overall assessment status
+            # Only change status if it's currently DRAFT (first time all areas submitted)
+            if assessment.status == AssessmentStatus.DRAFT:
+                assessment.status = AssessmentStatus.SUBMITTED
+                logger.info(
+                    f"All 6 governance areas submitted for assessment {assessment_id}. "
+                    f"Overall status changed to SUBMITTED."
+                )
+            else:
+                # Status is already SUBMITTED or something else (legacy data or already processed)
+                # Don't change it, but log for debugging
+                logger.info(
+                    f"All 6 governance areas submitted for assessment {assessment_id}, "
+                    f"but status is already {assessment.status.value}. No change needed."
+                )
+        else:
+            # Not all areas submitted yet - keep status as DRAFT
+            # This ensures the "Assessment Submitted" banner only shows when ALL areas are submitted
+            if assessment.status == AssessmentStatus.SUBMITTED:
+                # Edge case: Status was already SUBMITTED (legacy data), but not all areas are submitted yet
+                # Revert to DRAFT to match the actual state
+                assessment.status = AssessmentStatus.DRAFT
+                logger.warning(
+                    f"Assessment {assessment_id} had SUBMITTED status but not all areas are submitted. "
+                    f"Reverting to DRAFT status."
+                )
+            logger.info(
+                f"Area {governance_area_id} submitted for assessment {assessment_id}. "
+                f"Overall status remains DRAFT (not all areas submitted yet)."
+            )
 
         db.commit()
 
@@ -328,6 +369,38 @@ class AreaSubmissionService:
             if data.get("status") == "rework":
                 return False
 
+        return True
+
+    def _check_all_areas_submitted(self, assessment: Assessment) -> bool:
+        """
+        Check if all 6 governance areas have been submitted.
+
+        An area is considered "submitted" if its status is:
+        - "submitted" (initial submission)
+        - "in_review" (assessor started reviewing)
+        - "rework" (assessor requested rework, but area was submitted)
+        - "approved" (assessor approved, but area was submitted)
+
+        Args:
+            assessment: Assessment instance
+
+        Returns:
+            True if all 6 areas are submitted (not in "draft" status), False otherwise
+        """
+        if not assessment.area_submission_status:
+            return False
+
+        # Check all 6 governance areas (1-6)
+        for area_id in range(1, 7):  # 1 to 6 inclusive
+            area_key = str(area_id)
+            area_data = assessment.area_submission_status.get(area_key, {})
+            area_status = area_data.get("status", "draft")
+
+            # If any area is still in "draft" status, not all areas are submitted
+            if area_status == "draft":
+                return False
+
+        # All 6 areas have a non-draft status (submitted, in_review, rework, or approved)
         return True
 
 
