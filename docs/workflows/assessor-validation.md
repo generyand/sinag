@@ -309,13 +309,14 @@ query = query.filter(
 
 ### 5. Calibration Workflow (Validator Only)
 
-Validators can request **calibration** for indicators in their governance area that need targeted
-corrections. Unlike rework (which is triggered by Assessors), calibration:
+Validators can request **calibration** for indicators in specific governance areas that need
+targeted corrections. Unlike rework (which is triggered by Assessors), calibration:
 
 - Is requested by Validators during final validation
 - Routes BLGU submission back to the **same Validator** (not to all Assessors)
-- Is limited to indicators within the Validator's governance area
-- Supports **parallel calibration** - multiple Validators can request calibration simultaneously
+- Can target any governance area (Validators have system-wide access)
+- Supports **parallel calibration** - calibration can be requested for different areas
+  simultaneously
 
 **Calibration Process:**
 
@@ -442,13 +443,13 @@ When MLGOO is satisfied with the assessment:
 
 ### MLGOO vs Validator Comparison
 
-| Aspect             | Validator                       | MLGOO                           |
-| ------------------ | ------------------------------- | ------------------------------- |
-| **Scope**          | Own governance area only        | All governance areas            |
-| **Pass/Fail**      | Sets indicator status           | Reviews overall results         |
-| **Calibration**    | Requests calibration (per area) | Requests RE-calibration (final) |
-| **Final Decision** | Forwards to MLGOO               | Approves or RE-calibrates       |
-| **Access Level**   | Area-specific                   | System-wide                     |
+| Aspect             | Validator                          | MLGOO                           |
+| ------------------ | ---------------------------------- | ------------------------------- |
+| **Scope**          | All governance areas (system-wide) | All governance areas            |
+| **Pass/Fail**      | Sets indicator status              | Reviews overall results         |
+| **Calibration**    | Requests calibration (per area)    | Requests RE-calibration (final) |
+| **Final Decision** | Forwards to MLGOO                  | Approves or RE-calibrates       |
+| **Access Level**   | System-wide                        | System-wide                     |
 
 ---
 
@@ -468,16 +469,16 @@ When MLGOO is satisfied with the assessment:
 
 ### Calibration vs. Rework vs. RE-Calibration
 
-| Aspect             | Rework (Assessor)     | Calibration (Validator)            | RE-Calibration (MLGOO)          |
-| ------------------ | --------------------- | ---------------------------------- | ------------------------------- |
-| **Who triggers**   | Assessor              | Validator                          | MLGOO                           |
-| **When triggered** | During initial review | During final validation            | During MLGOO approval           |
-| **Scope**          | Any indicators        | Only Validator's governance area   | Any indicators (MLGOO selected) |
-| **Returns to**     | All Assessors         | Same Validator                     | Validator, then MLGOO           |
-| **Limit**          | 1 per assessment      | 1 per governance area              | 1 per assessment                |
-| **AI Summary**     | Yes (rework_summary)  | Yes (calibration_summary per area) | No (uses comments)              |
-| **Field flag**     | `rework_count = 1`    | `is_calibration_rework = true`     | `is_mlgoo_recalibration = true` |
-| **Status before**  | `IN_REVIEW`           | `AWAITING_FINAL_VALIDATION`        | `AWAITING_MLGOO_APPROVAL`       |
+| Aspect             | Rework (Assessor)     | Calibration (Validator)                          | RE-Calibration (MLGOO)          |
+| ------------------ | --------------------- | ------------------------------------------------ | ------------------------------- |
+| **Who triggers**   | Assessor              | Validator                                        | MLGOO                           |
+| **When triggered** | During initial review | During final validation                          | During MLGOO approval           |
+| **Scope**          | Any indicators        | Specific governance area (selected by Validator) | Any indicators (MLGOO selected) |
+| **Returns to**     | All Assessors         | Same Validator                                   | Validator, then MLGOO           |
+| **Limit**          | 1 per assessment      | 1 per governance area                            | 1 per assessment                |
+| **AI Summary**     | Yes (rework_summary)  | Yes (calibration_summary per area)               | No (uses comments)              |
+| **Field flag**     | `rework_count = 1`    | `is_calibration_rework = true`                   | `is_mlgoo_recalibration = true` |
+| **Status before**  | `IN_REVIEW`           | `AWAITING_FINAL_VALIDATION`                      | `AWAITING_MLGOO_APPROVAL`       |
 
 ---
 
@@ -872,7 +873,7 @@ class MOVAnnotation(BaseModel):
 
 _For more information, see:_
 
-- [Indicator Builder Specification](../indicator-builder-specification.md)
+- Indicator Builder Specification (see `docs/` for details)
 - [BLGU Assessment Workflow](./blgu-assessment.md)
 - [Classification Algorithm](./classification-algorithm.md)
 - [Intelligence Layer Workflow](./intelligence-layer.md)

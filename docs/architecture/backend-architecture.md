@@ -334,9 +334,9 @@ graph TB
 
         GET_ADMIN[get_current_admin_user<br/><br/>Requires MLGOO_DILG role<br/><br/>Depends: get_current_active_user]
 
-        GET_VALIDATOR[get_current_validator_user<br/><br/>Requires VALIDATOR role<br/>Requires validator_area_id<br/><br/>Depends: get_current_active_user]
+        GET_VALIDATOR[get_current_validator_user<br/><br/>Requires VALIDATOR role<br/>System-wide access, no area required<br/><br/>Depends: get_current_active_user]
 
-        GET_ASSESSOR[get_current_assessor_or_validator<br/><br/>Accepts ASSESSOR or VALIDATOR<br/>Validates area assignment<br/><br/>Depends: get_current_active_user]
+        GET_ASSESSOR[get_current_assessor_or_validator<br/><br/>Accepts ASSESSOR or VALIDATOR<br/>ASSESSOR requires assessor_area_id<br/><br/>Depends: get_current_active_user]
 
         GET_EXTERNAL[get_current_external_user<br/><br/>Requires KATUPARAN_CENTER_USER<br/>Read-only access<br/><br/>Depends: get_current_active_user]
     end
@@ -344,7 +344,7 @@ graph TB
     subgraph "Endpoint Usage"
         EP_BLGU[POST /assessments<br/><br/>Depends: get_current_active_user<br/>Check: role == BLGU_USER]
 
-        EP_VALIDATOR[GET /assessor/barangays<br/><br/>Depends: get_current_validator_user<br/>Filter: by validator_area_id]
+        EP_VALIDATOR[GET /validator/submissions<br/><br/>Depends: get_current_validator_user<br/>System-wide: all assessments]
 
         EP_ASSESSOR[POST /assessor/validate<br/><br/>Depends: get_current_assessor_or_validator<br/>Accept: both roles]
 
@@ -407,32 +407,42 @@ async def get_current_validator_user(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> User:
-    """Validator dependency with governance area loaded."""
+    """Validator dependency - system-wide access, no area required."""
     if current_user.role != UserRole.VALIDATOR:
         raise HTTPException(403, "Validator access required")
 
+    return current_user
+
+async def get_current_assessor_user(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """Assessor dependency with governance area loaded."""
     user_with_area = (
         db.query(User)
-        .options(joinedload(User.validator_area))
+        .options(joinedload(User.assessor_area))
         .filter(User.id == current_user.id)
         .first()
     )
 
-    if not user_with_area.validator_area:
-        raise HTTPException(403, "Validator must be assigned to a governance area")
+    if not user_with_area or user_with_area.role != UserRole.ASSESSOR:
+        raise HTTPException(403, "Assessor access required")
+
+    if user_with_area.assessor_area is None:
+        raise HTTPException(403, "Assessor must be assigned to a governance area")
 
     return user_with_area
 
 # Usage in router
-@router.get("/assessor/barangays", tags=["assessor"])
-def get_validator_barangays(
+@router.get("/assessor/submissions", tags=["assessor"])
+def get_assessor_submissions(
     db: Session = Depends(deps.get_db),
-    current_validator: User = Depends(deps.get_current_validator_user)
+    current_assessor: User = Depends(deps.get_current_assessor_user)
 ):
-    """Get barangays for validator's assigned governance area."""
-    return assessor_service.get_barangays_for_validator(
+    """Get submissions for assessor's assigned governance area."""
+    return assessor_service.get_submissions_for_assessor(
         db,
-        current_validator.validator_area_id
+        current_assessor.assessor_area_id
     )
 ```
 
@@ -1103,4 +1113,4 @@ class AssessmentService:
 - Five user roles with dedicated dependency functions for access control
 - External analytics endpoint provides aggregated, anonymized data for research
 
-_Last updated: December 2025_
+_Last updated: February 2026_

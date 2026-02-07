@@ -1,6 +1,6 @@
 # Multi-Year Assessment Support
 
-**Version:** 1.0 **Date:** December 2024 **Status:** Implemented
+**Version:** 1.1 **Date:** February 2026 **Status:** Implemented
 
 ## Overview
 
@@ -79,6 +79,11 @@ CREATE TABLE assessment_years (
     phase2_deadline TIMESTAMPTZ,           -- Final submission deadline
     calibration_deadline TIMESTAMPTZ,      -- Calibration/validation deadline
 
+    -- Deadline window configuration (duration in days)
+    submission_window_days INTEGER,        -- Days for initial submission (~30-60)
+    rework_window_days INTEGER,            -- Days for BLGU to resubmit after rework
+    calibration_window_days INTEGER,       -- Days for BLGU to resubmit after calibration
+
     -- Lifecycle flags
     is_active BOOLEAN DEFAULT FALSE,       -- Only ONE can be true
     is_published BOOLEAN DEFAULT FALSE,    -- Visible to Katuparan Center
@@ -129,18 +134,31 @@ ALTER TABLE indicators ADD COLUMN effective_to_year INTEGER;
 
 ### Assessment Year Management
 
-| Endpoint                                     | Method | Description                          | Role Required     |
-| -------------------------------------------- | ------ | ------------------------------------ | ----------------- |
-| `/api/v1/assessment-years`                   | GET    | List all assessment years            | MLGOO_DILG        |
-| `/api/v1/assessment-years`                   | POST   | Create new assessment year           | MLGOO_DILG        |
-| `/api/v1/assessment-years/{year}`            | GET    | Get specific year details            | MLGOO_DILG        |
-| `/api/v1/assessment-years/{year}`            | PUT    | Update year configuration            | MLGOO_DILG        |
-| `/api/v1/assessment-years/{year}`            | DELETE | Delete year (if no assessments)      | MLGOO_DILG        |
-| `/api/v1/assessment-years/{year}/activate`   | POST   | Activate year (deactivates others)   | MLGOO_DILG        |
-| `/api/v1/assessment-years/{year}/deactivate` | POST   | Deactivate year                      | MLGOO_DILG        |
-| `/api/v1/assessment-years/{year}/publish`    | POST   | Make visible to Katuparan Center     | MLGOO_DILG        |
-| `/api/v1/assessment-years/{year}/unpublish`  | POST   | Hide from Katuparan Center           | MLGOO_DILG        |
-| `/api/v1/assessment-years/accessible`        | GET    | Get years accessible to current user | All authenticated |
+| Endpoint                                     | Method | Description                              | Role Required     |
+| -------------------------------------------- | ------ | ---------------------------------------- | ----------------- |
+| `/api/v1/assessment-years`                   | GET    | List all assessment years                | All authenticated |
+| `/api/v1/assessment-years`                   | POST   | Create new assessment year               | MLGOO_DILG        |
+| `/api/v1/assessment-years/accessible`        | GET    | Get years accessible to current user     | All authenticated |
+| `/api/v1/assessment-years/simple`            | GET    | Simplified year list for dropdowns       | All authenticated |
+| `/api/v1/assessment-years/active`            | GET    | Get currently active year config         | All authenticated |
+| `/api/v1/assessment-years/active/number`     | GET    | Get active year number and previous year | All authenticated |
+| `/api/v1/assessment-years/{year}`            | GET    | Get specific year details                | All authenticated |
+| `/api/v1/assessment-years/{year}`            | PATCH  | Update year configuration                | MLGOO_DILG        |
+| `/api/v1/assessment-years/{year}`            | DELETE | Delete year (if no assessments)          | MLGOO_DILG        |
+| `/api/v1/assessment-years/{year}/activate`   | POST   | Activate year (deactivates others)       | MLGOO_DILG        |
+| `/api/v1/assessment-years/{year}/deactivate` | POST   | Deactivate year                          | MLGOO_DILG        |
+| `/api/v1/assessment-years/{year}/publish`    | POST   | Make visible to Katuparan Center         | MLGOO_DILG        |
+| `/api/v1/assessment-years/{year}/unpublish`  | POST   | Hide from Katuparan Center               | MLGOO_DILG        |
+| `/api/v1/assessment-years/{year}/phase`      | GET    | Get current assessment phase for year    | All authenticated |
+
+**Access Control Notes:**
+
+- `GET /` (list): MLGOO_DILG sees all years; other roles see only published years
+- `GET /{year}`: MLGOO_DILG can view any year; other roles can only view published years
+- `GET /simple`: Returns minimal data (year, is_active, is_published) for dropdown selectors
+- `GET /active/number`: Returns `{ year, previous_year }` for convenience
+- `GET /{year}/phase`: Returns current phase (`pre_assessment`, `phase1`, `rework`, `phase2`,
+  `calibration`, `completed`, or `unknown`)
 
 ### Year-Filtered Endpoints
 
@@ -161,12 +179,12 @@ If `year` is not provided, these endpoints default to the **active year**.
 
 Different roles have different access to assessment years:
 
-| Role                      | Accessible Years                      |
-| ------------------------- | ------------------------------------- |
-| **MLGOO_DILG**            | All years (published and unpublished) |
-| **KATUPARAN_CENTER_USER** | All published years only              |
-| **BLGU_USER**             | All years they have assessments for   |
-| **ASSESSOR / VALIDATOR**  | Active year only                      |
+| Role                      | Accessible Years                         |
+| ------------------------- | ---------------------------------------- |
+| **MLGOO_DILG**            | All years (published and unpublished)    |
+| **KATUPARAN_CENTER_USER** | All published years only                 |
+| **BLGU_USER**             | All years with assessments + active year |
+| **ASSESSOR / VALIDATOR**  | Active year only                         |
 
 ## Frontend Integration
 
@@ -222,31 +240,56 @@ function YearManagement() {
 ## Bulk Assessment Creation
 
 When a year is activated, the system can automatically create draft assessments for all BLGU users
-who don't already have an assessment for that year. This is handled by a Celery background task:
+who don't already have an assessment for that year. This is handled by Celery background tasks
+defined in `apps/api/app/workers/assessment_year_worker.py`.
 
-```python
-# Triggered automatically on year activation
-@celery.task
-def create_bulk_assessments(year: int):
-    """Create draft assessments for all BLGUs without an assessment for the year."""
-    # Implementation in apps/api/app/workers/assessment_year_worker.py
-```
+### Tasks
+
+| Task Name                                    | Trigger                  | Description                                           |
+| -------------------------------------------- | ------------------------ | ----------------------------------------------------- |
+| `assessment_year.create_bulk_assessments`    | Year activation          | Creates DRAFT assessments for all active BLGU users   |
+| `assessment_year.create_assessment_for_blgu` | New BLGU user creation   | Creates a DRAFT assessment for a single BLGU user     |
+| `assessment_year.finalize_year`              | Year transition / manual | Finalizes year, counts stats, publishes for Katuparan |
+
+### Retry Policy
+
+All tasks use the same retry configuration:
+
+- **Max retries**: 3
+- **Initial backoff**: 60 seconds
+- **Max backoff**: 300 seconds
+- **Retry jitter**: Enabled
+- **Auto-retry on**: `OperationalError`, `SQLAlchemyError`, `ConnectionError`, `TimeoutError`
+- **Batch size**: 100 (for bulk operations)
+
+### Activation with `create_assessments` Parameter
+
+The `POST /{year}/activate` endpoint accepts a `create_assessments` query parameter (default:
+`true`). When enabled, it triggers the `create_bulk_assessments` Celery task asynchronously. The
+actual count of created assessments is available later via the task result.
 
 ## Year Placeholder Resolution
 
 Dynamic year placeholders in indicator definitions are resolved using `YearPlaceholderResolver`:
 
-| Placeholder              | Example for Year 2025         |
-| ------------------------ | ----------------------------- |
-| `{CURRENT_YEAR}`         | 2025                          |
-| `{PREVIOUS_YEAR}`        | 2024                          |
-| `{JAN_OCT_CURRENT_YEAR}` | January to October 2025       |
-| `{JUL_SEP_CURRENT_YEAR}` | July-September 2025           |
-| `{Q1_Q3_CURRENT_YEAR}`   | 1st to 3rd quarter of CY 2025 |
-| `{DEC_31_CURRENT_YEAR}`  | December 31, 2025             |
-| `{DEC_31_PREVIOUS_YEAR}` | December 31, 2024             |
-| `{CY_CURRENT_YEAR}`      | CY 2025                       |
-| `{CY_PREVIOUS_YEAR}`     | CY 2024                       |
+| Placeholder                 | Example for Year 2025         |
+| --------------------------- | ----------------------------- |
+| `{CURRENT_YEAR}`            | 2025                          |
+| `{PREVIOUS_YEAR}`           | 2024                          |
+| `{JAN_OCT_CURRENT_YEAR}`    | January to October 2025       |
+| `{JAN_TO_OCT_CURRENT_YEAR}` | January to October 2025       |
+| `{JUL_SEP_CURRENT_YEAR}`    | July-September 2025           |
+| `{JUL_TO_SEP_CURRENT_YEAR}` | July-September 2025           |
+| `{Q1_Q3_CURRENT_YEAR}`      | 1st to 3rd quarter of CY 2025 |
+| `{DEC_31_CURRENT_YEAR}`     | December 31, 2025             |
+| `{DEC_31_PREVIOUS_YEAR}`    | December 31, 2024             |
+| `{CY_CURRENT_YEAR}`         | CY 2025                       |
+| `{CY_PREVIOUS_YEAR}`        | CY 2024                       |
+| `{MARCH_CURRENT_YEAR}`      | March 2025                    |
+| `{OCT_31_CURRENT_YEAR}`     | October 31, 2025              |
+
+**Note:** `{JAN_TO_OCT_CURRENT_YEAR}` and `{JUL_TO_SEP_CURRENT_YEAR}` are aliases for their shorter
+forms without `_TO_`.
 
 ## Migration Notes
 
