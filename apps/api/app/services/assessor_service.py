@@ -911,6 +911,9 @@ class AssessorService:
                 "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"
                 if assessment.rework_requested_at
                 else None,
+                "auto_submitted_at": assessment.auto_submitted_at.isoformat() + "Z"
+                if assessment.auto_submitted_at
+                else None,
                 "rework_count": assessment.rework_count,
                 "rework_round_used": assessment.rework_round_used,
                 "calibration_count": assessment.calibration_count,

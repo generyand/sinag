@@ -3,7 +3,9 @@
 // Button validation logic:
 // - Save Draft: Always enabled unless action in progress
 // - Send for Rework: Enabled when ALL indicators reviewed AND at least one rework toggle is ON
+//   (bypasses allReviewed when auto-flagged empty indicators exist from auto-submitted assessments)
 // - Approve: Enabled when ALL indicators reviewed AND NO rework toggles are ON
+//   (force-enabled when rework cycle is used up - assessor must approve)
 
 import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
 import { StatusBadge } from "@/components/shared";
@@ -111,14 +113,21 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // This allows us to track which specific files need re-upload, not just which indicators
   const [reworkFlags, setReworkFlags] = useState<Record<number, Set<number>>>({});
 
+  // Track which indicators were auto-flagged because they have zero MOV files (auto-submitted assessments)
+  const [autoFlaggedEmptyIds, setAutoFlaggedEmptyIds] = useState<Set<number>>(new Set());
+
   // Initialize reworkFlags from API data (annotated_mov_file_ids for file-level tracking + manual flags)
+  // Also auto-flag indicators with zero MOV files (from auto-submitted assessments)
   useEffect(() => {
     if (data) {
       const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
       const core = (assessment.assessment as AnyRecord) ?? assessment;
       const resps: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+      const isAutoSubmitted = !!core.auto_submitted_at;
 
       const initial: Record<number, Set<number>> = {};
+      const emptyIds = new Set<number>();
+
       resps.forEach((r) => {
         // Use annotated_mov_file_ids for file-level tracking (array of MOV file IDs with annotations)
         const annotatedFileIds: number[] = r.annotated_mov_file_ids || [];
@@ -133,12 +142,41 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           // Manual flag without specific file annotations - create empty set to mark as flagged
           initial[r.id] = new Set();
         }
+
+        // Auto-flag indicators with zero MOV files (auto-submitted assessments with missing uploads)
+        const movFiles: any[] = (r.movs as any[]) || [];
+        if (isAutoSubmitted && movFiles.length === 0) {
+          initial[r.id] = initial[r.id] || new Set();
+          emptyIds.add(r.id);
+        }
       });
+
       setReworkFlags(initial);
+      setAutoFlaggedEmptyIds(emptyIds);
+
+      // Auto-set rework comments for empty indicators
+      if (emptyIds.size > 0) {
+        setForm((prev) => {
+          const updated = { ...prev };
+          emptyIds.forEach((responseId) => {
+            if (!updated[responseId]?.publicComment) {
+              updated[responseId] = {
+                ...updated[responseId],
+                publicComment: "No MOV files uploaded for this indicator.",
+              };
+            }
+          });
+          return updated;
+        });
+      }
+
       console.log(
         "[AssessorValidationClient] Initialized reworkFlags from API (file-level + manual):",
         initial
       );
+      if (emptyIds.size > 0) {
+        console.log("[AssessorValidationClient] Auto-flagged empty indicators:", [...emptyIds]);
+      }
     }
   }, [data]);
 
@@ -733,6 +771,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     responses.some((r) => {
       return r.id in reworkFlags;
     });
+
+  // Check if any indicators in the current area were auto-flagged due to empty MOV files
+  // Only count as auto-flagged if still present in reworkFlags (assessor may have manually un-toggled)
+  const hasAutoFlaggedEmptyIndicators =
+    isAssessor && responses.some((r) => autoFlaggedEmptyIds.has(r.id) && r.id in reworkFlags);
 
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
@@ -1584,6 +1627,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               )}
             </Button>
             {/* Send for Rework - Assessors only, requires ALL reviewed AND at least one rework toggle ON */}
+            {/* When auto-flagged empty indicators exist, bypass allReviewed requirement */}
             {isAssessor && (
               <Button
                 variant="secondary"
@@ -1593,7 +1637,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 disabled={
                   isAnyActionPending ||
                   isAreaLocked ||
-                  !allReviewed ||
+                  (!allReviewed && !hasAutoFlaggedEmptyIndicators) ||
                   !hasIndicatorsFlaggedForRework ||
                   myAreaReworkUsed
                 }
@@ -1602,7 +1646,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                   background:
                     isAnyActionPending ||
                     isAreaLocked ||
-                    !allReviewed ||
+                    (!allReviewed && !hasAutoFlaggedEmptyIndicators) ||
                     !hasIndicatorsFlaggedForRework ||
                     myAreaReworkUsed
                       ? "var(--muted)"
@@ -1615,7 +1659,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                       ? "Area is already approved."
                       : myAreaStatus === "rework"
                         ? "Area is already sent for rework. Waiting for BLGU to resubmit."
-                        : !allReviewed
+                        : !allReviewed && !hasAutoFlaggedEmptyIndicators
                           ? "Review all indicators before sending for rework."
                           : !hasIndicatorsFlaggedForRework
                             ? "Toggle 'Send for Rework' on at least one MOV file to enable this button."
@@ -1708,7 +1752,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               </Button>
             )}
 
-            {/* Approve Area - Assessors approve their governance area, requires ALL reviewed AND NO rework toggles ON */}
+            {/* Approve Area - Assessors approve their governance area */}
+            {/* When rework cycle is used (myAreaReworkUsed), force-enable approve regardless of review/flag status */}
             {isAssessor && (
               <Button
                 size="sm"
@@ -1717,16 +1762,14 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 disabled={
                   isAnyActionPending ||
                   isAreaLocked ||
-                  !allReviewed ||
-                  hasIndicatorsFlaggedForRework
+                  (!myAreaReworkUsed && (!allReviewed || hasIndicatorsFlaggedForRework))
                 }
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{
                   background:
                     isAnyActionPending ||
                     isAreaLocked ||
-                    !allReviewed ||
-                    hasIndicatorsFlaggedForRework
+                    (!myAreaReworkUsed && (!allReviewed || hasIndicatorsFlaggedForRework))
                       ? "var(--muted)"
                       : "var(--success)",
                 }}
@@ -1737,11 +1780,13 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                       ? "Area is already approved."
                       : myAreaStatus === "rework"
                         ? "Area is sent for rework. Waiting for BLGU to resubmit."
-                        : !allReviewed
-                          ? "Review all indicators before approving."
-                          : hasIndicatorsFlaggedForRework
-                            ? "Cannot approve while MOV files are flagged for rework. Remove all rework flags or use 'Compile and Send for Rework' instead."
-                            : undefined
+                        : myAreaReworkUsed
+                          ? "Rework cycle completed. Approve to send to validator."
+                          : !allReviewed
+                            ? "Review all indicators before approving."
+                            : hasIndicatorsFlaggedForRework
+                              ? "Cannot approve while MOV files are flagged for rework. Remove all rework flags or use 'Compile and Send for Rework' instead."
+                              : undefined
                 }
               >
                 {finalizeMut.isPending || areaApproveMut.isPending ? (
