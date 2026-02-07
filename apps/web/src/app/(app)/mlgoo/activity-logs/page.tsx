@@ -123,6 +123,22 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; bgColor: str
     color: "text-teal-700",
     bgColor: "bg-teal-50",
   },
+  // Compliance actions (BLGU addresses flagged indicators)
+  indicator_rework_compliance: {
+    label: "Rework Compliance",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+  },
+  indicator_calibration_compliance: {
+    label: "Calibration Compliance",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+  },
+  indicator_recalibration_compliance: {
+    label: "Recalibration Compliance",
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-50",
+  },
 };
 
 interface Activity {
@@ -164,6 +180,10 @@ const INDICATOR_ACTIONS = [
   "indicator_flagged_calibration",
   "mov_uploaded",
   "mov_annotated",
+  // Compliance actions
+  "indicator_rework_compliance",
+  "indicator_calibration_compliance",
+  "indicator_recalibration_compliance",
 ];
 
 interface ActionCount {
@@ -408,13 +428,27 @@ export default function ActivityLogsPage() {
                       <SelectItem value="indicator_reviewed">Indicator Reviewed</SelectItem>
                       <SelectItem value="indicator_validated">Indicator Validated</SelectItem>
                       <SelectItem value="indicator_flagged_rework">
-                        Indicator Flagged Rework
+                        Indicator Flagged for Rework
                       </SelectItem>
                       <SelectItem value="indicator_flagged_calibration">
-                        Indicator Flagged Calibration
+                        Indicator Flagged for Calibration
                       </SelectItem>
                       <SelectItem value="mov_uploaded">MOV Uploaded</SelectItem>
                       <SelectItem value="mov_annotated">MOV Annotated</SelectItem>
+                    </SelectGroup>
+
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="font-semibold text-emerald-600">
+                        Compliance Actions
+                      </SelectLabel>
+                      <SelectItem value="indicator_rework_compliance">Rework Compliance</SelectItem>
+                      <SelectItem value="indicator_calibration_compliance">
+                        Calibration Compliance
+                      </SelectItem>
+                      <SelectItem value="indicator_recalibration_compliance">
+                        Recalibration Compliance
+                      </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>

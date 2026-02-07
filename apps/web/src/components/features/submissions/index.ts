@@ -6,5 +6,6 @@ export { generateSubmissionsData, mockSubmissionsData } from "./SubmissionsData"
 export { SubmissionsEmptyState } from "./SubmissionsEmptyState";
 export { ActiveFilterPills } from "./ActiveFilterPills";
 export { SubmissionsMobileCard, SubmissionsMobileList } from "./SubmissionsMobileCard";
+export { NeedsReworkPopover } from "./NeedsReworkPopover";
 export * from "./hooks";
 export * from "./utils";

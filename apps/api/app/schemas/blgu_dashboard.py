@@ -151,6 +151,28 @@ class AISummary(BaseModel):
     )
 
 
+class AreaAssessorStatus(BaseModel):
+    """
+    Assessor status for a single governance area.
+
+    Shows BLGU users which assessors have reviewed their assessment per area.
+    """
+
+    governance_area_id: int = Field(..., description="Governance area ID (1-6)")
+    governance_area_name: str = Field(..., description="Governance area name")
+    assessor_name: str | None = Field(
+        None, description="Name of the assessor assigned to this area (null if none assigned)"
+    )
+    is_assessed: bool = Field(
+        ...,
+        description="True if assessor has approved this area, False if still pending or not yet reviewed",
+    )
+    status: str | None = Field(
+        None,
+        description="Area submission status: 'approved', 'rework', 'submitted', 'in_review', or null if pending",
+    )
+
+
 class IndicatorItem(BaseModel):
     """
     Individual indicator with completion status.
@@ -325,6 +347,12 @@ class BLGUDashboardResponse(BaseModel):
     governance_areas: list[GovernanceAreaGroup] = Field(
         ..., description="Indicators grouped by governance area"
     )
+    area_assessor_status: list[AreaAssessorStatus] | None = Field(
+        None,
+        description="Status of assessor reviews per governance area. "
+        "Shows which assessors have assessed/approved each area. "
+        "Only populated when assessment is SUBMITTED or beyond.",
+    )
     rework_comments: list[ReworkComment] | None = Field(
         None,
         description="Assessor feedback comments if assessment needs rework (null otherwise)",
@@ -332,6 +360,14 @@ class BLGUDashboardResponse(BaseModel):
     mov_annotations_by_indicator: dict[int, list[dict[str, Any]]] | None = Field(
         None,
         description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)",
+    )
+
+    # Epic 5.0: Track which rework indicators have been addressed by BLGU
+    addressed_indicator_ids: list[int] | None = Field(
+        None,
+        description="List of indicator IDs that have been addressed after rework was requested. "
+        "An indicator is considered 'addressed' when BLGU uploads new MOV files after rework_requested_at. "
+        "Use this (not is_complete) to determine if an indicator is 'Fixed' in the rework workflow.",
     )
 
     # AI-generated summary for rework/calibration guidance

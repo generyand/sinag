@@ -1242,7 +1242,53 @@ def submit_assessment(
             f"Missing MOVs: {validation_result.missing_movs}"
         )
 
-    # Update assessment status to SUBMITTED
+    # FIX: Check for per-area rework status (per-area workflow)
+    # In the per-area workflow, the overall assessment status may still be "SUBMITTED"
+    # while individual areas have status="rework". We need to handle this as a resubmission.
+    has_pending_area_rework = assessment.has_pending_area_rework()
+
+    if has_pending_area_rework:
+        # This is a resubmission after per-area rework
+        # Reset area statuses from "rework" back to "submitted"
+        from sqlalchemy.orm.attributes import flag_modified
+
+        if assessment.area_submission_status:
+            for area_key, area_data in assessment.area_submission_status.items():
+                if isinstance(area_data, dict) and area_data.get("status") == "rework":
+                    area_data["status"] = "submitted"
+                    area_data["resubmitted_after_rework"] = True
+                    area_data["submitted_at"] = datetime.utcnow().isoformat()
+                    logger.info(
+                        f"[SUBMIT] Reset area {area_key} status from 'rework' to 'submitted' "
+                        f"for assessment {assessment_id} (per-area resubmission)"
+                    )
+            flag_modified(assessment, "area_submission_status")
+
+        # Set rework_submitted_at for timeline tracking
+        assessment.rework_submitted_at = datetime.utcnow()
+
+        # Update assessment status to SUBMITTED
+        assessment.status = AssessmentStatus.SUBMITTED
+        assessment.submitted_at = datetime.utcnow()
+        db.commit()
+        db.refresh(assessment)
+
+        # Send notification about resubmission (same as resubmit endpoint)
+        try:
+            from app.workers.notifications import send_rework_resubmission_notification
+
+            send_rework_resubmission_notification.delay(assessment_id)
+        except Exception as e:
+            logger.error(f"Failed to queue rework resubmission notification: {e}")
+
+        return SubmitAssessmentResponse(
+            success=True,
+            message="Assessment resubmitted successfully after rework",
+            assessment_id=assessment.id,
+            submitted_at=assessment.submitted_at,
+        )
+
+    # Regular first-time submission
     assessment.status = AssessmentStatus.SUBMITTED
     assessment.submitted_at = datetime.utcnow()
     db.commit()
@@ -1490,11 +1536,14 @@ def resubmit_assessment(
             detail="You can only resubmit your own assessments",
         )
 
-    # Check assessment status is REWORK
-    if assessment.status != AssessmentStatus.REWORK:
+    # Check assessment status is REWORK or has pending area reworks (per-area workflow)
+    # In the per-area workflow, assessment may be in SUBMITTED status while individual areas are in "rework"
+    has_pending_area_rework = assessment.has_pending_area_rework()
+    if assessment.status != AssessmentStatus.REWORK and not has_pending_area_rework:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment must be in REWORK status to resubmit. Current status: {assessment.status.value}",
+            detail=f"Assessment must be in REWORK status or have pending area reworks to resubmit. "
+            f"Current status: {assessment.status.value}",
         )
 
     # Check if this is an MLGOO RE-calibration (distinct from assessor rework)
@@ -1535,8 +1584,26 @@ def resubmit_assessment(
             f"Flagged MOV files: {assessment.mlgoo_recalibration_mov_file_ids}"
         )
     else:
-        assessment.status = AssessmentStatus.SUBMITTED
+        # Set to SUBMITTED_FOR_REVIEW for assessor re-review (consistent with submit_assessment)
+        assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
         assessment.submitted_at = datetime.utcnow()
+        assessment.rework_submitted_at = datetime.utcnow()
+
+        # CRITICAL: Reset area statuses from "rework" back to "submitted"
+        # This allows assessors to re-review and approve areas after BLGU resubmits
+        if assessment.area_submission_status:
+            from sqlalchemy.orm.attributes import flag_modified
+
+            for area_key, area_data in assessment.area_submission_status.items():
+                if isinstance(area_data, dict) and area_data.get("status") == "rework":
+                    area_data["status"] = "submitted"
+                    area_data["resubmitted_after_rework"] = True
+                    area_data["submitted_at"] = datetime.utcnow().isoformat()
+                    logger.info(
+                        f"[RESUBMIT] Reset area {area_key} status from 'rework' to 'submitted' "
+                        f"for assessment {assessment_id}"
+                    )
+            flag_modified(assessment, "area_submission_status")
 
     db.commit()
     db.refresh(assessment)

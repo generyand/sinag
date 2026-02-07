@@ -358,6 +358,24 @@ class Assessment(Base):
     # ==========================================================================
     # Per-Area Submission Helper Methods
     # ==========================================================================
+    def has_pending_area_rework(self) -> bool:
+        """
+        Check if any governance area has pending rework status.
+
+        This is used to detect rework resubmission in the per-area workflow,
+        where a single assessor can send their area for rework before all 6 areas
+        have made a decision (in which case rework_requested_at would still be None).
+
+        Returns:
+            True if any area has status="rework", False otherwise
+        """
+        if not self.area_submission_status:
+            return False
+        return any(
+            isinstance(data, dict) and data.get("status") == "rework"
+            for data in self.area_submission_status.values()
+        )
+
     def all_areas_approved(self) -> bool:
         """
         Check if all governance areas are approved by assessors.
@@ -390,27 +408,71 @@ class Assessment(Base):
 
     def can_assessor_request_rework(self) -> bool:
         """
-        Check if assessors can still request rework for this assessment.
+        DEPRECATED: Use can_area_request_rework() for per-area rework checking.
 
-        Rework can only be requested once. After the rework round is used,
-        assessors can only approve.
+        This method checks the global rework_round_used flag, which is kept
+        for backward compatibility but doesn't reflect the per-area rework logic.
 
         Returns:
-            True if rework can be requested, False otherwise
+            True if no area has used rework yet, False otherwise
         """
         return not self.rework_round_used
 
-    def can_validator_request_calibration(self) -> bool:
+    def can_area_request_rework(self, governance_area_id: int) -> bool:
         """
-        Check if the validator can still request calibration for this assessment.
+        Check if a specific governance area can still request rework.
 
-        Calibration can only be requested once per assessment.
-        After the calibration round is used, validator can only approve.
+        Each of the 6 governance areas gets its own independent rework round.
+        An area can only request rework once.
+
+        Args:
+            governance_area_id: The governance area ID (1-6)
 
         Returns:
-            True if calibration can be requested, False otherwise
+            True if this area can request rework, False if already used
+        """
+        if not self.area_submission_status:
+            return True  # No tracking yet, can request
+        area_data = self.area_submission_status.get(str(governance_area_id), {})
+        return not area_data.get("rework_used", False)
+
+    def can_validator_request_calibration(self) -> bool:
+        """
+        DEPRECATED: Use can_area_request_calibration() for per-area calibration checking.
+
+        This method checks the global calibration_round_used flag, which is kept
+        for backward compatibility but doesn't reflect the per-area calibration logic.
+
+        Returns:
+            True if no area has been calibrated yet, False otherwise
         """
         return not self.calibration_round_used
+
+    def can_area_request_calibration(self, governance_area_id: int) -> bool:
+        """
+        Check if a specific governance area can still be calibrated.
+
+        Each of the 6 governance areas can only be calibrated once.
+
+        Args:
+            governance_area_id: The governance area ID (1-6)
+
+        Returns:
+            True if this area can be calibrated, False if already calibrated
+        """
+        calibrated_areas = self.calibrated_area_ids or []
+        return governance_area_id not in calibrated_areas
+
+    def get_uncalibrated_area_ids(self) -> list[int]:
+        """
+        Get list of governance area IDs that have NOT been calibrated yet.
+
+        Returns:
+            Sorted list of governance area IDs (1-6) that can still be calibrated
+        """
+        calibrated = set(self.calibrated_area_ids or [])
+        all_areas = set(range(1, TOTAL_GOVERNANCE_AREAS + 1))
+        return sorted(all_areas - calibrated)
 
     def get_areas_in_rework(self) -> list[int]:
         """
@@ -579,10 +641,20 @@ class MOVFile(Base):
         DateTime, nullable=True, index=True
     )  # Soft delete support
 
+    # Per-MOV Assessor Feedback (Epic 6.0)
+    # Assessor can add general notes and flag individual MOVs for rework
+    assessor_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    flagged_for_rework: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    flagged_by_assessor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    flagged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     # Relationships
     assessment = relationship("Assessment", back_populates="mov_files")
     indicator = relationship("Indicator", back_populates="mov_files")
     uploader = relationship("User", foreign_keys=[uploaded_by])
+    flagged_by = relationship("User", foreign_keys=[flagged_by_assessor_id])
 
 
 class FeedbackComment(Base):

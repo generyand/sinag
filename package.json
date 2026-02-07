@@ -12,6 +12,8 @@
     "dev:api": "./scripts/dev-worktree.sh api",
     "dev:no-celery": "./scripts/dev-worktree.sh no-celery",
     "dev:ports": "./scripts/dev-worktree.sh ports",
+    "test:prod": "./scripts/test-prod.sh",
+    "test:prod:no-celery": "./scripts/test-prod.sh no-celery",
     "celery": "cd apps/api && pnpm dev:celery",
     "celery:logs": "docker compose logs -f celery-worker",
     "lint": "turbo lint",

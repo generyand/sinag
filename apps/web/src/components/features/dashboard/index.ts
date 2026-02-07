@@ -16,3 +16,4 @@ export { CompletionStatusBadge } from "./CompletionStatusBadge";
 export { GovernanceAreaBreakdown } from "./GovernanceAreaBreakdown";
 export { ReworkStatsCard } from "./ReworkStatsCard";
 export { TopReworkReasonsCard } from "./TopReworkReasonsCard";
+export { LiveUpdatesCarousel } from "./LiveUpdatesCarousel";

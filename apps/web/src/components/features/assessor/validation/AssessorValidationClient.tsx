@@ -1,5 +1,10 @@
 "use client";
 
+// Button validation logic:
+// - Save Draft: Always enabled unless action in progress
+// - Send for Rework: Enabled when ALL indicators reviewed AND at least one rework toggle is ON
+// - Approve: Enabled when ALL indicators reviewed AND NO rework toggles are ON
+
 import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
@@ -202,6 +207,41 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     }
   };
 
+  // Callback when assessor saves MOV feedback with rework flag - update state for progress indicator
+  const handleReworkFlagSaved = (responseId: number, movFileId: number, flagged: boolean) => {
+    console.log(
+      "[AssessorValidationClient] handleReworkFlagSaved:",
+      responseId,
+      "movFileId:",
+      movFileId,
+      "flagged:",
+      flagged
+    );
+    setReworkFlags((prev) => {
+      if (flagged) {
+        // Add file to the set for this response
+        const existingSet = prev[responseId] || new Set();
+        const newSet = new Set(existingSet);
+        newSet.add(movFileId);
+        return { ...prev, [responseId]: newSet };
+      } else {
+        // Remove file from the set
+        const existingSet = prev[responseId];
+        if (!existingSet) return prev;
+
+        const newSet = new Set(existingSet);
+        newSet.delete(movFileId);
+
+        // If set is now empty, remove the entry entirely
+        if (newSet.size === 0) {
+          const { [responseId]: _, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [responseId]: newSet };
+      }
+    });
+  };
+
   // Set initial expandedId when data loads
   useEffect(() => {
     if (data && expandedId === null) {
@@ -319,6 +359,29 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   );
 
   const reworkCount: number = core.rework_count ?? 0;
+  // Per-area rework tracking: each of the 6 governance areas gets its own independent rework round
+  // my_area_rework_used is True only if THIS assessor's area has used its rework round
+  const myAreaReworkUsed: boolean = (core.my_area_rework_used ?? false) as boolean;
+
+  // Per-area status for the current assessor's governance area
+  // Values: "draft", "submitted", "in_review", "rework", "approved"
+  const myAreaStatus: string | null = (core?.my_area_status ?? null) as string | null;
+
+  // Check if the area is "locked" (already sent for rework or approved)
+  // When locked, disable Save/Rework/Approve buttons for assessors
+  const isAreaLocked: boolean = myAreaStatus === "rework" || myAreaStatus === "approved";
+
+  // Track if any action is in progress to disable all buttons
+  // This prevents users from clicking other buttons while an action is processing
+  const isAnyActionPending: boolean =
+    isSaving ||
+    areaApproveMut.isPending ||
+    areaReworkMut.isPending ||
+    finalizeMut.isPending ||
+    reworkMut.isPending;
+
+  // Check if area has been successfully approved (to disable buttons after success)
+  const isAreaApproved: boolean = myAreaStatus === "approved";
 
   // Get timestamps for MOV file separation (new vs old files)
   // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
@@ -454,11 +517,21 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             const hasLocalComments =
               form[resp.id]?.publicComment && form[resp.id]!.publicComment!.trim().length > 0;
 
-            // Only check OLD persisted data if NOT requiring rework
+            // Check if indicator has new MOV files uploaded after rework request
+            // If BLGU uploaded new files, the assessor needs to review them fresh
+            const hasNewMovsAfterRework =
+              reworkRequestedAt &&
+              ((resp.movs as any[]) || []).some((mov: any) => {
+                const uploadedAt = mov.uploaded_at;
+                if (!uploadedAt) return false;
+                return new Date(uploadedAt) > new Date(reworkRequestedAt);
+              });
+
+            // Only check OLD persisted data if NOT requiring rework AND no new MOVs uploaded after rework
             let hasPersistedChecklistData = false;
             let hasPersistedComments = false;
 
-            if (!resp.requires_rework) {
+            if (!resp.requires_rework && !hasNewMovsAfterRework) {
               // Check backend response_data for persisted checklist data
               // Check both assessor_val_ and validator_val_ prefixes
               const responseData = (resp as AnyRecord).response_data || {};
@@ -485,13 +558,17 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             // BUT: If requires_rework is true, the flag was used to SEND for rework - it doesn't mean "completed"
             const hasReworkFlag = resp.id in reworkFlags;
 
-            // IMPORTANT: If requires_rework is true, we're WAITING for BLGU to respond
-            // The rework flag means we flagged it FOR rework, not that we've completed reviewing it
+            // IMPORTANT: Indicator needs re-review if:
+            // 1. requires_rework is true (assessor flagged it, waiting for BLGU), OR
+            // 2. BLGU uploaded new MOVs after rework (needs fresh assessor review)
             const isWaitingForBlgu = resp.requires_rework === true;
+            const needsReReview = isWaitingForBlgu || hasNewMovsAfterRework;
 
             console.log(`[Status Calc] Response ${resp.id}:`, {
               requires_rework: resp.requires_rework,
               isWaitingForBlgu,
+              hasNewMovsAfterRework,
+              needsReReview,
               hasChecklistData,
               hasLocalComments,
               hasPersistedComments,
@@ -499,19 +576,27 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               hasReworkFlag,
             });
 
-            // If indicator is waiting for BLGU (requires_rework=true), show as needs_rework
-            // unless assessor has done NEW work in this session (local checklist/comments)
-            if (isWaitingForBlgu) {
-              // Only show as completed if assessor did NEW work after BLGU resubmitted
+            // If indicator needs re-review (requires_rework=true OR has new MOVs after rework),
+            // show as needs_rework unless assessor has done NEW work in this session
+            if (needsReReview) {
+              // Only show as completed if assessor did NEW checklist work after BLGU uploaded
               if (hasChecklistData || hasLocalComments) {
-                status = "completed";
-                console.log(
-                  `[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`
-                );
+                // Check if any MOV is flagged for rework - show different status
+                if (hasReworkFlag) {
+                  status = "flagged_for_rework";
+                  console.log(
+                    `[Status Calc] Response ${resp.id} → 'flagged_for_rework' (has rework flag)`
+                  );
+                } else {
+                  status = "completed";
+                  console.log(
+                    `[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`
+                  );
+                }
               } else {
                 status = "needs_rework";
                 console.log(
-                  `[Status Calc] Response ${resp.id} → 'needs_rework' (waiting for BLGU)`
+                  `[Status Calc] Response ${resp.id} → 'needs_rework' (needs assessor re-review)`
                 );
               }
             }
@@ -523,8 +608,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               hasPersistedChecklistData ||
               hasReworkFlag
             ) {
-              status = "completed";
-              console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
+              // Differentiate between flagged for rework vs completed (BLGU complied)
+              if (hasReworkFlag) {
+                status = "flagged_for_rework";
+                console.log(
+                  `[Status Calc] Response ${resp.id} → 'flagged_for_rework' (has MOV flagged for rework)`
+                );
+              } else {
+                status = "completed";
+                console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
+              }
             }
           }
 
@@ -551,7 +644,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           return area;
         }),
     };
-  }, [responses, checklistData, form, dataUpdatedAt, reworkFlags]); // Add dataUpdatedAt to force recalc when data refetches
+  }, [responses, checklistData, form, dataUpdatedAt, reworkFlags, reworkRequestedAt]); // Add dataUpdatedAt to force recalc when data refetches, reworkRequestedAt for new MOV detection
 
   // Conditional returns AFTER all hooks to maintain hook order
   if (isLoading) {
@@ -1118,8 +1211,15 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={isSaving || isAssessorWithoutArea}
+              disabled={isSaving || isAssessorWithoutArea || (isAssessor && isAreaLocked)}
               className="text-xs sm:text-sm px-2 sm:px-4"
+              title={
+                isAssessor && isAreaLocked
+                  ? myAreaStatus === "rework"
+                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                    : "Area is already reviewed and approved."
+                  : undefined
+              }
             >
               <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save as Draft"}</span>
               <span className="sm:hidden">Save</span>
@@ -1204,6 +1304,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                   separationLabel="After Rework"
                   onAnnotationCreated={handleAnnotationCreated}
                   onAnnotationDeleted={handleAnnotationDeleted}
+                  onReworkFlagSaved={handleReworkFlagSaved}
                 />
               </div>
             )}
@@ -1298,6 +1399,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                       separationLabel="After Rework"
                       onAnnotationCreated={handleAnnotationCreated}
                       onAnnotationDeleted={handleAnnotationDeleted}
+                      onReworkFlagSaved={handleReworkFlagSaved}
                     />
                   </div>
                 )}
@@ -1360,6 +1462,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 separationLabel="After Rework"
                 onAnnotationCreated={handleAnnotationCreated}
                 onAnnotationDeleted={handleAnnotationDeleted}
+                onReworkFlagSaved={handleReworkFlagSaved}
               />
             </div>
 
@@ -1422,12 +1525,46 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               size="sm"
               type="button"
               onClick={onSaveDraft}
-              disabled={isSaving}
+              disabled={isAnyActionPending || isAreaApproved}
               className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
+              title={
+                isAssessor && isAreaLocked
+                  ? myAreaStatus === "rework"
+                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                    : "Area is already reviewed and approved."
+                  : undefined
+              }
             >
-              {isSaving ? "Saving..." : "Save as Draft"}
+              {isSaving ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span className="hidden sm:inline">Saving Progress...</span>
+                  <span className="sm:hidden">Saving...</span>
+                </>
+              ) : (
+                "Save as Draft"
+              )}
             </Button>
-            {/* Send for Rework - Assessors only, requires comments */}
+            {/* Send for Rework - Assessors only, requires ALL reviewed AND at least one rework toggle ON */}
             {isAssessor && (
               <Button
                 variant="secondary"
@@ -1435,17 +1572,37 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
                 disabled={
+                  isAnyActionPending ||
+                  isAreaLocked ||
+                  !allReviewed ||
                   !hasIndicatorsFlaggedForRework ||
-                  reworkCount !== 0 ||
-                  reworkMut.isPending ||
-                  areaReworkMut.isPending
+                  myAreaReworkUsed
                 }
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
-                style={{ background: "var(--cityscape-yellow)" }}
+                style={{
+                  background:
+                    isAnyActionPending ||
+                    isAreaLocked ||
+                    !allReviewed ||
+                    !hasIndicatorsFlaggedForRework ||
+                    myAreaReworkUsed
+                      ? "var(--muted)"
+                      : "var(--cityscape-yellow)",
+                }}
                 title={
-                  !hasIndicatorsFlaggedForRework
-                    ? "Toggle 'Flag for Rework' on at least one indicator to send for rework"
-                    : undefined
+                  isAnyActionPending
+                    ? "An action is in progress. Please wait."
+                    : myAreaStatus === "approved"
+                      ? "Area is already approved."
+                      : myAreaStatus === "rework"
+                        ? "Area is already sent for rework. Waiting for BLGU to resubmit."
+                        : !allReviewed
+                          ? "Review all indicators before sending for rework."
+                          : !hasIndicatorsFlaggedForRework
+                            ? "Toggle 'Send for Rework' on at least one MOV file to enable this button."
+                            : myAreaReworkUsed
+                              ? "Rework round has already been used for this governance area. Each area is only allowed one rework round."
+                              : undefined
                 }
               >
                 {reworkMut.isPending || areaReworkMut.isPending ? (
@@ -1489,7 +1646,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowReworkConfirm(true)}
-                disabled={!allReviewed || !anyFail || reworkCount !== 0 || reworkMut.isPending}
+                disabled={isAnyActionPending || !allReviewed || !anyFail || reworkCount !== 0}
                 className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--cityscape-yellow)" }}
                 title={
@@ -1532,19 +1689,73 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               </Button>
             )}
 
-            {/* Approve Area - Assessors approve their governance area */}
+            {/* Approve Area - Assessors approve their governance area, requires ALL reviewed AND NO rework toggles ON */}
             {isAssessor && (
               <Button
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={!allReviewed || finalizeMut.isPending || areaApproveMut.isPending}
+                disabled={
+                  isAnyActionPending ||
+                  isAreaLocked ||
+                  !allReviewed ||
+                  hasIndicatorsFlaggedForRework
+                }
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
-                style={{ background: "var(--success)" }}
-                title={!allReviewed ? "Review all indicators before approving" : undefined}
+                style={{
+                  background:
+                    isAnyActionPending ||
+                    isAreaLocked ||
+                    !allReviewed ||
+                    hasIndicatorsFlaggedForRework
+                      ? "var(--muted)"
+                      : "var(--success)",
+                }}
+                title={
+                  isAnyActionPending
+                    ? "An action is in progress. Please wait."
+                    : myAreaStatus === "approved"
+                      ? "Area is already approved."
+                      : myAreaStatus === "rework"
+                        ? "Area is sent for rework. Waiting for BLGU to resubmit."
+                        : !allReviewed
+                          ? "Review all indicators before approving."
+                          : hasIndicatorsFlaggedForRework
+                            ? "Cannot approve while MOV files are flagged for rework. Remove all rework flags or use 'Compile and Send for Rework' instead."
+                            : undefined
+                }
               >
-                <span className="hidden sm:inline">Approve Area and Send to Validator</span>
-                <span className="sm:hidden">Approve</span>
+                {finalizeMut.isPending || areaApproveMut.isPending ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">Submitting to Validator...</span>
+                    <span className="sm:hidden">Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Approve Area and Send to Validator</span>
+                    <span className="sm:hidden">Approve</span>
+                  </>
+                )}
               </Button>
             )}
 
@@ -1554,7 +1765,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 size="sm"
                 type="button"
                 onClick={() => setShowFinalizeConfirm(true)}
-                disabled={!allReviewed || (anyFail && reworkCount === 0) || finalizeMut.isPending}
+                disabled={isAnyActionPending || !allReviewed || (anyFail && reworkCount === 0)}
                 className="w-full sm:w-auto text-white hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
                 style={{ background: "var(--success)" }}
                 title={
@@ -1563,8 +1774,37 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                     : undefined
                 }
               >
-                <span className="hidden sm:inline">Finalize Validation</span>
-                <span className="sm:hidden">Finalize</span>
+                {finalizeMut.isPending ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">Finalizing Validation...</span>
+                    <span className="sm:hidden">Finalizing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Finalize Validation</span>
+                    <span className="sm:hidden">Finalize</span>
+                  </>
+                )}
               </Button>
             )}
           </div>

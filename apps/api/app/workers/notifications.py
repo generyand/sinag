@@ -1110,6 +1110,108 @@ def send_mlgoo_recalibration_notification(self: Any, assessment_id: int) -> dict
         db.close()
 
 
+# ==================== MLGOO RECALIBRATION RESUBMISSION NOTIFICATION ====================
+
+
+@celery_app.task(
+    bind=True,
+    name="notifications.send_mlgoo_recalibration_resubmission_notification",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
+def send_mlgoo_recalibration_resubmission_notification(
+    self: Any, assessment_id: int
+) -> dict[str, Any]:
+    """
+    BLGU resubmits after MLGOO RE-calibration -> All Validators notified.
+
+    When BLGU completes the recalibration requested by MLGOO and resubmits,
+    the assessment goes to AWAITING_FINAL_VALIDATION. All Validators are
+    notified to review the recalibrated indicators before the assessment
+    returns to MLGOO for final approval.
+
+    Args:
+        assessment_id: ID of the resubmitted assessment
+
+    Returns:
+        dict: Result of the notification process
+    """
+    db: Session = SessionLocal()
+
+    try:
+        # Get the assessment
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+
+        if not assessment:
+            logger.error("Assessment %s not found", assessment_id)
+            return {"success": False, "error": "Assessment not found", "permanent": True}
+
+        # Get barangay name
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        # Create notifications for all Validators (system-wide)
+        notifications = notification_service.notify_all_validators(
+            db=db,
+            notification_type=NotificationType.READY_FOR_VALIDATION,
+            title=f"RE-calibration Review: {barangay_name}",
+            message="A BLGU has resubmitted after MLGOO RE-calibration. Please review the recalibrated indicators.",
+            assessment_id=assessment_id,
+        )
+
+        db.commit()
+
+        logger.info(
+            "MLGOO_RECALIBRATION_RESUBMISSION notification: Assessment %s for %s - %d validators notified",
+            assessment_id,
+            barangay_name,
+            len(notifications),
+        )
+
+        return {
+            "success": True,
+            "message": f"RE-calibration resubmission notification sent to {len(notifications)} validator(s)",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "notifications_created": len(notifications),
+        }
+
+    except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
+        logger.warning(
+            "Transient error in MLGOO recalibration resubmission notification for assessment %s (attempt %d/%d): %s",
+            assessment_id,
+            self.request.retries + 1,
+            MAX_RETRIES + 1,
+            str(e),
+        )
+        db.rollback()
+        raise
+
+    except MaxRetriesExceededError:
+        logger.error(
+            "Max retries exceeded for MLGOO recalibration resubmission notification - assessment %s",
+            assessment_id,
+        )
+        return {"success": False, "error": "Max retries exceeded", "assessment_id": assessment_id}
+
+    except Exception as e:
+        logger.error(
+            "Unexpected error sending MLGOO recalibration resubmission notification for assessment %s: %s",
+            assessment_id,
+            str(e),
+            exc_info=True,
+        )
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        db.close()
+
+
 # ==================== ASSESSMENT APPROVED NOTIFICATION ====================
 
 

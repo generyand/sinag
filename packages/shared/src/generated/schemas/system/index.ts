@@ -12,7 +12,9 @@ import type { ApprovalQueueItem } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
 import type { GovernanceAreaGroup } from '../common';
+import type { BLGUDashboardResponseAreaAssessorStatus } from '../assessor';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
+import type { BLGUDashboardResponseAddressedIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationMovFileIds } from '../movs';
 import type { BLGUDashboardResponseMlgooRecalibrationComments } from '../mlgoo';
@@ -271,10 +273,14 @@ export interface BLGUDashboardResponse {
   completion_percentage: number;
   /** Indicators grouped by governance area */
   governance_areas: GovernanceAreaGroup[];
+  /** Status of assessor reviews per governance area. Shows which assessors have assessed/approved each area. Only populated when assessment is SUBMITTED or beyond. */
+  area_assessor_status?: BLGUDashboardResponseAreaAssessorStatus;
   /** Assessor feedback comments if assessment needs rework (null otherwise) */
   rework_comments?: BLGUDashboardResponseReworkComments;
   /** MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations) */
   mov_annotations_by_indicator?: BLGUDashboardResponseMovAnnotationsByIndicator;
+  /** List of indicator IDs that have been addressed after rework was requested. An indicator is considered 'addressed' when BLGU uploads new MOV files after rework_requested_at. Use this (not is_complete) to determine if an indicator is 'Fixed' in the rework workflow. */
+  addressed_indicator_ids?: BLGUDashboardResponseAddressedIndicatorIds;
   /** AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages. */
   ai_summary?: BLGUDashboardResponseAiSummary;
   /** List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). Tagalog ('fil') is generated on-demand if requested. */

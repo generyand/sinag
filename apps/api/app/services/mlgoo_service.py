@@ -14,9 +14,11 @@ from app.db.enums import AssessmentStatus, ValidationStatus
 from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
+    FeedbackComment,
+    MOVAnnotation,
     MOVFile,
 )
-from app.db.models.governance_area import Indicator
+from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.services.assessment_activity_service import assessment_activity_service
 from app.services.bbi_service import bbi_service
@@ -66,6 +68,258 @@ class MLGOOService:
             return tuple(int(p) for p in parts)
         except (ValueError, AttributeError):
             return (999,)  # Put invalid codes at the end
+
+    def _build_rework_calibration_summary(
+        self, db: Session, assessment: Assessment
+    ) -> dict[str, Any] | None:
+        """
+        Build a comprehensive summary of rework/calibration requests for an assessment.
+
+        Gathers information about:
+        - Assessor rework requests (who, when, comments)
+        - Validator calibration requests (who, when, comments)
+        - MLGOO RE-calibration requests (comments)
+        - Indicators flagged for rework/calibration with their feedback
+        - MOV annotations from assessors
+
+        Args:
+            db: Database session
+            assessment: The assessment to build summary for
+
+        Returns:
+            dict: Rework/calibration summary, or None if no rework/calibration info
+        """
+        has_rework = assessment.rework_requested_at is not None
+        has_calibration = assessment.calibration_requested_at is not None
+        has_mlgoo_recalibration = assessment.is_mlgoo_recalibration
+
+        # If no rework/calibration activity, return None
+        if not has_rework and not has_calibration and not has_mlgoo_recalibration:
+            return None
+
+        summary: dict[str, Any] = {
+            "has_rework": has_rework,
+            "has_calibration": has_calibration,
+            "has_mlgoo_recalibration": has_mlgoo_recalibration,
+            "rework_requested_by_id": None,
+            "rework_requested_by_name": None,
+            "rework_comments": assessment.rework_comments,
+            "calibration_validator_id": None,
+            "calibration_validator_name": None,
+            "calibration_comments": None,
+            "pending_calibrations": [],
+            "rework_indicators": [],
+        }
+
+        # Batch collect all user IDs and governance area IDs needed
+        user_ids: set[int] = set()
+        area_ids: set[int] = set()
+
+        if assessment.rework_requested_by:
+            user_ids.add(assessment.rework_requested_by)
+        if assessment.calibration_validator_id:
+            user_ids.add(assessment.calibration_validator_id)
+
+        # Collect IDs from pending calibrations (with defensive type checking)
+        for cal in assessment.pending_calibrations or []:
+            if not isinstance(cal, dict):
+                continue
+            validator_id = cal.get("validator_id")
+            area_id = cal.get("governance_area_id")
+            if validator_id:
+                user_ids.add(validator_id)
+            if area_id:
+                area_ids.add(area_id)
+
+        # Batch fetch all users in a single query
+        users_by_id: dict[int, User] = {}
+        if user_ids:
+            users = db.query(User).filter(User.id.in_(user_ids)).all()
+            users_by_id = {u.id: u for u in users}
+
+        # Batch fetch all governance areas in a single query
+        areas_by_id: dict[int, GovernanceArea] = {}
+        if area_ids:
+            areas = db.query(GovernanceArea).filter(GovernanceArea.id.in_(area_ids)).all()
+            areas_by_id = {a.id: a for a in areas}
+
+        # Populate rework requester info
+        if assessment.rework_requested_by:
+            rework_requester = users_by_id.get(assessment.rework_requested_by)
+            if rework_requester:
+                summary["rework_requested_by_id"] = rework_requester.id
+                summary["rework_requested_by_name"] = rework_requester.name
+
+        # Populate calibration validator info
+        if assessment.calibration_validator_id:
+            calibration_validator = users_by_id.get(assessment.calibration_validator_id)
+            if calibration_validator:
+                summary["calibration_validator_id"] = calibration_validator.id
+                summary["calibration_validator_name"] = calibration_validator.name
+
+        # Build pending calibrations list (parallel calibration support)
+        for cal in assessment.pending_calibrations or []:
+            if not isinstance(cal, dict):
+                continue
+            validator_id = cal.get("validator_id")
+            area_id = cal.get("governance_area_id")
+            if validator_id and area_id:
+                validator = users_by_id.get(validator_id)
+                area = areas_by_id.get(area_id)
+                if validator and area:
+                    summary["pending_calibrations"].append(
+                        {
+                            "validator_id": validator.id,
+                            "validator_name": validator.name,
+                            "governance_area_id": area.id,
+                            "governance_area_name": area.name,
+                            "requested_at": self._format_utc_datetime(
+                                cal.get("requested_at")
+                                if isinstance(cal.get("requested_at"), datetime)
+                                else None
+                            ),
+                            "comments": cal.get("comments"),
+                        }
+                    )
+
+        # Get indicators flagged for rework/calibration with their feedback
+        responses_with_feedback = (
+            db.query(AssessmentResponse)
+            .options(
+                joinedload(AssessmentResponse.indicator).joinedload(Indicator.governance_area),
+                selectinload(AssessmentResponse.feedback_comments).joinedload(
+                    FeedbackComment.assessor
+                ),
+            )
+            .filter(
+                AssessmentResponse.assessment_id == assessment.id,
+            )
+            .all()
+        )
+
+        # Filter to only include responses that need rework/calibration
+        mlgoo_recalibration_ids = set(assessment.mlgoo_recalibration_indicator_ids or [])
+
+        # Collect indicator IDs that need rework/calibration for batch MOV query
+        indicator_ids_for_mov: list[int] = []
+        for response in responses_with_feedback:
+            is_rework = response.requires_rework
+            is_calibration = response.flagged_for_calibration
+            is_mlgoo_recal = response.indicator_id in mlgoo_recalibration_ids
+            if is_rework or is_calibration or is_mlgoo_recal:
+                indicator_ids_for_mov.append(response.indicator_id)
+
+        # Batch fetch all MOV files for these indicators in a single query
+        mov_files_by_indicator: dict[int, list[MOVFile]] = {}
+        if indicator_ids_for_mov:
+            mov_files = (
+                db.query(MOVFile)
+                .filter(
+                    MOVFile.assessment_id == assessment.id,
+                    MOVFile.indicator_id.in_(indicator_ids_for_mov),
+                    MOVFile.deleted_at.is_(None),
+                )
+                .all()
+            )
+            for mf in mov_files:
+                if mf.indicator_id not in mov_files_by_indicator:
+                    mov_files_by_indicator[mf.indicator_id] = []
+                mov_files_by_indicator[mf.indicator_id].append(mf)
+
+        # Batch fetch all annotations for these MOV files in a single query
+        all_mov_file_ids = [mf.id for mfs in mov_files_by_indicator.values() for mf in mfs]
+        annotations_by_mov_id: dict[int, list[MOVAnnotation]] = {}
+        if all_mov_file_ids:
+            annotations = (
+                db.query(MOVAnnotation)
+                .options(joinedload(MOVAnnotation.assessor))
+                .filter(MOVAnnotation.mov_file_id.in_(all_mov_file_ids))
+                .all()
+            )
+            for ann in annotations:
+                if ann.mov_file_id not in annotations_by_mov_id:
+                    annotations_by_mov_id[ann.mov_file_id] = []
+                annotations_by_mov_id[ann.mov_file_id].append(ann)
+
+        # Build the rework indicators list
+        for response in responses_with_feedback:
+            is_rework = response.requires_rework
+            is_calibration = response.flagged_for_calibration
+            is_mlgoo_recal = response.indicator_id in mlgoo_recalibration_ids
+
+            if not (is_rework or is_calibration or is_mlgoo_recal):
+                continue
+
+            # Determine status type
+            if is_mlgoo_recal:
+                status = "mlgoo_recalibration"
+            elif is_calibration:
+                status = "calibration"
+            else:
+                status = "rework"
+
+            indicator = response.indicator
+            area = indicator.governance_area if indicator else None
+
+            # Get feedback comments for this response (already eagerly loaded)
+            feedback_comments = []
+            for fc in response.feedback_comments or []:
+                feedback_comments.append(
+                    {
+                        "id": fc.id,
+                        "comment": fc.comment,
+                        "comment_type": fc.comment_type,
+                        "assessor_id": fc.assessor_id,
+                        "assessor_name": fc.assessor.name if fc.assessor else "Unknown",
+                        "created_at": self._format_utc_datetime(fc.created_at),
+                    }
+                )
+
+            # Get MOV annotations for this indicator (from batched data)
+            mov_annotations = []
+            indicator_mov_files = mov_files_by_indicator.get(response.indicator_id, [])
+            for mov_file in indicator_mov_files:
+                file_annotations = annotations_by_mov_id.get(mov_file.id, [])
+                for ann in file_annotations:
+                    mov_annotations.append(
+                        {
+                            "id": ann.id,
+                            "mov_file_id": mov_file.id,
+                            "mov_filename": mov_file.file_name,
+                            "mov_file_type": mov_file.file_type,
+                            "annotation_type": ann.annotation_type,
+                            "page": ann.page,
+                            "rect": ann.rect,
+                            "rects": ann.rects,
+                            "comment": ann.comment,
+                            "assessor_id": ann.assessor_id,
+                            "assessor_name": ann.assessor.name if ann.assessor else "Unknown",
+                            "created_at": self._format_utc_datetime(ann.created_at),
+                        }
+                    )
+
+            summary["rework_indicators"].append(
+                {
+                    "indicator_id": indicator.id if indicator else response.indicator_id,
+                    "indicator_name": indicator.name if indicator else "Unknown",
+                    "indicator_code": indicator.indicator_code if indicator else None,
+                    "governance_area_id": area.id if area else None,
+                    "governance_area_name": area.name if area else "Unknown",
+                    "status": status,
+                    "validation_status": response.validation_status.value
+                    if response.validation_status
+                    else None,
+                    "feedback_comments": feedback_comments,
+                    "mov_annotations": mov_annotations,
+                }
+            )
+
+        # Sort indicators by indicator_code for consistent display
+        summary["rework_indicators"].sort(
+            key=lambda x: self._parse_indicator_code(x.get("indicator_code", ""))
+        )
+
+        return summary
 
     def get_approval_queue(
         self,
@@ -872,6 +1126,8 @@ class MLGOOService:
                     assessment.mlgoo_recalibration_indicator_ids
                     and indicator.id in assessment.mlgoo_recalibration_indicator_ids
                 ),
+                "requires_rework": response.requires_rework if response else False,
+                "flagged_for_calibration": response.flagged_for_calibration if response else False,
                 "mov_files": mov_files_by_indicator.get(indicator.id, []),
             }
             areas_data[area_id]["indicators"].append(indicator_data)
@@ -941,6 +1197,8 @@ class MLGOOService:
                 assessment.grace_period_expires_at
             ),
             "is_locked_for_deadline": assessment.is_locked_for_deadline,
+            # Rework/Calibration summary (detailed info for display)
+            "rework_calibration_summary": self._build_rework_calibration_summary(db, assessment),
         }
 
     def unlock_assessment(

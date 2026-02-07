@@ -73,7 +73,7 @@ const mlgooNavigation = [
 const blguNavigation = [
   { name: "Dashboard", href: "/blgu/dashboard", icon: "home" },
   { name: "My Assessments", href: "/blgu/assessments", icon: "clipboard" },
-  { name: "Analytics", href: "/blgu/analytics", icon: "chart" },
+  { name: "Insights", href: "/blgu/analytics", icon: "chart" },
   { name: "Profile", href: "/blgu/profile", icon: "user" },
 ];
 
@@ -100,7 +100,7 @@ const validatorNavigation = [
 
 const katuparanNavigation = [
   { name: "Dashboard", href: "/katuparan/dashboard", icon: "home" },
-  { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
+  // { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
   { name: "Profile", href: "/katuparan/profile", icon: "user" },
 ];
 

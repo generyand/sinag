@@ -112,7 +112,14 @@ export function ReviewHistoryRow({ item }: ReviewHistoryRowProps) {
         {/* Outcome */}
         <TableCell>
           {item.final_compliance_status ? (
-            <Badge variant={outcomeBadgeVariant} className="text-xs">
+            <Badge
+              variant={outcomeBadgeVariant}
+              className={cn(
+                "text-xs",
+                item.final_compliance_status === "PASSED" &&
+                  "bg-green-600 dark:bg-green-600 text-white"
+              )}
+            >
               {item.final_compliance_status}
             </Badge>
           ) : (

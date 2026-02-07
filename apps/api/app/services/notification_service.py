@@ -443,6 +443,59 @@ class NotificationService:
         )
         return notifications
 
+    def notify_all_validators(
+        self,
+        db: Session,
+        notification_type: NotificationType,
+        title: str,
+        message: str,
+        assessment_id: int,
+    ) -> list[Notification]:
+        """
+        Send notification to ALL active VALIDATOR users.
+
+        Validators are system-wide (not area-specific) and are notified when:
+        - Assessments are ready for final validation
+        - BLGU resubmits after MLGOO recalibration (needs Validator re-review)
+
+        Args:
+            db: Database session
+            notification_type: Type of notification
+            title: Notification title
+            message: Notification message
+            assessment_id: Related assessment ID
+
+        Returns:
+            List of created Notification objects
+        """
+        # Get all active Validators (system-wide, not area-specific)
+        validators = (
+            db.query(User)
+            .filter(
+                User.role == UserRole.VALIDATOR,
+                User.is_active == True,
+            )
+            .all()
+        )
+
+        notifications = []
+        for user in validators:
+            notification = self.create_notification(
+                db=db,
+                recipient_id=user.id,
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                assessment_id=assessment_id,
+            )
+            notifications.append(notification)
+
+        self.logger.info(
+            f"Created {len(notifications)} notifications for Validators "
+            f"(type: {notification_type.value})"
+        )
+        return notifications
+
     # ==================== RETRIEVAL METHODS ====================
 
     def get_user_notifications(

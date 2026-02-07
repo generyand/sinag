@@ -5,11 +5,14 @@
  * Used within ReworkIndicatorsPanel to show indicators requiring resubmission.
  *
  * ENHANCEMENTS:
- * - Shows completion status badge (Fixed/Needs Attention)
+ * - Shows addressed status badge (Fixed/Needs Attention)
  * - Displays preview of first comment if available
  * - Better visual hierarchy with improved colors and spacing
  * - More prominent hover state with shadow and border animation
  * - Clearer feedback type indicators with counts
+ *
+ * NOTE: Uses `is_addressed` (new file uploaded after rework) to determine "Fixed" status,
+ * NOT `is_complete`. An indicator is "Fixed" only when BLGU uploads new files after rework.
  */
 
 "use client";
@@ -30,11 +33,15 @@ export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardP
       ? firstComment.substring(0, 100) + "..."
       : firstComment;
 
+  // Use is_addressed to determine if indicator is "Fixed"
+  // An indicator is addressed when BLGU uploads new files after rework was requested
+  const isFixed = failed.is_addressed;
+
   return (
     <button
       onClick={onFixClick}
       className={`w-full flex items-start gap-4 p-4 rounded-sm border-2 transition-all text-left group ${
-        failed.is_complete
+        isFixed
           ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10 hover:border-green-400 dark:hover:border-green-600 hover:shadow-md"
           : "border-orange-200 dark:border-orange-800 bg-white dark:bg-gray-900 hover:border-orange-400 dark:hover:border-orange-600 hover:shadow-lg hover:scale-[1.01]"
       }`}
@@ -43,12 +50,12 @@ export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardP
       <div className="flex-shrink-0 mt-0.5">
         <div
           className={`h-11 w-11 rounded-full flex items-center justify-center transition-colors ${
-            failed.is_complete
+            isFixed
               ? "bg-green-100 dark:bg-green-900/30 group-hover:bg-green-200 dark:group-hover:bg-green-900/50"
               : "bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50"
           }`}
         >
-          {failed.is_complete ? (
+          {isFixed ? (
             <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
           ) : (
             <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -63,7 +70,7 @@ export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardP
           <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors">
             {failed.indicator_name}
           </h4>
-          {failed.is_complete ? (
+          {isFixed ? (
             <span className="flex-shrink-0 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-1 rounded-sm font-medium border border-green-200 dark:border-green-800">
               Fixed
             </span>
@@ -97,8 +104,8 @@ export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardP
           </div>
         )}
 
-        {/* Comment Preview */}
-        {commentPreview && !failed.is_complete && (
+        {/* Comment Preview - show only if not fixed */}
+        {commentPreview && !isFixed && (
           <div className="text-xs text-gray-600 dark:text-gray-400 italic leading-relaxed bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-sm border-l-2 border-orange-300 dark:border-orange-600">
             "{commentPreview}"
           </div>

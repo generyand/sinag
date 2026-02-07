@@ -1,7 +1,7 @@
 "use client";
 
-import { Assessment } from "@/types/assessment";
-import { ReactElement, useEffect, useState } from "react";
+import { AreaStatusType, Assessment } from "@/types/assessment";
+import { ReactElement, useCallback, useEffect, useState } from "react";
 import { AssessmentTreeNode } from "./AssessmentTreeNode";
 import { TreeHeader } from "./TreeHeader";
 import {
@@ -11,22 +11,46 @@ import {
   saveExpandedState,
 } from "./tree-utils";
 
+// Type for the area status response from the API
+export interface AreaStatusResponse {
+  area_submission_status: Record<string, { status: AreaStatusType } | unknown>;
+  area_assessor_approved: Record<string, boolean>;
+  all_areas_approved: boolean;
+}
+
 interface TreeNavigatorProps {
   assessment: Assessment;
   selectedIndicatorId: string | null;
   onIndicatorSelect: (indicatorId: string) => void;
+  areaStatusData?: AreaStatusResponse | null;
+  onAreaSubmitSuccess?: () => void;
 }
 
 export function TreeNavigator({
   assessment,
   selectedIndicatorId,
   onIndicatorSelect,
+  areaStatusData,
+  onAreaSubmitSuccess,
 }: TreeNavigatorProps) {
   // Load expanded state from sessionStorage or auto-expand first incomplete
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(() => {
     const stored = loadExpandedState(assessment.id);
     return stored.size > 0 ? stored : getInitialExpandedAreas(assessment);
   });
+
+  // Helper to get area status from the fetched data
+  const getAreaStatus = useCallback(
+    (areaId: string): AreaStatusType => {
+      if (!areaStatusData?.area_submission_status) return "draft";
+      const status = areaStatusData.area_submission_status[areaId];
+      if (status && typeof status === "object" && "status" in status) {
+        return (status as { status: AreaStatusType }).status;
+      }
+      return "draft";
+    },
+    [areaStatusData]
+  );
 
   // Save expanded state when it changes
   useEffect(() => {
@@ -137,6 +161,10 @@ export function TreeNavigator({
                   onToggle={() => toggleArea(area.id)}
                   progress={progress}
                   level={0}
+                  assessmentId={assessment.id}
+                  areaStatus={getAreaStatus(area.id)}
+                  assessmentStatus={assessment.status}
+                  onAreaSubmitSuccess={onAreaSubmitSuccess}
                 />
 
                 {/* Indicators (when expanded) - Render hierarchical tree */}

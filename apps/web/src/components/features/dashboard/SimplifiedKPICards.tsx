@@ -186,7 +186,7 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
           </Tooltip>
         </TooltipProvider>
 
-        {/* Pipeline Health - Combined */}
+        {/* Review Status - Combined */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -203,7 +203,7 @@ export function SimplifiedKPICards({ data }: SimplifiedKPICardsProps) {
                 <CardContent className="p-4 sm:p-5 relative z-10">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs sm:text-sm font-semibold text-gray-700">
-                      Pipeline Health
+                      Review Status
                     </span>
                     <div className="p-2 bg-purple-500 rounded-sm">
                       <Clock className="h-4 w-4 text-white" />

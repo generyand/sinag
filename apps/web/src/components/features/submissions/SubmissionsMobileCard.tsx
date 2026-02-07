@@ -1,8 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Check, Eye, Loader2, Send } from "lucide-react";
-import { getValidatorDisplayStatus, type SubmissionUIModel } from "./utils/dataTransformers";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Check, Eye, Info, Loader2, Send } from "lucide-react";
+import { NeedsReworkPopover } from "./NeedsReworkPopover";
+import {
+  getAreasBreakdownWithAssessors,
+  getValidatorDisplayStatus,
+  type SubmissionUIModel,
+} from "./utils/dataTransformers";
 import {
   getProgressBarColor,
   getStatusConfig,
@@ -15,6 +21,92 @@ interface SubmissionsMobileCardProps {
   onView: (submission: SubmissionUIModel) => void;
   onRemind: (submission: SubmissionUIModel) => void;
   remindingId?: number | null;
+}
+
+/**
+ * Assessors progress row with tooltip showing detailed breakdown.
+ */
+function AssessorsProgressRow({ submission }: { submission: SubmissionUIModel }) {
+  const { areasApprovedCount, areaApprovalStatus, reviewers } = submission;
+  const isComplete = areasApprovedCount === 6;
+  const { approved, missing } = getAreasBreakdownWithAssessors(areaApprovalStatus, reviewers);
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-semibold text-[var(--foreground)]">Assessors:</span>
+      <span
+        className={
+          isComplete ? "text-green-600 dark:text-green-400 font-medium" : "text-[var(--foreground)]"
+        }
+      >
+        {areasApprovedCount}/6
+      </span>
+      {isComplete ? (
+        <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+          <Check className="h-3.5 w-3.5" />
+          Complete
+        </span>
+      ) : (
+        <span className="text-[var(--muted-foreground)]">Submitted</span>
+      )}
+      {/* Info icon with tooltip showing assessor breakdown */}
+      <TooltipProvider>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              aria-label="View assessor details"
+            >
+              <Info className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="bottom"
+            align="start"
+            className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-xs"
+          >
+            <div className="space-y-3 text-xs">
+              {approved.length > 0 && (
+                <div>
+                  <div className="font-semibold text-green-600 dark:text-green-400 mb-1.5">
+                    Reviewed ({approved.length}):
+                  </div>
+                  <ul className="space-y-1 ml-2">
+                    {approved.map((area) => (
+                      <li key={area.areaId} className="text-[var(--foreground)]">
+                        <span className="font-medium">{area.areaName}</span>
+                        {area.assessorName && (
+                          <span className="text-[var(--muted-foreground)]">
+                            {" "}
+                            — {area.assessorName}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {missing.length > 0 && (
+                <div>
+                  <div className="font-semibold text-amber-600 dark:text-amber-400 mb-1.5">
+                    Missing ({missing.length}):
+                  </div>
+                  <ul className="space-y-1 ml-2">
+                    {missing.map((area) => (
+                      <li key={area.areaId} className="text-[var(--foreground)]">
+                        {area.areaName}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
 }
 
 /**
@@ -39,7 +131,10 @@ export function SubmissionsMobileCard({
         <h3 className="font-semibold text-[var(--foreground)] text-base">
           Brgy. {submission.barangayName}
         </h3>
-        {isStatusClickable(submission.currentStatus) ? (
+        {submission.currentStatus === "Needs Rework" ? (
+          /* Needs Rework: Show popover with assessor details */
+          <NeedsReworkPopover submission={submission} statusConfig={statusConfig} />
+        ) : isStatusClickable(submission.currentStatus) ? (
           <button
             onClick={() => onView(submission)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-medium shrink-0 cursor-pointer transition-all duration-200 hover:opacity-80 hover:ring-2 hover:ring-offset-1 hover:ring-current"
@@ -88,27 +183,8 @@ export function SubmissionsMobileCard({
 
       {/* Meta info */}
       <div className="space-y-2 mb-4 text-sm">
-        {/* Assessors Progress */}
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-[var(--foreground)]">Assessors:</span>
-          <span
-            className={
-              submission.areasApprovedCount === 6
-                ? "text-green-600 dark:text-green-400 font-medium"
-                : "text-[var(--foreground)]"
-            }
-          >
-            {submission.areasApprovedCount}/6
-          </span>
-          {submission.areasApprovedCount === 6 ? (
-            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
-              <Check className="h-3.5 w-3.5" />
-              Complete
-            </span>
-          ) : (
-            <span className="text-[var(--muted-foreground)]">Submitted</span>
-          )}
-        </div>
+        {/* Assessors Progress with detailed tooltip */}
+        <AssessorsProgressRow submission={submission} />
         {/* Validator Status */}
         <div className="flex items-center gap-2">
           <span className="font-semibold text-[var(--foreground)]">Validator:</span>

@@ -20,7 +20,7 @@ The SINAG system implements role-based access control (RBAC) with five distinct 
 - Can only review indicators within their assigned governance area
 - Can review MOVs and leave comments for their area
 - Cannot set Pass/Fail status (only Validators can)
-- Can request rework for their area (one rework round shared across all 6 assessors)
+- Can request rework for their area (one independent rework round per governance area)
 - Can approve their area (triggers status transition when all 6 areas approved)
 
 ### 3. VALIDATOR (System-Wide)

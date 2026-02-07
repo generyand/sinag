@@ -36,8 +36,283 @@ import {
   Cell,
 } from "recharts";
 import { AxiosError } from "axios";
+import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+
+// =============================================================================
+// TEMPORARY PREVIEW MODE - Remove after review
+// =============================================================================
+const PREVIEW_MODE = false; // Set to false to disable mock data
+
+const MOCK_DASHBOARD_DATA = {
+  overall_compliance: {
+    total_barangays: 25,
+    passed_count: 19,
+    failed_count: 6,
+    pass_percentage: 76.0,
+    fail_percentage: 24.0,
+  },
+  governance_area_performance: {
+    areas: [
+      {
+        area_code: "GA1",
+        area_name: "Financial Administration",
+        area_type: "Core",
+        passed_count: 20,
+        failed_count: 4,
+        pass_percentage: 83.3,
+        fail_percentage: 16.7,
+      },
+      {
+        area_code: "GA2",
+        area_name: "Disaster Preparedness",
+        area_type: "Core",
+        passed_count: 16,
+        failed_count: 8,
+        pass_percentage: 66.7,
+        fail_percentage: 33.3,
+      },
+      {
+        area_code: "GA3",
+        area_name: "Safety, Peace and Order",
+        area_type: "Core",
+        passed_count: 22,
+        failed_count: 2,
+        pass_percentage: 91.7,
+        fail_percentage: 8.3,
+      },
+      {
+        area_code: "GA4",
+        area_name: "Social Protection",
+        area_type: "Essential",
+        passed_count: 19,
+        failed_count: 5,
+        pass_percentage: 79.2,
+        fail_percentage: 20.8,
+      },
+      {
+        area_code: "GA5",
+        area_name: "Environmental Management",
+        area_type: "Essential",
+        passed_count: 14,
+        failed_count: 10,
+        pass_percentage: 58.3,
+        fail_percentage: 41.7,
+      },
+      {
+        area_code: "GA6",
+        area_name: "Sustainable Economy",
+        area_type: "Essential",
+        passed_count: 17,
+        failed_count: 7,
+        pass_percentage: 70.8,
+        fail_percentage: 29.2,
+      },
+    ],
+  },
+  top_failing_indicators: {
+    top_failing_indicators: [
+      {
+        indicator_id: 1,
+        indicator_name: "Waste Segregation at Source Program Implementation",
+        failure_count: 14,
+        failure_percentage: 58.3,
+        total_assessed: 25,
+      },
+      {
+        indicator_id: 2,
+        indicator_name: "Updated BDRRM Plan with Climate Change Adaptation",
+        failure_count: 12,
+        failure_percentage: 50.0,
+        total_assessed: 25,
+      },
+      {
+        indicator_id: 3,
+        indicator_name: "Quarterly Financial Report Submission",
+        failure_count: 10,
+        failure_percentage: 41.7,
+        total_assessed: 25,
+      },
+      {
+        indicator_id: 4,
+        indicator_name: "Livelihood Program with Monitoring System",
+        failure_count: 9,
+        failure_percentage: 37.5,
+        total_assessed: 25,
+      },
+      {
+        indicator_id: 5,
+        indicator_name: "Senior Citizen and PWD Database Maintenance",
+        failure_count: 8,
+        failure_percentage: 33.3,
+        total_assessed: 25,
+      },
+    ],
+  },
+  ai_insights: {
+    insights: [
+      {
+        governance_area_name: "Environmental Management",
+        priority: "high",
+        insight_summary:
+          "Multiple barangays struggle with waste segregation program implementation. Common challenges include lack of Materials Recovery Facilities (MRFs), insufficient waste collection equipment, and low household participation rates. Recommended interventions: Municipal-wide IEC campaign, MRF construction support, and waste segregation training for barangay officials.",
+      },
+      {
+        governance_area_name: "Disaster Preparedness",
+        priority: "high",
+        insight_summary:
+          "BDRRM plans across several barangays lack climate change adaptation components. Many plans have not been updated since 2020. Recommended interventions: Training on Climate Change-sensitive BDRRM planning, provision of hazard mapping support, and establishment of early warning system networks.",
+      },
+      {
+        governance_area_name: "Financial Administration",
+        priority: "medium",
+        insight_summary:
+          "Delays in quarterly financial report submission are common, often due to manual record-keeping systems. Recommended interventions: Basic bookkeeping training for barangay treasurers, introduction of simple digital financial tracking tools, and establishment of municipal-level technical assistance.",
+      },
+      {
+        governance_area_name: "Sustainable Economy",
+        priority: "medium",
+        insight_summary:
+          "Livelihood programs exist but lack systematic monitoring and evaluation. Success indicators are often undefined or unmeasured. Recommended interventions: M&E capacity building, development of standard livelihood program templates, and establishment of beneficiary tracking systems.",
+      },
+    ],
+  },
+  bbi_trends: {
+    total_barangays_assessed: 25,
+    bbis: [
+      {
+        bbi_abbreviation: "BDRRMC",
+        bbi_name: "Barangay Disaster Risk Reduction Management Committee",
+        governance_area_code: "GA2",
+        highly_functional_count: 14,
+        highly_functional_percentage: 58.3,
+        moderately_functional_count: 6,
+        moderately_functional_percentage: 25.0,
+        low_functional_count: 3,
+        low_functional_percentage: 12.5,
+        non_functional_count: 1,
+        non_functional_percentage: 4.2,
+        total_assessed: 25,
+      },
+      {
+        bbi_abbreviation: "BCPC",
+        bbi_name: "Barangay Council for the Protection of Children",
+        governance_area_code: "GA4",
+        highly_functional_count: 16,
+        highly_functional_percentage: 66.7,
+        moderately_functional_count: 5,
+        moderately_functional_percentage: 20.8,
+        low_functional_count: 2,
+        low_functional_percentage: 8.3,
+        non_functional_count: 1,
+        non_functional_percentage: 4.2,
+        total_assessed: 25,
+      },
+      {
+        bbi_abbreviation: "VAWC",
+        bbi_name: "Violence Against Women and Children Desk",
+        governance_area_code: "GA4",
+        highly_functional_count: 12,
+        highly_functional_percentage: 50.0,
+        moderately_functional_count: 8,
+        moderately_functional_percentage: 33.3,
+        low_functional_count: 3,
+        low_functional_percentage: 12.5,
+        non_functional_count: 1,
+        non_functional_percentage: 4.2,
+        total_assessed: 25,
+      },
+      {
+        bbi_abbreviation: "KP",
+        bbi_name: "Katarungang Pambarangay",
+        governance_area_code: "GA3",
+        highly_functional_count: 18,
+        highly_functional_percentage: 75.0,
+        moderately_functional_count: 4,
+        moderately_functional_percentage: 16.7,
+        low_functional_count: 2,
+        low_functional_percentage: 8.3,
+        non_functional_count: 0,
+        non_functional_percentage: 0,
+        total_assessed: 25,
+      },
+      {
+        bbi_abbreviation: "BPSO",
+        bbi_name: "Barangay Peace and Security Office",
+        governance_area_code: "GA3",
+        highly_functional_count: 15,
+        highly_functional_percentage: 62.5,
+        moderately_functional_count: 6,
+        moderately_functional_percentage: 25.0,
+        low_functional_count: 2,
+        low_functional_percentage: 8.3,
+        non_functional_count: 1,
+        non_functional_percentage: 4.2,
+        total_assessed: 25,
+      },
+    ],
+  },
+};
+
+const MOCK_HEATMAP_DATA = {
+  total_barangays: 25,
+  summary: {
+    pass_count: 19,
+    fail_count: 6,
+    in_progress_count: 0,
+    not_started_count: 0,
+  },
+  barangays: [
+    { anonymous_id: "Barangay A01", status: "pass" },
+    { anonymous_id: "Barangay A02", status: "pass" },
+    { anonymous_id: "Barangay A03", status: "pass" },
+    { anonymous_id: "Barangay A04", status: "pass" },
+    { anonymous_id: "Barangay A05", status: "fail" },
+    { anonymous_id: "Barangay A06", status: "pass" },
+    { anonymous_id: "Barangay A07", status: "pass" },
+    { anonymous_id: "Barangay A08", status: "pass" },
+    { anonymous_id: "Barangay A09", status: "pass" },
+    { anonymous_id: "Barangay B01", status: "pass" },
+    { anonymous_id: "Barangay B02", status: "fail" },
+    { anonymous_id: "Barangay B03", status: "pass" },
+    { anonymous_id: "Barangay B04", status: "pass" },
+    { anonymous_id: "Barangay B05", status: "pass" },
+    { anonymous_id: "Barangay B06", status: "fail" },
+    { anonymous_id: "Barangay B07", status: "pass" },
+    { anonymous_id: "Barangay B08", status: "pass" },
+    { anonymous_id: "Barangay C01", status: "pass" },
+    { anonymous_id: "Barangay C02", status: "fail" },
+    { anonymous_id: "Barangay C03", status: "pass" },
+    { anonymous_id: "Barangay C04", status: "pass" },
+    { anonymous_id: "Barangay C05", status: "fail" },
+    { anonymous_id: "Barangay C06", status: "pass" },
+    { anonymous_id: "Barangay C07", status: "fail" },
+    { anonymous_id: "Barangay C08", status: "pass" },
+  ],
+};
+// =============================================================================
+
+/**
+ * Resolves year placeholders in indicator names using the assessment cycle year.
+ */
+function resolveYearPlaceholders(text: string, year: number): string {
+  const prevYear = year - 1;
+  return text
+    .replace(/\{CURRENT_YEAR\}/g, String(year))
+    .replace(/\{PREVIOUS_YEAR\}/g, String(prevYear))
+    .replace(/\{CY_CURRENT_YEAR\}/g, `CY ${year}`)
+    .replace(/\{CY_PREVIOUS_YEAR\}/g, `CY ${prevYear}`)
+    .replace(/\{JUL_TO_SEP_CURRENT_YEAR\}/g, `July-September ${year}`)
+    .replace(/\{JUL_SEP_CURRENT_YEAR\}/g, `July-September ${year}`)
+    .replace(/\{JAN_TO_OCT_CURRENT_YEAR\}/g, `January to October ${year}`)
+    .replace(/\{JAN_OCT_CURRENT_YEAR\}/g, `January to October ${year}`)
+    .replace(/\{Q1_Q3_CURRENT_YEAR\}/g, `1st to 3rd quarter of CY ${year}`)
+    .replace(/\{DEC_31_CURRENT_YEAR\}/g, `December 31, ${year}`)
+    .replace(/\{DEC_31_PREVIOUS_YEAR\}/g, `December 31, ${prevYear}`)
+    .replace(/\{MARCH_CURRENT_YEAR\}/g, `March ${year}`)
+    .replace(/\{OCT_31_CURRENT_YEAR\}/g, `October 31, ${year}`);
+}
 
 /**
  * Katuparan Center Dashboard Page
@@ -64,6 +339,8 @@ export default function KatuparanDashboardPage() {
       },
     }
   );
+
+  const effectiveYear = useEffectiveYear() ?? new Date().getFullYear();
 
   // Fetch geographic heatmap data separately
   const { data: heatmapData, isLoading: heatmapLoading } = useGetExternalAnalyticsGeographicHeatmap(
@@ -101,14 +378,18 @@ export default function KatuparanDashboardPage() {
   const requiredCount = insufficientDataMatch ? parseInt(insufficientDataMatch[1]) : 5;
   const currentCount = insufficientDataMatch ? parseInt(insufficientDataMatch[2]) : 0;
 
+  // Use mock data in preview mode, otherwise use API data
+  const effectiveData = PREVIEW_MODE ? MOCK_DASHBOARD_DATA : data;
+  const effectiveHeatmapData = PREVIEW_MODE ? MOCK_HEATMAP_DATA : heatmapData;
+
   // Pie chart colors
   const COLORS = ["#22c55e", "#ef4444"];
 
   // Prepare pie chart data
-  const pieData = data?.overall_compliance
+  const pieData = effectiveData?.overall_compliance
     ? [
-        { name: "Passed", value: data.overall_compliance.passed_count },
-        { name: "Failed", value: data.overall_compliance.failed_count },
+        { name: "Passed", value: effectiveData.overall_compliance.passed_count },
+        { name: "Failed", value: effectiveData.overall_compliance.failed_count },
       ]
     : [];
 
@@ -124,8 +405,19 @@ export default function KatuparanDashboardPage() {
         </AlertDescription>
       </Alert>
 
+      {/* Preview Mode Banner */}
+      {PREVIEW_MODE && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <Info className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <strong>Preview Mode:</strong> Showing mock data for UI review. Set PREVIEW_MODE to
+            false to see real data.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Loading State */}
-      {isLoading && (
+      {!PREVIEW_MODE && isLoading && (
         <div className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <Skeleton className="h-[300px] w-full" />
@@ -137,7 +429,7 @@ export default function KatuparanDashboardPage() {
       )}
 
       {/* Insufficient Data State */}
-      {isInsufficientData && (
+      {!PREVIEW_MODE && isInsufficientData && (
         <Card className="border-dashed border-2 border-amber-300 bg-amber-50/30">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-amber-100 p-4 mb-6">
@@ -193,7 +485,7 @@ export default function KatuparanDashboardPage() {
       )}
 
       {/* Generic Error State */}
-      {error && !isInsufficientData && (
+      {!PREVIEW_MODE && error && !isInsufficientData && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
@@ -215,7 +507,7 @@ export default function KatuparanDashboardPage() {
       )}
 
       {/* Dashboard Content */}
-      {data && (
+      {(PREVIEW_MODE || data) && effectiveData && (
         <>
           {/* Overall SGLGB Compliance Summary */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -226,7 +518,7 @@ export default function KatuparanDashboardPage() {
                   <Target className="h-5 w-5 text-primary" />
                   <CardTitle>Municipal SGLGB Status</CardTitle>
                 </div>
-                <CardDescription>CY {new Date().getFullYear()} Assessment Results</CardDescription>
+                <CardDescription>CY {effectiveYear} Assessment Results</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -237,10 +529,10 @@ export default function KatuparanDashboardPage() {
                       <span className="text-sm font-medium text-green-700">PASSED</span>
                     </div>
                     <p className="text-4xl font-bold text-green-600">
-                      {data.overall_compliance.pass_percentage.toFixed(0)}%
+                      {effectiveData.overall_compliance.pass_percentage.toFixed(0)}%
                     </p>
                     <p className="text-sm text-green-600 mt-1">
-                      {data.overall_compliance.passed_count} barangays
+                      {effectiveData.overall_compliance.passed_count} barangays
                     </p>
                   </div>
                   {/* Failed */}
@@ -250,17 +542,19 @@ export default function KatuparanDashboardPage() {
                       <span className="text-sm font-medium text-red-700">FAILED</span>
                     </div>
                     <p className="text-4xl font-bold text-red-600">
-                      {data.overall_compliance.fail_percentage.toFixed(0)}%
+                      {effectiveData.overall_compliance.fail_percentage.toFixed(0)}%
                     </p>
                     <p className="text-sm text-red-600 mt-1">
-                      {data.overall_compliance.failed_count} barangays
+                      {effectiveData.overall_compliance.failed_count} barangays
                     </p>
                   </div>
                 </div>
                 <div className="text-center pt-2 border-t">
                   <p className="text-sm text-muted-foreground">
                     Total Barangays Assessed:{" "}
-                    <span className="font-semibold">{data.overall_compliance.total_barangays}</span>
+                    <span className="font-semibold">
+                      {effectiveData.overall_compliance.total_barangays}
+                    </span>
                   </p>
                 </div>
               </CardContent>
@@ -296,8 +590,8 @@ export default function KatuparanDashboardPage() {
                         <td>
                           {data?.overall_compliance
                             ? item.name === "Passed"
-                              ? `${data.overall_compliance.pass_percentage.toFixed(1)}%`
-                              : `${data.overall_compliance.fail_percentage.toFixed(1)}%`
+                              ? `${effectiveData.overall_compliance.pass_percentage.toFixed(1)}%`
+                              : `${effectiveData.overall_compliance.fail_percentage.toFixed(1)}%`
                             : "N/A"}
                         </td>
                       </tr>
@@ -319,7 +613,19 @@ export default function KatuparanDashboardPage() {
                         outerRadius={80}
                         paddingAngle={2}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent, x, y }) => (
+                          <text
+                            x={x}
+                            y={y}
+                            fill="#374151"
+                            fontSize={12}
+                            fontWeight={500}
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                          >
+                            {`${name} ${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        )}
                       >
                         {pieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -361,7 +667,7 @@ export default function KatuparanDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.governance_area_performance.areas.map((area) => (
+                  {effectiveData.governance_area_performance.areas.map((area) => (
                     <tr key={area.area_code}>
                       <td>{area.area_name}</td>
                       <td>{area.area_type}</td>
@@ -377,11 +683,11 @@ export default function KatuparanDashboardPage() {
               <div
                 className="h-[350px] mb-6"
                 role="img"
-                aria-label={`Bar chart showing governance area performance. ${data.governance_area_performance.areas.map((a) => `${a.area_name}: ${a.pass_percentage.toFixed(1)}% pass rate`).join(", ")}`}
+                aria-label={`Bar chart showing governance area performance. ${effectiveData.governance_area_performance.areas.map((a) => `${a.area_name}: ${a.pass_percentage.toFixed(1)}% pass rate`).join(", ")}`}
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={data.governance_area_performance.areas}
+                    data={effectiveData.governance_area_performance.areas}
                     layout="vertical"
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
@@ -403,7 +709,7 @@ export default function KatuparanDashboardPage() {
 
               {/* Area Cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {data.governance_area_performance.areas.map((area) => {
+                {effectiveData.governance_area_performance.areas.map((area) => {
                   // Determine if Core or Essential based on area_type field
                   const isCore = area.area_type === "Core";
 
@@ -457,52 +763,56 @@ export default function KatuparanDashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {data.top_failing_indicators.top_failing_indicators.length > 0 ? (
+              {effectiveData.top_failing_indicators.top_failing_indicators.length > 0 ? (
                 <div className="space-y-4">
-                  {data.top_failing_indicators.top_failing_indicators.map((indicator, index) => (
-                    <div
-                      key={indicator.indicator_id}
-                      className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                    >
+                  {effectiveData.top_failing_indicators.top_failing_indicators.map(
+                    (indicator, index) => (
                       <div
-                        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-                          index === 0
-                            ? "bg-red-500"
-                            : index === 1
-                              ? "bg-red-400"
-                              : index === 2
-                                ? "bg-orange-400"
-                                : "bg-orange-300"
-                        }`}
+                        key={indicator.indicator_id}
+                        className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
-                        #{index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm mb-1">{indicator.indicator_name}</h4>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <XCircle className="h-4 w-4 text-red-500" />
-                            <span>Failures:</span>
-                            <span className="font-medium text-destructive">
-                              {indicator.failure_count}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            <span>Failure Rate:</span>
-                            <span className="font-medium text-destructive">
-                              {indicator.failure_percentage.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                            <span>Total Assessed:</span>
-                            <span className="font-medium">{indicator.total_assessed}</span>
+                        <div
+                          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                            index === 0
+                              ? "bg-red-500"
+                              : index === 1
+                                ? "bg-red-400"
+                                : index === 2
+                                  ? "bg-orange-400"
+                                  : "bg-orange-300"
+                          }`}
+                        >
+                          #{index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm mb-1">
+                            {resolveYearPlaceholders(indicator.indicator_name, effectiveYear)}
+                          </h4>
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <XCircle className="h-4 w-4 text-red-500" />
+                              <span>Failures:</span>
+                              <span className="font-medium text-destructive">
+                                {indicator.failure_count}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <AlertTriangle className="h-4 w-4 text-amber-500" />
+                              <span>Failure Rate:</span>
+                              <span className="font-medium text-destructive">
+                                {indicator.failure_percentage.toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                              <span>Total Assessed:</span>
+                              <span className="font-medium">{indicator.total_assessed}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
@@ -525,9 +835,9 @@ export default function KatuparanDashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {data.ai_insights.insights.length > 0 ? (
+              {effectiveData.ai_insights.insights.length > 0 ? (
                 <div className="space-y-6">
-                  {data.ai_insights.insights.map((insight, index) => (
+                  {effectiveData.ai_insights.insights.map((insight, index) => (
                     <div
                       key={index}
                       className="rounded-lg border p-4 bg-gradient-to-r from-amber-50/50 to-transparent"
@@ -580,11 +890,11 @@ export default function KatuparanDashboardPage() {
           </Card>
 
           {/* BBI Functionality Trends */}
-          {data.bbi_trends && <BBITrendsChart data={data.bbi_trends} />}
+          {effectiveData.bbi_trends && <BBITrendsChart data={effectiveData.bbi_trends} />}
 
           {/* Geographic Heatmap (Anonymized) */}
-          {heatmapLoading && <Skeleton className="h-[400px] w-full" />}
-          {heatmapData && <AnonymizedHeatmap data={heatmapData} />}
+          {!PREVIEW_MODE && heatmapLoading && <Skeleton className="h-[400px] w-full" />}
+          {effectiveHeatmapData && <AnonymizedHeatmap data={effectiveHeatmapData} />}
 
           {/* Footer */}
           <div className="text-center text-sm text-muted-foreground pt-4 border-t">

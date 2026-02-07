@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, X } from "lucide-react";
 import { SubmissionsFilter } from "@/types/submissions";
+import { UNIFIED_STATUS_FILTER_OPTIONS } from "./utils/statusConfig";
 import { useState } from "react";
 
 interface SubmissionsFiltersProps {
@@ -12,12 +13,8 @@ interface SubmissionsFiltersProps {
   onFiltersChange: (filters: SubmissionsFilter) => void;
 }
 
-const statusOptions = [
-  { value: "awaiting_review", label: "Awaiting Review", color: "bg-blue-100 text-blue-800" },
-  { value: "in_progress", label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
-  { value: "needs_rework", label: "Needs Rework", color: "bg-orange-100 text-orange-800" },
-  { value: "validated", label: "Validated", color: "bg-green-100 text-green-800" },
-];
+// Use unified status filter options from centralized config
+const statusOptions = UNIFIED_STATUS_FILTER_OPTIONS;
 
 export function SubmissionsFilters({ filters, onFiltersChange }: SubmissionsFiltersProps) {
   const [showStatusFilter, setShowStatusFilter] = useState(false);

@@ -33,6 +33,8 @@ import type {
   GetAssessorQueueParams,
   GetAssessorStatsParams,
   HTTPValidationError,
+  MOVAssessorFeedbackResponse,
+  MOVAssessorFeedbackUpdate,
   MOVCreate,
   MOVUploadResponse,
   MunicipalOverviewDashboard,
@@ -881,20 +883,25 @@ export function useGetAssessorAnalytics<TData = Awaited<ReturnType<typeof getAss
 
 
 /**
- * Get comprehensive assessor dashboard data for their governance area.
+ * Get comprehensive dashboard data for assessors and validators.
 
-After workflow restructuring: ASSESSORs are area-specific.
-This endpoint provides assessor-specific analytics that mirror the MLGOO
-municipal overview but filtered by the assessor's assigned governance area.
+**For VALIDATORS (system-wide access):**
+- See ALL assessments across all 6 governance areas
+- Aggregated compliance summary, area performance, failing indicators
+- Allows validators to coordinate offline within their cluster
 
-**Access:** ASSESSOR role users with area assignment only
+**For ASSESSORS (area-specific access):**
+- See assessments filtered by their assigned governance area
+- Area-specific analytics mirroring the MLGOO municipal overview
+
+**Access:** VALIDATOR role OR ASSESSOR role with area assignment
 
 Returns all dashboard sections in a single request:
-- Compliance summary (pass/fail counts, rates) for their governance area
-- Governance area performance (limited to their area)
-- Top failing indicators in their area
-- Aggregated CapDev summary for their area
-- Barangay status list (barangays with responses in their area)
+- Compliance summary (pass/fail counts, rates)
+- Governance area performance
+- Top failing indicators
+- Aggregated CapDev summary
+- Barangay status list
 
 Args:
     year: Optional year filter (e.g., 2024, 2025)
@@ -1476,6 +1483,167 @@ export const useDeleteAssessorAnnotationsAnnotationId = <TError = HTTPValidation
       return useMutation(mutationOptions);
     }
     /**
+ * Update assessor notes and rework flag for a specific MOV file.
+
+Assessors can add general notes about a MOV file and flag it for rework.
+The rework flag auto-toggles ON when notes are added, but can be manually
+toggled OFF by the assessor.
+
+**Path Parameters:**
+- mov_file_id: ID of the MOV file to update
+
+**Request Body:**
+- assessor_notes: Optional general notes about this MOV
+- flagged_for_rework: Optional flag indicating MOV needs rework
+
+**Returns:** Updated MOV assessor feedback
+
+**Raises:**
+- 404: MOV file not found
+- 403: User not authorized to update this MOV
+ * @summary Update per-MOV assessor feedback
+ */
+export const patchAssessorMovs$MovFileIdFeedback = (
+    movFileId: number,
+    mOVAssessorFeedbackUpdate: MOVAssessorFeedbackUpdate,
+ options?: SecondParameter<typeof mutator>,) => {
+      
+      
+      return mutator<MOVAssessorFeedbackResponse>(
+      {url: `/api/v1/assessor/movs/${movFileId}/feedback`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: mOVAssessorFeedbackUpdate
+    },
+      options);
+    }
+  
+
+
+export const getPatchAssessorMovsMovFileIdFeedbackMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAssessorMovs$MovFileIdFeedback>>, TError,{movFileId: number;data: MOVAssessorFeedbackUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchAssessorMovs$MovFileIdFeedback>>, TError,{movFileId: number;data: MOVAssessorFeedbackUpdate}, TContext> => {
+
+const mutationKey = ['patchAssessorMovsMovFileIdFeedback'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchAssessorMovs$MovFileIdFeedback>>, {movFileId: number;data: MOVAssessorFeedbackUpdate}> = (props) => {
+          const {movFileId,data} = props ?? {};
+
+          return  patchAssessorMovs$MovFileIdFeedback(movFileId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchAssessorMovsMovFileIdFeedbackMutationResult = NonNullable<Awaited<ReturnType<typeof patchAssessorMovs$MovFileIdFeedback>>>
+    export type PatchAssessorMovsMovFileIdFeedbackMutationBody = MOVAssessorFeedbackUpdate
+    export type PatchAssessorMovsMovFileIdFeedbackMutationError = HTTPValidationError
+
+    /**
+ * @summary Update per-MOV assessor feedback
+ */
+export const usePatchAssessorMovsMovFileIdFeedback = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAssessorMovs$MovFileIdFeedback>>, TError,{movFileId: number;data: MOVAssessorFeedbackUpdate}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchAssessorMovs$MovFileIdFeedback>>,
+        TError,
+        {movFileId: number;data: MOVAssessorFeedbackUpdate},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchAssessorMovsMovFileIdFeedbackMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Get assessor feedback for a specific MOV file.
+
+Returns the assessor notes and rework flag for the specified MOV file.
+
+**Path Parameters:**
+- mov_file_id: ID of the MOV file
+
+**Returns:** MOV assessor feedback data
+
+**Raises:**
+- 404: MOV file not found
+ * @summary Get per-MOV assessor feedback
+ */
+export const getAssessorMovs$MovFileIdFeedback = (
+    movFileId: number,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<MOVAssessorFeedbackResponse>(
+      {url: `/api/v1/assessor/movs/${movFileId}/feedback`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAssessorMovsMovFileIdFeedbackQueryKey = (movFileId?: number,) => {
+    return [
+    `/api/v1/assessor/movs/${movFileId}/feedback`
+    ] as const;
+    }
+
+    
+export const getGetAssessorMovsMovFileIdFeedbackQueryOptions = <TData = Awaited<ReturnType<typeof getAssessorMovs$MovFileIdFeedback>>, TError = HTTPValidationError>(movFileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdFeedback>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssessorMovsMovFileIdFeedbackQueryKey(movFileId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdFeedback>>> = ({ signal }) => getAssessorMovs$MovFileIdFeedback(movFileId, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(movFileId),  staleTime: 30000, refetchOnWindowFocus: true,  ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdFeedback>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssessorMovsMovFileIdFeedbackQueryResult = NonNullable<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdFeedback>>>
+export type GetAssessorMovsMovFileIdFeedbackQueryError = HTTPValidationError
+
+
+/**
+ * @summary Get per-MOV assessor feedback
+ */
+
+export function useGetAssessorMovsMovFileIdFeedback<TData = Awaited<ReturnType<typeof getAssessorMovs$MovFileIdFeedback>>, TError = HTTPValidationError>(
+ movFileId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssessorMovs$MovFileIdFeedback>>, TError, TData>, request?: SecondParameter<typeof mutator>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssessorMovsMovFileIdFeedbackQueryOptions(movFileId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
  * Assessor approves their assigned governance area.
 
 After workflow restructuring, assessors are area-specific (6 users for 6 areas).

@@ -16,6 +16,9 @@ class AssessorQueueItem(BaseModel):
     status: str  # Per-area status for assessors (SUBMITTED, IN_REVIEW, REWORK, APPROVED)
     updated_at: datetime
     area_progress: int = 0  # Progress percentage (0-100) of indicators reviewed
+    re_review_progress: int = (
+        0  # Progress percentage (0-100) for re-reviewing after rework resubmission
+    )
 
     # Per-area fields (for area-specific assessors)
     governance_area_id: int | None = None
@@ -33,6 +36,10 @@ class AssessorQueueItem(BaseModel):
     areas_in_rework: list[int] | None = None
     rework_round_used: bool = False
     rework_submitted_at: datetime | None = None
+
+    # Per-area rework tracking (for per-area workflow)
+    # True if THIS assessor's governance area has used its rework round
+    my_area_rework_used: bool = False
 
     # Calibration fields
     is_calibration_rework: bool = False
@@ -129,6 +136,35 @@ class AnnotationResponse(BaseModel):
     comment: str
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================================
+# Per-MOV Assessor Feedback Schemas (Epic 6.0)
+# ============================================================================
+
+
+class MOVAssessorFeedbackUpdate(BaseModel):
+    """Request schema for updating per-MOV assessor feedback.
+
+    Assessors can add general notes and flag individual MOV files for rework.
+    The flag auto-toggles ON when notes are added, but can be manually toggled OFF.
+    """
+
+    assessor_notes: str | None = None
+    flagged_for_rework: bool | None = None
+
+
+class MOVAssessorFeedbackResponse(BaseModel):
+    """Response schema for per-MOV assessor feedback."""
+
+    mov_file_id: int
+    assessor_notes: str | None = None
+    flagged_for_rework: bool = False
+    flagged_by_assessor_id: int | None = None
+    flagged_at: datetime | None = None
 
     class Config:
         from_attributes = True

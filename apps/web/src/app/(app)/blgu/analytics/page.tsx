@@ -22,14 +22,114 @@ import { YearSelector } from "@/components/features/assessment-year/YearSelector
 import {
   AnalyticsPendingCard,
   LanguageSelector,
-  CapDevSummaryCard,
   GovernanceWeaknessesCard,
   RecommendationsCard,
-  CapDevNeedsAccordion,
-  InterventionsGrid,
   PriorityActionsChecklist,
 } from "@/components/features/blgu-analytics";
 import { CapDevInsightsContent } from "@/types/capdev";
+
+// =============================================================================
+// TEMPORARY PREVIEW MODE - Remove after review
+// =============================================================================
+const PREVIEW_MODE = false; // Set to false to disable mock data
+
+const MOCK_INSIGHTS: CapDevInsightsContent = {
+  summary: "Mock summary for preview",
+  governance_weaknesses: [
+    {
+      area_name: "Financial Administration",
+      description:
+        "Incomplete financial records and delayed submission of budget reports. The barangay lacks a systematic approach to tracking expenditures and revenue.",
+      severity: "high",
+    },
+    {
+      area_name: "Disaster Preparedness",
+      description:
+        "No updated Barangay Disaster Risk Reduction Management Plan. Emergency response protocols are outdated and evacuation routes need review.",
+      severity: "high",
+    },
+    {
+      area_name: "Environmental Management",
+      description:
+        "Waste segregation program needs improvement. Only 40% of households are actively participating in the waste management initiative.",
+      severity: "medium",
+    },
+    {
+      area_name: "Social Protection",
+      description:
+        "Database of senior citizens and PWDs requires updating. Some beneficiaries may not be receiving appropriate support services.",
+      severity: "low",
+    },
+  ],
+  recommendations: [
+    {
+      title: "Implement Digital Financial Tracking System",
+      description:
+        "Adopt a simple digital bookkeeping system to track all barangay income and expenses. This will improve transparency and make audit preparation easier.",
+      governance_area: "Financial Administration",
+      priority: "high",
+      expected_impact: "90% improvement in financial report accuracy and on-time submission",
+    },
+    {
+      title: "Update BDRRM Plan with Community Input",
+      description:
+        "Conduct community consultations to update the disaster risk reduction plan. Include new hazard assessments and updated evacuation procedures.",
+      governance_area: "Disaster Preparedness",
+      priority: "high",
+      expected_impact: "Enhanced community resilience and faster emergency response",
+    },
+    {
+      title: "Launch Waste Segregation Awareness Campaign",
+      description:
+        "Organize purok-level information drives about proper waste segregation. Partner with schools for youth education programs.",
+      governance_area: "Environmental Management",
+      priority: "medium",
+      expected_impact: "Increase household participation from 40% to 75%",
+    },
+    {
+      title: "Conduct Beneficiary Database Validation",
+      description:
+        "Perform house-to-house validation of senior citizens and PWD registry. Ensure all eligible residents are properly documented.",
+      governance_area: "Social Protection",
+      priority: "medium",
+      expected_impact: "100% accurate beneficiary database for social services",
+    },
+  ],
+  priority_actions: [
+    {
+      action:
+        "Designate a Barangay Financial Records Officer and provide basic bookkeeping training",
+      responsible_party: "Barangay Captain",
+      timeline: "Immediate",
+      success_indicator: "Officer appointed and trained within 2 weeks",
+    },
+    {
+      action: "Schedule BDRRM committee meeting to review and update emergency protocols",
+      responsible_party: "BDRRM Committee Chair",
+      timeline: "Immediate",
+      success_indicator: "Meeting conducted with action items documented",
+    },
+    {
+      action: "Procure waste segregation bins and educational materials for distribution",
+      responsible_party: "Environment Committee",
+      timeline: "Short-term",
+      success_indicator: "Materials distributed to all puroks within 1 month",
+    },
+    {
+      action: "Deploy barangay health workers for beneficiary database validation",
+      responsible_party: "Barangay Secretary",
+      timeline: "Short-term",
+      success_indicator: "Validation completed for 100% of registered beneficiaries",
+    },
+    {
+      action: "Establish quarterly review schedule for all governance areas",
+      responsible_party: "Barangay Council",
+      timeline: "Long-term",
+      success_indicator: "Regular review meetings institutionalized",
+    },
+  ],
+};
+// =============================================================================
 
 // Status labels for display
 const STATUS_LABELS: Record<string, string> = {
@@ -222,7 +322,7 @@ export default function BLGUAnalyticsPage() {
         </div>
 
         {/* Main Content */}
-        {!isCompleted ? (
+        {!isCompleted && !PREVIEW_MODE ? (
           // Pending State
           <AnalyticsPendingCard
             status={assessmentStatus}
@@ -245,8 +345,17 @@ export default function BLGUAnalyticsPage() {
               </div>
             )}
 
-            {/* Status Check */}
-            {capdevData?.status === "pending" || capdevData?.status === "generating" ? (
+            {/* Preview Mode Banner */}
+            {PREVIEW_MODE && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+                <span className="text-amber-600 text-sm font-medium">
+                  Preview Mode - Showing mock data for UI review
+                </span>
+              </div>
+            )}
+
+            {!PREVIEW_MODE &&
+            (capdevData?.status === "pending" || capdevData?.status === "generating") ? (
               <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6 text-center">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--cityscape-yellow)] mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
@@ -256,7 +365,7 @@ export default function BLGUAnalyticsPage() {
                   AI is analyzing your assessment data. This may take a few minutes.
                 </p>
               </div>
-            ) : capdevData?.status === "failed" ? (
+            ) : !PREVIEW_MODE && capdevData?.status === "failed" ? (
               <div className="bg-[var(--card)] border border-red-200 rounded-lg p-6 text-center">
                 <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
@@ -266,43 +375,32 @@ export default function BLGUAnalyticsPage() {
                   Unable to generate insights. Please contact support if this persists.
                 </p>
               </div>
-            ) : insights ? (
-              // Display CapDev Content
+            ) : (PREVIEW_MODE ? MOCK_INSIGHTS : insights) ? (
+              // Display CapDev Content - Streamlined 3-section layout
               <>
-                {/* Summary Card */}
-                {insights.summary && (
-                  <CapDevSummaryCard
-                    summary={insights.summary}
-                    generatedAt={insights.generated_at || capdevData?.generated_at}
-                  />
-                )}
-
-                {/* Governance Weaknesses */}
-                {insights.governance_weaknesses && insights.governance_weaknesses.length > 0 && (
-                  <GovernanceWeaknessesCard weaknesses={insights.governance_weaknesses} />
-                )}
-
-                {/* Recommendations */}
-                {insights.recommendations && insights.recommendations.length > 0 && (
-                  <RecommendationsCard recommendations={insights.recommendations} />
-                )}
-
-                {/* Capacity Development Needs */}
-                {insights.capacity_development_needs &&
-                  insights.capacity_development_needs.length > 0 && (
-                    <CapDevNeedsAccordion needs={insights.capacity_development_needs} />
+                {/* Governance Weaknesses - "What's wrong?" */}
+                {(PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.governance_weaknesses &&
+                  (PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.governance_weaknesses!.length > 0 && (
+                    <GovernanceWeaknessesCard
+                      weaknesses={(PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.governance_weaknesses!}
+                    />
                   )}
 
-                {/* Suggested Interventions */}
-                {insights.suggested_interventions &&
-                  insights.suggested_interventions.length > 0 && (
-                    <InterventionsGrid interventions={insights.suggested_interventions} />
+                {/* Recommendations - "What should we do?" */}
+                {(PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.recommendations &&
+                  (PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.recommendations!.length > 0 && (
+                    <RecommendationsCard
+                      recommendations={(PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.recommendations!}
+                    />
                   )}
 
-                {/* Priority Actions */}
-                {insights.priority_actions && insights.priority_actions.length > 0 && (
-                  <PriorityActionsChecklist actions={insights.priority_actions} />
-                )}
+                {/* Priority Actions - "What do I do first?" */}
+                {(PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.priority_actions &&
+                  (PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.priority_actions!.length > 0 && (
+                    <PriorityActionsChecklist
+                      actions={(PREVIEW_MODE ? MOCK_INSIGHTS : insights)!.priority_actions!}
+                    />
+                  )}
               </>
             ) : (
               // No insights available

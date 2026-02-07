@@ -96,7 +96,10 @@ graph TD
     S --> T[Status: REWORK + is_mlgoo_recalibration=true]
     T --> U[BLGU Addresses RE-calibration]
     U --> V[BLGU Resubmits]
-    V --> P
+    V --> VA[Status: AWAITING_FINAL_VALIDATION]
+    VA --> VB[Validator Reviews RE-calibration]
+    VB --> VC[Validator Finalizes]
+    VC --> P
     R -->|Approved| W[MLGOO Approves]
     W --> X[Status: COMPLETED]
 ```
@@ -409,7 +412,10 @@ If MLGOO identifies issues after validator review, they can request RE-calibrati
    - Stores `mlgoo_recalibration_comments` (guidance for BLGU)
 4. **BLGU Receives Notification**: Dashboard shows RE-calibration details
 5. **BLGU Addresses Issues**: Only specified indicators are unlocked
-6. **BLGU Resubmits**: Assessment returns to `AWAITING_MLGOO_APPROVAL`
+6. **BLGU Resubmits**: Assessment goes to `AWAITING_FINAL_VALIDATION` for Validator re-review
+7. **Validator Reviews**: Validator reviews the recalibrated indicators
+8. **Validator Finalizes**: After approval, assessment returns to `AWAITING_MLGOO_APPROVAL`
+9. **MLGOO Final Review**: MLGOO can now approve the assessment
 
 **RE-Calibration Limit:**
 
@@ -448,17 +454,17 @@ When MLGOO is satisfied with the assessment:
 
 ## Assessment Status Flow
 
-| Status                                   | Description                         | Who Can See                | Next Actions                                       |
-| ---------------------------------------- | ----------------------------------- | -------------------------- | -------------------------------------------------- |
-| `DRAFT`                                  | BLGU is filling out                 | BLGU only                  | Submit                                             |
-| `SUBMITTED`                              | Submitted for review                | Assessors                  | Review, Send Rework, or Finalize                   |
-| `IN_REVIEW`                              | Assessor reviewing                  | Assessors                  | Continue review                                    |
-| `REWORK`                                 | Needs revision                      | BLGU, Assessors/Validators | BLGU revises and resubmits                         |
-| `REWORK` + `is_calibration_rework=true`  | Calibration needed                  | BLGU, Validator            | BLGU addresses specific area, submits to Validator |
-| `REWORK` + `is_mlgoo_recalibration=true` | MLGOO RE-calibration                | BLGU, MLGOO                | BLGU addresses MLGOO issues, resubmits             |
-| `AWAITING_FINAL_VALIDATION`              | Ready for validator                 | Validators                 | Determine Pass/Fail, Calibrate, or Finalize        |
-| `AWAITING_MLGOO_APPROVAL`                | Validators done, awaiting MLGOO     | MLGOO, BLGU                | MLGOO approves or requests RE-calibration          |
-| `COMPLETED`                              | Validation complete, MLGOO approved | All                        | View final results                                 |
+| Status                                   | Description                         | Who Can See                | Next Actions                                        |
+| ---------------------------------------- | ----------------------------------- | -------------------------- | --------------------------------------------------- |
+| `DRAFT`                                  | BLGU is filling out                 | BLGU only                  | Submit                                              |
+| `SUBMITTED`                              | Submitted for review                | Assessors                  | Review, Send Rework, or Finalize                    |
+| `IN_REVIEW`                              | Assessor reviewing                  | Assessors                  | Continue review                                     |
+| `REWORK`                                 | Needs revision                      | BLGU, Assessors/Validators | BLGU revises and resubmits                          |
+| `REWORK` + `is_calibration_rework=true`  | Calibration needed                  | BLGU, Validator            | BLGU addresses specific area, submits to Validator  |
+| `REWORK` + `is_mlgoo_recalibration=true` | MLGOO RE-calibration                | BLGU, MLGOO                | BLGU addresses MLGOO issues, resubmits to Validator |
+| `AWAITING_FINAL_VALIDATION`              | Ready for validator                 | Validators                 | Determine Pass/Fail, Calibrate, or Finalize         |
+| `AWAITING_MLGOO_APPROVAL`                | Validators done, awaiting MLGOO     | MLGOO, BLGU                | MLGOO approves or requests RE-calibration           |
+| `COMPLETED`                              | Validation complete, MLGOO approved | All                        | View final results                                  |
 
 ### Calibration vs. Rework vs. RE-Calibration
 
@@ -467,7 +473,7 @@ When MLGOO is satisfied with the assessment:
 | **Who triggers**   | Assessor              | Validator                          | MLGOO                           |
 | **When triggered** | During initial review | During final validation            | During MLGOO approval           |
 | **Scope**          | Any indicators        | Only Validator's governance area   | Any indicators (MLGOO selected) |
-| **Returns to**     | All Assessors         | Same Validator                     | MLGOO                           |
+| **Returns to**     | All Assessors         | Same Validator                     | Validator, then MLGOO           |
 | **Limit**          | 1 per assessment      | 1 per governance area              | 1 per assessment                |
 | **AI Summary**     | Yes (rework_summary)  | Yes (calibration_summary per area) | No (uses comments)              |
 | **Field flag**     | `rework_count = 1`    | `is_calibration_rework = true`     | `is_mlgoo_recalibration = true` |
@@ -695,12 +701,14 @@ class ValidationRequest(BaseModel):
 # Total governance areas constant
 TOTAL_GOVERNANCE_AREAS = 6  # IDs 1-6
 
-# Per-area submission tracking
-area_submission_status: dict = {}  # {"1": {"status": "approved", "approved_at": "...", "assessor_id": 5}, ...}
+# Per-area submission tracking (includes per-area rework tracking)
+# Each area's data includes "rework_used": true/false for independent rework rounds
+area_submission_status: dict = {}  # {"1": {"status": "approved", "approved_at": "...", "assessor_id": 5, "rework_used": false}, ...}
 area_assessor_approved: dict = {}  # {"1": true, "2": false, ...}
 
-# Rework round tracking
-rework_round_used: bool = False    # True after first rework (all 6 assessors share one round)
+# Global rework round tracking (for analytics - kept for backward compatibility)
+# Note: Actual per-area rework blocking is done via area_submission_status[area_id]["rework_used"]
+rework_round_used: bool = False    # True if ANY area has used its rework round
 
 # Calibration round tracking
 calibration_round_used: bool = False  # True after first calibration
@@ -725,22 +733,39 @@ def get_area_status(self, governance_area_id: int) -> str:
     area_data = self.area_submission_status.get(str(governance_area_id), {})
     return area_data.get("status", "draft")
 
-def can_assessor_request_rework(self) -> bool:
-    """Check if assessors can still request rework (one round only)."""
-    return not self.rework_round_used
+def can_area_request_rework(self, governance_area_id: int) -> bool:
+    """Check if a specific area can still request rework (one round per area).
+
+    Each of the 6 governance areas gets its own independent rework round.
+    """
+    area_data = (self.area_submission_status or {}).get(str(governance_area_id), {})
+    return not area_data.get("rework_used", False)
 ```
 
 **Calibration Fields (Assessment Model):**
 
 ```python
-# Single calibration tracking (legacy)
+# Per-area calibration tracking
+calibrated_area_ids: list = []           # List of area IDs already calibrated (max 1 per area)
 is_calibration_rework: bool = False      # True if in calibration mode
 calibration_validator_id: int | None     # FK to requesting Validator
-calibration_count: int = 0               # Number of calibrations per area
+
+# Global calibration tracking (for analytics - kept for backward compatibility)
+# Note: Actual per-area calibration blocking is done via calibrated_area_ids
+calibration_round_used: bool = False     # True if ANY area has been calibrated
+calibration_count: int = 0               # Legacy: global count (deprecated)
 
 # Parallel calibration support
 pending_calibrations: list = []          # List of pending calibration requests
 calibration_summaries_by_area: dict = {} # AI summaries per governance area
+
+def can_area_request_calibration(self, governance_area_id: int) -> bool:
+    """Check if a specific area can still be calibrated (one round per area).
+
+    Each of the 6 governance areas can only be calibrated once.
+    """
+    calibrated_areas = self.calibrated_area_ids or []
+    return governance_area_id not in calibrated_areas
 ```
 
 **MOV Annotation:**

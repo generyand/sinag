@@ -34,6 +34,7 @@ import type { ReviewHistoryDetailFinalComplianceStatus } from '../compliance';
 import type { ReviewHistoryIndicator } from '../indicators';
 import type { ReviewHistoryFeedbackCommentAssessorRole } from '../assessor';
 import type { ReviewHistoryItemFinalComplianceStatus } from '../compliance';
+import type { ReworkCalibrationIndicatorItem } from '../indicators';
 import type { AssessmentRow } from '../assessments';
 import type { TourCompletedUpdateAssessments } from '../assessments';
 import type { TourCompletedUpdateIndicatorForm } from '../indicators';
@@ -686,6 +687,25 @@ export interface ExtendDeadlineResult {
 
 
 /**
+ * FeedbackCommentItem
+ */
+export interface FeedbackCommentItem {
+  id: number;
+  comment: string;
+  comment_type: string;
+  assessor_id: number;
+  assessor_name: string;
+  created_at: FeedbackCommentItemCreatedAt;
+}
+
+
+/**
+ * FeedbackCommentItemCreatedAt
+ */
+export type FeedbackCommentItemCreatedAt = string | null;
+
+
+/**
  * FieldAnswerInput
  */
 export interface FieldAnswerInput {
@@ -1222,6 +1242,31 @@ export interface PdfRect {
 
 
 /**
+ * PendingCalibrationItem
+ */
+export interface PendingCalibrationItem {
+  validator_id: number;
+  validator_name: string;
+  governance_area_id: number;
+  governance_area_name: string;
+  requested_at: PendingCalibrationItemRequestedAt;
+  comments?: PendingCalibrationItemComments;
+}
+
+
+/**
+ * PendingCalibrationItemComments
+ */
+export type PendingCalibrationItemComments = string | null;
+
+
+/**
+ * PendingCalibrationItemRequestedAt
+ */
+export type PendingCalibrationItemRequestedAt = string | null;
+
+
+/**
  * PercentageThresholdRuleOperator
  */
 export type PercentageThresholdRuleOperator = typeof PercentageThresholdRuleOperator[keyof typeof PercentageThresholdRuleOperator];
@@ -1452,6 +1497,60 @@ export type ReviewHistoryItemMunicipalityName = string | null;
  * ReviewHistoryItemSubmittedAt
  */
 export type ReviewHistoryItemSubmittedAt = string | null;
+
+
+/**
+ * ReworkCalibrationSummary
+ */
+export interface ReworkCalibrationSummary {
+  has_rework?: boolean;
+  has_calibration?: boolean;
+  has_mlgoo_recalibration?: boolean;
+  rework_requested_by_id?: ReworkCalibrationSummaryReworkRequestedById;
+  rework_requested_by_name?: ReworkCalibrationSummaryReworkRequestedByName;
+  rework_comments?: ReworkCalibrationSummaryReworkComments;
+  calibration_validator_id?: ReworkCalibrationSummaryCalibrationValidatorId;
+  calibration_validator_name?: ReworkCalibrationSummaryCalibrationValidatorName;
+  calibration_comments?: ReworkCalibrationSummaryCalibrationComments;
+  pending_calibrations?: PendingCalibrationItem[];
+  rework_indicators?: ReworkCalibrationIndicatorItem[];
+}
+
+
+/**
+ * ReworkCalibrationSummaryCalibrationComments
+ */
+export type ReworkCalibrationSummaryCalibrationComments = string | null;
+
+
+/**
+ * ReworkCalibrationSummaryCalibrationValidatorId
+ */
+export type ReworkCalibrationSummaryCalibrationValidatorId = number | null;
+
+
+/**
+ * ReworkCalibrationSummaryCalibrationValidatorName
+ */
+export type ReworkCalibrationSummaryCalibrationValidatorName = string | null;
+
+
+/**
+ * ReworkCalibrationSummaryReworkComments
+ */
+export type ReworkCalibrationSummaryReworkComments = string | null;
+
+
+/**
+ * ReworkCalibrationSummaryReworkRequestedById
+ */
+export type ReworkCalibrationSummaryReworkRequestedById = number | null;
+
+
+/**
+ * ReworkCalibrationSummaryReworkRequestedByName
+ */
+export type ReworkCalibrationSummaryReworkRequestedByName = string | null;
 
 
 /**

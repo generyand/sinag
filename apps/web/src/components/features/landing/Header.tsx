@@ -23,7 +23,7 @@ const NavLinks = ({
       <button
         key={link.id}
         onClick={() => scrollToSection(link.id)}
-        className={`text-foreground hover:text-[#fbbf24] hover:font-semibold transition-all duration-300 cursor-pointer bg-transparent border-none outline-none rounded-md hover:bg-[#fbbf24]/10 ${
+        className={`text-gray-700 hover:text-[#fbbf24] hover:font-semibold transition-all duration-300 cursor-pointer bg-transparent border-none outline-none rounded-md hover:bg-[#fbbf24]/10 ${
           mobile
             ? "block w-full text-left px-4 py-3 text-lg font-medium"
             : "p-2 transform hover:scale-105"
@@ -92,10 +92,10 @@ export function Header() {
               )}
             </div>
             <div className="leading-tight cursor-pointer" onClick={() => scrollToSection("home")}>
-              <div className="font-extrabold text-lg md:text-xl tracking-tight text-foreground group-hover:text-[#fbbf24] transition-colors duration-300">
+              <div className="font-extrabold text-lg md:text-xl tracking-tight text-gray-900 group-hover:text-[#fbbf24] transition-colors duration-300">
                 SINAG
               </div>
-              <div className="hidden lg:block text-xs text-muted-foreground font-medium">
+              <div className="hidden lg:block text-xs text-gray-600 font-medium">
                 SGLGB Insights Nurturing Assessments and Governance
               </div>
             </div>

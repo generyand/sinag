@@ -110,43 +110,51 @@ export function IndicatorAccordion({
             return nodes.map((node) => {
               if (node.id === indicator.id) {
                 // Check if this indicator requires rework
-                // If requiresRework is true, we should NOT mark as "completed" even if files exist
-                // because those files might be old files that need to be re-uploaded
+                // The requiresRework flag is AUTHORITATIVE - set by assessor via backend
+                // Frontend should NEVER clear this flag - only backend can after assessor reviews
                 const nodeRequiresRework = node.requiresRework === true;
 
                 // Determine the new status
                 let newStatus: string;
-                if (isComplete && !nodeRequiresRework) {
+                if (nodeRequiresRework) {
+                  // CRITICAL: If assessor flagged for rework, ALWAYS show "needs_rework"
+                  // regardless of whether new files have been uploaded
+                  // The BLGU can see their upload progress via the CompletionFeedbackPanel
+                  // but the indicator remains in "needs_rework" until assessor clears it
+                  newStatus = "needs_rework";
+                } else if (isComplete) {
                   // Only mark as completed if NOT requiring rework
                   newStatus = "completed";
-                } else if (isComplete && nodeRequiresRework) {
-                  // Files exist but indicator requires rework - keep as in_progress
-                  // The DynamicFormRenderer's isIndicatorComplete already filters
-                  // by rework timestamp, so if it says complete, trust it
-                  newStatus = "completed";
                 } else {
-                  // No files - check if we're in rework mode
-                  newStatus = nodeRequiresRework ? "in_progress" : "not_started";
+                  newStatus = "not_started";
                 }
 
                 return {
                   ...node,
                   status: newStatus,
-                  // CRITICAL: Clear requiresRework when marking as complete
-                  // This ensures the merge logic in useAssessment preserves this status
-                  requiresRework: newStatus === "completed" ? false : node.requiresRework,
+                  // CRITICAL: Never clear requiresRework from frontend
+                  // Only backend can clear this flag after assessor reviews
+                  requiresRework: node.requiresRework,
                 };
               }
               if (node.children && node.children.length > 0) {
                 const updatedChildren = updateInTree(node.children);
-                // Check if all children are completed
+                // Check children statuses for proper propagation
                 const allChildrenCompleted = updatedChildren.every(
                   (c: any) => c.status === "completed"
+                );
+                const anyChildNeedsRework = updatedChildren.some(
+                  (c: any) => c.status === "needs_rework" || c.requiresRework === true
                 );
                 return {
                   ...node,
                   children: updatedChildren,
-                  status: allChildrenCompleted ? "completed" : node.status,
+                  // Propagate needs_rework status upward if any child needs rework
+                  status: anyChildNeedsRework
+                    ? "needs_rework"
+                    : allChildrenCompleted
+                      ? "completed"
+                      : node.status,
                 };
               }
               return node;
@@ -615,11 +623,14 @@ export function IndicatorAccordion({
                       }
 
                       // Status logic: completed only if:
+                      // - NOT requiring rework (assessor's flag is authoritative) AND
                       // - All answered AND
                       // - (No "yes" answers OR all "yes" sections have MOVs)
                       const hasYes = requiredSectionsWithYes.size > 0;
-                      const newStatus =
-                        allAnswered && (!hasYes || allSectionsSatisfied)
+                      const nodeRequiresRework = (indicator as any).requiresRework === true;
+                      const newStatus = nodeRequiresRework
+                        ? "needs_rework"
+                        : allAnswered && (!hasYes || allSectionsSatisfied)
                           ? "completed"
                           : "not_started";
 
@@ -639,7 +650,15 @@ export function IndicatorAccordion({
                               const allCompleted = n.children.every(
                                 (c: any) => c.status === "completed"
                               );
-                              n.status = allCompleted ? "completed" : n.status;
+                              const anyNeedsRework = n.children.some(
+                                (c: any) => c.status === "needs_rework" || c.requiresRework === true
+                              );
+                              // Propagate needs_rework status upward
+                              n.status = anyNeedsRework
+                                ? "needs_rework"
+                                : allCompleted
+                                  ? "completed"
+                                  : n.status;
                             }
                           }
                         };
@@ -659,11 +678,19 @@ export function IndicatorAccordion({
                               const allCompleted = updatedChildren.every(
                                 (c: any) => c.status === "completed"
                               );
+                              const anyNeedsRework = updatedChildren.some(
+                                (c: any) => c.status === "needs_rework" || c.requiresRework === true
+                              );
                               // Create a new container object with updated children
+                              // Propagate needs_rework status upward
                               return {
                                 ...node,
                                 children: updatedChildren,
-                                status: allCompleted ? "completed" : node.status,
+                                status: anyNeedsRework
+                                  ? "needs_rework"
+                                  : allCompleted
+                                    ? "completed"
+                                    : node.status,
                               };
                             }
                             return node;
@@ -786,11 +813,14 @@ export function IndicatorAccordion({
                                       requiredSections.length > 0
                                         ? requiredSections.every((s) => present.has(s))
                                         : true; // uploading any file counts; list will refresh from server
+                                    // Check for rework requirement - assessor's flag is authoritative
+                                    const nodeRequiresRework = current.requiresRework === true;
                                     nodes[i] = {
                                       ...current,
-                                      status:
-                                        (current.complianceAnswer || localCompliance) === "yes" &&
-                                        allSatisfied
+                                      status: nodeRequiresRework
+                                        ? "needs_rework"
+                                        : (current.complianceAnswer || localCompliance) === "yes" &&
+                                            allSatisfied
                                           ? "completed"
                                           : "not_started",
                                     };
@@ -845,12 +875,15 @@ export function IndicatorAccordion({
                                     requiredSections.length > 0
                                       ? requiredSections.every((s) => present.has(s))
                                       : files.length > 0;
+                                  // Check for rework requirement - assessor's flag is authoritative
+                                  const nodeRequiresRework = current.requiresRework === true;
                                   nodes[i] = {
                                     ...current,
                                     movFiles: files,
-                                    status:
-                                      (current.complianceAnswer || localCompliance) === "yes" &&
-                                      allSatisfied
+                                    status: nodeRequiresRework
+                                      ? "needs_rework"
+                                      : (current.complianceAnswer || localCompliance) === "yes" &&
+                                          allSatisfied
                                         ? "completed"
                                         : "not_started",
                                   };

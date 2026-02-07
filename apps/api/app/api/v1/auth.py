@@ -78,23 +78,25 @@ async def login(
             f"(attempt #{failed_count})"
         )
 
-        # Audit log for failed login (user_id may be None if user doesn't exist)
-        try:
-            audit_service.log_audit_event(
-                db=db,
-                user_id=user.id if user else 0,  # 0 for unknown user
-                entity_type="auth",
-                entity_id=None,
-                action="login_failed",
-                changes={
-                    "email": normalized_email,
-                    "attempt_number": failed_count,
-                    "reason": "invalid_credentials",  # Generic reason
-                },
-                ip_address=client_ip,
-            )
-        except Exception as e:
-            logger.error(f"Failed to log audit event: {e}")
+        # Audit log for failed login (only if user exists to avoid FK violation)
+        # We don't log audit events for non-existent users to avoid security enumeration
+        if user:
+            try:
+                audit_service.log_audit_event(
+                    db=db,
+                    user_id=user.id,
+                    entity_type="auth",
+                    entity_id=None,
+                    action="login_failed",
+                    changes={
+                        "email": normalized_email,
+                        "attempt_number": failed_count,
+                        "reason": "invalid_credentials",  # Generic reason
+                    },
+                    ip_address=client_ip,
+                )
+            except Exception as e:
+                logger.error(f"Failed to log audit event: {e}")
 
         # Check if this attempt triggered lockout
         remaining_attempts = MAX_FAILED_ATTEMPTS - failed_count

@@ -173,6 +173,13 @@ export function useCurrentAssessment() {
       governanceAreaId: areaId.toString(),
       status: (() => {
         const isCompleted = (indicator.response as any)?.is_completed === true;
+        const requiresRework = (indicator.response as any)?.requires_rework === true;
+
+        // Prioritize rework status - if assessor requested rework, show that status
+        if (requiresRework) {
+          return "needs_rework" as const;
+        }
+
         return indicator.response
           ? isCompleted
             ? ("completed" as const)
@@ -449,23 +456,24 @@ export function useCurrentAssessment() {
             const localMovFiles = localData?.movFiles;
 
             // Determine which status to use:
-            // - If LOCAL says requires_rework=false (we cleared it after upload), trust local
-            // - If local says "completed" but server doesn't, keep local (optimistic update)
-            // - If server says "completed" but local doesn't, use server (server caught up)
-            // - If both agree, use server (most up-to-date)
+            // - Server's requiresRework flag is AUTHORITATIVE (set by assessor)
+            // - If server says requires_rework=true, always show "needs_rework" status
+            // - Only preserve optimistic "completed" status when server does NOT require rework
             const localCompleted = localStatus === "completed";
             const serverCompleted = serverInd.status === "completed";
-            // Use LOCAL requiresRework if we've cleared it (false), otherwise use server's value
-            const requiresRework =
-              localRequiresRework === false ? false : serverInd.requiresRework === true;
+            // CRITICAL: Always trust server's requiresRework flag - assessor's decision is authoritative
+            const serverRequiresRework = serverInd.requiresRework === true;
 
             let finalStatus = serverInd.status;
             let finalRequiresRework = serverInd.requiresRework;
             let finalMovFiles = serverInd.movFiles;
 
-            if (localCompleted && !serverCompleted && !requiresRework) {
-              // Preserve optimistic update - local knows something server doesn't yet
-              // Also preserve the local requiresRework=false and movFiles
+            // If server indicates rework is required, always respect that (assessor's decision)
+            if (serverRequiresRework) {
+              finalStatus = "needs_rework";
+              finalRequiresRework = true;
+            } else if (localCompleted && !serverCompleted) {
+              // Only preserve optimistic "completed" status when NOT in rework mode
               finalStatus = "completed";
               finalRequiresRework = false;
               // If local has movFiles (from optimistic upload), use local's version

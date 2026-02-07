@@ -37,6 +37,10 @@ export function useReworkContext(
 
     const indicatorMap = new Map<number, FailedIndicator>();
 
+    // Get addressed indicator IDs from backend - these are indicators where
+    // BLGU uploaded new files AFTER rework was requested
+    const addressedIds = new Set<number>((dashboardData as any).addressed_indicator_ids || []);
+
     // Helper function to find indicator in governance areas
     const findIndicator = (indicatorId: number) => {
       for (const area of dashboardData.governance_areas) {
@@ -64,6 +68,7 @@ export function useReworkContext(
             governance_area_id: indicator.governance_area_id,
             governance_area_name: indicator.governance_area_name,
             is_complete: indicator.is_complete,
+            is_addressed: addressedIds.has(comment.indicator_id),
             comments: [comment], // Store only the first comment
             annotations: [],
             total_feedback_items: 0,
@@ -91,6 +96,7 @@ export function useReworkContext(
               governance_area_id: indicator.governance_area_id,
               governance_area_name: indicator.governance_area_name,
               is_complete: indicator.is_complete,
+              is_addressed: addressedIds.has(indicatorId),
               comments: [],
               annotations: [],
               total_feedback_items: 0,
@@ -124,7 +130,9 @@ export function useReworkContext(
 
   const progress = useMemo<ReworkProgress>(() => {
     const total = failedIndicators.length;
-    const fixed = failedIndicators.filter((f) => f.is_complete).length;
+    // Use is_addressed (new file uploaded after rework) instead of is_complete
+    // to determine if an indicator is truly "Fixed"
+    const fixed = failedIndicators.filter((f) => f.is_addressed).length;
     const currentIndex = currentIndicatorId
       ? failedIndicators.findIndex((f) => f.indicator_id === currentIndicatorId)
       : -1;

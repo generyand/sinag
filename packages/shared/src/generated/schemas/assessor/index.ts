@@ -9,6 +9,35 @@ import type { WorkflowMetrics } from '../common';
 import type { AssessorAnalyticsResponseAssessmentPeriod } from '../assessments';
 
 /**
+ * AreaAssessorStatus
+ */
+export interface AreaAssessorStatus {
+  /** Governance area ID (1-6) */
+  governance_area_id: number;
+  /** Governance area name */
+  governance_area_name: string;
+  /** Name of the assessor assigned to this area (null if none assigned) */
+  assessor_name?: AreaAssessorStatusAssessorName;
+  /** True if assessor has approved this area, False if still pending or not yet reviewed */
+  is_assessed: boolean;
+  /** Area submission status: 'approved', 'rework', 'submitted', 'in_review', or null if pending */
+  status?: AreaAssessorStatusStatus;
+}
+
+
+/**
+ * AreaAssessorStatusAssessorName
+ */
+export type AreaAssessorStatusAssessorName = string | null;
+
+
+/**
+ * AreaAssessorStatusStatus
+ */
+export type AreaAssessorStatusStatus = string | null;
+
+
+/**
  * AssessorAnalyticsResponse
  */
 export interface AssessorAnalyticsResponse {
@@ -36,6 +65,7 @@ export interface AssessorQueueItem {
   status: string;
   updated_at: string;
   area_progress?: number;
+  re_review_progress?: number;
   governance_area_id?: AssessorQueueItemGovernanceAreaId;
   governance_area_name?: AssessorQueueItemGovernanceAreaName;
   area_status?: AssessorQueueItemAreaStatus;
@@ -45,6 +75,7 @@ export interface AssessorQueueItem {
   areas_in_rework?: AssessorQueueItemAreasInRework;
   rework_round_used?: boolean;
   rework_submitted_at?: AssessorQueueItemReworkSubmittedAt;
+  my_area_rework_used?: boolean;
   is_calibration_rework?: boolean;
   pending_calibrations_count?: number;
 }
@@ -96,6 +127,12 @@ export type AssessorQueueItemSubmissionDate = string | null;
  * AssessorQueueItemSubmissionType
  */
 export type AssessorQueueItemSubmissionType = string | null;
+
+
+/**
+ * BLGUDashboardResponseAreaAssessorStatus
+ */
+export type BLGUDashboardResponseAreaAssessorStatus = AreaAssessorStatus[] | null;
 
 
 /**
@@ -173,6 +210,69 @@ year?: number | null;
  * IndicatorDetailItemAssessorRemarks
  */
 export type IndicatorDetailItemAssessorRemarks = string | null;
+
+
+/**
+ * MOVAssessorFeedbackResponse
+ */
+export interface MOVAssessorFeedbackResponse {
+  mov_file_id: number;
+  assessor_notes?: MOVAssessorFeedbackResponseAssessorNotes;
+  flagged_for_rework?: boolean;
+  flagged_by_assessor_id?: MOVAssessorFeedbackResponseFlaggedByAssessorId;
+  flagged_at?: MOVAssessorFeedbackResponseFlaggedAt;
+}
+
+
+/**
+ * MOVAssessorFeedbackResponseAssessorNotes
+ */
+export type MOVAssessorFeedbackResponseAssessorNotes = string | null;
+
+
+/**
+ * MOVAssessorFeedbackResponseFlaggedAt
+ */
+export type MOVAssessorFeedbackResponseFlaggedAt = string | null;
+
+
+/**
+ * MOVAssessorFeedbackResponseFlaggedByAssessorId
+ */
+export type MOVAssessorFeedbackResponseFlaggedByAssessorId = number | null;
+
+
+/**
+ * MOVAssessorFeedbackUpdate
+ */
+export interface MOVAssessorFeedbackUpdate {
+  assessor_notes?: MOVAssessorFeedbackUpdateAssessorNotes;
+  flagged_for_rework?: MOVAssessorFeedbackUpdateFlaggedForRework;
+}
+
+
+/**
+ * MOVAssessorFeedbackUpdateAssessorNotes
+ */
+export type MOVAssessorFeedbackUpdateAssessorNotes = string | null;
+
+
+/**
+ * MOVAssessorFeedbackUpdateFlaggedForRework
+ */
+export type MOVAssessorFeedbackUpdateFlaggedForRework = boolean | null;
+
+
+/**
+ * MOVFileResponseAssessorNotes
+ */
+export type MOVFileResponseAssessorNotes = string | null;
+
+
+/**
+ * MOVFileResponseFlaggedByAssessorId
+ */
+export type MOVFileResponseFlaggedByAssessorId = number | null;
 
 
 /**

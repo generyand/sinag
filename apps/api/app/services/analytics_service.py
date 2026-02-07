@@ -776,13 +776,86 @@ class AnalyticsService:
                             if issue and issue.strip():
                                 reason_to_assessments[issue.strip()].append(assessment)
 
+        # Also include raw feedback comments from assessments that have adjustments
+        # but are MISSING their AI summaries. This ensures assessor notes are always
+        # included even when the rework_summary generation failed.
+        assessments_missing_summaries = [
+            a
+            for a in assessments
+            if (a.rework_count and a.rework_count > 0 and not a.rework_summary)
+            or (
+                a.calibration_count
+                and a.calibration_count > 0
+                and not a.calibration_summary
+                and not a.calibration_summaries_by_area
+            )
+        ]
+
+        if assessments_missing_summaries:
+            missing_ids = [a.id for a in assessments_missing_summaries]
+            assessment_map_missing = {a.id: a for a in assessments_missing_summaries}
+
+            fallback_comments = (
+                db.query(FeedbackComment)
+                .join(AssessmentResponse)
+                .filter(AssessmentResponse.assessment_id.in_(missing_ids))
+                .filter(FeedbackComment.is_internal_note == False)  # noqa: E712
+                .limit(50)
+                .all()
+            )
+
+            raw_comments_fallback: list[str] = []
+            comment_to_assessments_fallback: dict[str, list[Assessment]] = defaultdict(list)
+
+            for fc in fallback_comments:
+                if fc.comment and fc.comment.strip():
+                    comment_text = fc.comment.strip()
+                    raw_comments_fallback.append(comment_text)
+                    assessment_id = fc.response.assessment_id
+                    if assessment_id in assessment_map_missing:
+                        comment_to_assessments_fallback[comment_text].append(
+                            assessment_map_missing[assessment_id]
+                        )
+
+            if raw_comments_fallback:
+                from app.services.intelligence_service import intelligence_service
+
+                formulated = intelligence_service.formulate_adjustment_reasons(
+                    raw_comments=list(set(raw_comments_fallback)),
+                    max_reasons=10,
+                )
+
+                if formulated:
+                    unique_fallback_assessments = {
+                        a.id: a
+                        for a_list in comment_to_assessments_fallback.values()
+                        for a in a_list
+                    }
+                    all_fallback_assessments = list(unique_fallback_assessments.values())
+
+                    for reason in formulated:
+                        reason_to_assessments[reason].extend(all_fallback_assessments)
+
+                    logger.info(
+                        f"📊 Included {len(formulated)} assessor/validator reasons from "
+                        f"{len(raw_comments_fallback)} raw comments (missing AI summaries) "
+                        f"across {len(all_fallback_assessments)} assessments"
+                    )
+                else:
+                    logger.warning(
+                        "⚠️ AI formulation failed for missing-summary fallback, using raw comments"
+                    )
+                    for comment_text, assessment_list in comment_to_assessments_fallback.items():
+                        reason_to_assessments[comment_text].extend(assessment_list)
+
         # Debug logging: track extracted reasons
         total_reasons = sum(len(v) for v in reason_to_assessments.values())
         logger.info(
-            f"📊 Extracted {total_reasons} adjustment reasons from AI summaries across {len(reason_to_assessments)} unique issues"
+            f"📊 Extracted {total_reasons} adjustment reasons from AI summaries and feedback "
+            f"across {len(reason_to_assessments)} unique issues"
         )
 
-        # If no AI-generated reasons, fall back to feedback comments with AI formulation
+        # If still no reasons, fall back to ALL feedback comments with AI formulation
         if not reason_to_assessments:
             # Get feedback comments from assessments with adjustments
             assessment_ids_with_adjustments = [a.id for a in assessments]

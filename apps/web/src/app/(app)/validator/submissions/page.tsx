@@ -8,48 +8,53 @@ import {
   SubmissionsData,
   SubmissionsFilter,
   SubmissionsKPI,
+  UnifiedStatus,
 } from "@/types/submissions";
+import { AssessorQueueItem, useGetAssessorStats } from "@sinag/shared";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useGetAssessorStats } from "@sinag/shared";
 
-// Map API status to UI areaStatus for VALIDATORS
-function mapStatusToAreaStatus(status: string): BarangaySubmission["areaStatus"] {
-  const normalizedStatus = status.toLowerCase();
+/**
+ * Maps API data to unified status for validator dashboard.
+ *
+ * Logic (similar to assessor but adapted for validator context):
+ * 1. If global_status = "VALIDATED" or "COMPLETED" → "reviewed"
+ * 2. If submission_type = "rework_pending" → "sent_for_rework"
+ * 3. If submission_type = "rework_resubmission":
+ *    - re_review_progress = 0 → "awaiting_re_review"
+ *    - re_review_progress > 0 → "re_assessment_in_progress"
+ * 4. Otherwise:
+ *    - area_progress = 0 → "awaiting_assessment"
+ *    - area_progress > 0 → "assessment_in_progress"
+ */
+function mapToUnifiedStatus(item: AssessorQueueItem): UnifiedStatus {
+  const globalStatus = item.global_status?.toUpperCase();
 
-  // For validators, AWAITING_FINAL_VALIDATION means awaiting their review
-  if (normalizedStatus === "awaiting_final_validation") {
-    return "awaiting_review";
+  // Check if already reviewed/validated (validator completed)
+  if (globalStatus === "VALIDATED" || globalStatus === "COMPLETED") {
+    return "reviewed";
   }
 
-  if (normalizedStatus.includes("rework")) {
-    return "needs_rework";
+  // Check submission type for rework states
+  if (item.submission_type === "rework_pending") {
+    return "sent_for_rework";
   }
 
-  // VALIDATED or COMPLETED means validator finished
-  if (normalizedStatus === "validated" || normalizedStatus === "completed") {
-    return "validated";
+  if (item.submission_type === "rework_resubmission") {
+    // Re-submission from BLGU - check re-review progress
+    const reReviewProgress = item.re_review_progress ?? 0;
+    if (reReviewProgress === 0) {
+      return "awaiting_re_review";
+    }
+    return "re_assessment_in_progress";
   }
 
-  return "in_progress";
-}
-
-// Map API status to UI overallStatus
-function mapStatusToOverallStatus(status: string): BarangaySubmission["overallStatus"] {
-  const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes("submitted") || normalizedStatus.includes("review")) {
-    return "submitted";
+  // First submission - check area progress
+  const areaProgress = item.area_progress ?? 0;
+  if (areaProgress === 0) {
+    return "awaiting_assessment";
   }
-  if (normalizedStatus.includes("rework")) {
-    return "needs_rework";
-  }
-  if (normalizedStatus.includes("validated")) {
-    return "validated";
-  }
-  if (normalizedStatus.includes("draft")) {
-    return "draft";
-  }
-  return "under_review";
+  return "assessment_in_progress";
 }
 
 export default function ValidatorSubmissionsPage() {
@@ -68,20 +73,32 @@ export default function ValidatorSubmissionsPage() {
     if (!queueData || queueLoading) return null;
 
     // Map queue items to BarangaySubmission
+    // UPDATED: Now uses unified status (combining areaStatus and overallStatus)
     const submissions: BarangaySubmission[] = queueData.map((item) => ({
       id: item.assessment_id.toString(),
       barangayName: item.barangay_name || "Unknown",
       areaProgress: item.area_progress ?? 0, // Progress from API
-      areaStatus: mapStatusToAreaStatus(item.status),
-      overallStatus: mapStatusToOverallStatus(item.status),
+      unifiedStatus: mapToUnifiedStatus(item),
+      reReviewProgress: item.re_review_progress,
       lastUpdated: item.updated_at,
+      submissionType: item.submission_type as BarangaySubmission["submissionType"],
+      globalStatus: item.global_status,
     }));
 
     // Calculate KPIs from queue data and stats
+    // Updated to use unified status values
     const kpi: SubmissionsKPI = {
-      awaitingReview: submissions.filter((s) => s.areaStatus === "awaiting_review").length,
-      inRework: submissions.filter((s) => s.areaStatus === "needs_rework").length,
-      validated: (statsData as { validated_count?: number })?.validated_count ?? 0, // Use stats endpoint for accurate count
+      awaitingReview: submissions.filter(
+        (s) => s.unifiedStatus === "awaiting_assessment" || s.unifiedStatus === "awaiting_re_review"
+      ).length,
+      // inRework tracks items sent for rework or being re-assessed (excludes awaiting_re_review to avoid double-counting)
+      inRework: submissions.filter(
+        (s) =>
+          s.unifiedStatus === "sent_for_rework" || s.unifiedStatus === "re_assessment_in_progress"
+      ).length,
+      validated:
+        (statsData as { validated_count?: number })?.validated_count ??
+        submissions.filter((s) => s.unifiedStatus === "reviewed").length,
       avgReviewTime: 0, // Not provided by API, default to 0
     };
 
@@ -105,9 +122,9 @@ export default function ValidatorSubmissionsPage() {
       );
     }
 
-    // Apply status filter
+    // Apply status filter using unified status
     if (filters.status.length > 0) {
-      filtered = filtered.filter((submission) => filters.status.includes(submission.areaStatus));
+      filtered = filtered.filter((submission) => filters.status.includes(submission.unifiedStatus));
     }
 
     return filtered;

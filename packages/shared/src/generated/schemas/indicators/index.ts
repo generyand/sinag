@@ -15,6 +15,8 @@ import type { GovernanceAreaNested } from '../common';
 import type { ReviewHistoryIndicatorAssessorRemarks } from '../assessor';
 import type { ReviewHistoryFeedbackComment } from '../common';
 import type { ValidationStatus } from '../error';
+import type { FeedbackCommentItem } from '../common';
+import type { MOVAnnotationItem } from '../movs';
 import type { ChecklistItemResponse } from '../system';
 
 /**
@@ -132,6 +134,12 @@ export type BBIResultResponseSubIndicatorResults = BBIResultResponseSubIndicator
  * BBIResultResponseSubIndicatorResultsAnyOfItem
  */
 export type BBIResultResponseSubIndicatorResultsAnyOfItem = { [key: string]: unknown };
+
+
+/**
+ * BLGUDashboardResponseAddressedIndicatorIds
+ */
+export type BLGUDashboardResponseAddressedIndicatorIds = number[] | null;
 
 
 /**
@@ -479,6 +487,8 @@ export interface IndicatorDetailItem {
   assessor_remarks: IndicatorDetailItemAssessorRemarks;
   is_completed: boolean;
   is_recalibration_target: boolean;
+  requires_rework?: boolean;
+  flagged_for_calibration?: boolean;
   mov_files?: MOVFileItem[];
 }
 
@@ -985,6 +995,34 @@ export type ReviewHistoryIndicatorGovernanceAreaName = string | null;
  * ReviewHistoryIndicatorValidationStatus
  */
 export type ReviewHistoryIndicatorValidationStatus = ValidationStatus | null;
+
+
+/**
+ * ReworkCalibrationIndicatorItem
+ */
+export interface ReworkCalibrationIndicatorItem {
+  indicator_id: number;
+  indicator_name: string;
+  indicator_code: ReworkCalibrationIndicatorItemIndicatorCode;
+  governance_area_id: number;
+  governance_area_name: string;
+  status: string;
+  validation_status: ReworkCalibrationIndicatorItemValidationStatus;
+  feedback_comments?: FeedbackCommentItem[];
+  mov_annotations?: MOVAnnotationItem[];
+}
+
+
+/**
+ * ReworkCalibrationIndicatorItemIndicatorCode
+ */
+export type ReworkCalibrationIndicatorItemIndicatorCode = string | null;
+
+
+/**
+ * ReworkCalibrationIndicatorItemValidationStatus
+ */
+export type ReworkCalibrationIndicatorItemValidationStatus = string | null;
 
 
 /**

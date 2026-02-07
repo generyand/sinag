@@ -45,7 +45,8 @@ interface Phase1SectionProps {
 function getPhase1Status(
   status: string,
   isCalibrationRework: boolean,
-  isMlgooRecalibration: boolean
+  isMlgooRecalibration: boolean,
+  reworkCount: number = 0
 ): { phaseStatus: PhaseStatus; statusLabel: string; isActive: boolean } {
   const assessmentStatus = status as AssessmentStatus;
 
@@ -60,7 +61,7 @@ function getPhase1Status(
     case "IN_REVIEW":
       return {
         phaseStatus: "under_review",
-        statusLabel: "Under Review",
+        statusLabel: reworkCount > 0 ? "Under Re-Review" : "Under Review",
         isActive: true,
       };
     case "REWORK":
@@ -117,7 +118,8 @@ export function Phase1Section({
   const { phaseStatus, statusLabel, isActive } = getPhase1Status(
     dashboardData.status,
     dashboardData.is_calibration_rework || false,
-    isMlgooRecalibration
+    isMlgooRecalibration,
+    dashboardData.rework_count || 0
   );
 
   // Phase 1 is editable only during DRAFT or assessor rework (not calibration, not MLGOO recalibration)

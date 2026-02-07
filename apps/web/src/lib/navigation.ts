@@ -25,7 +25,7 @@ export const mlgooNavigation: NavItem[] = [
 export const blguNavigation: NavItem[] = [
   { name: "Dashboard", href: "/blgu/dashboard", icon: "home" },
   { name: "My Assessments", href: "/blgu/assessments", icon: "clipboard" },
-  { name: "Analytics", href: "/blgu/analytics", icon: "chart" },
+  { name: "Insights", href: "/blgu/analytics", icon: "chart" },
   { name: "Profile", href: "/blgu/profile", icon: "user" },
 ];
 
@@ -44,7 +44,7 @@ export const validatorNavigation: NavItem[] = [
 
 export const katuparanNavigation: NavItem[] = [
   { name: "Dashboard", href: "/katuparan/dashboard", icon: "home" },
-  { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
+  // { name: "Reports", href: "/katuparan/reports", icon: "clipboard" },
   { name: "Profile", href: "/katuparan/profile", icon: "user" },
 ];
 

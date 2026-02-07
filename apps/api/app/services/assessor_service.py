@@ -156,19 +156,29 @@ class AssessorService:
                 area_status = a.get_area_status(assessor.assessor_area_id)
                 if area_status == "approved":
                     continue  # Skip - assessor already approved their area
-                # Only skip "draft" areas if the overall assessment is NOT in a submitted/rework status
-                # This handles:
-                # 1. Legacy workflow where BLGUs submit the entire assessment at once
-                # 2. Reverted assessments where area_submission_status was reset to "draft"
-                # (area_submission_status might not be populated, defaulting to "draft")
-                if area_status == "draft" and a.status not in (
-                    AssessmentStatus.SUBMITTED,
-                    AssessmentStatus.SUBMITTED_FOR_REVIEW,
-                    AssessmentStatus.IN_REVIEW,
-                    AssessmentStatus.REWORK,  # Include REWORK - reverted assessments
-                    AssessmentStatus.NEEDS_REWORK,  # Legacy rework status
-                ):
-                    continue  # Skip - BLGU hasn't submitted this area yet
+
+                # Per-area submission workflow logic:
+                # Distinguish between legacy workflow and new per-area workflow
+                has_per_area_tracking = bool(a.area_submission_status)
+
+                if has_per_area_tracking:
+                    # NEW PER-AREA WORKFLOW: area_submission_status is populated
+                    # Only show assessments where THIS assessor's area is submitted/in_review/rework
+                    # Skip if the assessor's specific area is still "draft" (not submitted yet)
+                    if area_status == "draft":
+                        continue  # Skip - BLGU hasn't submitted THIS area yet
+                else:
+                    # LEGACY WORKFLOW: area_submission_status is None/empty
+                    # This handles older assessments submitted before per-area tracking was implemented
+                    # Only skip if the overall assessment is NOT in a submitted/rework status
+                    if area_status == "draft" and a.status not in (
+                        AssessmentStatus.SUBMITTED,
+                        AssessmentStatus.SUBMITTED_FOR_REVIEW,
+                        AssessmentStatus.IN_REVIEW,
+                        AssessmentStatus.REWORK,  # Include REWORK - reverted assessments
+                        AssessmentStatus.NEEDS_REWORK,  # Legacy rework status
+                    ):
+                        continue  # Skip - BLGU hasn't submitted yet (legacy mode)
 
             # For validators: Check calibration status
             if is_validator:
@@ -207,6 +217,59 @@ class AssessorService:
 
             area_progress = round((reviewed_count / total_count * 100) if total_count > 0 else 0)
 
+            # Calculate re-review progress for rework/calibration resubmissions
+            # This tracks how many indicators have been re-reviewed AFTER BLGU resubmitted
+            re_review_progress = 0
+
+            # For assessors: extract area_data once for reuse in re_review_progress and submission_type
+            area_data: dict[str, Any] = {}
+            if is_assessor and a.area_submission_status:
+                area_data = a.area_submission_status.get(str(assessor.assessor_area_id), {})
+
+            if is_assessor:
+                # Use the area's submitted_at timestamp if it was resubmitted after rework
+                if area_data.get("resubmitted_after_rework", False):
+                    resubmit_timestamp_str = area_data.get("submitted_at")
+                    if resubmit_timestamp_str:
+                        # Parse the ISO timestamp
+                        try:
+                            resubmit_timestamp = datetime.fromisoformat(
+                                resubmit_timestamp_str.replace("Z", "+00:00")
+                            )
+                            # Make it timezone-naive for comparison (DB stores naive timestamps)
+                            resubmit_timestamp = resubmit_timestamp.replace(tzinfo=None)
+                            re_reviewed_count = sum(
+                                1
+                                for r in area_responses
+                                if r.response_data
+                                and any(
+                                    k.startswith("assessor_val_") for k in r.response_data.keys()
+                                )
+                                and r.updated_at
+                                and r.updated_at >= resubmit_timestamp
+                            )
+                            re_review_progress = round(
+                                (re_reviewed_count / total_count * 100) if total_count > 0 else 0
+                            )
+                        except (ValueError, TypeError) as e:
+                            logger.warning(
+                                f"Failed to parse submitted_at timestamp for assessment {a.id}, "
+                                f"area {assessor.assessor_area_id}: {e}"
+                            )
+            else:
+                # Validator: use calibration_submitted_at for progress tracking
+                if a.calibration_submitted_at is not None:
+                    re_reviewed_count = sum(
+                        1
+                        for r in area_responses
+                        if r.validation_status is not None
+                        and r.updated_at
+                        and r.updated_at >= a.calibration_submitted_at
+                    )
+                    re_review_progress = round(
+                        (re_reviewed_count / total_count * 100) if total_count > 0 else 0
+                    )
+
             # FIX Issue #4: Return per-area status for assessors instead of global status
             # This ensures each assessor only sees status relevant to their governance area
             if is_assessor:
@@ -234,12 +297,29 @@ class AssessorService:
 
             # Determine submission type: first submission or rework resubmission
             # This helps differentiate between brand new submissions vs reworked ones
-            if a.rework_submitted_at is not None:
-                submission_type = "rework_resubmission"
-            elif a.rework_round_used:
-                submission_type = "rework_pending"
+            # FIX: Use per-area status for assessors instead of global rework_round_used flag
+            # This ensures each assessor only sees "rework_pending" for their own area
+            if is_assessor:
+                # For assessors: reuse area_data extracted earlier
+                if area_data.get("resubmitted_after_rework", False):
+                    # BLGU has resubmitted for this area after rework request
+                    submission_type = "rework_resubmission"
+                elif area_status == "rework":
+                    # Assessor has sent this area for rework, awaiting BLGU resubmission
+                    submission_type = "rework_pending"
+                else:
+                    submission_type = "first_submission"
             else:
-                submission_type = "first_submission"
+                # For validators: use calibration status (not assessor rework)
+                # Validators request "calibration" which is tracked separately
+                if a.calibration_submitted_at is not None:
+                    # BLGU has resubmitted after calibration request
+                    submission_type = "rework_resubmission"
+                elif a.is_calibration_rework:
+                    # Validator has requested calibration, awaiting BLGU resubmission
+                    submission_type = "rework_pending"
+                else:
+                    submission_type = "first_submission"
 
             items.append(
                 {
@@ -258,11 +338,17 @@ class AssessorService:
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
                     "area_progress": area_progress,
+                    # NEW: Re-review progress for rework resubmissions
+                    "re_review_progress": re_review_progress,
                     # NEW: Submission type for Issue #5 (distinguish first vs rework)
                     "submission_type": submission_type,
                     # NEW: Rework-related fields for better context
                     "rework_round_used": a.rework_round_used,
                     "rework_submitted_at": a.rework_submitted_at,
+                    # Per-area rework tracking: True if THIS assessor's area has used its rework round
+                    "my_area_rework_used": area_data.get("rework_used", False)
+                    if is_assessor
+                    else False,
                 }
             )
 
@@ -450,12 +536,33 @@ class AssessorService:
 
         # Log indicator-level activity for more specific tracking
         try:
+            # Import ActivityAction here to avoid circular dependency with assessment_activity schemas
             from app.schemas.assessment_activity import ActivityAction
-            from app.services.assessment_activity_service import assessment_activity_service
 
             # Get indicator details for logging
             indicator = response.indicator
             governance_area = indicator.governance_area if indicator else None
+
+            # Get barangay name from the assessment's BLGU user
+            assessment = response.assessment
+            barangay_name = None
+            if assessment and assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            # Resolve year placeholders in indicator name (e.g., {JUL_TO_SEP_CURRENT_YEAR})
+            indicator_name = indicator.name if indicator else "Unknown"
+            if indicator_name and assessment:
+                year_resolver = get_year_resolver(db, assessment.assessment_year)
+                indicator_name = year_resolver.resolve_string(indicator_name) or indicator_name
+
+            # Determine if user is a validator or assessor using explicit role check
+            # Validators (VALIDATOR role) have system-wide access; assessors are area-specific
+            is_validator = assessor.role == UserRole.VALIDATOR
+            action = (
+                ActivityAction.INDICATOR_VALIDATED.value
+                if is_validator
+                else ActivityAction.INDICATOR_REVIEWED.value
+            )
 
             assessment_activity_service.log_indicator_activity(
                 db=db,
@@ -464,8 +571,8 @@ class AssessorService:
                 indicator_code=indicator.indicator_code
                 if indicator and indicator.indicator_code
                 else "N/A",
-                indicator_name=indicator.name if indicator else "Unknown",
-                action=ActivityAction.INDICATOR_REVIEWED.value,
+                indicator_name=indicator_name,
+                action=action,
                 user_id=assessor.id,
                 governance_area_id=governance_area.id if governance_area else None,
                 governance_area_name=governance_area.name if governance_area else None,
@@ -474,6 +581,8 @@ class AssessorService:
                     "has_remarks": bool(assessor_remarks),
                     "has_public_comment": bool(public_comment),
                     "flagged_for_calibration": flagged_for_calibration,
+                    "barangay_name": barangay_name,
+                    "reviewer_type": "validator" if is_validator else "assessor",
                 },
             )
         except Exception as e:
@@ -786,11 +895,25 @@ class AssessorService:
                 if assessment.rework_requested_at
                 else None,
                 "rework_count": assessment.rework_count,
+                "rework_round_used": assessment.rework_round_used,
                 "calibration_count": assessment.calibration_count,
                 "calibrated_area_ids": assessment.calibrated_area_ids or [],
                 "calibration_requested_at": assessment.calibration_requested_at.isoformat() + "Z"
                 if assessment.calibration_requested_at
                 else None,
+                # Per-area status tracking (for disabling buttons when area is rework/approved)
+                "area_submission_status": assessment.area_submission_status or {},
+                "area_assessor_approved": assessment.area_assessor_approved or {},
+                # Assessor's own area status (for quick lookup)
+                "my_area_status": assessment.get_area_status(assessor.assessor_area_id)
+                if assessor.assessor_area_id
+                else None,
+                # Per-area rework tracking: True if THIS assessor's area has used its rework round
+                "my_area_rework_used": (assessment.area_submission_status or {})
+                .get(str(assessor.assessor_area_id), {})
+                .get("rework_used", False)
+                if assessor.assessor_area_id
+                else False,
                 "blgu_user": {
                     "id": assessment.blgu_user.id,
                     "name": assessment.blgu_user.name,
@@ -1267,10 +1390,36 @@ class AssessorService:
         # Allow "draft" status because area_submission_status may not be initialized yet
         # When assessment is SUBMITTED but area hasn't been explicitly tracked,
         # get_area_status() returns "draft" - this is valid for approval
+        # Also allow "rework" status if BLGU has resubmitted - detected by:
+        # 1. resubmitted_after_rework flag in area_submission_status
+        # 2. rework_submitted_at timestamp on assessment
+        # 3. Assessment is in SUBMITTED/SUBMITTED_FOR_REVIEW status (implies resubmission for old data)
+        area_data = (assessment.area_submission_status or {}).get(str(governance_area_id), {})
+        has_resubmitted_flag = area_data.get("resubmitted_after_rework", False)
+        has_rework_submitted_at = assessment.rework_submitted_at is not None
+        # For old data: if assessment is in SUBMITTED/SUBMITTED_FOR_REVIEW but area is "rework",
+        # it means BLGU resubmitted but area_status wasn't updated (old code bug)
+        assessment_implies_resubmission = assessment.status in (
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.SUBMITTED_FOR_REVIEW,
+        )
+
         if area_status not in ("draft", "submitted", "in_review"):
-            raise ValueError(
-                f"Area is in '{area_status}' status. Can only approve areas in 'draft', 'submitted', or 'in_review' status."
-            )
+            # Allow approval if area was in rework but BLGU has resubmitted
+            if area_status == "rework" and (
+                has_resubmitted_flag or has_rework_submitted_at or assessment_implies_resubmission
+            ):
+                self.logger.info(
+                    f"Allowing approval for area {governance_area_id} in 'rework' status "
+                    f"because BLGU has resubmitted (resubmitted_after_rework={has_resubmitted_flag}, "
+                    f"rework_submitted_at={assessment.rework_submitted_at}, "
+                    f"assessment_status={assessment.status.value})"
+                )
+            else:
+                raise ValueError(
+                    f"Area is in '{area_status}' status. Can only approve areas in 'draft', 'submitted', or 'in_review' status. "
+                    f"If the BLGU has resubmitted, please ensure the area status has been updated."
+                )
 
         # Get governance area name
         governance_area = (
@@ -1380,11 +1529,14 @@ class AssessorService:
                 f"SUBMITTED_FOR_REVIEW, or IN_REVIEW status."
             )
 
-        # Check if rework round has already been used
-        if assessment.rework_round_used:
+        # Check if rework round has already been used FOR THIS AREA (per-area rework logic)
+        # Each of the 6 governance areas gets its own independent rework round
+        area_key = str(governance_area_id)
+        area_data = (assessment.area_submission_status or {}).get(area_key, {})
+        if area_data.get("rework_used", False):
             raise ValueError(
-                "Rework round has already been used for this assessment. "
-                "Only one rework round is allowed."
+                "Rework round has already been used for this governance area. "
+                "Each area is only allowed one rework round."
             )
 
         # Check current area status
@@ -1407,18 +1559,29 @@ class AssessorService:
         governance_area_name = governance_area.name if governance_area else "Unknown"
 
         # Update area status to rework
-        area_key = str(governance_area_id)
+        # Note: area_key is already defined above when checking per-area rework usage
         if assessment.area_submission_status is None:
             assessment.area_submission_status = {}
 
         now = datetime.utcnow()
+        # Preserve existing area data and add/update rework fields
+        existing_area_data = assessment.area_submission_status.get(area_key, {})
         assessment.area_submission_status[area_key] = {
+            **existing_area_data,  # Preserve any existing data
             "status": "rework",
             "rework_requested_at": now.isoformat(),
             "rework_comments": comments,
             "assessor_id": assessor.id,
+            "rework_used": True,  # Mark this area's rework round as used
         }
         flag_modified(assessment, "area_submission_status")
+
+        # Keep global rework_round_used for backward compatibility (analytics/statistics)
+        # Note: The actual per-area rework blocking is now done via area_data["rework_used"]
+        # This global flag just indicates that at least one area has used its rework round
+        if not assessment.rework_round_used:
+            assessment.rework_round_used = True
+            flag_modified(assessment, "rework_round_used")
 
         # FIX Issue #3: Do NOT immediately change global assessment status!
         # The assessor is only flagging their area for rework - other assessors may still
@@ -1628,6 +1791,7 @@ class AssessorService:
         # 1. MOV annotations (always triggers rework - file-level feedback)
         # 2. Manual "Flag for Rework" toggle (assessor_manual_rework_flag in response_data)
         # NOTE: Comments alone do NOT trigger rework - only annotations or explicit flag
+        flagged_indicators: list[dict] = []  # Track indicators for activity logging
         for response in assessment.responses:
             has_mov_annotations = (
                 response.indicator_id in annotations_by_indicator
@@ -1659,6 +1823,15 @@ class AssessorService:
                         if not k.startswith("assessor_val_")
                     }
 
+                # Track indicator for individual logging
+                flagged_indicators.append(
+                    {
+                        "response": response,
+                        "has_annotations": has_mov_annotations,
+                        "has_manual_flag": has_manual_rework_flag,
+                    }
+                )
+
                 self.logger.info(
                     f"[SEND REWORK] Cleared checklist data for response {response.id} (indicator {response.indicator_id})"
                 )
@@ -1687,6 +1860,32 @@ class AssessorService:
                 },
                 description=f"Rework requested by {assessor.name}",
             )
+
+            # Log individual indicator-level activities for each flagged indicator
+            from app.schemas.assessment_activity import ActivityAction
+
+            for flagged in flagged_indicators:
+                response = flagged["response"]
+                indicator = response.indicator
+                if indicator:
+                    governance_area = indicator.governance_area
+                    assessment_activity_service.log_indicator_activity(
+                        db=db,
+                        assessment_id=assessment_id,
+                        indicator_id=indicator.id,
+                        indicator_code=indicator.indicator_code,
+                        indicator_name=indicator.name,  # SQLAlchemy model uses 'name'
+                        action=ActivityAction.INDICATOR_FLAGGED_REWORK.value,
+                        user_id=assessor.id,  # type: ignore
+                        governance_area_id=governance_area.id if governance_area else None,
+                        governance_area_name=governance_area.name if governance_area else None,
+                        extra_data={
+                            "barangay_name": barangay_name,
+                            "has_annotations": flagged["has_annotations"],
+                            "has_manual_flag": flagged["has_manual_flag"],
+                            "flagged_by": assessor.name,
+                        },
+                    )
         except Exception as e:
             self.logger.error(f"Failed to log rework activity: {e}")
 
@@ -1799,13 +1998,6 @@ class AssessorService:
                 "(after all 6 governance areas are approved by assessors)"
             )
 
-        # Check if calibration round has already been used (1 round limit)
-        if assessment.calibration_round_used:
-            raise ValueError(
-                "Calibration has already been used for this assessment. "
-                "Only one calibration round is allowed."
-            )
-
         # Validator must have at least one indicator flagged for calibration
         flagged_responses = [r for r in assessment.responses if r.flagged_for_calibration]
 
@@ -1813,6 +2005,29 @@ class AssessorService:
             raise ValueError(
                 "At least one indicator must be flagged for calibration. "
                 "Use the 'Flag for Calibration' toggle on indicators that need corrections."
+            )
+
+        # Get the governance area IDs of the flagged indicators
+        requested_area_ids: set[int] = set(
+            r.indicator.governance_area_id
+            for r in flagged_responses
+            if r.indicator is not None and r.indicator.governance_area_id is not None
+        )
+
+        # Check if any of these areas have ALREADY been calibrated (per-area calibration logic)
+        # Each governance area can only be calibrated ONCE
+        already_calibrated = set(assessment.calibrated_area_ids or [])
+        areas_already_used = requested_area_ids.intersection(already_calibrated)
+
+        if areas_already_used:
+            # Get area names for better error message
+            area_names = []
+            for area_id in areas_already_used:
+                area = db.query(GovernanceArea).filter(GovernanceArea.id == area_id).first()
+                area_names.append(area.name if area else f"Area {area_id}")
+            raise ValueError(
+                f"Calibration has already been used for the following governance area(s): {', '.join(area_names)}. "
+                f"Each governance area can only be calibrated once."
             )
 
         # CRITICAL: Flag the JSON column as modified so SQLAlchemy detects the change
@@ -1846,25 +2061,30 @@ class AssessorService:
         assessment.is_calibration_rework = True
         assessment.calibration_validator_id = validator.id
         assessment.calibration_count += 1  # Legacy: still increment for backwards compatibility
-        assessment.calibration_round_used = True  # Mark calibration round as used
+        # Keep global calibration_round_used for backward compatibility (analytics/statistics)
+        # Note: The actual per-area calibration blocking is done via calibrated_area_ids
+        # This global flag just indicates that at least one area has been calibrated
+        if not assessment.calibration_round_used:
+            assessment.calibration_round_used = True
 
-        # Populate calibrated_area_ids with the governance area IDs of flagged indicators
-        # This is CRITICAL for submit_for_calibration_review to properly clear feedback_comments:
+        # Update calibrated_area_ids by APPENDING the governance area IDs of flagged indicators
+        # This is CRITICAL for:
+        # 1. Per-area calibration tracking - each area can only be calibrated ONCE
+        # 2. submit_for_calibration_review to properly clear feedback_comments
         # - The cleanup logic at assessments.py:1668 filters by: r.indicator.governance_area_id in calibrated_area_ids
-        # - Without this, the filter returns empty and OLD validator feedback persists in the UI
-        # - This causes the "auto-checked checklist" bug where old "Validator's Findings" remain visible
         from sqlalchemy.orm.attributes import flag_modified
 
-        calibrated_area_ids: list[int] = list(
-            set(
-                r.indicator.governance_area_id
-                for r in flagged_responses
-                if r.indicator is not None and r.indicator.governance_area_id is not None
-            )
-        )
-        assessment.calibrated_area_ids = calibrated_area_ids
+        # Note: requested_area_ids and already_calibrated are calculated above in the per-area validation check
+        new_calibrated_area_ids: list[int] = list(requested_area_ids)
+
+        # Append to existing calibrated_area_ids (reuse already_calibrated set from validation check)
+        all_calibrated = already_calibrated.union(requested_area_ids)
+        assessment.calibrated_area_ids = sorted(all_calibrated)  # Sort for consistent ordering
         flag_modified(assessment, "calibrated_area_ids")  # Ensure SQLAlchemy tracks the JSON change
-        self.logger.info(f"[CALIBRATION] Set calibrated_area_ids: {calibrated_area_ids}")
+        self.logger.info(
+            f"[CALIBRATION] Updated calibrated_area_ids: {assessment.calibrated_area_ids} "
+            f"(newly calibrated: {new_calibrated_area_ids})"
+        )
 
         # Mark flagged indicators for rework
         # These are the indicators the BLGU needs to correct and re-upload
@@ -1918,6 +2138,29 @@ class AssessorService:
                 },
                 description=f"Calibration requested by {validator.name} for {calibrated_count} indicator(s)",
             )
+
+            # Log individual indicator-level activities for each calibrated indicator
+            from app.schemas.assessment_activity import ActivityAction
+
+            for response in flagged_responses:
+                indicator = response.indicator
+                if indicator:
+                    governance_area = indicator.governance_area
+                    assessment_activity_service.log_indicator_activity(
+                        db=db,
+                        assessment_id=assessment_id,
+                        indicator_id=indicator.id,
+                        indicator_code=indicator.indicator_code,
+                        indicator_name=indicator.name,  # SQLAlchemy model uses 'name'
+                        action=ActivityAction.INDICATOR_FLAGGED_CALIBRATION.value,
+                        user_id=validator.id,  # type: ignore
+                        governance_area_id=governance_area.id if governance_area else None,
+                        governance_area_name=governance_area.name if governance_area else None,
+                        extra_data={
+                            "barangay_name": barangay_name,
+                            "flagged_by": validator.name,
+                        },
+                    )
         except Exception as e:
             self.logger.error(f"Failed to log calibration activity: {e}")
 
@@ -2512,26 +2755,15 @@ class AssessorService:
         if assessment_year is None:
             assessment_year = assessment_year_service.get_active_year_number(db)
 
-        # Determine if user is a validator
-        is_validator = user.role == UserRole.VALIDATOR and user.assessor_area_id is not None
+        # Determine if user is a validator (system-wide access, assessor_area_id = NULL)
+        is_validator = user.role == UserRole.VALIDATOR
 
         # Base query for COMPLETED assessments
         if is_validator:
-            # Validators: Show assessments with responses in their governance area
-            # Use a subquery to get distinct assessment IDs first to avoid PostgreSQL DISTINCT ON issues
-            assessment_ids_subquery = (
-                db.query(Assessment.id)
-                .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
-                .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
-                .filter(
-                    Assessment.status == AssessmentStatus.COMPLETED,
-                    Indicator.governance_area_id == user.assessor_area_id,
-                )
-                .distinct()
-                .subquery()
-            )
+            # Validators: System-wide access - show ALL completed assessments
+            # This allows validators working in clusters to coordinate offline
             query = db.query(Assessment).filter(
-                Assessment.id.in_(db.query(assessment_ids_subquery.c.id))
+                Assessment.status == AssessmentStatus.COMPLETED,
             )
         else:
             # Assessors: Show assessments they reviewed (reviewed_by == user.id)
@@ -2574,14 +2806,7 @@ class AssessorService:
             .all()
         )
 
-        # Get validator's governance area name if applicable
-        governance_area_name = None
-        if is_validator:
-            area = (
-                db.query(GovernanceArea).filter(GovernanceArea.id == user.assessor_area_id).first()
-            )
-            if area:
-                governance_area_name = area.name
+        # Validators have system-wide access, no governance area filtering needed
 
         # Build response items
         items = []
@@ -2593,18 +2818,14 @@ class AssessorService:
                 barangay_name = assessment.blgu_user.barangay.name
 
             # Count validation statuses for this assessment
-            # For validators, only count indicators in their governance area
+            # Validators see ALL indicators (system-wide access)
+            # Assessors also see all indicators (they reviewed the whole assessment)
             pass_count = 0
             fail_count = 0
             conditional_count = 0
             indicator_count = 0
 
             for response in assessment.responses:
-                # For validators, filter by governance area
-                if is_validator and response.indicator:
-                    if response.indicator.governance_area_id != user.assessor_area_id:
-                        continue
-
                 indicator_count += 1
                 if response.validation_status == ValidationStatus.PASS:
                     pass_count += 1
@@ -2621,7 +2842,7 @@ class AssessorService:
                     "assessment_id": assessment.id,
                     "barangay_name": barangay_name,
                     "municipality_name": municipality_name,
-                    "governance_area_name": governance_area_name,
+                    "governance_area_name": None,  # System-wide access, no specific area
                     "submitted_at": assessment.submitted_at,
                     "completed_at": completed_at,
                     "final_compliance_status": assessment.final_compliance_status,
@@ -2685,14 +2906,11 @@ class AssessorService:
             return {"success": False, "message": "Assessment not found"}
 
         # Verify access
-        is_validator = user.role == UserRole.VALIDATOR and user.assessor_area_id is not None
+        is_validator = user.role == UserRole.VALIDATOR
 
         if is_validator:
-            # Validators must have responses in their governance area
-            has_access = any(
-                r.indicator and r.indicator.governance_area_id == user.assessor_area_id
-                for r in assessment.responses
-            )
+            # Validators have system-wide access to all completed assessments
+            has_access = assessment.status == AssessmentStatus.COMPLETED
         else:
             # Assessors must be the reviewer
             has_access = assessment.reviewed_by == user.id
@@ -2706,23 +2924,12 @@ class AssessorService:
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
-        # Get validator's governance area name if applicable
-        governance_area_name = None
-        if is_validator:
-            area = (
-                db.query(GovernanceArea).filter(GovernanceArea.id == user.assessor_area_id).first()
-            )
-            if area:
-                governance_area_name = area.name
+        # Validators have system-wide access, no area filtering needed
+        governance_area_name = None  # Not applicable for system-wide validators
 
-        # Build indicator list
+        # Build indicator list (all indicators for validators, all indicators for assessors)
         indicators = []
         for response in assessment.responses:
-            # For validators, filter by governance area
-            if is_validator and response.indicator:
-                if response.indicator.governance_area_id != user.assessor_area_id:
-                    continue
-
             indicator = response.indicator
             if not indicator:
                 continue
@@ -2809,50 +3016,46 @@ class AssessorService:
         self, db: Session, validator: User, year: int | None = None, include_draft: bool = False
     ) -> dict[str, Any]:
         """
-        Get comprehensive validator dashboard data filtered by governance area.
+        Get comprehensive validator dashboard data.
 
-        This method provides validator-specific analytics that mirror the MLGOO
-        municipal overview but filtered by the validator's assigned governance area.
+        Validators have system-wide access and can see ALL assessments across
+        all governance areas. This allows validators working in clusters to
+        coordinate offline and share workload.
 
         Args:
             db: Database session
-            validator: The validator user (must have assessor_area_id)
+            validator: The validator user (system-wide access)
             year: Optional year filter
             include_draft: Include draft assessments
 
         Returns:
-            dict: Dashboard data with all sections filtered by governance area
+            dict: Dashboard data with all assessments (system-wide)
         """
 
         from app.db.models.barangay import Barangay
         from app.db.models.governance_area import GovernanceArea
 
-        if validator.assessor_area_id is None:
-            raise ValueError("Validator must have an assigned governance area")
+        # Validators have system-wide access - no area filtering
+        # Get all governance areas for reference
+        governance_areas = db.query(GovernanceArea).all()
+        governance_area_map = {ga.id: ga for ga in governance_areas}
 
-        # Get governance area name
-        governance_area = (
-            db.query(GovernanceArea).filter(GovernanceArea.id == validator.assessor_area_id).first()
-        )
-        governance_area_name = governance_area.name if governance_area else "Unknown"
-
-        # Base query for assessments with responses in validator's governance area
-        base_query = (
-            db.query(Assessment)
-            .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
-            .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
-            .filter(Indicator.governance_area_id == validator.assessor_area_id)
+        # Base query for ALL assessments (system-wide access for validators)
+        # PERFORMANCE: Eager load relationships to prevent N+1 queries
+        base_query = db.query(Assessment).options(
+            joinedload(Assessment.blgu_user).joinedload(User.barangay),
+            selectinload(Assessment.responses).joinedload(AssessmentResponse.indicator),
         )
 
         # Apply year filter
         if year is not None:
             base_query = base_query.filter(Assessment.assessment_year == year)
 
-        # Get all assessments with responses in this governance area
-        all_assessments = base_query.distinct(Assessment.id).all()
+        # Get ALL assessments (system-wide access for validators)
+        all_assessments = base_query.all()
 
         # =====================================================================
-        # Compliance Summary (for validator's governance area)
+        # Compliance Summary (system-wide for validators)
         # =====================================================================
 
         # Count total barangays (all in municipality)
@@ -2863,26 +3066,13 @@ class AssessorService:
             a for a in all_assessments if a.status == AssessmentStatus.COMPLETED
         ]
 
-        # Calculate pass/fail based on responses in validator's area
-        passed_count = 0
-        failed_count = 0
-        for assessment in completed_assessments:
-            area_responses = [
-                r
-                for r in assessment.responses
-                if r.indicator.governance_area_id == validator.assessor_area_id
-            ]
-            if area_responses:
-                pass_count = sum(
-                    1 for r in area_responses if r.validation_status == ValidationStatus.PASS
-                )
-                fail_count = sum(
-                    1 for r in area_responses if r.validation_status == ValidationStatus.FAIL
-                )
-                if pass_count > fail_count:
-                    passed_count += 1
-                elif fail_count > 0:
-                    failed_count += 1
+        # Calculate pass/fail based on final_compliance_status (system-wide)
+        passed_count = sum(
+            1 for a in completed_assessments if a.final_compliance_status == ComplianceStatus.PASSED
+        )
+        failed_count = sum(
+            1 for a in completed_assessments if a.final_compliance_status == ComplianceStatus.FAILED
+        )
 
         assessed_count = len(completed_assessments)
         compliance_rate = (passed_count / assessed_count * 100) if assessed_count > 0 else 0.0
@@ -2954,55 +3144,91 @@ class AssessorService:
         }
 
         # =====================================================================
-        # Governance Area Performance (validator's area only)
+        # Governance Area Performance (all areas - system-wide for validators)
         # =====================================================================
 
-        total_indicators = (
-            db.query(func.count(Indicator.id))
-            .filter(Indicator.governance_area_id == validator.assessor_area_id)
-            .scalar()
-            or 0
-        )
+        # Calculate performance per governance area
+        area_performance_list = []
+        core_pass_rates = []
+        essential_pass_rates = []
+
+        for ga in governance_areas:
+            area_indicators = (
+                db.query(func.count(Indicator.id))
+                .filter(Indicator.governance_area_id == ga.id)
+                .scalar()
+                or 0
+            )
+
+            # Count pass/fail for this area across all completed assessments
+            area_passed = 0
+            area_failed = 0
+            for assessment in completed_assessments:
+                area_responses = [
+                    r for r in assessment.responses if r.indicator.governance_area_id == ga.id
+                ]
+                if area_responses:
+                    pass_count = sum(
+                        1 for r in area_responses if r.validation_status == ValidationStatus.PASS
+                    )
+                    fail_count = sum(
+                        1 for r in area_responses if r.validation_status == ValidationStatus.FAIL
+                    )
+                    if pass_count > fail_count:
+                        area_passed += 1
+                    elif fail_count > 0:
+                        area_failed += 1
+
+            area_total = area_passed + area_failed
+            area_pass_rate = (area_passed / area_total * 100) if area_total > 0 else 0.0
+
+            area_performance_list.append(
+                {
+                    "id": ga.id,
+                    "name": ga.name,
+                    "area_type": ga.area_type.value if ga.area_type else "CORE",
+                    "total_indicators": area_indicators,
+                    "passed_count": area_passed,
+                    "failed_count": area_failed,
+                    "pass_rate": area_pass_rate,
+                    "common_weaknesses": [],
+                }
+            )
+
+            if ga.area_type == AreaType.CORE:
+                core_pass_rates.append(area_pass_rate)
+            else:
+                essential_pass_rates.append(area_pass_rate)
 
         governance_area_performance = {
-            "areas": [
-                {
-                    "id": governance_area.id,
-                    "name": governance_area_name,
-                    "area_type": governance_area.area_type.value if governance_area else "CORE",
-                    "total_indicators": total_indicators,
-                    "passed_count": passed_count,
-                    "failed_count": failed_count,
-                    "pass_rate": compliance_rate,
-                    "common_weaknesses": [],  # Can add CapDev analysis if needed
-                }
-            ],
-            "core_areas_pass_rate": compliance_rate
-            if governance_area and governance_area.area_type == AreaType.CORE
+            "areas": area_performance_list,
+            "core_areas_pass_rate": sum(core_pass_rates) / len(core_pass_rates)
+            if core_pass_rates
             else 0.0,
-            "essential_areas_pass_rate": compliance_rate
-            if governance_area and governance_area.area_type == AreaType.ESSENTIAL
+            "essential_areas_pass_rate": sum(essential_pass_rates) / len(essential_pass_rates)
+            if essential_pass_rates
             else 0.0,
         }
 
         # =====================================================================
-        # Top Failing Indicators (in validator's area)
+        # Top Failing Indicators (all areas - system-wide for validators)
         # =====================================================================
 
         indicator_failures: dict[int, dict[str, Any]] = {}
         for assessment in all_assessments:
             for response in assessment.responses:
-                if response.indicator.governance_area_id != validator.assessor_area_id:
-                    continue
+                indicator_id = response.indicator.id
+                ga = governance_area_map.get(response.indicator.governance_area_id)
+                ga_name = ga.name if ga else "Unknown"
+
                 if response.validation_status == ValidationStatus.FAIL:
-                    indicator_id = response.indicator.id
                     if indicator_id not in indicator_failures:
                         indicator_failures[indicator_id] = {
                             "indicator_id": indicator_id,
                             "indicator_code": response.indicator.indicator_code,
                             "indicator_name": response.indicator.name,
-                            "governance_area_id": validator.assessor_area_id,
-                            "governance_area": governance_area_name,
+                            "governance_area_id": response.indicator.governance_area_id,
+                            "governance_area": ga_name,
                             "fail_count": 0,
                             "total_assessed": 0,
                             "fail_rate": 0.0,
@@ -3011,14 +3237,13 @@ class AssessorService:
                     indicator_failures[indicator_id]["fail_count"] += 1
                     indicator_failures[indicator_id]["total_assessed"] += 1
                 elif response.validation_status == ValidationStatus.PASS:
-                    indicator_id = response.indicator.id
                     if indicator_id not in indicator_failures:
                         indicator_failures[indicator_id] = {
                             "indicator_id": indicator_id,
                             "indicator_code": response.indicator.indicator_code,
                             "indicator_name": response.indicator.name,
-                            "governance_area_id": validator.assessor_area_id,
-                            "governance_area": governance_area_name,
+                            "governance_area_id": response.indicator.governance_area_id,
+                            "governance_area": ga_name,
                             "fail_count": 0,
                             "total_assessed": 0,
                             "fail_rate": 0.0,
@@ -3053,7 +3278,7 @@ class AssessorService:
         }
 
         # =====================================================================
-        # Barangay Status List (barangays with responses in validator's area)
+        # Barangay Status List (all assessments - system-wide for validators)
         # =====================================================================
 
         barangay_list = []
@@ -3069,29 +3294,32 @@ class AssessorService:
             barangay_id = barangay.id if barangay else 0
             barangay_name = barangay.name if barangay else "Unknown"
 
-            # Check if area responses exist
-            area_responses = [
-                r
-                for r in assessment.responses
-                if r.indicator.governance_area_id == validator.assessor_area_id
-            ]
+            # Calculate overall compliance (system-wide)
+            all_responses = assessment.responses
+            total_pass_count = sum(
+                1 for r in all_responses if r.validation_status == ValidationStatus.PASS
+            )
 
-            # Calculate compliance for this area
-            area_pass_count = sum(
-                1 for r in area_responses if r.validation_status == ValidationStatus.PASS
-            )
-            area_fail_count = sum(
-                1 for r in area_responses if r.validation_status == ValidationStatus.FAIL
-            )
-            area_compliance = (
-                (
-                    ComplianceStatus.PASSED
-                    if area_pass_count > area_fail_count
-                    else ComplianceStatus.FAILED
-                )
-                if (area_pass_count + area_fail_count > 0)
+            # Use assessment's final_compliance_status if available
+            compliance_status = (
+                assessment.final_compliance_status.value
+                if assessment.final_compliance_status
                 else None
             )
+
+            # Count governance areas passed
+            areas_passed = 0
+            for ga in governance_areas:
+                ga_responses = [r for r in all_responses if r.indicator.governance_area_id == ga.id]
+                if ga_responses:
+                    ga_pass = sum(
+                        1 for r in ga_responses if r.validation_status == ValidationStatus.PASS
+                    )
+                    ga_fail = sum(
+                        1 for r in ga_responses if r.validation_status == ValidationStatus.FAIL
+                    )
+                    if ga_pass > ga_fail:
+                        areas_passed += 1
 
             barangay_list.append(
                 {
@@ -3099,17 +3327,17 @@ class AssessorService:
                     "barangay_name": barangay_name,
                     "assessment_id": assessment.id,
                     "status": assessment.status.value,
-                    "compliance_status": area_compliance.value if area_compliance else None,
+                    "compliance_status": compliance_status,
                     "submitted_at": assessment.submitted_at,
                     "mlgoo_approved_at": assessment.mlgoo_approved_at,
                     "overall_score": None,
                     "has_capdev_insights": False,
                     "capdev_status": None,
-                    "governance_areas_passed": None,
-                    "total_governance_areas": None,
-                    "pass_count": area_pass_count,
+                    "governance_areas_passed": areas_passed,
+                    "total_governance_areas": len(governance_areas),
+                    "pass_count": total_pass_count,
                     "conditional_count": 0,
-                    "total_responses": len(area_responses),
+                    "total_responses": len(all_responses),
                 }
             )
 
@@ -3127,6 +3355,111 @@ class AssessorService:
             "barangay_statuses": barangay_statuses,
             "generated_at": datetime.utcnow(),
             "assessment_cycle": f"SGLGB {year}" if year else None,
+        }
+
+    # =========================================================================
+    # Per-MOV Assessor Feedback Methods (Epic 6.0)
+    # =========================================================================
+
+    def update_mov_assessor_feedback(
+        self,
+        db: Session,
+        mov_file_id: int,
+        assessor_id: int,
+        assessor_notes: str | None = None,
+        flagged_for_rework: bool | None = None,
+    ) -> dict:
+        """
+        Update assessor notes and rework flag for a specific MOV file.
+
+        The rework flag auto-toggles ON when notes are added (if not explicitly set).
+        Assessors can manually toggle it OFF even if notes exist.
+
+        Args:
+            db: Database session
+            mov_file_id: ID of the MOV file to update
+            assessor_id: ID of the assessor making the update
+            assessor_notes: Optional general notes about this MOV
+            flagged_for_rework: Optional flag indicating MOV needs rework
+
+        Returns:
+            dict with updated MOV feedback data
+
+        Raises:
+            ValueError: If MOV file not found
+        """
+        # Get the MOV file
+        mov_file = db.query(MOVFile).filter(MOVFile.id == mov_file_id).first()
+
+        if not mov_file:
+            raise ValueError(f"MOV file {mov_file_id} not found")
+
+        # Update assessor notes if provided
+        if assessor_notes is not None:
+            mov_file.assessor_notes = assessor_notes if assessor_notes.strip() else None
+
+        # Determine flagged_for_rework value
+        # If explicitly set, use that value
+        # Otherwise, auto-toggle ON if notes were just added (and not empty)
+        if flagged_for_rework is not None:
+            new_flag_value = flagged_for_rework
+        elif assessor_notes is not None and assessor_notes.strip():
+            # Auto-toggle ON when notes are added
+            new_flag_value = True
+        else:
+            # Keep existing value
+            new_flag_value = mov_file.flagged_for_rework
+
+        # Update flag and tracking fields
+        if new_flag_value != mov_file.flagged_for_rework:
+            mov_file.flagged_for_rework = new_flag_value
+            if new_flag_value:
+                mov_file.flagged_by_assessor_id = assessor_id
+                mov_file.flagged_at = datetime.utcnow()
+            else:
+                # Keep the flagged_by info for history, just clear the flag
+                mov_file.flagged_at = None
+
+        db.commit()
+        db.refresh(mov_file)
+
+        return {
+            "mov_file_id": mov_file.id,
+            "assessor_notes": mov_file.assessor_notes,
+            "flagged_for_rework": mov_file.flagged_for_rework,
+            "flagged_by_assessor_id": mov_file.flagged_by_assessor_id,
+            "flagged_at": mov_file.flagged_at,
+        }
+
+    def get_mov_assessor_feedback(
+        self,
+        db: Session,
+        mov_file_id: int,
+    ) -> dict:
+        """
+        Get assessor feedback for a specific MOV file.
+
+        Args:
+            db: Database session
+            mov_file_id: ID of the MOV file
+
+        Returns:
+            dict with MOV feedback data
+
+        Raises:
+            ValueError: If MOV file not found
+        """
+        mov_file = db.query(MOVFile).filter(MOVFile.id == mov_file_id).first()
+
+        if not mov_file:
+            raise ValueError(f"MOV file {mov_file_id} not found")
+
+        return {
+            "mov_file_id": mov_file.id,
+            "assessor_notes": mov_file.assessor_notes,
+            "flagged_for_rework": mov_file.flagged_for_rework,
+            "flagged_by_assessor_id": mov_file.flagged_by_assessor_id,
+            "flagged_at": mov_file.flagged_at,
         }
 
 

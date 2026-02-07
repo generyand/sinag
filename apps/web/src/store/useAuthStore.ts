@@ -136,12 +136,7 @@ export const useAuthStore = create<AuthState>()(
                 isAuthenticated: true,
                 mustChangePassword: state.mustChangePassword || false,
               });
-              console.log("Auth state hydrated successfully");
-            } else {
-              console.log("No valid auth data found in storage");
             }
-          } else {
-            console.log("No auth storage found");
           }
         } catch (error) {
           console.error("Error hydrating auth state:", error);
@@ -185,7 +180,19 @@ export const useAuthStore = create<AuthState>()(
       // - ASSESSOR is now area-specific (with assessor_area_id)
       // - VALIDATOR is now system-wide (no area required)
       // - Field renamed from validator_area_id to assessor_area_id
-      version: 4, // Increment version to force reset after workflow restructuring
+      version: 4,
+      migrate: (persistedState, version) => {
+        // Force reset for versions < 4 due to workflow restructuring
+        if (version < 4) {
+          return {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            mustChangePassword: false,
+          };
+        }
+        return persistedState as AuthState;
+      },
     }
   )
 );

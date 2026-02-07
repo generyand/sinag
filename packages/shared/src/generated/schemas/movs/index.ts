@@ -4,6 +4,8 @@
 // 🏷️  Based on FastAPI tag: "movs"
 
 import type { FlaggedMovFileItemIndicatorCode } from '../indicators';
+import type { MOVFileResponseAssessorNotes } from '../assessor';
+import type { MOVFileResponseFlaggedByAssessorId } from '../assessor';
 import type { NotificationResult } from '../notifications';
 
 /**
@@ -79,6 +81,61 @@ export interface FlaggedMovFileItem {
  * FlaggedMovFileItemComment
  */
 export type FlaggedMovFileItemComment = string | null;
+
+
+/**
+ * MOVAnnotationItem
+ */
+export interface MOVAnnotationItem {
+  id: number;
+  mov_file_id: number;
+  mov_filename: string;
+  mov_file_type: string;
+  annotation_type: string;
+  page?: MOVAnnotationItemPage;
+  rect?: MOVAnnotationItemRect;
+  rects?: MOVAnnotationItemRects;
+  comment: string;
+  assessor_id: number;
+  assessor_name: string;
+  created_at: MOVAnnotationItemCreatedAt;
+}
+
+
+/**
+ * MOVAnnotationItemCreatedAt
+ */
+export type MOVAnnotationItemCreatedAt = string | null;
+
+
+/**
+ * MOVAnnotationItemPage
+ */
+export type MOVAnnotationItemPage = number | null;
+
+
+/**
+ * MOVAnnotationItemRect
+ */
+export type MOVAnnotationItemRect = MOVAnnotationItemRectAnyOf | null;
+
+
+/**
+ * MOVAnnotationItemRectAnyOf
+ */
+export type MOVAnnotationItemRectAnyOf = { [key: string]: unknown };
+
+
+/**
+ * MOVAnnotationItemRects
+ */
+export type MOVAnnotationItemRects = MOVAnnotationItemRectsAnyOfItem[] | null;
+
+
+/**
+ * MOVAnnotationItemRectsAnyOfItem
+ */
+export type MOVAnnotationItemRectsAnyOfItem = { [key: string]: unknown };
 
 
 /**
@@ -167,6 +224,10 @@ export interface MOVFileResponse {
   uploaded_at: MOVFileResponseUploadedAt;
   deleted_at?: MOVFileResponseDeletedAt;
   field_id?: MOVFileResponseFieldId;
+  assessor_notes?: MOVFileResponseAssessorNotes;
+  flagged_for_rework?: boolean;
+  flagged_by_assessor_id?: MOVFileResponseFlaggedByAssessorId;
+  flagged_at?: MOVFileResponseFlaggedAt;
 }
 
 
@@ -180,6 +241,12 @@ export type MOVFileResponseDeletedAt = string | null;
  * MOVFileResponseFieldId
  */
 export type MOVFileResponseFieldId = string | null;
+
+
+/**
+ * MOVFileResponseFlaggedAt
+ */
+export type MOVFileResponseFlaggedAt = string | null;
 
 
 /**

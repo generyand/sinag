@@ -114,7 +114,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # - Multiple workers based on CPU cores
 # - No auto-reload
 # - Production-grade logging
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--log-level", "info"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--log-level", "info", "--proxy-headers", "--forwarded-allow-ips", "*"]
 
 # ------------------------------------------------------------------------------
 # Stage 5: Celery Worker (for background tasks)

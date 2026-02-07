@@ -11,8 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarangaySubmission } from "@/types/submissions";
+import { BarangaySubmission, UnifiedStatus } from "@/types/submissions";
 import { Clock, Eye, Play } from "lucide-react";
+import { UNIFIED_STATUS_CONFIG } from "./utils/statusConfig";
 
 interface SubmissionsTableProps {
   submissions: BarangaySubmission[];
@@ -20,156 +21,59 @@ interface SubmissionsTableProps {
 }
 
 export function SubmissionsTable({ submissions, onSubmissionClick }: SubmissionsTableProps) {
-  const getStatusBadge = (status: BarangaySubmission["areaStatus"]) => {
-    const statusConfig = {
-      awaiting_review: {
-        label: "Awaiting Review",
-        color: "text-[var(--kpi-blue-text)]",
-        bgColor: "var(--kpi-blue-bg)",
-      },
-      in_progress: {
-        label: "In Progress",
-        color: "text-[var(--kpi-orange-text)]",
-        bgColor: "var(--kpi-orange-bg)",
-      },
-      needs_rework: {
-        label: "Needs Rework",
-        color: "text-[var(--kpi-orange-text)]",
-        bgColor: "var(--kpi-orange-bg)",
-      },
-      validated: {
-        label: "Validated",
-        color: "text-[var(--kpi-green-text)]",
-        bgColor: "var(--kpi-green-bg)",
-      },
-    };
-
-    const config = statusConfig[status];
+  // Get unified status badge using the centralized config
+  const getUnifiedStatusBadge = (status: UnifiedStatus) => {
+    const config = UNIFIED_STATUS_CONFIG[status];
     return (
       <Badge
         variant="secondary"
-        className={`${config.color} border-0`}
-        style={{ backgroundColor: config.bgColor }}
+        className={`text-[${config.textColor}] border-0 whitespace-nowrap`}
+        style={{ backgroundColor: config.bgColor, color: config.textColor }}
       >
         {config.label}
       </Badge>
     );
   };
 
-  const getOverallStatusBadge = (status: BarangaySubmission["overallStatus"]) => {
-    const statusConfig = {
-      draft: { label: "Draft", color: "text-[var(--text-muted)]", bgColor: "var(--muted)" },
-      submitted: {
-        label: "Submitted",
-        color: "text-[var(--kpi-blue-text)]",
-        bgColor: "var(--kpi-blue-bg)",
-      },
-      under_review: {
-        label: "Under Review",
-        color: "text-[var(--kpi-orange-text)]",
-        bgColor: "var(--kpi-orange-bg)",
-      },
-      needs_rework: {
-        label: "Needs Rework",
-        color: "text-[var(--kpi-orange-text)]",
-        bgColor: "var(--kpi-orange-bg)",
-      },
-      validated: {
-        label: "Validated",
-        color: "text-[var(--kpi-green-text)]",
-        bgColor: "var(--kpi-green-bg)",
-      },
-      completed: {
-        label: "Completed",
-        color: "text-[var(--kpi-purple-text)]",
-        bgColor: "var(--kpi-purple-bg)",
-      },
-    };
-
-    const config = statusConfig[status];
-    return (
-      <Badge
-        variant="secondary"
-        className={`${config.color} text-xs border-0`}
-        style={{ backgroundColor: config.bgColor }}
-      >
-        {config.label}
-      </Badge>
-    );
+  // Get the appropriate icon for each action
+  const getActionIcon = (status: UnifiedStatus) => {
+    switch (status) {
+      case "awaiting_assessment":
+      case "awaiting_re_review":
+        return Play;
+      case "assessment_in_progress":
+      case "re_assessment_in_progress":
+        return Clock;
+      case "sent_for_rework":
+      case "reviewed":
+      default:
+        return Eye;
+    }
   };
 
+  // Get action button based on unified status
   const getActionButton = (submission: BarangaySubmission) => {
-    const { areaStatus } = submission;
+    const { unifiedStatus } = submission;
+    const config = UNIFIED_STATUS_CONFIG[unifiedStatus];
+    const Icon = getActionIcon(unifiedStatus);
 
-    // Awaiting review - Show prominent "Start Review" button
-    if (areaStatus === "awaiting_review") {
-      return (
-        <Button
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSubmissionClick(submission);
-          }}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 rounded-sm"
-          aria-label={`Start review for ${submission.barangayName}`}
-        >
-          <Play className="h-4 w-4 mr-2" aria-hidden="true" />
-          Start Review
-        </Button>
-      );
-    }
+    // Determine variant based on action type
+    const isGhost = config.actionVariant === "ghost";
+    const isOutline = config.actionVariant === "outline";
 
-    // In progress - Show "Continue Review" button
-    if (areaStatus === "in_progress") {
-      return (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSubmissionClick(submission);
-          }}
-          className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 hover:text-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 rounded-sm"
-          aria-label={`Continue review for ${submission.barangayName}`}
-        >
-          <Clock className="h-4 w-4 mr-2" aria-hidden="true" />
-          Continue Review
-        </Button>
-      );
-    }
-
-    // Needs rework - BLGU has resubmitted after calibration, validator should re-review
-    if (areaStatus === "needs_rework") {
-      return (
-        <Button
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSubmissionClick(submission);
-          }}
-          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 rounded-sm"
-          aria-label={`Re-review submission for ${submission.barangayName}`}
-        >
-          <Play className="h-4 w-4 mr-2" aria-hidden="true" />
-          Re-Review
-        </Button>
-      );
-    }
-
-    // Validated or other status - Show "View Submission"
     return (
       <Button
         size="sm"
-        variant="ghost"
+        variant={isGhost ? "ghost" : isOutline ? "outline" : "default"}
         onClick={(e) => {
           e.stopPropagation();
           onSubmissionClick(submission);
         }}
-        className="text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--hover)] transition-all duration-200 transform hover:scale-105 rounded-sm"
-        aria-label={`View submission for ${submission.barangayName}`}
+        className={`relative z-10 ${config.actionColorClass} shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-sm`}
+        aria-label={`${config.actionLabel} for ${submission.barangayName}`}
       >
-        <Eye className="h-4 w-4 mr-2" aria-hidden="true" />
-        View Submission
+        <Icon className="h-4 w-4 mr-2" aria-hidden="true" />
+        {config.actionLabel}
       </Button>
     );
   };
@@ -225,16 +129,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
               >
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full" aria-hidden="true"></div>
-                  <span>Status (in this Area)</span>
-                </div>
-              </TableHead>
-              <TableHead
-                className="text-[var(--foreground)] font-semibold text-sm py-4 px-6"
-                role="columnheader"
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full" aria-hidden="true"></div>
-                  <span>Overall Status</span>
+                  <span>Status</span>
                 </div>
               </TableHead>
               <TableHead
@@ -319,10 +214,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
                   </div>
                 </TableCell>
                 <TableCell className="py-4 px-6" role="cell">
-                  {getStatusBadge(submission.areaStatus)}
-                </TableCell>
-                <TableCell className="py-4 px-6" role="cell">
-                  {getOverallStatusBadge(submission.overallStatus)}
+                  {getUnifiedStatusBadge(submission.unifiedStatus)}
                 </TableCell>
                 <TableCell className="text-[var(--text-secondary)] text-sm py-4 px-6" role="cell">
                   <div className="flex items-center space-x-2">

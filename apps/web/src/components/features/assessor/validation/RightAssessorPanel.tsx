@@ -1665,7 +1665,7 @@ export function RightAssessorPanel({
                         </div>
                         <Textarea
                           {...register(`${key}.publicComment` as const)}
-                          placeholder="Provide clear, actionable feedback for BLGU to address for rework."
+                          placeholder="Add notes or feedback about this indicator..."
                           className={errorsFor ? "border-red-500" : undefined}
                         />
                         {errorsFor ? (
@@ -1694,41 +1694,6 @@ export function RightAssessorPanel({
                           }
                           return null;
                         })()}
-
-                      {/* Flag for Rework toggle (assessors only) */}
-                      {isAssessor && (
-                        <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 rounded-md p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-start gap-2">
-                              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-                              <div>
-                                <Label
-                                  htmlFor={`rework-flag-${r.id}`}
-                                  className="text-sm font-medium text-red-900 dark:text-red-100 cursor-pointer"
-                                >
-                                  Flag for Rework
-                                </Label>
-                                <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
-                                  Mark this indicator for BLGU to revise
-                                </p>
-                              </div>
-                            </div>
-                            <Switch
-                              id={`rework-flag-${r.id}`}
-                              checked={
-                                // With file-level tracking, check if key exists in reworkFlags
-                                reworkFlags
-                                  ? r.id in reworkFlags
-                                  : ((r as AnyRecord).has_mov_annotations ?? false)
-                              }
-                              onCheckedChange={(checked) => {
-                                onReworkFlagChange?.(r.id, checked);
-                              }}
-                              className="data-[state=checked]:bg-red-600 data-[state=unchecked]:border-2 data-[state=unchecked]:border-red-400 data-[state=unchecked]:bg-red-100"
-                            />
-                          </div>
-                        </div>
-                      )}
 
                       {/* Flag for Calibration toggle (validators only) */}
                       {isValidator && (
