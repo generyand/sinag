@@ -422,11 +422,13 @@ def _auto_submit_assessment(db: Session, assessment: Assessment, now: datetime) 
     assessment.auto_submitted_at = now
 
     # Submit all 6 governance areas so assessors can see the submission
+    # Fix: also update areas that were initialized with "draft" status
     now_iso = now.isoformat()
     area_status = assessment.area_submission_status or {}
     for area_id in range(1, 7):
         area_key = str(area_id)
-        if area_key not in area_status:
+        existing = area_status.get(area_key, {})
+        if existing.get("status") not in ("submitted", "in_review", "approved"):
             area_status[area_key] = {"status": "submitted", "submitted_at": now_iso}
     assessment.area_submission_status = area_status
     flag_modified(assessment, "area_submission_status")
