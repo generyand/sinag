@@ -1366,22 +1366,35 @@ class AssessorService:
             raise ValueError(f"Assessment {assessment_id} not found")
 
         # Verify assessment is in a valid status for area approval
-        # Valid statuses: SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK
+        # Valid statuses: DRAFT (per-area workflow), SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK
+        # DRAFT is included because in per-area workflow, overall status stays DRAFT
+        # until ALL 6 areas are submitted, but individual areas can be submitted early
         valid_statuses = (
+            AssessmentStatus.DRAFT,
             AssessmentStatus.SUBMITTED,
             AssessmentStatus.SUBMITTED_FOR_REVIEW,
             AssessmentStatus.IN_REVIEW,
             AssessmentStatus.REWORK,
+            AssessmentStatus.NEEDS_REWORK,
         )
         if assessment.status not in valid_statuses:
             raise ValueError(
                 f"Assessment is in '{assessment.status.value}' status. "
-                f"Area approval is only allowed for assessments in SUBMITTED, "
+                f"Area approval is only allowed for assessments in DRAFT, SUBMITTED, "
                 f"SUBMITTED_FOR_REVIEW, IN_REVIEW, or REWORK status."
             )
 
         # Check current area status
         area_status = assessment.get_area_status(governance_area_id)
+
+        # Prevent approving an area that genuinely hasn't been submitted yet
+        # (global DRAFT + area "draft" means BLGU hasn't submitted this area)
+        if assessment.status == AssessmentStatus.DRAFT and area_status == "draft":
+            raise ValueError(
+                "This governance area has not been submitted yet. "
+                "The BLGU must submit this area before it can be approved."
+            )
+
         if area_status == "approved":
             return {
                 "success": True,
@@ -1521,9 +1534,12 @@ class AssessorService:
             raise ValueError(f"Assessment {assessment_id} not found")
 
         # Verify assessment is in a valid status for area rework request
-        # Valid statuses: SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW
+        # Valid statuses: DRAFT (per-area workflow), SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW
+        # DRAFT is included because in per-area workflow, overall status stays DRAFT
+        # until ALL 6 areas are submitted, but individual areas can be submitted early
         # Note: REWORK status means rework was already requested globally
         valid_statuses = (
+            AssessmentStatus.DRAFT,
             AssessmentStatus.SUBMITTED,
             AssessmentStatus.SUBMITTED_FOR_REVIEW,
             AssessmentStatus.IN_REVIEW,
@@ -1531,7 +1547,7 @@ class AssessorService:
         if assessment.status not in valid_statuses:
             raise ValueError(
                 f"Assessment is in '{assessment.status.value}' status. "
-                f"Area rework request is only allowed for assessments in SUBMITTED, "
+                f"Area rework request is only allowed for assessments in DRAFT, SUBMITTED, "
                 f"SUBMITTED_FOR_REVIEW, or IN_REVIEW status."
             )
 
@@ -1547,6 +1563,15 @@ class AssessorService:
 
         # Check current area status
         area_status = assessment.get_area_status(governance_area_id)
+
+        # Prevent rework on an area that genuinely hasn't been submitted yet
+        # (global DRAFT + area "draft" means BLGU hasn't submitted this area)
+        if assessment.status == AssessmentStatus.DRAFT and area_status == "draft":
+            raise ValueError(
+                "This governance area has not been submitted yet. "
+                "The BLGU must submit this area before it can be sent for rework."
+            )
+
         if area_status == "rework":
             raise ValueError("Area is already in rework status")
 
