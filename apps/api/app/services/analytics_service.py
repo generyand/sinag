@@ -646,6 +646,7 @@ class AnalyticsService:
 
         Aggregates key_issues from rework_summary and calibration_summary
         fields across all assessments to identify the most common adjustment reasons.
+        Falls back to MOV notes and annotations when AI summaries are missing.
 
         Args:
             db: Database session
@@ -655,7 +656,7 @@ class AnalyticsService:
             TopReworkReasons or None if no adjustment data available
         """
 
-        from app.db.models.assessment import FeedbackComment
+        from app.db.models.assessment import MOVAnnotation, MOVFile
 
         # PERFORMANCE FIX: Use SQL COUNT instead of loading all assessments
         # Build year filter condition
@@ -776,9 +777,9 @@ class AnalyticsService:
                             if issue and issue.strip():
                                 reason_to_assessments[issue.strip()].append(assessment)
 
-        # Also include raw feedback comments from assessments that have adjustments
-        # but are MISSING their AI summaries. This ensures assessor notes are always
-        # included even when the rework_summary generation failed.
+        # Also include MOV notes and annotations from assessments that have adjustments
+        # but are MISSING their AI summaries. This ensures assessor/validator feedback
+        # is always included even when the rework_summary generation failed.
         assessments_missing_summaries = [
             a
             for a in assessments
@@ -795,41 +796,59 @@ class AnalyticsService:
             missing_ids = [a.id for a in assessments_missing_summaries]
             assessment_map_missing = {a.id: a for a in assessments_missing_summaries}
 
-            fallback_comments = (
-                db.query(FeedbackComment)
-                .join(AssessmentResponse)
-                .filter(AssessmentResponse.assessment_id.in_(missing_ids))
-                .filter(FeedbackComment.is_internal_note == False)  # noqa: E712
+            # Get MOV notes (assessor_notes from MOVFile)
+            fallback_mov_files = (
+                db.query(MOVFile)
+                .filter(MOVFile.assessment_id.in_(missing_ids))
+                .filter(MOVFile.assessor_notes.isnot(None))
+                .filter(MOVFile.deleted_at.is_(None))
                 .limit(50)
                 .all()
             )
 
-            raw_comments_fallback: list[str] = []
-            comment_to_assessments_fallback: dict[str, list[Assessment]] = defaultdict(list)
+            # Get MOV annotations (eager-load mov_file to avoid N+1)
+            fallback_annotations = (
+                db.query(MOVAnnotation)
+                .join(MOVFile)
+                .options(joinedload(MOVAnnotation.mov_file))
+                .filter(MOVFile.assessment_id.in_(missing_ids))
+                .filter(MOVFile.deleted_at.is_(None))
+                .limit(50)
+                .all()
+            )
 
-            for fc in fallback_comments:
-                if fc.comment and fc.comment.strip():
-                    comment_text = fc.comment.strip()
-                    raw_comments_fallback.append(comment_text)
-                    assessment_id = fc.response.assessment_id
-                    if assessment_id in assessment_map_missing:
-                        comment_to_assessments_fallback[comment_text].append(
-                            assessment_map_missing[assessment_id]
+            raw_notes_fallback: list[str] = []
+            note_to_assessments_fallback: dict[str, list[Assessment]] = defaultdict(list)
+
+            for mf in fallback_mov_files:
+                if mf.assessor_notes and mf.assessor_notes.strip():
+                    note_text = mf.assessor_notes.strip()
+                    raw_notes_fallback.append(note_text)
+                    if mf.assessment_id in assessment_map_missing:
+                        note_to_assessments_fallback[note_text].append(
+                            assessment_map_missing[mf.assessment_id]
                         )
 
-            if raw_comments_fallback:
+            for annotation in fallback_annotations:
+                if annotation.comment and annotation.comment.strip():
+                    comment_text = annotation.comment.strip()
+                    mov_file = annotation.mov_file
+                    if mov_file and mov_file.assessment_id in assessment_map_missing:
+                        note_to_assessments_fallback[comment_text].append(
+                            assessment_map_missing[mov_file.assessment_id]
+                        )
+
+            if raw_notes_fallback:
                 from app.services.intelligence_service import intelligence_service
 
                 formulated = intelligence_service.formulate_adjustment_reasons(
-                    raw_comments=list(set(raw_comments_fallback)),
+                    raw_comments=list(set(raw_notes_fallback)),
                     max_reasons=10,
                 )
 
                 if formulated:
                     unique_fallback_assessments = {
-                        a.id: a
-                        for a_list in comment_to_assessments_fallback.values()
-                        for a in a_list
+                        a.id: a for a_list in note_to_assessments_fallback.values() for a in a_list
                     }
                     all_fallback_assessments = list(unique_fallback_assessments.values())
 
@@ -838,70 +857,89 @@ class AnalyticsService:
 
                     logger.info(
                         f"📊 Included {len(formulated)} assessor/validator reasons from "
-                        f"{len(raw_comments_fallback)} raw comments (missing AI summaries) "
+                        f"{len(raw_notes_fallback)} MOV notes/annotations (missing AI summaries) "
                         f"across {len(all_fallback_assessments)} assessments"
                     )
                 else:
                     logger.warning(
-                        "⚠️ AI formulation failed for missing-summary fallback, using raw comments"
+                        "⚠️ AI formulation failed for missing-summary fallback, using raw MOV notes"
                     )
-                    for comment_text, assessment_list in comment_to_assessments_fallback.items():
-                        reason_to_assessments[comment_text].extend(assessment_list)
+                    for note_text, assessment_list in note_to_assessments_fallback.items():
+                        reason_to_assessments[note_text].extend(assessment_list)
 
         # Debug logging: track extracted reasons
         total_reasons = sum(len(v) for v in reason_to_assessments.values())
         logger.info(
-            f"📊 Extracted {total_reasons} adjustment reasons from AI summaries and feedback "
+            f"📊 Extracted {total_reasons} adjustment reasons from AI summaries and MOV notes "
             f"across {len(reason_to_assessments)} unique issues"
         )
 
-        # If still no reasons, fall back to ALL feedback comments with AI formulation
+        # If still no reasons, fall back to ALL MOV notes/annotations with AI formulation
         if not reason_to_assessments:
-            # Get feedback comments from assessments with adjustments
+            # Get MOV notes and annotations from assessments with adjustments
             assessment_ids_with_adjustments = [a.id for a in assessments]
             if assessment_ids_with_adjustments:
                 # Create a mapping of assessment_id -> assessment for quick lookup
                 assessment_map = {a.id: a for a in assessments}
 
-                feedback_comments = (
-                    db.query(FeedbackComment)
-                    .join(AssessmentResponse)
-                    .filter(AssessmentResponse.assessment_id.in_(assessment_ids_with_adjustments))
-                    .filter(FeedbackComment.is_internal_note == False)  # noqa: E712
+                # Get MOV notes (assessor_notes from MOVFile)
+                mov_files_with_notes = (
+                    db.query(MOVFile)
+                    .filter(MOVFile.assessment_id.in_(assessment_ids_with_adjustments))
+                    .filter(MOVFile.assessor_notes.isnot(None))
+                    .filter(MOVFile.deleted_at.is_(None))
                     .limit(50)
                     .all()
                 )
 
-                # Collect raw comments for AI formulation
-                raw_comments: list[str] = []
-                comment_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
+                # Get MOV annotations (eager-load mov_file to avoid N+1)
+                mov_annotations_all = (
+                    db.query(MOVAnnotation)
+                    .join(MOVFile)
+                    .options(joinedload(MOVAnnotation.mov_file))
+                    .filter(MOVFile.assessment_id.in_(assessment_ids_with_adjustments))
+                    .filter(MOVFile.deleted_at.is_(None))
+                    .limit(50)
+                    .all()
+                )
 
-                for fc in feedback_comments:
-                    if fc.comment and fc.comment.strip():
-                        comment_text = fc.comment.strip()
-                        raw_comments.append(comment_text)
-                        assessment_id = fc.response.assessment_id
-                        if assessment_id in assessment_map:
-                            comment_to_assessments[comment_text].append(
-                                assessment_map[assessment_id]
+                # Collect raw notes for AI formulation
+                raw_notes: list[str] = []
+                note_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
+
+                for mf in mov_files_with_notes:
+                    if mf.assessor_notes and mf.assessor_notes.strip():
+                        note_text = mf.assessor_notes.strip()
+                        raw_notes.append(note_text)
+                        if mf.assessment_id in assessment_map:
+                            note_to_assessments[note_text].append(assessment_map[mf.assessment_id])
+
+                for annotation in mov_annotations_all:
+                    if annotation.comment and annotation.comment.strip():
+                        comment_text = annotation.comment.strip()
+                        raw_notes.append(comment_text)
+                        mov_file = annotation.mov_file
+                        if mov_file and mov_file.assessment_id in assessment_map:
+                            note_to_assessments[comment_text].append(
+                                assessment_map[mov_file.assessment_id]
                             )
 
-                # Use AI to formulate raw comments into proper descriptive sentences
-                if raw_comments:
+                # Use AI to formulate raw MOV notes into proper descriptive sentences
+                if raw_notes:
                     from app.services.intelligence_service import intelligence_service
 
                     formulated_reasons = intelligence_service.formulate_adjustment_reasons(
-                        raw_comments=list(set(raw_comments)),  # Deduplicate before sending to AI
+                        raw_comments=list(set(raw_notes)),  # Deduplicate before sending to AI
                         max_reasons=10,
                     )
 
                     if formulated_reasons:
-                        # Since AI merges similar comments into aggregated reasons,
-                        # we cannot preserve the exact comment-to-assessment mapping.
+                        # Since AI merges similar notes into aggregated reasons,
+                        # we cannot preserve the exact note-to-assessment mapping.
                         # Instead, associate each reason with ALL affected assessments
                         # as these represent common issues across them.
                         unique_assessments_dict = {
-                            a.id: a for a_list in comment_to_assessments.values() for a in a_list
+                            a.id: a for a_list in note_to_assessments.values() for a in a_list
                         }
                         all_affected_assessments = list(unique_assessments_dict.values())
 
@@ -911,16 +949,14 @@ class AnalyticsService:
 
                         logger.info(
                             f"📊 AI formulated {len(formulated_reasons)} reasons "
-                            f"from {len(raw_comments)} raw comments "
+                            f"from {len(raw_notes)} MOV notes/annotations "
                             f"across {len(all_affected_assessments)} assessments"
                         )
                     else:
-                        # AI formulation failed, fall back to raw comments
-                        logger.warning(
-                            "⚠️ AI formulation failed, falling back to raw feedback comments"
-                        )
-                        for comment_text, assessment_list in comment_to_assessments.items():
-                            reason_to_assessments[comment_text] = assessment_list
+                        # AI formulation failed, fall back to raw MOV notes
+                        logger.warning("⚠️ AI formulation failed, falling back to raw MOV notes")
+                        for note_text, assessment_list in note_to_assessments.items():
+                            reason_to_assessments[note_text] = assessment_list
 
         # Build TopReworkReason objects with affected barangays
         all_reasons: list[TopReworkReason] = []
