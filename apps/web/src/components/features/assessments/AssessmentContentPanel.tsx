@@ -2,7 +2,7 @@
 
 import { useIndicatorNavigation } from "@/hooks/useIndicatorNavigation";
 import { useReworkContext } from "@/hooks/useReworkContext";
-import { Assessment, Indicator } from "@/types/assessment";
+import { AreaStatusType, Assessment, Indicator } from "@/types/assessment";
 import { ArrowLeft, FileText } from "lucide-react";
 import { useRef } from "react";
 import { ReworkAlertBanner } from "../rework";
@@ -22,6 +22,10 @@ interface AssessmentContentPanelProps {
   dashboardData?: any; // BLGUDashboardResponse for rework context
   /** MOV file IDs flagged by MLGOO for recalibration */
   mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
+  /** Per-area submission status data for locking submitted areas */
+  areaStatusData?: {
+    area_submission_status?: Record<string, { status?: AreaStatusType }>;
+  } | null;
 }
 
 export function AssessmentContentPanel({
@@ -34,6 +38,7 @@ export function AssessmentContentPanel({
   movAnnotations = {},
   dashboardData,
   mlgooFlaggedFileIds = [],
+  areaStatusData,
 }: AssessmentContentPanelProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -98,9 +103,21 @@ export function AssessmentContentPanel({
     calibrationGovernanceAreaIds.length > 0 &&
     !calibrationGovernanceAreaIds.includes(String(selectedIndicator.governanceAreaId));
 
+  // Per-area lock: lock indicators whose governance area has been submitted
+  const areaId = String(selectedIndicator.governanceAreaId);
+  const areaStatus = areaStatusData?.area_submission_status?.[areaId];
+  const areaSubmissionStatus = areaStatus && typeof areaStatus === "object" && "status" in areaStatus
+    ? (areaStatus as { status: AreaStatusType }).status
+    : null;
+  const isLockedDueToAreaSubmission =
+    areaSubmissionStatus === "submitted" ||
+    areaSubmissionStatus === "in_review" ||
+    areaSubmissionStatus === "approved";
+
   const indicatorLocked =
     isLocked ||
     isLockedDueToCalibration ||
+    isLockedDueToAreaSubmission ||
     (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);
 
   // Get MOV annotations for the selected indicator

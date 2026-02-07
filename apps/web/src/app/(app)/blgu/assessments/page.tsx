@@ -303,6 +303,7 @@ export default function BLGUAssessmentsPage() {
             movAnnotations={dashboardData?.mov_annotations_by_indicator || {}}
             dashboardData={dashboardData}
             mlgooFlaggedFileIds={(dashboardData as any)?.mlgoo_recalibration_mov_file_ids || []}
+            areaStatusData={areaStatusData as any}
           />
         </main>
       </div>
