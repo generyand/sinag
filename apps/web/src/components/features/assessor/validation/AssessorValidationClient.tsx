@@ -123,7 +123,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
       const core = (assessment.assessment as AnyRecord) ?? assessment;
       const resps: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
-      const isAutoSubmitted = !!core.auto_submitted_at;
+      const autoSubmitted = !!core.auto_submitted_at;
 
       const initial: Record<number, Set<number>> = {};
       const emptyIds = new Set<number>();
@@ -145,7 +145,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
         // Auto-flag indicators with zero MOV files (auto-submitted assessments with missing uploads)
         const movFiles: any[] = (r.movs as any[]) || [];
-        if (isAutoSubmitted && movFiles.length === 0) {
+        if (autoSubmitted && movFiles.length === 0) {
           initial[r.id] = initial[r.id] || new Set();
           emptyIds.add(r.id);
         }
@@ -178,7 +178,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         console.log("[AssessorValidationClient] Auto-flagged empty indicators:", [...emptyIds]);
       }
     }
-  }, [data]);
+  }, [data, dataUpdatedAt]);
 
   // Callback when rework flag is manually toggled from UI (toggles all files for the indicator)
   // When toggled ON via UI without specific file context, we mark the indicator as flagged with an empty set
@@ -435,6 +435,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     "") as string;
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
   const statusText: string = core?.status ?? core?.assessment_status ?? "";
+  // Check if this assessment was auto-submitted because BLGU missed the deadline
+  const isAutoSubmitted: boolean = !!core?.auto_submitted_at;
 
   // Per-area approval tracking (for assessor workflow visibility)
   const areaAssessorApproved: Record<string, boolean> = (core?.area_assessor_approved ??
@@ -1263,6 +1265,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 <span className="text-muted-foreground">areas</span>
               </div>
             )}
+            {isAutoSubmitted && isAssessor && (
+              <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 rounded-md text-[10px] font-medium border border-orange-200 dark:border-orange-800">
+                <AlertCircle className="h-3 w-3" />
+                <span>Missed Deadline</span>
+              </div>
+            )}
             {statusText ? (
               <div className="scale-75 sm:scale-90 origin-right">
                 <StatusBadge status={statusText} />
@@ -1299,6 +1307,31 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             <AlertDescription>
               Your account is not assigned to a governance area. Please contact your administrator
               to assign you to a specific governance area before you can review assessments.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* Auto-submitted alert - BLGU missed the deadline */}
+      {isAutoSubmitted && isAssessor && (
+        <div className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-3">
+          <Alert className="border-orange-300 bg-orange-50 dark:border-orange-700 dark:bg-orange-950/30">
+            <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            <AlertTitle className="text-orange-800 dark:text-orange-300">
+              Auto-Submitted — BLGU Missed Deadline
+            </AlertTitle>
+            <AlertDescription className="text-orange-700 dark:text-orange-400">
+              This assessment was automatically submitted because the BLGU did not complete their
+              submission before the Phase 1 deadline.
+              {hasAutoFlaggedEmptyIndicators && (
+                <>
+                  {" "}
+                  Indicators with no uploaded MOV files have been automatically flagged for rework.
+                  {myAreaReworkUsed
+                    ? " The rework cycle has been used — please approve this area to send it to the validator."
+                    : " You may send this area for rework immediately."}
+                </>
+              )}
             </AlertDescription>
           </Alert>
         </div>

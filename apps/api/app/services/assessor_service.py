@@ -1468,7 +1468,9 @@ class AssessorService:
             assessment.area_assessor_approved = {}
 
         now = datetime.utcnow()
+        existing_area_data = assessment.area_submission_status.get(area_key, {})
         assessment.area_submission_status[area_key] = {
+            **existing_area_data,
             "status": "approved",
             "approved_at": now.isoformat(),
             "assessor_id": assessor.id,
