@@ -13,6 +13,9 @@
  * - AWAITING_FINAL_VALIDATION/COMPLETED → "Completed" (read-only)
  */
 
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { MessageSquare, FileText, ChevronRight } from "lucide-react";
 import { PhaseCard, PhaseStatus } from "./PhaseCard";
 import { DeadlineBanner } from "./DeadlineBanner";
 import { CompletionMetricsCard, IndicatorNavigationList } from "@/components/features/dashboard";
@@ -21,6 +24,7 @@ import {
   ResubmitAssessmentButton,
 } from "@/components/features/assessments";
 import { ReworkIndicatorsPanel, AISummaryPanel } from "@/components/features/rework";
+import { Card } from "@/components/ui/card";
 import { BLGUDashboardResponse, AISummary } from "@sinag/shared";
 
 type AssessmentStatus =
@@ -135,6 +139,41 @@ export function Phase1Section({
     !dashboardData.is_calibration_rework &&
     !isMlgooRecalibration;
 
+  const router = useRouter();
+
+  // Show assessor feedback notice when annotations exist outside rework workflow
+  const annotationsByIndicator = (dashboardData as any).mov_annotations_by_indicator as
+    | Record<string, any[]>
+    | null
+    | undefined;
+  const feedbackIndicators = useMemo(() => {
+    if (showReworkFeedback || !annotationsByIndicator) return [];
+    const items: Array<{
+      indicatorId: number;
+      indicatorName: string;
+      annotationCount: number;
+      governanceAreaName: string;
+    }> = [];
+    for (const area of dashboardData.governance_areas) {
+      const searchIndicators = (indicators: any[]) => {
+        for (const ind of indicators) {
+          const annotations = annotationsByIndicator[String(ind.indicator_id)];
+          if (annotations && annotations.length > 0) {
+            items.push({
+              indicatorId: ind.indicator_id,
+              indicatorName: ind.indicator_name,
+              annotationCount: annotations.length,
+              governanceAreaName: area.governance_area_name,
+            });
+          }
+          if (ind.children) searchIndicators(ind.children);
+        }
+      };
+      searchIndicators(area.indicators);
+    }
+    return items;
+  }, [showReworkFeedback, annotationsByIndicator, dashboardData.governance_areas]);
+
   // Build navigation items
   const navigationItems = dashboardData.governance_areas.flatMap((area) =>
     area.indicators.map((indicator) => ({
@@ -190,6 +229,52 @@ export function Phase1Section({
               />
             </div>
           )}
+
+        {/* Assessor Feedback Notice - Shows when annotations exist outside rework */}
+        {feedbackIndicators.length > 0 && (
+          <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="h-5 w-5 text-amber-600" />
+              <h4 className="font-semibold text-amber-900 dark:text-amber-100">
+                Assessor Feedback Available
+              </h4>
+              <span className="ml-auto text-sm text-amber-700 dark:text-amber-300">
+                {feedbackIndicators.length} indicator{feedbackIndicators.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
+              The assessor has provided feedback on the following indicators. Review the annotated
+              MOV files to see their comments.
+            </p>
+            <div className="space-y-1">
+              {feedbackIndicators.map((item) => (
+                <button
+                  key={item.indicatorId}
+                  onClick={() =>
+                    router.push(`/blgu/assessment/${assessmentId}/indicator/${item.indicatorId}`)
+                  }
+                  className="flex items-center justify-between w-full text-left px-3 py-2 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors text-sm"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                    <span className="text-amber-900 dark:text-amber-100 truncate">
+                      {item.indicatorName}
+                    </span>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 flex-shrink-0">
+                      {item.governanceAreaName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className="text-xs text-amber-700 dark:text-amber-300">
+                      {item.annotationCount} annotation{item.annotationCount !== 1 ? "s" : ""}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-amber-500" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Completion Metrics - Only show when editable */}
         {isEditable && (

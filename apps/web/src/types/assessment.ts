@@ -62,6 +62,7 @@ export interface Indicator {
   requiresRework?: boolean; // Editable during Needs Rework when true
   responseId?: number | null; // Backend response id for mutations
   isProfilingOnly?: boolean; // For data collection only, does not affect pass/fail
+  hasMovNotes?: boolean; // True when assessor has put notes or flagged MOV files for this indicator
 }
 
 export interface MOVFile {

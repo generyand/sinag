@@ -288,6 +288,7 @@ export default function BLGUAssessmentsPage() {
             onIndicatorSelect={handleIndicatorSelect}
             areaStatusData={areaStatusData as any}
             onAreaSubmitSuccess={handleAreaSubmitSuccess}
+            areaAssessorStatus={(dashboardData as any)?.area_assessor_status}
           />
         </nav>
 

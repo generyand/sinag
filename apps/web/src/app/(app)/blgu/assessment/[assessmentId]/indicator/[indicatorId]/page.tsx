@@ -8,7 +8,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ArrowLeft, RefreshCw, BarChart3 } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  RefreshCw,
+  BarChart3,
+  MessageSquare,
+  FileText,
+} from "lucide-react";
 import { DynamicFormRenderer } from "@/components/features/forms/DynamicFormRenderer";
 import { LockedStateBanner } from "@/components/features/assessments";
 import { ReworkAlertBanner, ReworkProgressTracker } from "@/components/features/rework";
@@ -91,7 +98,7 @@ export default function IndicatorFormPage() {
   // Epic 5.0: Rework workflow context
   const reworkContext = useReworkContext(dashboardData as any, indicatorId, assessmentId);
 
-  // Epic 5.0: Get MOV annotations for this indicator (if in rework status)
+  // Get MOV annotations for this indicator (available for all non-DRAFT assessments)
   const movAnnotations = dashboardData?.mov_annotations_by_indicator?.[indicatorId] || [];
 
   // Epic 5.0: Get rework comments for this indicator (if in rework status)
@@ -256,6 +263,23 @@ export default function IndicatorFormPage() {
           indicator={reworkContext.current_indicator}
           assessmentId={assessmentId}
         />
+      )}
+
+      {/* Assessor Feedback Notice - Shows when annotations exist outside rework workflow */}
+      {!reworkContext?.from_rework && movAnnotations.length > 0 && (
+        <Alert className="border-amber-400 bg-amber-50 dark:bg-amber-950/20">
+          <MessageSquare className="h-5 w-5 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200 space-y-1">
+            <p className="font-medium">Assessor Feedback Available</p>
+            <p className="text-sm">
+              The assessor has provided{" "}
+              <span className="font-medium">
+                {movAnnotations.length} annotation{movAnnotations.length !== 1 ? "s" : ""}
+              </span>{" "}
+              on this indicator&apos;s MOV files. Review the annotated files below.
+            </p>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Dynamic Form */}

@@ -37,6 +37,8 @@ interface AssessmentTreeNodeProps {
   areaStatus?: AreaStatusType;
   assessmentStatus?: string;
   onAreaSubmitSuccess?: () => void;
+  // Per-area rework/calibration tracking
+  remainingAttempts?: { reworkLeft: boolean; calibrationLeft: boolean };
 }
 
 export function AssessmentTreeNode({
@@ -53,6 +55,7 @@ export function AssessmentTreeNode({
   areaStatus = "draft",
   assessmentStatus,
   onAreaSubmitSuccess,
+  remainingAttempts,
 }: AssessmentTreeNodeProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -141,6 +144,12 @@ export function AssessmentTreeNode({
     // Indicator status icons
     const indicator = item as Indicator;
 
+    // Show yellow warning for indicators with MOV notes or flagged files
+    if (indicator.hasMovNotes) {
+      // If also completed, show warning triangle (notes take visual priority)
+      return <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" aria-hidden="true" />;
+    }
+
     switch (indicator.status) {
       case "completed":
         return <CheckCircle className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />;
@@ -215,6 +224,39 @@ export function AssessmentTreeNode({
                 className={`text-xs ${isActive ? "text-[var(--foreground)]/70" : "text-[var(--text-secondary)]"} flex-shrink-0`}
               >
                 {progress.completed}/{progress.total}
+              </span>
+            )}
+            {/* Rework / Calibration remaining badges */}
+            {remainingAttempts && (
+              <span className="flex items-center gap-0.5 flex-shrink-0">
+                <span
+                  className={`text-[9px] font-semibold px-1 rounded ${
+                    remainingAttempts.reworkLeft
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                  }`}
+                  title={
+                    remainingAttempts.reworkLeft
+                      ? "1 rework attempt remaining"
+                      : "Rework attempt used"
+                  }
+                >
+                  R:{remainingAttempts.reworkLeft ? "1" : "0"}
+                </span>
+                <span
+                  className={`text-[9px] font-semibold px-1 rounded ${
+                    remainingAttempts.calibrationLeft
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                  }`}
+                  title={
+                    remainingAttempts.calibrationLeft
+                      ? "1 calibration attempt remaining"
+                      : "Calibration attempt used"
+                  }
+                >
+                  C:{remainingAttempts.calibrationLeft ? "1" : "0"}
+                </span>
               </span>
             )}
             {/* Per-area submit button */}
