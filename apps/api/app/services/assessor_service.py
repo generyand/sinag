@@ -527,16 +527,27 @@ class AssessorService:
 
         db.commit()
 
-        # Save public comment if provided
-        if public_comment:
-            public_feedback = FeedbackComment(
-                comment=public_comment,
-                comment_type="validation",
-                response_id=response_id,
-                assessor_id=assessor.id,
-                is_internal_note=False,
-            )
-            db.add(public_feedback)
+        # Save or clear public comment
+        if public_comment is not None:
+            # Always delete existing validation comments from this assessor first
+            # to prevent row accumulation (each save used to append a new row)
+            db.query(FeedbackComment).filter(
+                FeedbackComment.response_id == response_id,
+                FeedbackComment.assessor_id == assessor.id,
+                FeedbackComment.comment_type == "validation",
+                FeedbackComment.is_internal_note == False,  # noqa: E712
+            ).delete()
+
+            if public_comment.strip():
+                # Create new comment
+                public_feedback = FeedbackComment(
+                    comment=public_comment,
+                    comment_type="validation",
+                    response_id=response_id,
+                    assessor_id=assessor.id,
+                    is_internal_note=False,
+                )
+                db.add(public_feedback)
 
         db.commit()
 

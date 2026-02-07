@@ -779,6 +779,20 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       // Has comments
       const hasComments = formData?.publicComment && formData.publicComment.trim().length > 0;
 
+      // Check if comment was previously saved but now cleared (needs to be deleted on backend)
+      const feedbackComments = (r as AnyRecord).feedback_comments || [];
+      const hadPreviousComment = feedbackComments.some((fc: any) => {
+        if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
+        const commenterRole = (fc.assessor?.role || "").toUpperCase();
+        return isAssessor
+          ? commenterRole === "ASSESSOR"
+          : isValidator
+            ? commenterRole === "VALIDATOR"
+            : false;
+      });
+      const commentWasCleared =
+        hadPreviousComment && formData?.publicComment !== undefined && !hasComments;
+
       // Has manual rework flag (assessor only) - current local state
       const hasReworkFlag = isAssessor && r.id in reworkFlags;
 
@@ -788,11 +802,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       const needsToClearReworkFlag = hadManualReworkFlag && !hasReworkFlag;
 
       console.log(
-        `[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}, hasReworkFlag=${hasReworkFlag}, needsToClearReworkFlag=${needsToClearReworkFlag}`
+        `[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}, commentWasCleared=${commentWasCleared}, hasReworkFlag=${hasReworkFlag}, needsToClearReworkFlag=${needsToClearReworkFlag}`
       );
 
       return (
-        hasStatus || hasChecklistData || hasComments || hasReworkFlag || needsToClearReworkFlag
+        hasStatus ||
+        hasChecklistData ||
+        hasComments ||
+        commentWasCleared ||
+        hasReworkFlag ||
+        needsToClearReworkFlag
       );
     });
 

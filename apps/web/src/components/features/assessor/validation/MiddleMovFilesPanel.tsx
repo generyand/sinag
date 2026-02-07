@@ -753,7 +753,7 @@ export function MiddleMovFilesPanel({
                   {/* Assessor Feedback Section */}
                   <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <h3 className="font-semibold text-sm mb-3 text-slate-900 dark:text-slate-100">
-                      Assessor Feedback
+                      MOV Notes
                     </h3>
 
                     {feedbackLoading ? (
@@ -763,17 +763,10 @@ export function MiddleMovFilesPanel({
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {/* Assessor's Notes */}
                         <div className="space-y-2">
-                          <Label
-                            htmlFor="assessor-notes"
-                            className="text-xs font-medium text-slate-700 dark:text-slate-300"
-                          >
-                            Assessor&apos;s Notes
-                          </Label>
                           <Textarea
                             id="assessor-notes"
-                            placeholder="Add notes about this MOV..."
+                            placeholder="Describe the specific issue with this file (e.g., missing signature, incorrect date, or blurry scan)..."
                             value={assessorNotes}
                             onChange={(e) => handleNotesChange(e.target.value)}
                             className="min-h-[80px] text-sm resize-none"
