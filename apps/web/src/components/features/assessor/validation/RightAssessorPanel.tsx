@@ -1423,12 +1423,13 @@ export function RightAssessorPanel({
                                   )}
                               </div>
 
-                              {/* Black separator line after shared document checkbox */}
+                              {/* Black separator line after shared document section */}
                               {(item.item_id === "4_1_6_report" ||
                                 item.item_id === "4_3_4_upload" ||
                                 item.item_id === "4_5_6_upload" ||
-                                item.item_id === "4_8_4_upload_report") && (
-                                <div className="border-b border-black my-2" />
+                                item.item_id === "4_8_4_upload_report" ||
+                                item.item_id === "6_1_4_report_count") && (
+                                <div className="mt-3 mb-4 border-t-2 border-black" />
                               )}
 
                               {/* Computed % Allocation for BDRRMF (Indicator 2.1.3) */}
