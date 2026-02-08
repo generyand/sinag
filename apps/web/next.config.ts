@@ -12,6 +12,9 @@ if (isProduction && (!apiUrl || apiUrl.includes("localhost"))) {
 }
 
 const nextConfig: NextConfig = {
+  // Temporarily enable source maps for production debugging
+  productionBrowserSourceMaps: true,
+
   // Monorepo configuration for Vercel deployment
   transpilePackages: ["@sinag/shared"],
 

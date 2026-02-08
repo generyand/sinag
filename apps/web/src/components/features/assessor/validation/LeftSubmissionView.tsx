@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { getSignedUrl } from "@/lib/uploadMov";
 import { resolveMovUrl } from "@/lib/utils";

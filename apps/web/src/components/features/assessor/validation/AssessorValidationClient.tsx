@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 // Button validation logic:
 // - Save Draft: Always enabled unless action in progress

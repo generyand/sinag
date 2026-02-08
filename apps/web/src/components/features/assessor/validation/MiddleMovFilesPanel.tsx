@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { FileList } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
