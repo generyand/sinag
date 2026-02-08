@@ -229,7 +229,7 @@ export default function ImageAnnotator({
         {/* Render existing annotations */}
         {imageLoaded &&
           layout &&
-          annotations.map((ann) => (
+          (annotations || []).map((ann) => (
             <React.Fragment key={ann.id}>
               {renderRect(ann.rect, "#fbbf24", 0.2, ann.comment)}
             </React.Fragment>

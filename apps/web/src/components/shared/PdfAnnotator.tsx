@@ -50,8 +50,8 @@ export default function PdfAnnotator({
   onAddRef.current = onAdd;
   const annotateEnabledRef = React.useRef(annotateEnabled);
   annotateEnabledRef.current = annotateEnabled;
-  const annotationsRef = React.useRef(annotations);
-  annotationsRef.current = annotations;
+  const annotationsRef = React.useRef(annotations || []);
+  annotationsRef.current = annotations || [];
 
   // The highlight plugin provides selection -> trigger UI -> save data
   // Memoized to prevent re-creation on every render (which causes highlight plugin
@@ -389,7 +389,7 @@ export default function PdfAnnotator({
         },
         renderHighlightContent: (_props: RenderHighlightContentProps) => <></>,
         renderHighlights: (props: RenderHighlightsProps) => {
-          const pageAnns = annotationsRef.current.filter((a) => a.page === props.pageIndex);
+          const pageAnns = (annotationsRef.current || []).filter((a) => a.page === props.pageIndex);
           return (
             <>
               {pageAnns.map((a, idx) => (
@@ -408,7 +408,11 @@ export default function PdfAnnotator({
                 >
                   {(() => {
                     const sourceRects =
-                      Array.isArray(a.rects) && a.rects.length > 0 ? a.rects : [a.rect];
+                      Array.isArray(a.rects) && a.rects.length > 0
+                        ? a.rects
+                        : a.rect
+                          ? [a.rect]
+                          : [{ x: 0, y: 0, w: 0, h: 0 }];
                     const first = sourceRects[0];
                     const anyRProps: any = props as any;
                     const rectCssFrom = (r: PdfRect) =>
@@ -479,7 +483,7 @@ export default function PdfAnnotator({
     const root = containerRef.current;
     if (!root) return;
     // Determine the page of the target annotation
-    const target = annotations.find((a) => a.id === focusAnnotationId);
+    const target = (annotations || []).find((a) => a.id === focusAnnotationId);
     const pageIndex = typeof target?.page === "number" ? target!.page : 0;
     // pdf.js uses data-page-number (1-based)
     const pageEl = root.querySelector(

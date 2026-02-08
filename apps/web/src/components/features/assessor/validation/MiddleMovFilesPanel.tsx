@@ -424,31 +424,28 @@ export function MiddleMovFilesPanel({
   };
 
   // Transform annotations from backend format to PdfAnnotator format
+  const safeAnnotations = Array.isArray(annotations) ? annotations : [];
   const pdfAnnotations = React.useMemo(() => {
-    return (
-      (annotations as any[])?.map((ann: any) => ({
-        id: String(ann.id),
-        type: "pdfRect" as const,
-        page: ann.page ?? ann.page_number ?? 0, // Backend returns 'page', not 'page_number'
-        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-        rects: ann.rects,
-        comment: ann.comment || "",
-        createdAt: ann.created_at || new Date().toISOString(),
-      })) || []
-    );
-  }, [annotations]);
+    return safeAnnotations.map((ann: any) => ({
+      id: String(ann.id),
+      type: "pdfRect" as const,
+      page: ann.page ?? ann.page_number ?? 0, // Backend returns 'page', not 'page_number'
+      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+      rects: ann.rects,
+      comment: ann.comment || "",
+      createdAt: ann.created_at || new Date().toISOString(),
+    }));
+  }, [safeAnnotations]);
 
   // Transform annotations for ImageAnnotator
   const imageAnnotations = React.useMemo(() => {
-    return (
-      (annotations as any[])?.map((ann: any) => ({
-        id: String(ann.id),
-        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-        comment: ann.comment || "",
-        createdAt: ann.created_at || new Date().toISOString(),
-      })) || []
-    );
-  }, [annotations]);
+    return safeAnnotations.map((ann: any) => ({
+      id: String(ann.id),
+      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+      comment: ann.comment || "",
+      createdAt: ann.created_at || new Date().toISOString(),
+    }));
+  }, [safeAnnotations]);
 
   const handleAddAnnotation = React.useCallback(
     async (annotation: any) => {
@@ -499,7 +496,7 @@ export function MiddleMovFilesPanel({
   const handleDeleteAnnotation = React.useCallback(
     async (annotationId: number) => {
       // Calculate remaining count BEFORE deletion (since annotations state is stale after mutation)
-      const currentCount = annotations?.length ?? 0;
+      const currentCount = Array.isArray(annotations) ? annotations.length : 0;
       const remainingCountForFile = Math.max(0, currentCount - 1);
 
       console.log(
@@ -542,7 +539,7 @@ export function MiddleMovFilesPanel({
         console.error("[MiddleMovFilesPanel] Failed to delete annotation:", error);
       }
     },
-    [annotations?.length, expandedId, selectedFile?.id, deleteAnnotation, onAnnotationDeleted]
+    [safeAnnotations.length, expandedId, selectedFile?.id, deleteAnnotation, onAnnotationDeleted]
   );
 
   // Wrapper for PdfAnnotator's onDelete which passes string ID
@@ -622,7 +619,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No new files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -645,7 +642,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No existing files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -672,7 +669,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No previous files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -698,7 +695,7 @@ export function MiddleMovFilesPanel({
             canDelete={false}
             loading={false}
             emptyMessage="No files uploaded yet"
-            movAnnotations={annotations as any[]}
+            movAnnotations={safeAnnotations}
           />
         )}
       </div>
