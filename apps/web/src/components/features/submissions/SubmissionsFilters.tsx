@@ -11,12 +11,19 @@ import { useState } from "react";
 interface SubmissionsFiltersProps {
   filters: SubmissionsFilter;
   onFiltersChange: (filters: SubmissionsFilter) => void;
+  statusFilterOptions?: ReadonlyArray<{
+    readonly value: string;
+    readonly label: string;
+    readonly color: string;
+  }>;
 }
 
-// Use unified status filter options from centralized config
-const statusOptions = UNIFIED_STATUS_FILTER_OPTIONS;
-
-export function SubmissionsFilters({ filters, onFiltersChange }: SubmissionsFiltersProps) {
+export function SubmissionsFilters({
+  filters,
+  onFiltersChange,
+  statusFilterOptions = UNIFIED_STATUS_FILTER_OPTIONS,
+}: SubmissionsFiltersProps) {
+  const statusOptions = statusFilterOptions;
   const [showStatusFilter, setShowStatusFilter] = useState(false);
 
   const handleSearchChange = (value: string) => {

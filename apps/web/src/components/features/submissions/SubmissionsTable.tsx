@@ -13,17 +13,22 @@ import {
 } from "@/components/ui/table";
 import { BarangaySubmission, UnifiedStatus } from "@/types/submissions";
 import { Clock, Eye, Play } from "lucide-react";
-import { UNIFIED_STATUS_CONFIG } from "./utils/statusConfig";
+import { UNIFIED_STATUS_CONFIG, type UnifiedStatusConfig } from "./utils/statusConfig";
 
 interface SubmissionsTableProps {
   submissions: BarangaySubmission[];
   onSubmissionClick: (submission: BarangaySubmission) => void;
+  statusConfig?: Record<UnifiedStatus, UnifiedStatusConfig>;
 }
 
-export function SubmissionsTable({ submissions, onSubmissionClick }: SubmissionsTableProps) {
-  // Get unified status badge using the centralized config
+export function SubmissionsTable({
+  submissions,
+  onSubmissionClick,
+  statusConfig = UNIFIED_STATUS_CONFIG,
+}: SubmissionsTableProps) {
+  // Get unified status badge using the provided config (assessor or validator)
   const getUnifiedStatusBadge = (status: UnifiedStatus) => {
-    const config = UNIFIED_STATUS_CONFIG[status];
+    const config = statusConfig[status];
     return (
       <Badge
         variant="secondary"
@@ -54,7 +59,7 @@ export function SubmissionsTable({ submissions, onSubmissionClick }: Submissions
   // Get action button based on unified status
   const getActionButton = (submission: BarangaySubmission) => {
     const { unifiedStatus } = submission;
-    const config = UNIFIED_STATUS_CONFIG[unifiedStatus];
+    const config = statusConfig[unifiedStatus];
     const Icon = getActionIcon(unifiedStatus);
 
     // Determine variant based on action type
