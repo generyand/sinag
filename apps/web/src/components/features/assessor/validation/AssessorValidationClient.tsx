@@ -116,7 +116,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // Track which indicators were auto-flagged because they have zero MOV files (auto-submitted assessments)
   const [autoFlaggedEmptyIds, setAutoFlaggedEmptyIds] = useState<Set<number>>(new Set());
 
-  // Initialize reworkFlags from API data (annotated_mov_file_ids for file-level tracking + manual flags)
+  // Initialize reworkFlags from API data (flagged_mov_file_ids for file-level tracking + manual flags)
   // Also auto-flag indicators with zero MOV files (from auto-submitted assessments)
   useEffect(() => {
     if (data) {
@@ -129,15 +129,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       const emptyIds = new Set<number>();
 
       resps.forEach((r) => {
-        // Use annotated_mov_file_ids for file-level tracking (array of MOV file IDs with annotations)
-        const annotatedFileIds: number[] = r.annotated_mov_file_ids || [];
+        // Use flagged_mov_file_ids for file-level tracking (MOV files where flagged_for_rework=True)
+        // NOT annotated_mov_file_ids (which tracks annotations, a different concept)
+        const flaggedFileIds: number[] = r.flagged_mov_file_ids || [];
 
         // Also check for manual rework flag in response_data
         const responseData = r.response_data || {};
         const hasManualReworkFlag = responseData.assessor_manual_rework_flag === true;
 
-        if (annotatedFileIds.length > 0) {
-          initial[r.id] = new Set(annotatedFileIds);
+        if (flaggedFileIds.length > 0) {
+          initial[r.id] = new Set(flaggedFileIds);
         } else if (hasManualReworkFlag) {
           // Manual flag without specific file annotations - create empty set to mark as flagged
           initial[r.id] = new Set();
@@ -197,52 +198,18 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     });
   };
 
-  // Callback when assessor creates an annotation - add file to rework set
-  const handleAnnotationCreated = (responseId: number, movFileId: number) => {
-    console.log(
-      "[AssessorValidationClient] handleAnnotationCreated - adding file to flag:",
-      responseId,
-      "movFileId:",
-      movFileId
-    );
-    setReworkFlags((prev) => {
-      const existingSet = prev[responseId] || new Set();
-      const newSet = new Set(existingSet);
-      newSet.add(movFileId);
-      return { ...prev, [responseId]: newSet };
-    });
+  // Annotation created/deleted callbacks - no longer update reworkFlags
+  // The rework toggle (Save Feedback) is the sole source of truth for progress indicators
+  const handleAnnotationCreated = (_responseId: number, _movFileId: number) => {
+    // Annotations don't affect progress indicator icons; only the explicit rework toggle does
   };
 
-  // Callback when assessor deletes an annotation - remove file from set if no annotations remain for that file
   const handleAnnotationDeleted = (
-    responseId: number,
-    movFileId: number,
-    remainingCountForFile: number
+    _responseId: number,
+    _movFileId: number,
+    _remainingCountForFile: number
   ) => {
-    console.log(
-      "[AssessorValidationClient] handleAnnotationDeleted:",
-      responseId,
-      "movFileId:",
-      movFileId,
-      "remaining:",
-      remainingCountForFile
-    );
-    if (remainingCountForFile === 0) {
-      setReworkFlags((prev) => {
-        const existingSet = prev[responseId];
-        if (!existingSet) return prev;
-
-        const newSet = new Set(existingSet);
-        newSet.delete(movFileId);
-
-        // If set is now empty, remove the entry entirely
-        if (newSet.size === 0) {
-          const { [responseId]: _, ...rest } = prev;
-          return rest;
-        }
-        return { ...prev, [responseId]: newSet };
-      });
-    }
+    // Annotations don't affect progress indicator icons; only the explicit rework toggle does
   };
 
   // Callback when assessor saves MOV feedback with rework flag - update state for progress indicator
@@ -766,7 +733,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     });
 
   // Check if assessor has any indicators flagged for rework
-  // reworkFlags is the single source of truth (initialized from annotated_mov_file_ids, updated via toggle/annotations)
+  // reworkFlags is the single source of truth (initialized from flagged_mov_file_ids, updated via Save Feedback toggle)
   // With file-level tracking, check if key exists in reworkFlags
   const hasIndicatorsFlaggedForRework =
     isAssessor &&

@@ -378,7 +378,7 @@ export function MiddleMovFilesPanel({
     updateFeedbackMutation.mutate({
       movFileId: selectedFile.id,
       data: {
-        assessor_notes: assessorNotes || null,
+        assessor_notes: assessorNotes,
         flagged_for_rework: flaggedForRework,
       },
     });

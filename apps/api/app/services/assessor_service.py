@@ -1323,6 +1323,10 @@ class AssessorService:
                 "annotated_mov_file_ids": [
                     mov.id for mov in all_movs_for_indicator if len(mov.annotations) > 0
                 ],
+                # List of MOV file IDs explicitly flagged for rework (toggle ON)
+                "flagged_mov_file_ids": [
+                    mov.id for mov in all_movs_for_indicator if mov.flagged_for_rework
+                ],
             }
             # DEBUG: Log requires_rework status
             self.logger.info(
