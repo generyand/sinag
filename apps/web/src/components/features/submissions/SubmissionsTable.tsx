@@ -196,26 +196,24 @@ export function SubmissionsTable({
                       <Progress
                         value={submission.areaProgress}
                         className="h-2 bg-[var(--muted)]"
-                        aria-label={`Progress: ${submission.areaProgress}%`}
+                        aria-label={`Progress: ${submission.reviewedCount} of ${submission.totalCount} indicators reviewed`}
                       />
                     </div>
                     <span className="text-sm font-semibold text-[var(--foreground)] min-w-[3rem] text-right">
-                      {submission.areaProgress}%
+                      {submission.reviewedCount}/{submission.totalCount}
                     </span>
                   </div>
                   <div
                     className="mt-1 text-xs text-[var(--text-muted)]"
                     aria-label="Progress description"
                   >
-                    {submission.areaProgress < 25 && "Just started"}
-                    {submission.areaProgress >= 25 && submission.areaProgress < 50 && "In progress"}
-                    {submission.areaProgress >= 50 &&
-                      submission.areaProgress < 75 &&
-                      "Nearly complete"}
-                    {submission.areaProgress >= 75 &&
-                      submission.areaProgress < 100 &&
-                      "Almost done"}
-                    {submission.areaProgress === 100 && "Complete"}
+                    {submission.reviewedCount === 0 && "Not started"}
+                    {submission.reviewedCount > 0 &&
+                      submission.reviewedCount < submission.totalCount &&
+                      "In progress"}
+                    {submission.totalCount > 0 &&
+                      submission.reviewedCount === submission.totalCount &&
+                      "Complete"}
                   </div>
                 </TableCell>
                 <TableCell className="py-4 px-6" role="cell">

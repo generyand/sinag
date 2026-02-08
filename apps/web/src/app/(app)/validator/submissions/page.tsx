@@ -82,6 +82,8 @@ export default function ValidatorSubmissionsPage() {
       id: item.assessment_id.toString(),
       barangayName: item.barangay_name || "Unknown",
       areaProgress: item.area_progress ?? 0, // Progress from API
+      reviewedCount: item.reviewed_count ?? 0,
+      totalCount: item.total_count ?? 0,
       unifiedStatus: mapToUnifiedStatus(item),
       reReviewProgress: item.re_review_progress,
       lastUpdated: item.updated_at,

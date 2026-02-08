@@ -232,9 +232,15 @@ class AssessorService:
             if is_assessor and a.area_submission_status:
                 area_data = a.area_submission_status.get(str(assessor.assessor_area_id), {})
 
+            # Determine if this area is a rework resubmission
+            # Check both flags for robustness (handles data from before resubmitted_after_rework fix)
+            is_area_rework_resubmission = area_data.get(
+                "resubmitted_after_rework", False
+            ) or area_data.get("is_resubmission", False)
+
             if is_assessor:
                 # Use the area's submitted_at timestamp if it was resubmitted after rework
-                if area_data.get("resubmitted_after_rework", False):
+                if is_area_rework_resubmission:
                     resubmit_timestamp_str = area_data.get("submitted_at")
                     if resubmit_timestamp_str:
                         # Parse the ISO timestamp
@@ -306,8 +312,8 @@ class AssessorService:
             # FIX: Use per-area status for assessors instead of global rework_round_used flag
             # This ensures each assessor only sees "rework_pending" for their own area
             if is_assessor:
-                # For assessors: reuse area_data extracted earlier
-                if area_data.get("resubmitted_after_rework", False):
+                # For assessors: reuse is_area_rework_resubmission computed earlier
+                if is_area_rework_resubmission:
                     # BLGU has resubmitted for this area after rework request
                     submission_type = "rework_resubmission"
                 elif area_status == "rework":
@@ -344,6 +350,8 @@ class AssessorService:
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
                     "area_progress": area_progress,
+                    "reviewed_count": reviewed_count,
+                    "total_count": total_count,
                     # NEW: Re-review progress for rework resubmissions
                     "re_review_progress": re_review_progress,
                     # NEW: Submission type for Issue #5 (distinguish first vs rework)
