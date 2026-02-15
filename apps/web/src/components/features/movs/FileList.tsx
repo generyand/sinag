@@ -317,7 +317,8 @@ export function FileList({
               const hasAnnotations = fileAnnotations.length > 0;
               const mlgooFlagged = getMlgooFlaggedInfo(file.id);
               const hasAssessorNotes = !!(file.assessor_notes && file.assessor_notes.trim());
-              const needsReupload = hasAnnotations || mlgooFlagged.isFlagged;
+              const isFlaggedForRework = !!(file as any).flagged_for_rework;
+              const needsReupload = hasAnnotations || mlgooFlagged.isFlagged || isFlaggedForRework;
 
               return (
                 <div
@@ -328,9 +329,11 @@ export function FileList({
                       ? "border-2 border-red-400 bg-red-50/70 dark:border-red-500 dark:bg-red-950/30"
                       : hasAnnotations
                         ? "border-2 border-orange-400 bg-orange-50/70 dark:border-orange-500 dark:bg-orange-950/30"
-                        : hasAssessorNotes
-                          ? "border-2 border-yellow-400 bg-yellow-50/70 dark:border-yellow-500 dark:bg-yellow-950/30"
-                          : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)]"
+                        : isFlaggedForRework
+                          ? "border-2 border-orange-400 bg-orange-50/70 dark:border-orange-500 dark:bg-orange-950/30"
+                          : hasAssessorNotes
+                            ? "border-2 border-yellow-400 bg-yellow-50/70 dark:border-yellow-500 dark:bg-yellow-950/30"
+                            : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)]"
                   )}
                 >
                   {/* File Info Header */}
@@ -346,6 +349,11 @@ export function FileList({
                         <AlertCircle
                           className="h-5 w-5 text-orange-600 dark:text-orange-400"
                           aria-label="File needs re-upload"
+                        />
+                      ) : isFlaggedForRework ? (
+                        <AlertTriangle
+                          className="h-5 w-5 text-orange-600 dark:text-orange-400"
+                          aria-label="File flagged for rework"
                         />
                       ) : hasAssessorNotes ? (
                         <AlertTriangle
@@ -367,7 +375,7 @@ export function FileList({
                               <p
                                 className={cn(
                                   "text-sm truncate max-w-[200px] cursor-default",
-                                  hasAnnotations
+                                  hasAnnotations || isFlaggedForRework
                                     ? "font-semibold text-orange-900 dark:text-orange-100"
                                     : hasAssessorNotes
                                       ? "font-semibold text-yellow-900 dark:text-yellow-100"
@@ -400,15 +408,27 @@ export function FileList({
                             Re-upload needed
                           </Badge>
                         )}
-                        {hasAssessorNotes && !mlgooFlagged.isFlagged && !hasAnnotations && (
+                        {isFlaggedForRework && !mlgooFlagged.isFlagged && !hasAnnotations && (
                           <Badge
                             variant="outline"
-                            className="text-xs shrink-0 border-yellow-500 bg-yellow-100 text-yellow-700 dark:border-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-300"
+                            className="text-xs shrink-0 border-orange-500 bg-orange-100 text-orange-700 dark:border-orange-600 dark:bg-orange-900/50 dark:text-orange-300"
                           >
-                            <StickyNote className="h-3 w-3 mr-1" />
-                            Has Notes
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Flagged for Rework
                           </Badge>
                         )}
+                        {hasAssessorNotes &&
+                          !mlgooFlagged.isFlagged &&
+                          !hasAnnotations &&
+                          !isFlaggedForRework && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs shrink-0 border-yellow-500 bg-yellow-100 text-yellow-700 dark:border-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-300"
+                            >
+                              <StickyNote className="h-3 w-3 mr-1" />
+                              Has Notes
+                            </Badge>
+                          )}
                       </div>
                       {/* MLGOO flagged comment */}
                       {mlgooFlagged.isFlagged && mlgooFlagged.comment && (
@@ -460,7 +480,7 @@ export function FileList({
                       <div
                         className={cn(
                           "flex items-center gap-2 text-xs mt-1",
-                          hasAnnotations
+                          hasAnnotations || isFlaggedForRework
                             ? "text-orange-600/80 dark:text-orange-400/80"
                             : hasAssessorNotes
                               ? "text-yellow-600/80 dark:text-yellow-400/80"
@@ -486,7 +506,7 @@ export function FileList({
                       "flex items-center gap-1 pt-2 border-t",
                       mlgooFlagged.isFlagged
                         ? "border-red-300 dark:border-red-700"
-                        : hasAnnotations
+                        : hasAnnotations || isFlaggedForRework
                           ? "border-orange-300 dark:border-orange-700"
                           : hasAssessorNotes
                             ? "border-yellow-300 dark:border-yellow-700"
@@ -502,7 +522,7 @@ export function FileList({
                       className={
                         mlgooFlagged.isFlagged
                           ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
-                          : hasAnnotations
+                          : hasAnnotations || isFlaggedForRework
                             ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
                             : ""
                       }
@@ -519,7 +539,7 @@ export function FileList({
                         className={
                           mlgooFlagged.isFlagged
                             ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
-                            : hasAnnotations
+                            : hasAnnotations || isFlaggedForRework
                               ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
                               : ""
                         }
@@ -537,7 +557,7 @@ export function FileList({
                         className={
                           mlgooFlagged.isFlagged
                             ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
-                            : hasAnnotations
+                            : hasAnnotations || isFlaggedForRework
                               ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
                               : ""
                         }

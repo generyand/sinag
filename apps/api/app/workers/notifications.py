@@ -677,14 +677,19 @@ def send_calibration_resubmission_notification(
     max_retries=MAX_RETRIES,
     retry_jitter=True,
 )
-def send_validation_complete_notification(self: Any, assessment_id: int) -> dict[str, Any]:
+def send_validation_complete_notification(
+    self: Any, assessment_id: int, is_post_calibration: bool = False
+) -> dict[str, Any]:
     """
-    Send notification to MLGOO users and BLGU user when assessment validation is complete.
+    Send notification to BLGU user when assessment validation is complete.
 
-    Notification #7: Validator completes validation -> MLGOO and BLGU notified
+    Notifies the BLGU user that the validator has completed final validation
+    and the assessment is now awaiting MLGOO approval.
+    MLGOO is notified separately by send_ready_for_mlgoo_approval_notification.
 
     Args:
         assessment_id: ID of the validated assessment
+        is_post_calibration: Whether this is after a calibration resubmission
 
     Returns:
         dict: Result of the notification process
@@ -706,23 +711,27 @@ def send_validation_complete_notification(self: Any, assessment_id: int) -> dict
 
         notifications_created = 0
 
-        # Notify all MLGOO users
-        mlgoo_notifications = notification_service.notify_all_mlgoo_users(
-            db=db,
-            notification_type=NotificationType.VALIDATION_COMPLETED,
-            title=f"Validation Complete: {barangay_name}",
-            message="The SGLGB assessment has been fully validated and is now complete.",
-            assessment_id=assessment_id,
-        )
-        notifications_created += len(mlgoo_notifications)
-
         # Notify BLGU user
         if assessment.blgu_user_id:
+            if is_post_calibration:
+                title = "Validation Complete (After Calibration)"
+                message = (
+                    "The validator has reviewed your calibration resubmission and completed "
+                    "the final validation. Your assessment is now awaiting final approval "
+                    "from the MLGOO Chairman."
+                )
+            else:
+                title = "Validation Complete"
+                message = (
+                    "The validator has completed the final validation of your SGLGB assessment. "
+                    "Your assessment is now awaiting final approval from the MLGOO Chairman."
+                )
+
             notification_service.notify_blgu_user(
                 db=db,
                 notification_type=NotificationType.VALIDATION_COMPLETED,
-                title="Assessment Validated!",
-                message="Congratulations! Your SGLGB assessment has been fully validated and is now complete.",
+                title=title,
+                message=message,
                 blgu_user_id=assessment.blgu_user_id,
                 assessment_id=assessment_id,
             )

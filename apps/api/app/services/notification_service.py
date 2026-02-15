@@ -3,6 +3,7 @@
 
 import logging
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -353,6 +354,70 @@ class NotificationService:
         self.logger.info(
             f"Sent per-area rework notification for area {governance_area_id} ({governance_area_name}) "
             f"to BLGU user {assessment.blgu_user_id} for assessment {assessment.id}"
+        )
+
+        return notification
+
+    def queue_per_area_approval_notification(
+        self,
+        db: Session,
+        assessment: Any,
+        governance_area_id: int,
+        governance_area_name: str,
+        assessor: Any,
+        is_post_rework: bool = False,
+    ) -> "Notification | None":
+        """
+        Send immediate per-area approval notification to BLGU.
+
+        Notifies the BLGU user when an assessor approves their governance area,
+        both for initial assessments and post-rework resubmissions.
+
+        Args:
+            db: Database session
+            assessment: Assessment object
+            governance_area_id: Governance area that was approved
+            governance_area_name: Name of the governance area
+            assessor: Assessor who approved the area
+            is_post_rework: Whether this approval is after a rework resubmission
+
+        Returns:
+            Created Notification object or None if BLGU user not found
+        """
+        if not assessment.blgu_user_id:
+            self.logger.warning(
+                f"Cannot send per-area approval notification: Assessment {assessment.id} has no BLGU user"
+            )
+            return None
+
+        if is_post_rework:
+            title = f"Area Approved (After Rework): {governance_area_name}"
+            message = (
+                f"The assessor has reviewed your rework submission for '{governance_area_name}' "
+                f"and approved it."
+            )
+        else:
+            title = f"Area Approved: {governance_area_name}"
+            message = (
+                f"The assessor for '{governance_area_name}' has completed their review "
+                f"and approved it."
+            )
+
+        notification = self.create_notification(
+            db=db,
+            recipient_id=assessment.blgu_user_id,
+            notification_type=NotificationType.AREA_ASSESSED,
+            title=title,
+            message=message,
+            assessment_id=assessment.id,
+            governance_area_id=governance_area_id,
+            send_email=True,
+        )
+
+        self.logger.info(
+            f"Sent per-area approval notification for area {governance_area_id} ({governance_area_name}) "
+            f"to BLGU user {assessment.blgu_user_id} for assessment {assessment.id} "
+            f"(post_rework={is_post_rework})"
         )
 
         return notification

@@ -191,6 +191,18 @@ class EmailService:
                 "message": "Barangay {barangay_name} has resubmitted their assessment after calibration. Please review the updated indicators.",
                 "cta_text": "Review Calibration",
             },
+            NotificationType.AREA_ASSESSED: {
+                "subject": "Governance Area Approved: {governance_area_name}",
+                "title": "Governance Area Approved",
+                "message": "The assessor has completed their review of '{governance_area_name}' for your {barangay_name} submission and approved it. Log in to see the details.",
+                "cta_text": "View Assessment",
+            },
+            NotificationType.VALIDATION_COMPLETED: {
+                "subject": "Your SGLGB Assessment Validation is Complete",
+                "title": "Validation Complete",
+                "message": "The validator has completed the final validation of your SGLGB assessment for {barangay_name}. Your assessment is now awaiting final approval from the MLGOO Chairman.",
+                "cta_text": "View Assessment",
+            },
             NotificationType.SUBMISSION_REMINDER: {
                 "subject": "Reminder: Complete Your SGLGB Assessment Submission",
                 "title": "Assessment Submission Reminder",

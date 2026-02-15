@@ -1502,6 +1502,26 @@ class AssessorService:
 
         db.commit()
 
+        # Send per-area approval notification to BLGU
+        try:
+            from app.services.notification_service import notification_service
+
+            is_post_rework = area_status == "rework" and (
+                has_resubmitted_flag or has_rework_submitted_at or assessment_implies_resubmission
+            )
+            notification_service.queue_per_area_approval_notification(
+                db=db,
+                assessment=assessment,
+                governance_area_id=governance_area_id,
+                governance_area_name=governance_area_name,
+                assessor=assessor,
+                is_post_rework=is_post_rework,
+            )
+            db.commit()
+        except Exception as e:
+            # Don't fail the approval if notification fails
+            self.logger.warning(f"Failed to queue per-area approval notification: {e}")
+
         self.logger.info(
             f"Assessor {assessor.id} approved area {governance_area_id} ({governance_area_name}) "
             f"for assessment {assessment_id}"
@@ -2508,17 +2528,26 @@ class AssessorService:
             try:
                 from app.workers.notifications import (
                     send_ready_for_mlgoo_approval_notification,
+                    send_validation_complete_notification,
                 )
 
-                # Queue the notification task to run in the background
+                # Queue MLGOO notification
                 task = send_ready_for_mlgoo_approval_notification.delay(assessment_id)
+
+                # Queue BLGU notification
+                is_post_calibration = assessment.calibration_count > 0
+                send_validation_complete_notification.delay(
+                    assessment_id, is_post_calibration=is_post_calibration
+                )
+
                 notification_result = {
                     "success": True,
-                    "message": "Ready for MLGOO approval notification queued successfully",
+                    "message": "Ready for MLGOO approval and validation complete notifications queued",
                     "task_id": task.id,
                 }
                 self.logger.info(
-                    f"Triggered ready-for-MLGOO-approval notification for assessment {assessment_id}"
+                    f"Triggered ready-for-MLGOO-approval and validation-complete notifications "
+                    f"for assessment {assessment_id} (post_calibration={is_post_calibration})"
                 )
             except Exception as e:
                 # Log the error but don't fail the finalization operation

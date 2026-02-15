@@ -31,6 +31,8 @@ function getNotificationIcon(type: NotificationType) {
       return { icon: RefreshCw, color: "text-purple-500", bg: "bg-purple-50" };
     case "VALIDATION_COMPLETED":
       return { icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" };
+    case "AREA_ASSESSED":
+      return { icon: CheckCircle2, color: "text-green-500", bg: "bg-green-50" };
     default:
       return { icon: FileCheck, color: "text-gray-500", bg: "bg-gray-50" };
   }
@@ -58,6 +60,7 @@ function getNotificationLink(notification: NotificationResponse): string | null 
     // Notifications for BLGU users - go to their dashboard
     case "REWORK_REQUESTED":
     case "CALIBRATION_REQUESTED":
+    case "AREA_ASSESSED":
       return `/blgu/dashboard`;
 
     // Notifications for MLGOO and BLGU when validation is complete
