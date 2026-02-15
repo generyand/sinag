@@ -21,6 +21,8 @@ interface AreaAssessorStatus {
   assessor_name: string | null;
   is_assessed: boolean;
   status?: string | null;
+  rework_used?: boolean;
+  calibration_used?: boolean;
 }
 
 interface AssessorStatusPanelProps {
@@ -113,6 +115,29 @@ export function AssessorStatusPanel({ areaAssessorStatus, className }: AssessorS
                     {area.assessor_name}
                   </p>
                 )}
+                {/* Remaining rework & calibration attempts */}
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span
+                    className={cn(
+                      "inline-block text-[9px] font-medium px-1 py-px rounded",
+                      area.rework_used
+                        ? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                        : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    )}
+                  >
+                    {area.rework_used ? "Rework used" : "1 rework left"}
+                  </span>
+                  <span
+                    className={cn(
+                      "inline-block text-[9px] font-medium px-1 py-px rounded",
+                      area.calibration_used
+                        ? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                        : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    )}
+                  >
+                    {area.calibration_used ? "Calibrated" : "1 calibration left"}
+                  </span>
+                </div>
               </div>
 
               {/* Status icon */}

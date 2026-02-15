@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { FileList } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {
   useGetAssessorMovsMovFileIdFeedback,
   usePatchAssessorMovsMovFileIdFeedback,
 } from "@sinag/shared";
-import { AlertTriangle, FileIcon, Loader2, Save, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, FileIcon, Loader2, Save, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
 import toast from "react-hot-toast";
@@ -39,7 +40,7 @@ const ImageAnnotator = dynamic(() => import("@/components/shared/ImageAnnotator"
  * Inner component that fetches signed URL and renders the appropriate file viewer.
  * Separated to allow conditional rendering with hooks.
  */
-function SecureFileContent({
+const SecureFileContent = React.memo(function SecureFileContent({
   file,
   annotationsLoading,
   pdfAnnotations,
@@ -142,7 +143,7 @@ function SecureFileContent({
       </Button>
     </div>
   );
-}
+});
 
 interface MiddleMovFilesPanelProps {
   assessment: AssessmentDetailsResponse;
@@ -163,6 +164,12 @@ interface MiddleMovFilesPanelProps {
   ) => void;
   /** Callback when rework flag is saved (for updating progress indicator) */
   onReworkFlagSaved?: (responseId: number, movFileId: number, flagged: boolean) => void;
+  /** When true, hides assessor-only feedback editing (used in Validator view) */
+  readOnly?: boolean;
+  /** Calibration flag state per indicator (validators only) */
+  calibrationFlags?: Record<number, boolean>;
+  /** Callback when validator toggles calibration flag (validators only) */
+  onCalibrationFlagChange?: (responseId: number, flagged: boolean) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -176,6 +183,9 @@ export function MiddleMovFilesPanel({
   onAnnotationCreated,
   onAnnotationDeleted,
   onReworkFlagSaved,
+  readOnly = false,
+  calibrationFlags,
+  onCalibrationFlagChange,
 }: MiddleMovFilesPanelProps) {
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
@@ -241,6 +251,8 @@ export function MiddleMovFilesPanel({
         isNew, // Flag for visual separation in UI
         is_rejected: mov.is_rejected === true, // Flag for rejected files (validator view)
         has_annotations: mov.has_annotations === true, // Flag for files with annotations
+        assessor_notes: mov.assessor_notes || null,
+        flagged_for_rework: mov.flagged_for_rework === true,
       };
     });
   }, [selectedResponse, effectiveTimestamp]);
@@ -260,19 +272,22 @@ export function MiddleMovFilesPanel({
 
     // Check if any old files have explicit rejection flags
     const hasExplicitRejection = oldUploads.some(
-      (f: any) => f.is_rejected === true || f.has_annotations === true
+      (f: any) =>
+        f.is_rejected === true || f.has_annotations === true || f.flagged_for_rework === true
     );
 
     let rejected: any[] = [];
     let accepted: any[] = [];
 
     if (hasExplicitRejection) {
-      // Use is_rejected or has_annotations flag to determine rejection
+      // Use is_rejected, has_annotations, or flagged_for_rework flag to determine rejection
       rejected = oldUploads.filter(
-        (f: any) => f.is_rejected === true || f.has_annotations === true
+        (f: any) =>
+          f.is_rejected === true || f.has_annotations === true || f.flagged_for_rework === true
       );
       accepted = oldUploads.filter(
-        (f: any) => f.is_rejected !== true && f.has_annotations !== true
+        (f: any) =>
+          f.is_rejected !== true && f.has_annotations !== true && f.flagged_for_rework !== true
       );
     } else {
       // No explicit rejection flags on any old files
@@ -306,20 +321,20 @@ export function MiddleMovFilesPanel({
   const [flaggedForRework, setFlaggedForRework] = React.useState(false);
   const [feedbackDirty, setFeedbackDirty] = React.useState(false);
 
-  // Fetch existing feedback when a file is selected
+  // Fetch existing feedback when a file is selected (assessor only)
   const movFileId = selectedFile?.id || 0;
   const { data: feedbackData, isLoading: feedbackLoading } = useGetAssessorMovsMovFileIdFeedback(
     movFileId,
     {
       query: {
         queryKey: getGetAssessorMovsMovFileIdFeedbackQueryKey(movFileId),
-        enabled: !!selectedFile?.id && isAnnotating,
+        enabled: !readOnly && !!selectedFile?.id && isAnnotating,
         staleTime: 0, // Always refetch when opening
       },
     }
   );
 
-  // Update feedback mutation
+  // Update feedback mutation (assessor only)
   const updateFeedbackMutation = usePatchAssessorMovsMovFileIdFeedback({
     mutation: {
       onSuccess: (_data, variables) => {
@@ -378,7 +393,7 @@ export function MiddleMovFilesPanel({
     updateFeedbackMutation.mutate({
       movFileId: selectedFile.id,
       data: {
-        assessor_notes: assessorNotes || null,
+        assessor_notes: assessorNotes,
         flagged_for_rework: flaggedForRework,
       },
     });
@@ -424,128 +439,134 @@ export function MiddleMovFilesPanel({
   };
 
   // Transform annotations from backend format to PdfAnnotator format
+  const safeAnnotations = Array.isArray(annotations) ? annotations : [];
   const pdfAnnotations = React.useMemo(() => {
-    return (
-      (annotations as any[])?.map((ann: any) => ({
-        id: String(ann.id),
-        type: "pdfRect" as const,
-        page: ann.page ?? ann.page_number ?? 0, // Backend returns 'page', not 'page_number'
-        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-        rects: ann.rects,
-        comment: ann.comment || "",
-        createdAt: ann.created_at || new Date().toISOString(),
-      })) || []
-    );
-  }, [annotations]);
+    return safeAnnotations.map((ann: any) => ({
+      id: String(ann.id),
+      type: "pdfRect" as const,
+      page: ann.page ?? ann.page_number ?? 0, // Backend returns 'page', not 'page_number'
+      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+      rects: ann.rects,
+      comment: ann.comment || "",
+      createdAt: ann.created_at || new Date().toISOString(),
+    }));
+  }, [safeAnnotations]);
 
   // Transform annotations for ImageAnnotator
   const imageAnnotations = React.useMemo(() => {
-    return (
-      (annotations as any[])?.map((ann: any) => ({
-        id: String(ann.id),
-        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-        comment: ann.comment || "",
-        createdAt: ann.created_at || new Date().toISOString(),
-      })) || []
-    );
-  }, [annotations]);
+    return safeAnnotations.map((ann: any) => ({
+      id: String(ann.id),
+      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+      comment: ann.comment || "",
+      createdAt: ann.created_at || new Date().toISOString(),
+    }));
+  }, [safeAnnotations]);
 
-  const handleAddAnnotation = async (annotation: any) => {
-    if (!selectedFile?.id) return;
+  const handleAddAnnotation = React.useCallback(
+    async (annotation: any) => {
+      if (!selectedFile?.id) return;
 
-    console.log("[MiddleMovFilesPanel] handleAddAnnotation called, expandedId:", expandedId);
+      console.log("[MiddleMovFilesPanel] handleAddAnnotation called, expandedId:", expandedId);
 
-    try {
-      // For images, annotation won't have a 'page' property
-      const isImageAnnotation = !("page" in annotation);
+      try {
+        // For images, annotation won't have a 'page' property
+        const isImageAnnotation = !("page" in annotation);
 
-      await createAnnotation({
-        mov_file_id: selectedFile.id,
-        annotation_type: isImageAnnotation ? "imageRect" : "pdfRect",
-        page: annotation.page ?? 0,
-        rect: annotation.rect,
-        rects: annotation.rects || undefined,
-        comment: annotation.comment || "",
-      });
+        await createAnnotation({
+          mov_file_id: selectedFile.id,
+          annotation_type: isImageAnnotation ? "imageRect" : "pdfRect",
+          page: annotation.page ?? 0,
+          rect: annotation.rect,
+          rects: annotation.rects || undefined,
+          comment: annotation.comment || "",
+        });
 
-      // Notify parent that annotation was created (for auto-toggling rework/calibration flag)
-      console.log(
-        "[MiddleMovFilesPanel] Annotation created, calling onAnnotationCreated:",
-        expandedId,
-        "movFileId:",
-        selectedFile.id
-      );
-      if (expandedId && onAnnotationCreated && selectedFile?.id) {
-        onAnnotationCreated(expandedId, selectedFile.id);
-      } else {
-        console.warn(
-          "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+        // Notify parent that annotation was created (for auto-toggling rework/calibration flag)
+        console.log(
+          "[MiddleMovFilesPanel] Annotation created, calling onAnnotationCreated:",
           expandedId,
-          "selectedFile.id:",
-          selectedFile?.id,
-          "onAnnotationCreated:",
-          !!onAnnotationCreated
+          "movFileId:",
+          selectedFile.id
         );
+        if (expandedId && onAnnotationCreated && selectedFile?.id) {
+          onAnnotationCreated(expandedId, selectedFile.id);
+        } else {
+          console.warn(
+            "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+            expandedId,
+            "selectedFile.id:",
+            selectedFile?.id,
+            "onAnnotationCreated:",
+            !!onAnnotationCreated
+          );
+        }
+      } catch (error) {
+        console.error("[MiddleMovFilesPanel] Failed to create annotation:", error);
       }
-    } catch (error) {
-      console.error("[MiddleMovFilesPanel] Failed to create annotation:", error);
-    }
-  };
+    },
+    [selectedFile?.id, expandedId, onAnnotationCreated, createAnnotation]
+  );
 
   // Wrapper for deleteAnnotation that calls the callback
-  const handleDeleteAnnotation = async (annotationId: number) => {
-    // Calculate remaining count BEFORE deletion (since annotations state is stale after mutation)
-    const currentCount = annotations?.length ?? 0;
-    const remainingCountForFile = Math.max(0, currentCount - 1);
+  const handleDeleteAnnotation = React.useCallback(
+    async (annotationId: number) => {
+      // Calculate remaining count BEFORE deletion (since annotations state is stale after mutation)
+      const currentCount = Array.isArray(annotations) ? annotations.length : 0;
+      const remainingCountForFile = Math.max(0, currentCount - 1);
 
-    console.log(
-      "[MiddleMovFilesPanel] handleDeleteAnnotation - annotationId:",
-      annotationId,
-      "expandedId:",
-      expandedId,
-      "movFileId:",
-      selectedFile?.id,
-      "currentCount:",
-      currentCount,
-      "willHaveRemaining:",
-      remainingCountForFile
-    );
+      console.log(
+        "[MiddleMovFilesPanel] handleDeleteAnnotation - annotationId:",
+        annotationId,
+        "expandedId:",
+        expandedId,
+        "movFileId:",
+        selectedFile?.id,
+        "currentCount:",
+        currentCount,
+        "willHaveRemaining:",
+        remainingCountForFile
+      );
 
-    try {
-      await deleteAnnotation(annotationId);
-      console.log("[MiddleMovFilesPanel] Annotation deleted successfully");
+      try {
+        await deleteAnnotation(annotationId);
+        console.log("[MiddleMovFilesPanel] Annotation deleted successfully");
 
-      // Notify parent that annotation was deleted (with file-level tracking)
-      if (expandedId && onAnnotationDeleted && selectedFile?.id) {
-        console.log(
-          "[MiddleMovFilesPanel] Calling onAnnotationDeleted with movFileId:",
-          selectedFile.id,
-          "remaining:",
-          remainingCountForFile
-        );
-        onAnnotationDeleted(expandedId, selectedFile.id, remainingCountForFile);
-      } else {
-        console.warn(
-          "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
-          expandedId,
-          "selectedFile.id:",
-          selectedFile?.id,
-          "onAnnotationDeleted:",
-          !!onAnnotationDeleted
-        );
+        // Notify parent that annotation was deleted (with file-level tracking)
+        if (expandedId && onAnnotationDeleted && selectedFile?.id) {
+          console.log(
+            "[MiddleMovFilesPanel] Calling onAnnotationDeleted with movFileId:",
+            selectedFile.id,
+            "remaining:",
+            remainingCountForFile
+          );
+          onAnnotationDeleted(expandedId, selectedFile.id, remainingCountForFile);
+        } else {
+          console.warn(
+            "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+            expandedId,
+            "selectedFile.id:",
+            selectedFile?.id,
+            "onAnnotationDeleted:",
+            !!onAnnotationDeleted
+          );
+        }
+      } catch (error) {
+        console.error("[MiddleMovFilesPanel] Failed to delete annotation:", error);
       }
-    } catch (error) {
-      console.error("[MiddleMovFilesPanel] Failed to delete annotation:", error);
-    }
-  };
+    },
+    [safeAnnotations.length, expandedId, selectedFile?.id, deleteAnnotation, onAnnotationDeleted]
+  );
 
   // Wrapper for PdfAnnotator's onDelete which passes string ID
-  const handleDeleteAnnotationFromPdf = (annotationIdStr: string) => {
-    const annotationId = parseInt(annotationIdStr, 10);
-    if (!isNaN(annotationId)) {
-      handleDeleteAnnotation(annotationId);
-    }
-  };
+  const handleDeleteAnnotationFromPdf = React.useCallback(
+    (annotationIdStr: string) => {
+      const annotationId = parseInt(annotationIdStr, 10);
+      if (!isNaN(annotationId)) {
+        handleDeleteAnnotation(annotationId);
+      }
+    },
+    [handleDeleteAnnotation]
+  );
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -613,7 +634,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No new files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -636,7 +657,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No existing files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -663,7 +684,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No previous files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -689,7 +710,7 @@ export function MiddleMovFilesPanel({
             canDelete={false}
             loading={false}
             emptyMessage="No files uploaded yet"
-            movAnnotations={annotations as any[]}
+            movAnnotations={safeAnnotations}
           />
         )}
       </div>
@@ -749,31 +770,95 @@ export function MiddleMovFilesPanel({
               {/* Comments Sidebar - Hidden on mobile, visible on desktop */}
               {(selectedFile.file_type === "application/pdf" ||
                 selectedFile.file_type?.startsWith("image/")) && (
-                <div className="hidden md:flex w-80 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
+                <div
+                  key={`sidebar-${selectedFile.id}`}
+                  className="hidden md:flex w-80 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4"
+                >
                   {/* Assessor Feedback Section */}
                   <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <h3 className="font-semibold text-sm mb-3 text-slate-900 dark:text-slate-100">
-                      Assessor Feedback
+                      MOV Notes
                     </h3>
 
-                    {feedbackLoading ? (
+                    {readOnly ? (
+                      /* Read-only view for Validator: show assessor notes + calibration flag toggle */
+                      <div className="space-y-3">
+                        {selectedFile.assessor_notes?.trim() ? (
+                          <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+                            <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                              {selectedFile.assessor_notes}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500 dark:text-slate-400 italic">
+                            No assessor notes for this file.
+                          </p>
+                        )}
+                        {selectedFile.flagged_for_rework && (
+                          <div className="flex items-center gap-2 p-2 rounded-md bg-orange-50 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-700">
+                            <AlertTriangle className="h-4 w-4 text-orange-500" />
+                            <span className="text-sm text-orange-700 dark:text-orange-300">
+                              Flagged for rework by assessor
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Flag for Calibration toggle (validators only) */}
+                        {onCalibrationFlagChange && expandedId && (
+                          <div
+                            className={`flex items-center justify-between p-3 rounded-md border ${
+                              calibrationFlags?.[expandedId]
+                                ? "bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700"
+                                : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <AlertCircle
+                                className={`h-4 w-4 ${calibrationFlags?.[expandedId] ? "text-orange-500" : "text-slate-400"}`}
+                              />
+                              <Label
+                                htmlFor="flag-calibration"
+                                className={`text-sm font-medium cursor-pointer ${
+                                  calibrationFlags?.[expandedId]
+                                    ? "text-orange-700 dark:text-orange-300"
+                                    : "text-slate-600 dark:text-slate-400"
+                                }`}
+                              >
+                                Flag for Calibration
+                              </Label>
+                            </div>
+                            <Switch
+                              id="flag-calibration"
+                              checked={calibrationFlags?.[expandedId] ?? false}
+                              onCheckedChange={(checked) => {
+                                onCalibrationFlagChange(expandedId, checked);
+                              }}
+                              className={`${
+                                calibrationFlags?.[expandedId]
+                                  ? "data-[state=checked]:bg-orange-500"
+                                  : "data-[state=unchecked]:bg-slate-300 dark:data-[state=unchecked]:bg-slate-600"
+                              }`}
+                            />
+                          </div>
+                        )}
+
+                        {calibrationFlags?.[expandedId ?? 0] && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400">
+                            This indicator will be flagged for BLGU to revise
+                          </p>
+                        )}
+                      </div>
+                    ) : feedbackLoading ? (
                       <div className="flex items-center gap-2 text-sm text-slate-500">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Loading...
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {/* Assessor's Notes */}
                         <div className="space-y-2">
-                          <Label
-                            htmlFor="assessor-notes"
-                            className="text-xs font-medium text-slate-700 dark:text-slate-300"
-                          >
-                            Assessor&apos;s Notes
-                          </Label>
                           <Textarea
                             id="assessor-notes"
-                            placeholder="Add notes about this MOV..."
+                            placeholder="Describe the specific issue with this file (e.g., missing signature, incorrect date, or blurry scan)..."
                             value={assessorNotes}
                             onChange={(e) => handleNotesChange(e.target.value)}
                             className="min-h-[80px] text-sm resize-none"

@@ -73,11 +73,13 @@ KATUPARAN_CENTER_USER → No assignments required
 
 The User model includes these role-related fields:
 
-| Field              | Type               | Description                                                       |
-| ------------------ | ------------------ | ----------------------------------------------------------------- |
-| `role`             | String enum        | MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER |
-| `assessor_area_id` | Integer (nullable) | FK to governance_areas table (for ASSESSOR role only)             |
-| `barangay_id`      | Integer (nullable) | FK to barangays table (for BLGU_USER role only)                   |
+| Field                 | Type               | Description                                                         |
+| --------------------- | ------------------ | ------------------------------------------------------------------- |
+| `role`                | String enum        | MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER   |
+| `assessor_area_id`    | Integer (nullable) | FK to governance_areas table (for ASSESSOR role only)               |
+| `barangay_id`         | Integer (nullable) | FK to barangays table (for BLGU_USER role only)                     |
+| `municipal_office_id` | Integer (nullable) | FK to municipal_offices table (municipal office assignment)         |
+| `preferred_language`  | String(3)          | Preferred language for AI summaries: ceb, fil, or en (default: ceb) |
 
 **Note**: The field `validator_area_id` was renamed to `assessor_area_id` in January 2026 as part of
 the workflow restructuring where Assessors became area-specific and Validators became system-wide.
@@ -87,11 +89,23 @@ the workflow restructuring where Assessors became area-specific and Validators b
 All admin endpoints require `MLGOO_DILG` role:
 
 - `POST /api/v1/users/` - Create new user
-- `GET /api/v1/users/` - List all users
+- `GET /api/v1/users/` - List all users (paginated, filterable)
+- `GET /api/v1/users/{user_id}` - Get user by ID
 - `PUT /api/v1/users/{user_id}` - Update user
-- `DELETE /api/v1/users/{user_id}` - Deactivate user
+- `DELETE /api/v1/users/{user_id}` - Deactivate user (soft delete)
 - `POST /api/v1/users/{user_id}/activate` - Activate user
 - `POST /api/v1/users/{user_id}/reset-password` - Reset password
+- `GET /api/v1/users/stats/dashboard` - User statistics for admin dashboard
+
+## Self-Service Endpoints
+
+Available to all authenticated users:
+
+- `GET /api/v1/users/me` - Get current user profile
+- `PUT /api/v1/users/me` - Update own profile
+- `PATCH /api/v1/users/me/language` - Update preferred language (ceb, fil, en)
+- `POST /api/v1/users/me/logo` - Upload profile logo
+- `DELETE /api/v1/users/me/logo` - Delete profile logo
 
 See `apps/api/app/api/v1/users.py` for implementation.
 
@@ -109,12 +123,12 @@ The Analytics page (`/analytics`) provides municipal-level overview and BBI comp
 
 ## Navigation Links by Role
 
-| Role                  | Sidebar Navigation                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------- |
-| MLGOO_DILG            | Dashboard, Submissions, Users, Governance Areas, Analytics, BBI Management, Profile |
-| VALIDATOR             | Submissions Queue, Analytics & Reports, Profile                                     |
-| ASSESSOR              | Submissions Queue, Profile                                                          |
-| BLGU_USER             | Dashboard, Assessment, Reports, Profile                                             |
-| KATUPARAN_CENTER_USER | External Analytics                                                                  |
+| Role                  | Sidebar Navigation                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| MLGOO_DILG            | Dashboard, Submission Queue, Analytics & Reports, Assessment Cycles, User Management, System Settings, Profile |
+| VALIDATOR             | Submissions Queue, Validation History, Analytics, Profile                                                      |
+| ASSESSOR              | Submissions Queue, Review History, Profile                                                                     |
+| BLGU_USER             | Dashboard, My Assessments, Insights, Profile                                                                   |
+| KATUPARAN_CENTER_USER | Dashboard, Profile                                                                                             |
 
 See `apps/web/src/lib/navigation.ts` for navigation configuration.

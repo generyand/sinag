@@ -27,9 +27,7 @@ export function CapDevSummaryCard({ summary, generatedAt }: CapDevSummaryCardPro
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-[var(--foreground)]">
-              AI Summary
-            </h3>
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">AI Summary</h3>
             {formattedDate && (
               <span className="text-xs text-[var(--text-secondary)]">
                 Generated: {formattedDate}

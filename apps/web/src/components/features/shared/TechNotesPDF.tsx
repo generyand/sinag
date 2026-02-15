@@ -1,12 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Download, Eye, FileText } from "lucide-react";
 import { useState } from "react";
 
@@ -113,12 +108,7 @@ export function TechNotesPDF({ areaNumber, areaName }: TechNotesPDFProps) {
                 <FileText className="h-5 w-5 text-amber-600" />
                 Technical Notes - {displayName}
               </DialogTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                className="h-8"
-              >
+              <Button variant="outline" size="sm" onClick={handleDownload} className="h-8">
                 <Download className="h-4 w-4 mr-2" />
                 Download
               </Button>

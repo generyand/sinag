@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { getSignedUrl } from "@/lib/uploadMov";
 import { resolveMovUrl } from "@/lib/utils";
@@ -66,6 +67,7 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
 
   // Transform database annotations to component format
   const annotations = React.useMemo(() => {
+    if (!Array.isArray(dbAnnotations)) return [];
     return dbAnnotations.map((ann: any) => ({
       id: String(ann.id),
       type: ann.annotation_type === "pdfRect" ? "pdfRect" : "rect",

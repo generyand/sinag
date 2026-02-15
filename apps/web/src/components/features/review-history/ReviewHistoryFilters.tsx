@@ -18,8 +18,7 @@ interface ReviewHistoryFiltersProps {
 }
 
 export function ReviewHistoryFilters({ filters, onFiltersChange }: ReviewHistoryFiltersProps) {
-  const hasActiveFilters =
-    filters.search || filters.dateFrom || filters.dateTo || filters.outcome;
+  const hasActiveFilters = filters.search || filters.dateFrom || filters.dateTo || filters.outcome;
 
   const clearFilters = () => {
     onFiltersChange({
@@ -34,7 +33,10 @@ export function ReviewHistoryFilters({ filters, onFiltersChange }: ReviewHistory
     <div className="flex flex-wrap gap-4 items-end">
       {/* Search */}
       <div className="flex-1 min-w-[200px]">
-        <label htmlFor="search" className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block">
+        <label
+          htmlFor="search"
+          className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block"
+        >
           Search
         </label>
         <div className="relative">
@@ -51,7 +53,10 @@ export function ReviewHistoryFilters({ filters, onFiltersChange }: ReviewHistory
 
       {/* Date From */}
       <div className="w-[160px]">
-        <label htmlFor="date-from" className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block">
+        <label
+          htmlFor="date-from"
+          className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block"
+        >
           From Date
         </label>
         <Input
@@ -69,7 +74,10 @@ export function ReviewHistoryFilters({ filters, onFiltersChange }: ReviewHistory
 
       {/* Date To */}
       <div className="w-[160px]">
-        <label htmlFor="date-to" className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block">
+        <label
+          htmlFor="date-to"
+          className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block"
+        >
           To Date
         </label>
         <Input
@@ -87,7 +95,10 @@ export function ReviewHistoryFilters({ filters, onFiltersChange }: ReviewHistory
 
       {/* Outcome Filter */}
       <div className="w-[160px]">
-        <label htmlFor="outcome" className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block">
+        <label
+          htmlFor="outcome"
+          className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block"
+        >
           Outcome
         </label>
         <Select

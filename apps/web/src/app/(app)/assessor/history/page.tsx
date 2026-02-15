@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  ReviewHistoryFilters,
-  ReviewHistoryTable,
-} from "@/components/features/review-history";
+import { ReviewHistoryFilters, ReviewHistoryTable } from "@/components/features/review-history";
 import { useReviewHistory, ReviewHistoryFilters as FilterType } from "@/hooks/useReviewHistory";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import { useState, useMemo } from "react";
@@ -80,11 +77,7 @@ export default function AssessorHistoryPage() {
   }
 
   return (
-    <main
-      className="min-h-screen bg-[var(--background)]"
-      role="main"
-      aria-label="Review History"
-    >
+    <main className="min-h-screen bg-[var(--background)]" role="main" aria-label="Review History">
       <div className="space-y-6">
         {/* Header */}
         <section className="bg-gradient-to-r from-[var(--card)] to-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm">
@@ -92,9 +85,7 @@ export default function AssessorHistoryPage() {
             <div className="p-2 bg-[var(--cityscape-yellow)] rounded-sm">
               <History className="h-5 w-5 text-[var(--cityscape-accent-foreground)]" />
             </div>
-            <h1 className="text-2xl font-semibold text-[var(--foreground)]">
-              Review History
-            </h1>
+            <h1 className="text-2xl font-semibold text-[var(--foreground)]">Review History</h1>
           </div>
           <p className="text-[var(--text-secondary)]">
             View your completed assessment reviews
@@ -109,12 +100,8 @@ export default function AssessorHistoryPage() {
         {/* Filters */}
         <section className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm">
           <header className="mb-4">
-            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-              Filter & Search
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)]">
-              Find specific completed reviews
-            </p>
+            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">Filter & Search</h2>
+            <p className="text-sm text-[var(--text-secondary)]">Find specific completed reviews</p>
           </header>
           <ReviewHistoryFilters filters={filters} onFiltersChange={setFilters} />
         </section>

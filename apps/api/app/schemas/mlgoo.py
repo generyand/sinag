@@ -249,6 +249,8 @@ class IndicatorDetailItem(BaseModel):
     validation_status: str | None
     assessor_remarks: str | None
     is_completed: bool  # Completion status (form filled + required MOVs uploaded)
+    assessor_reviewed: bool = False  # True when assessor checklist values were saved
+    validator_reviewed: bool = False  # True when validator set PASS/FAIL/CONDITIONAL
     is_recalibration_target: bool  # True if MLGOO flagged for recalibration
     requires_rework: bool = False  # True if assessor flagged for rework
     flagged_for_calibration: bool = False  # True if validator flagged for calibration

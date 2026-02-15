@@ -372,8 +372,12 @@ export function HeroSection() {
                 Official Platform
               </span>
               {/* Hide long subtitle on mobile, show shorter version */}
-              <span className="hidden md:inline" aria-label="Platform description">{currentHeroSlide.subtitle}</span>
-              <span className="md:hidden" aria-label="Platform description">Official SGLGB Analytics System for the Municipality of Sulop</span>
+              <span className="hidden md:inline" aria-label="Platform description">
+                {currentHeroSlide.subtitle}
+              </span>
+              <span className="md:hidden" aria-label="Platform description">
+                Official SGLGB Analytics System for the Municipality of Sulop
+              </span>
             </div>
           </div>
         </main>

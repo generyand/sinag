@@ -145,8 +145,18 @@ export function Footer() {
             {/* Contact Card */}
             <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
               <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4 text-[#fbbf24]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <svg
+                  className="w-4 h-4 text-[#fbbf24]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
                 </svg>
                 Contact Support
               </h4>
@@ -323,7 +333,9 @@ export function Footer() {
 
               {/* Social Media */}
               <div>
-                <p className="text-gray-400 text-sm mb-4">Follow us for updates and announcements</p>
+                <p className="text-gray-400 text-sm mb-4">
+                  Follow us for updates and announcements
+                </p>
                 <div className="flex gap-3">
                   <a
                     href="#"
@@ -389,7 +401,9 @@ export function Footer() {
                 </svg>
               </div>
               <div>
-                <div className="font-medium text-white text-sm md:text-base">© 2025 Municipality of Sulop</div>
+                <div className="font-medium text-white text-sm md:text-base">
+                  © 2025 Municipality of Sulop
+                </div>
                 <div className="text-xs">
                   All Rights Reserved • Developed by{" "}
                   <span className="text-[#fbbf24] font-semibold">SINAG</span> Team

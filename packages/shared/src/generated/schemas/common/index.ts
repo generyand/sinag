@@ -292,6 +292,15 @@ export const AreaType = {
 
 
 /**
+ * AutoSubmitDetail
+ */
+export interface AutoSubmitDetail {
+  assessment_id: number;
+  barangay_name: string;
+}
+
+
+/**
  * AvailableCycle
  */
 export interface AvailableCycle {
@@ -1890,6 +1899,26 @@ export interface TrendData {
   pass_rate: number;
   /** Date of the cycle */
   date: string;
+}
+
+
+/**
+ * ValidatorProgressItem
+ */
+export interface ValidatorProgressItem {
+  validator_ids?: number[];
+  validator_names?: string[];
+  status: string;
+  /** @minimum 0 */
+  reviewed_indicators?: number;
+  /** @minimum 0 */
+  total_indicators?: number;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  progress_percent: number;
+  label: string;
 }
 
 

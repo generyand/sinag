@@ -133,7 +133,7 @@ const makeAssessment = (overrides: {
         },
         movs: [],
         response_data: {},
-        annotated_mov_file_ids: [],
+        flagged_mov_file_ids: [],
       },
     ],
   },
@@ -172,8 +172,8 @@ describe("AssessorValidationClient rework button disabled state", () => {
       rework_round_used: false,
     });
 
-    // Add an indicator with annotation (flagged for rework)
-    assessment.assessment.responses[0].annotated_mov_file_ids = [1];
+    // Add a MOV file explicitly flagged for rework (toggle ON)
+    assessment.assessment.responses[0].flagged_mov_file_ids = [1];
 
     mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
       data: assessment,
@@ -197,7 +197,7 @@ describe("AssessorValidationClient rework button disabled state", () => {
     });
 
     // No annotations - no indicators flagged
-    assessment.assessment.responses[0].annotated_mov_file_ids = [];
+    assessment.assessment.responses[0].flagged_mov_file_ids = [];
 
     mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
       data: assessment,

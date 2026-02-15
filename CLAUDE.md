@@ -67,6 +67,7 @@ sinag/
 │   │   ├── app/
 │   │   │   ├── api/v1/      # Routers (thin layer)
 │   │   │   ├── db/models/   # SQLAlchemy models
+│   │   │   ├── core/        # Config, cache, Celery, year resolver
 │   │   │   ├── schemas/     # Pydantic schemas
 │   │   │   ├── services/    # Business logic (fat layer)
 │   │   │   └── workers/     # Celery tasks
@@ -155,13 +156,23 @@ See `docs/architecture/user-roles.md` for details.
 
 ## Key Services
 
-| Service                | Purpose                 |
-| ---------------------- | ----------------------- |
-| `assessment_service`   | Core assessment CRUD    |
-| `assessor_service`     | Validation workflow     |
-| `intelligence_service` | AI/Gemini integration   |
-| `mlgoo_service`        | MLGOO approval workflow |
-| `bbi_service`          | BBI functionality       |
+| Service                      | Purpose                                          |
+| ---------------------------- | ------------------------------------------------ |
+| `assessment_service`         | Core assessment CRUD and status management       |
+| `assessor_service`           | Per-area assessor review workflow                |
+| `mlgoo_service`              | MLGOO final approval and RE-calibration workflow |
+| `intelligence_service`       | AI/Gemini integration for insights               |
+| `bbi_service`                | BBI compliance checking (7 mandatory BBIs)       |
+| `assessment_year_service`    | Multi-year lifecycle (activate/publish/phase)    |
+| `analytics_service`          | Dashboard analytics and statistics               |
+| `user_service`               | User CRUD with role-based field management       |
+| `notification_service`       | In-app notification creation and delivery        |
+| `deadline_service`           | Per-assessment deadline tracking and extensions  |
+| `storage_service`            | Supabase file storage for MOVs and logos         |
+| `gar_service`                | Governance area report generation                |
+| `external_analytics_service` | Anonymized analytics for Katuparan Center        |
+| `compliance_service`         | Assessment compliance validation                 |
+| `email_service`              | Email notification delivery                      |
 
 ## Database Migrations (IMPORTANT)
 
@@ -222,21 +233,33 @@ Tags organize generated code:
 
 ## Environment Variables
 
+See `.env.example` files for full documentation of each variable.
+
 ### Backend (`apps/api/.env`)
 
 ```env
 DATABASE_URL=postgresql://...
 SUPABASE_URL=https://[project].supabase.co
+SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+SECRET_KEY=...                              # Min 32 chars, for JWT signing
 CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+REDIS_CACHE_URL=redis://localhost:6380/0    # Separate Redis for app cache
 GEMINI_API_KEY=...
+FIRST_SUPERUSER=admin@sinag.dilg.gov.ph
+FIRST_SUPERUSER_PASSWORD=...
+BACKEND_CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
 
 ### Frontend (`apps/web/.env.local`)
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_API_V1_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_APP_ENV=development
+NEXT_PUBLIC_SUPABASE_URL=https://[project].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_MAINTENANCE_MODE=false
 ```
 
 ## Common Issues
@@ -265,6 +288,8 @@ alembic upgrade head
 | Topic                  | Location                                     |
 | ---------------------- | -------------------------------------------- |
 | Project structure      | `docs/architecture/project-structure.md`     |
+| Database schema        | `docs/architecture/database-schema.md`       |
+| Backend architecture   | `docs/architecture/backend-architecture.md`  |
 | User roles             | `docs/architecture/user-roles.md`            |
 | Assessment workflow    | `docs/workflows/assessor-validation.md`      |
 | BLGU workflow          | `docs/workflows/blgu-assessment.md`          |

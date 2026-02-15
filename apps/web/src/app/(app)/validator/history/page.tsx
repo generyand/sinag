@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  ReviewHistoryFilters,
-  ReviewHistoryTable,
-} from "@/components/features/review-history";
+import { ReviewHistoryFilters, ReviewHistoryTable } from "@/components/features/review-history";
 import { useReviewHistory, ReviewHistoryFilters as FilterType } from "@/hooks/useReviewHistory";
 import { useValidatorGovernanceArea } from "@/hooks/useValidatorGovernanceArea";
 import { getGovernanceAreaLogo } from "@/lib/governance-area-logos";
@@ -12,7 +9,11 @@ import { History } from "lucide-react";
 import Image from "next/image";
 
 export default function ValidatorHistoryPage() {
-  const { governanceAreaName, governanceAreaCode, isLoading: governanceAreaLoading } = useValidatorGovernanceArea();
+  const {
+    governanceAreaName,
+    governanceAreaCode,
+    isLoading: governanceAreaLoading,
+  } = useValidatorGovernanceArea();
   const logoPath = governanceAreaCode ? getGovernanceAreaLogo(governanceAreaCode) : null;
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<FilterType>({
@@ -114,7 +115,10 @@ export default function ValidatorHistoryPage() {
               </h1>
               <p className="text-[var(--text-secondary)]">
                 {governanceAreaName ? (
-                  <>Completed validations for <span className="font-medium">{governanceAreaName}</span></>
+                  <>
+                    Completed validations for{" "}
+                    <span className="font-medium">{governanceAreaName}</span>
+                  </>
                 ) : (
                   "View your completed assessment validations"
                 )}
@@ -126,9 +130,7 @@ export default function ValidatorHistoryPage() {
         {/* Filters */}
         <section className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-6 shadow-sm">
           <header className="mb-4">
-            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-              Filter & Search
-            </h2>
+            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">Filter & Search</h2>
             <p className="text-sm text-[var(--text-secondary)]">
               Find specific completed validations
             </p>

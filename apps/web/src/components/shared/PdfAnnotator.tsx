@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { SpecialZoomLevel, Viewer, Worker } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
@@ -45,7 +46,11 @@ export default function PdfAnnotator({
   focusAnnotationId,
 }: PdfAnnotatorProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
+
   // The highlight plugin provides selection -> trigger UI -> save data
+  // NOTE: Do NOT memoize this with useMemo([], []) - the plugin has internal
+  // useEffect hooks that track highlight areas and become stale when memoized,
+  // causing "Cannot read properties of undefined (reading 'length')" crashes.
   const highlightPluginInstance = highlightPlugin({
     renderHighlightTarget: (props: RenderHighlightTargetProps) => {
       const anyProps: any = props as any;
@@ -370,7 +375,8 @@ export default function PdfAnnotator({
     },
     renderHighlightContent: (_props: RenderHighlightContentProps) => <></>,
     renderHighlights: (props: RenderHighlightsProps) => {
-      const pageAnns = annotations.filter((a) => a.page === props.pageIndex);
+      const safeAnnotations = Array.isArray(annotations) ? annotations : [];
+      const pageAnns = safeAnnotations.filter((a) => a.page === props.pageIndex);
       return (
         <>
           {pageAnns.map((a, idx) => (
@@ -389,15 +395,29 @@ export default function PdfAnnotator({
             >
               {(() => {
                 const sourceRects =
-                  Array.isArray(a.rects) && a.rects.length > 0 ? a.rects : [a.rect];
+                  Array.isArray(a.rects) && a.rects.length > 0
+                    ? a.rects
+                    : a.rect
+                      ? [a.rect]
+                      : [{ x: 0, y: 0, w: 0, h: 0 }];
                 const first = sourceRects[0];
                 const anyRProps: any = props as any;
                 const rectCssFrom = (r: PdfRect) =>
                   anyRProps?.getCssProperties
-                    ? anyRProps.getCssProperties({ left: r.x, top: r.y, width: r.w, height: r.h })
+                    ? anyRProps.getCssProperties({
+                        left: r.x,
+                        top: r.y,
+                        width: r.w,
+                        height: r.h,
+                      })
                     : { left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, height: `${r.h}%` };
                 const badgeCss = anyRProps?.getCssProperties
-                  ? anyRProps.getCssProperties({ left: first.x, top: first.y, width: 0, height: 0 })
+                  ? anyRProps.getCssProperties({
+                      left: first.x,
+                      top: first.y,
+                      width: 0,
+                      height: 0,
+                    })
                   : { left: `${first.x}%`, top: `${first.y}%` };
                 return (
                   <>
@@ -448,7 +468,8 @@ export default function PdfAnnotator({
     const root = containerRef.current;
     if (!root) return;
     // Determine the page of the target annotation
-    const target = annotations.find((a) => a.id === focusAnnotationId);
+    const safeAnns = Array.isArray(annotations) ? annotations : [];
+    const target = safeAnns.find((a) => a.id === focusAnnotationId);
     const pageIndex = typeof target?.page === "number" ? target!.page : 0;
     // pdf.js uses data-page-number (1-based)
     const pageEl = root.querySelector(

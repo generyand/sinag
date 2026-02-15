@@ -26,6 +26,7 @@ import type {
   AssessmentCycleUpdate,
   AuditLogListResponse,
   AuditLogResponse,
+  AutoSubmitResponse,
   DeadlineOverrideCreate,
   DeadlineOverrideListResponse,
   DeadlineOverrideResponse,
@@ -877,6 +878,69 @@ export function useGetAdminDeadlinesOverridesExport<TData = Awaited<ReturnType<t
 
 
 /**
+ * Manually trigger auto-submit for all DRAFT assessments past the Phase 1 deadline. Useful when Celery is not running. Requires MLGOO_DILG role.
+ * @summary Trigger auto-submit for overdue DRAFT assessments
+ */
+export const postAdminTriggerAutoSubmit = (
+    
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<AutoSubmitResponse>(
+      {url: `/api/v1/admin/trigger-auto-submit`, method: 'POST', signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAdminTriggerAutoSubmitMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, TError,void, TContext> => {
+
+const mutationKey = ['postAdminTriggerAutoSubmit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, void> = () => {
+          
+
+          return  postAdminTriggerAutoSubmit(requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAdminTriggerAutoSubmitMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>>
+    
+    export type PostAdminTriggerAutoSubmitMutationError = unknown
+
+    /**
+ * @summary Trigger auto-submit for overdue DRAFT assessments
+ */
+export const usePostAdminTriggerAutoSubmit = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>,
+        TError,
+        void,
+        TContext
+      > => {
+
+      const mutationOptions = getPostAdminTriggerAutoSubmitMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
  * Get system status and configuration information for admin users. Requires MLGOO_DILG role.
  * @summary Get admin system status
  */

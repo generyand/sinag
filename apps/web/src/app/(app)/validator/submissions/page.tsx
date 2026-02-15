@@ -1,6 +1,10 @@
 "use client";
 
 import { KPICards, SubmissionsFilters, SubmissionsTable } from "@/components/features/submissions";
+import {
+  VALIDATOR_UNIFIED_STATUS_CONFIG,
+  VALIDATOR_UNIFIED_STATUS_FILTER_OPTIONS,
+} from "@/components/features/submissions/utils/statusConfig";
 import { useAssessorQueue } from "@/hooks/useAssessor";
 import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import {
@@ -78,6 +82,8 @@ export default function ValidatorSubmissionsPage() {
       id: item.assessment_id.toString(),
       barangayName: item.barangay_name || "Unknown",
       areaProgress: item.area_progress ?? 0, // Progress from API
+      reviewedCount: item.reviewed_count ?? 0,
+      totalCount: item.total_count ?? 0,
       unifiedStatus: mapToUnifiedStatus(item),
       reReviewProgress: item.re_review_progress,
       lastUpdated: item.updated_at,
@@ -209,7 +215,11 @@ export default function ValidatorSubmissionsPage() {
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">Find specific submissions quickly</p>
         </header>
-        <SubmissionsFilters filters={filters} onFiltersChange={handleFiltersChange} />
+        <SubmissionsFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          statusFilterOptions={VALIDATOR_UNIFIED_STATUS_FILTER_OPTIONS}
+        />
       </section>
 
       {/* Enhanced Main Submissions Data Table */}
@@ -245,6 +255,7 @@ export default function ValidatorSubmissionsPage() {
           <SubmissionsTable
             submissions={filteredSubmissions}
             onSubmissionClick={handleSubmissionClick}
+            statusConfig={VALIDATOR_UNIFIED_STATUS_CONFIG}
           />
         ) : (
           <div className="text-center py-16 px-6" role="status" aria-label="No submissions found">

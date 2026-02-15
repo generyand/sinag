@@ -17,6 +17,7 @@ from celery.exceptions import MaxRetriesExceededError
 from sqlalchemy import and_
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.celery_app import celery_app
 from app.db.base import SessionLocal
@@ -419,6 +420,18 @@ def _auto_submit_assessment(db: Session, assessment: Assessment, now: datetime) 
     assessment.status = AssessmentStatus.SUBMITTED
     assessment.submitted_at = now
     assessment.auto_submitted_at = now
+
+    # Submit all 6 governance areas so assessors can see the submission
+    # Fix: also update areas that were initialized with "draft" status
+    now_iso = now.isoformat()
+    area_status = assessment.area_submission_status or {}
+    for area_id in range(1, 7):
+        area_key = str(area_id)
+        existing = area_status.get(area_key, {})
+        if existing.get("status") not in ("submitted", "in_review", "approved"):
+            area_status[area_key] = {"status": "submitted", "submitted_at": now_iso}
+    assessment.area_submission_status = area_status
+    flag_modified(assessment, "area_submission_status")
 
     logger.info(
         "Auto-submitted assessment %s (%s) - Status changed from DRAFT to SUBMITTED",

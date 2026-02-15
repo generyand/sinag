@@ -100,10 +100,10 @@ The core feature is the SGLGB Assessment cycle:
 **Roles:**
 
 - `MLGOO_DILG`: Admin / Final Approver.
-- `VALIDATOR`: Area Validator.
+- `VALIDATOR`: System-wide Validator (reviews entire assessment after all Assessors approve).
 - `ASSESSOR`: Area Assessor (Specific Governance Area).
 - `BLGU_USER`: Barangay User.
-- `KATUPARAN_CENTER_USER` / `UMDC_PEACE_CENTER_USER`: External Analytics Viewers.
+- `KATUPARAN_CENTER_USER`: External Analytics Viewer (read-only, anonymized data).
 
 ## Documentation References
 

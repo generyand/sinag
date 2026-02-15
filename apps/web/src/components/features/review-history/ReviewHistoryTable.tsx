@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import type { ReviewHistoryItem } from "@sinag/shared";
 import { ReviewHistoryRow } from "./ReviewHistoryRow";

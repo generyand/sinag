@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import {
   Accordion,
@@ -1423,6 +1424,15 @@ export function RightAssessorPanel({
                                   )}
                               </div>
 
+                              {/* Black separator line after shared document section */}
+                              {(item.item_id === "4_1_6_report" ||
+                                item.item_id === "4_3_4_upload" ||
+                                item.item_id === "4_5_6_upload" ||
+                                item.item_id === "4_8_4_upload_report" ||
+                                item.item_id === "6_1_4_report_count") && (
+                                <div className="mt-3 mb-4 border-t-2 border-black" />
+                              )}
+
                               {/* Computed % Allocation for BDRRMF (Indicator 2.1.3) */}
                               {indicatorCode === "2.1.3" &&
                                 item.item_id === "2_1_3_bdrrmf_amount" && (
@@ -1661,11 +1671,11 @@ export function RightAssessorPanel({
 
                       <div className="space-y-1">
                         <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                          {isValidator ? "Validator's Findings" : "Assessor's Notes"}
+                          {isValidator ? "Validator's Findings" : "General Feedback"}
                         </div>
                         <Textarea
                           {...register(`${key}.publicComment` as const)}
-                          placeholder="Add notes or feedback about this indicator..."
+                          placeholder="Provide an overall summary of the required changes or general instructions for this indicator..."
                           className={errorsFor ? "border-red-500" : undefined}
                         />
                         {errorsFor ? (

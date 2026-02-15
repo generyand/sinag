@@ -127,7 +127,10 @@ export function GARAnalyticsTab({ year }: GARAnalyticsTabProps) {
                 Select Assessment
               </label>
               <Select value={selectedAssessmentId} onValueChange={setSelectedAssessmentId}>
-                <SelectTrigger className="w-full h-10 md:h-11 text-sm" aria-labelledby="assessment-selector-label">
+                <SelectTrigger
+                  className="w-full h-10 md:h-11 text-sm"
+                  aria-labelledby="assessment-selector-label"
+                >
                   <SelectValue placeholder="Select assessment..." />
                 </SelectTrigger>
                 <SelectContent className="z-50 max-h-96">
@@ -159,7 +162,10 @@ export function GARAnalyticsTab({ year }: GARAnalyticsTabProps) {
                 Governance Area
               </label>
               <Select value={selectedAreaId} onValueChange={setSelectedAreaId}>
-                <SelectTrigger className="h-10 md:h-11 text-sm" aria-labelledby="governance-area-selector-label">
+                <SelectTrigger
+                  className="h-10 md:h-11 text-sm"
+                  aria-labelledby="governance-area-selector-label"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="z-50">
@@ -224,7 +230,9 @@ export function GARAnalyticsTab({ year }: GARAnalyticsTabProps) {
         <GARSkeleton />
       ) : garError ? (
         <div className="bg-[var(--card)] border border-red-200 rounded-sm shadow-lg p-4 md:p-6 text-center">
-          <p className="text-sm md:text-base text-red-600">Failed to load BGAR data. Please try again.</p>
+          <p className="text-sm md:text-base text-red-600">
+            Failed to load BGAR data. Please try again.
+          </p>
         </div>
       ) : garData ? (
         <GARReportDisplay data={garData} />

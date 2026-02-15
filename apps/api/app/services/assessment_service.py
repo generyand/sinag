@@ -403,7 +403,8 @@ class AssessmentService:
             # This is needed to auto-create AssessmentResponses for indicators with uploaded files
             step_start = time.time()
             q3b = text("""
-                SELECT id, indicator_id, file_name, file_size, file_type, file_url, field_id, uploaded_at
+                SELECT id, indicator_id, file_name, file_size, file_type, file_url, field_id, uploaded_at,
+                       assessor_notes, flagged_for_rework
                 FROM mov_files
                 WHERE assessment_id = :assessment_id
                   AND deleted_at IS NULL
@@ -415,9 +416,15 @@ class AssessmentService:
             # Build MOVFiles lookup by indicator_id
             mov_files_by_indicator: dict[int, list[dict]] = {}
             mov_file_indicator_ids: set[int] = set()
+            # Track which indicators have MOV notes or flagged files
+            indicators_with_mov_notes: set[int] = set()
             for row in mov_files_rows:
                 ind_id = row[1]
                 mov_file_indicator_ids.add(ind_id)
+                assessor_notes = row[8]
+                flagged_for_rework = row[9]
+                if (assessor_notes and assessor_notes.strip()) or flagged_for_rework:
+                    indicators_with_mov_notes.add(ind_id)
                 mov_files_by_indicator.setdefault(ind_id, []).append(
                     {
                         "id": row[0],
@@ -655,6 +662,7 @@ class AssessmentService:
                 "response": response_obj,
                 "movs": movs_list,
                 "feedback_comments": comments_list,
+                "has_mov_notes": ind["id"] in indicators_with_mov_notes,
                 "children": [],
             }
 
@@ -3604,9 +3612,7 @@ class AssessmentService:
                     "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
                     # Per-area assessor approval tracking
                     "area_assessor_approved": area_assessor_approved,
-                    "areas_approved_count": sum(
-                        1 for v in area_assessor_approved.values() if v
-                    ),
+                    "areas_approved_count": sum(1 for v in area_assessor_approved.values() if v),
                     # Assessor decisions made (approved + sent for rework)
                     "areas_reviewed_count": len(approved_area_ids | rework_area_ids),
                     # Per-area rework info (which assessors sent for rework)

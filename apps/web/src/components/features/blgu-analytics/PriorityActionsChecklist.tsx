@@ -36,9 +36,7 @@ export function PriorityActionsChecklist({ actions }: PriorityActionsChecklistPr
         <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
           <CheckSquare className="w-4 h-4 text-purple-600" />
         </div>
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Priority Actions
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Priority Actions</h3>
       </div>
 
       <div className="space-y-3">

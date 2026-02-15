@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Target, BookOpen } from "lucide-react";
-import {
-  CapDevNeed,
-  CapDevNeedAIFormat,
-  isCapDevNeedAIFormat,
-} from "@/types/capdev";
+import { CapDevNeed, CapDevNeedAIFormat, isCapDevNeedAIFormat } from "@/types/capdev";
 
 interface CapDevNeedsAccordionProps {
   needs?: CapDevNeed[] | CapDevNeedAIFormat[];
@@ -47,19 +43,14 @@ export function CapDevNeedsAccordion({ needs }: CapDevNeedsAccordionProps) {
           if (isAIFormat && isCapDevNeedAIFormat(need)) {
             // AI Format (category-based)
             return (
-              <div
-                key={idx}
-                className="border border-[var(--border)] rounded-lg overflow-hidden"
-              >
+              <div key={idx} className="border border-[var(--border)] rounded-lg overflow-hidden">
                 <button
                   onClick={() => toggleAccordion(idx)}
                   className="w-full flex items-center justify-between p-4 bg-[var(--muted)] hover:bg-[var(--hover)] transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
                     <BookOpen className="w-4 h-4 text-[var(--cityscape-yellow)]" />
-                    <span className="font-medium text-[var(--foreground)]">
-                      {need.category}
-                    </span>
+                    <span className="font-medium text-[var(--foreground)]">{need.category}</span>
                   </div>
                   <ChevronDown
                     className={`w-5 h-5 text-[var(--text-secondary)] transition-transform ${
@@ -69,9 +60,7 @@ export function CapDevNeedsAccordion({ needs }: CapDevNeedsAccordionProps) {
                 </button>
                 {isOpen && (
                   <div className="p-4 space-y-3">
-                    <p className="text-[var(--text-secondary)] text-sm">
-                      {need.description}
-                    </p>
+                    <p className="text-[var(--text-secondary)] text-sm">{need.description}</p>
                     {need.affected_indicators && need.affected_indicators.length > 0 && (
                       <div>
                         <p className="text-xs font-medium text-[var(--foreground)] mb-2">
@@ -115,19 +104,14 @@ export function CapDevNeedsAccordion({ needs }: CapDevNeedsAccordionProps) {
           // Standard Format (area-based)
           const standardNeed = need as CapDevNeed;
           return (
-            <div
-              key={idx}
-              className="border border-[var(--border)] rounded-lg overflow-hidden"
-            >
+            <div key={idx} className="border border-[var(--border)] rounded-lg overflow-hidden">
               <button
                 onClick={() => toggleAccordion(idx)}
                 className="w-full flex items-center justify-between p-4 bg-[var(--muted)] hover:bg-[var(--hover)] transition-colors text-left"
               >
                 <div className="flex items-center gap-3">
                   <BookOpen className="w-4 h-4 text-[var(--cityscape-yellow)]" />
-                  <span className="font-medium text-[var(--foreground)]">
-                    {standardNeed.area}
-                  </span>
+                  <span className="font-medium text-[var(--foreground)]">{standardNeed.area}</span>
                 </div>
                 <ChevronDown
                   className={`w-5 h-5 text-[var(--text-secondary)] transition-transform ${
@@ -140,9 +124,7 @@ export function CapDevNeedsAccordion({ needs }: CapDevNeedsAccordionProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs font-medium text-red-600 mb-1">Current Gap</p>
-                      <p className="text-sm text-[var(--foreground)]">
-                        {standardNeed.current_gap}
-                      </p>
+                      <p className="text-sm text-[var(--foreground)]">{standardNeed.current_gap}</p>
                     </div>
                     <div>
                       <p className="text-xs font-medium text-green-600 mb-1">Target State</p>

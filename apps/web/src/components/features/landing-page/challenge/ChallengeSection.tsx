@@ -117,7 +117,10 @@ export function ChallengeSection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8" role="list">
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8"
+        role="list"
+      >
         {challengeCards.map((card) => (
           <article
             key={card.id}
@@ -148,13 +151,18 @@ export function ChallengeSection() {
               </div>
             </div>
 
-            <h3 id={`challenge-${card.id}-title`} className="text-lg md:text-xl font-bold text-black mb-3 md:mb-4">
+            <h3
+              id={`challenge-${card.id}-title`}
+              className="text-lg md:text-xl font-bold text-black mb-3 md:mb-4"
+            >
               {card.title}
             </h3>
 
             {/* Removed percentage/statistics pill for cleaner layout */}
 
-            <p className="text-sm md:text-base text-gray-600 leading-relaxed mb-3 md:mb-4">{card.description}</p>
+            <p className="text-sm md:text-base text-gray-600 leading-relaxed mb-3 md:mb-4">
+              {card.description}
+            </p>
 
             {/* Solution Preview (subtle, descriptive outcome) */}
             <div className="mt-auto pt-3 md:pt-4 border-t border-gray-100 w-full">

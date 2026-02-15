@@ -1134,8 +1134,9 @@ function SectionRenderer({
           <Alert className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20 p-5">
             <Info className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             <AlertDescription className="text-blue-800 dark:text-blue-300 text-base">
-              <strong className="text-lg">Select ONE option</strong> that applies to your barangay&apos;s situation. You
-              only need to upload documents for the option that matches your case.
+              <strong className="text-lg">Select ONE option</strong> that applies to your
+              barangay&apos;s situation. You only need to upload documents for the option that
+              matches your case.
             </AlertDescription>
           </Alert>
 
@@ -1182,21 +1183,17 @@ function SectionRenderer({
                             {group.fieldNotes.title || "Note:"}
                           </div>
                           <div className="space-y-1">
-                            {group.fieldNotes.items.map(
-                              (noteItem: any, noteIdx: number) => (
-                                <div
-                                  key={noteIdx}
-                                  className="text-sm text-amber-800 dark:text-amber-300"
-                                >
-                                  {noteItem.label && (
-                                    <span className="font-medium">
-                                      {noteItem.label}:{" "}
-                                    </span>
-                                  )}
-                                  {noteItem.text}
-                                </div>
-                              )
-                            )}
+                            {group.fieldNotes.items.map((noteItem: any, noteIdx: number) => (
+                              <div
+                                key={noteIdx}
+                                className="text-sm text-amber-800 dark:text-amber-300"
+                              >
+                                {noteItem.label && (
+                                  <span className="font-medium">{noteItem.label}: </span>
+                                )}
+                                {noteItem.text}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}

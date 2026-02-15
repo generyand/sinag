@@ -1,11 +1,7 @@
 "use client";
 
 import { Lightbulb, ArrowRight } from "lucide-react";
-import {
-  CapDevRecommendation,
-  isCapDevRecommendation,
-  isStringArray,
-} from "@/types/capdev";
+import { CapDevRecommendation, isCapDevRecommendation, isStringArray } from "@/types/capdev";
 
 interface RecommendationsCardProps {
   recommendations?: CapDevRecommendation[] | string[];
@@ -40,9 +36,7 @@ export function RecommendationsCard({ recommendations }: RecommendationsCardProp
         <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
           <Lightbulb className="w-4 h-4 text-amber-600" />
         </div>
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Recommendations
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Recommendations</h3>
       </div>
 
       <div className="space-y-3">
@@ -77,9 +71,7 @@ export function RecommendationsCard({ recommendations }: RecommendationsCardProp
                   className="p-4 bg-[var(--muted)] rounded-lg border border-[var(--border)]"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <span className="font-medium text-[var(--foreground)]">
-                      {rec.title}
-                    </span>
+                    <span className="font-medium text-[var(--foreground)]">{rec.title}</span>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {rec.governance_area && (
                         <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 border border-purple-200">
@@ -95,9 +87,7 @@ export function RecommendationsCard({ recommendations }: RecommendationsCardProp
                       )}
                     </div>
                   </div>
-                  <p className="text-[var(--text-secondary)] text-sm mb-2">
-                    {rec.description}
-                  </p>
+                  <p className="text-[var(--text-secondary)] text-sm mb-2">{rec.description}</p>
                   {rec.expected_impact && (
                     <p className="text-xs text-[var(--cityscape-yellow)] mt-2">
                       <span className="font-medium">Expected Impact:</span> {rec.expected_impact}

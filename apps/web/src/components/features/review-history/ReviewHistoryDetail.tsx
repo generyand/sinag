@@ -78,9 +78,11 @@ export function ReviewHistoryDetail({ detail, isLoading, error }: ReviewHistoryD
   }
 
   // Calculate summary stats
-  const passCount = indicators.filter(i => i.validation_status?.toUpperCase() === "PASS").length;
-  const failCount = indicators.filter(i => i.validation_status?.toUpperCase() === "FAIL").length;
-  const conditionalCount = indicators.filter(i => i.validation_status?.toUpperCase() === "CONDITIONAL").length;
+  const passCount = indicators.filter((i) => i.validation_status?.toUpperCase() === "PASS").length;
+  const failCount = indicators.filter((i) => i.validation_status?.toUpperCase() === "FAIL").length;
+  const conditionalCount = indicators.filter(
+    (i) => i.validation_status?.toUpperCase() === "CONDITIONAL"
+  ).length;
 
   return (
     <div className="px-4 py-3 bg-[var(--muted)]/20 border-t border-[var(--border)]">
@@ -144,7 +146,8 @@ export function ReviewHistoryDetail({ detail, isLoading, error }: ReviewHistoryD
                 {/* Comments count */}
                 {indicator.feedback_comments && indicator.feedback_comments.length > 0 && (
                   <span className="text-blue-600 dark:text-blue-400" title="Comments">
-                    <MessageSquare className="h-3 w-3 inline" /> {indicator.feedback_comments.length}
+                    <MessageSquare className="h-3 w-3 inline" />{" "}
+                    {indicator.feedback_comments.length}
                   </span>
                 )}
 

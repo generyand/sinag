@@ -171,6 +171,14 @@ class AreaAssessorStatus(BaseModel):
         None,
         description="Area submission status: 'approved', 'rework', 'submitted', 'in_review', or null if pending",
     )
+    rework_used: bool = Field(
+        default=False,
+        description="True if this area's single rework round has already been used",
+    )
+    calibration_used: bool = Field(
+        default=False,
+        description="True if this area has already been calibrated by a validator",
+    )
 
 
 class IndicatorItem(BaseModel):

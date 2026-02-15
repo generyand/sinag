@@ -52,7 +52,9 @@ export function MapSection() {
       <div className="text-center mb-6 md:mb-8">
         <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-[#1A3A6D]/10 rounded-full mb-3 md:mb-4">
           <MapPin className="w-4 h-4 text-[#1A3A6D]" />
-          <span className="text-xs md:text-sm font-semibold text-[#1A3A6D]">Geographic Coverage</span>
+          <span className="text-xs md:text-sm font-semibold text-[#1A3A6D]">
+            Geographic Coverage
+          </span>
         </div>
         <h2
           id="map-heading"

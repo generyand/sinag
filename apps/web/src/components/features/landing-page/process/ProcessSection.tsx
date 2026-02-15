@@ -241,7 +241,10 @@ export function ProcessSection() {
                       {step.label}
                     </div>
                     {activeStep === idx && (
-                      <ChevronRight className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" style={{ color: step.activeColor }} />
+                      <ChevronRight
+                        className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0"
+                        style={{ color: step.activeColor }}
+                      />
                     )}
                   </div>
                   <div className="text-[10px] md:text-xs lg:text-sm text-gray-600 mt-0.5 truncate">
@@ -249,7 +252,9 @@ export function ProcessSection() {
                   </div>
                 </div>
                 {activeStep === idx && (
-                  <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse flex-shrink-0 ${step.color}`}></div>
+                  <div
+                    className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full animate-pulse flex-shrink-0 ${step.color}`}
+                  ></div>
                 )}
               </button>
             ))}
@@ -335,10 +340,10 @@ export function ProcessSection() {
                 {/* Step Metrics - Hidden on mobile to save space */}
                 <div className="hidden md:flex flex-row items-center gap-4 text-xs lg:text-sm">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${steps[activeStep].color}`}></div>
-                    <span className="font-medium text-gray-700">
-                      {steps[activeStep].duration}
-                    </span>
+                    <div
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${steps[activeStep].color}`}
+                    ></div>
+                    <span className="font-medium text-gray-700">{steps[activeStep].duration}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
@@ -359,7 +364,12 @@ export function ProcessSection() {
                 className="w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
                 aria-label="Previous step"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -377,7 +387,12 @@ export function ProcessSection() {
                 className="w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 bg-white/90 hover:bg-white shadow-lg hover:shadow-xl rounded-full flex items-center justify-center text-gray-700 hover:text-gray-900 transition-all duration-300 hover:scale-110 pointer-events-auto focus:outline-none focus:ring-2 focus:ring-gray-300 border border-gray-200"
                 aria-label="Next step"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

@@ -5,12 +5,12 @@ import logging
 from datetime import datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.enums import AssessmentStatus, NotificationType
 from app.db.models.assessment import Assessment
-from app.db.models.governance_area import GovernanceArea
+from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.services.notification_service import notification_service
 
@@ -216,8 +216,13 @@ class AreaSubmissionService:
             HTTPException: If assessment not found, user not authorized,
                            or area not in rework status
         """
-        # Get assessment
-        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        # Get assessment with responses for clearing assessor validation data
+        assessment = (
+            db.query(Assessment)
+            .options(selectinload(Assessment.responses))
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
         if not assessment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -256,15 +261,37 @@ class AreaSubmissionService:
         area_data = assessment.area_submission_status.get(area_key, {})
         area_data["status"] = "submitted"
         area_data["resubmitted_at"] = now.isoformat()
+        area_data["submitted_at"] = now.isoformat()
         area_data["is_resubmission"] = True
+        area_data["resubmitted_after_rework"] = True
         assessment.area_submission_status[area_key] = area_data
         flag_modified(assessment, "area_submission_status")
+
+        # Set rework_submitted_at for timeline tracking
+        assessment.rework_submitted_at = now
+
+        # Clear assessor validation data for rework responses in this area
+        # This ensures assessors start with clean checklists when re-reviewing
+        indicator_ids_in_area = {
+            ind.id
+            for ind in db.query(Indicator.id)
+            .filter(Indicator.governance_area_id == governance_area_id)
+            .all()
+        }
+        for response in assessment.responses:
+            if response.indicator_id in indicator_ids_in_area and response.requires_rework:
+                response.assessor_remarks = None
+                if response.response_data:
+                    response.response_data = {
+                        k: v
+                        for k, v in response.response_data.items()
+                        if not k.startswith("assessor_val_")
+                    }
 
         # Check if all rework areas have been resubmitted
         if self._check_all_rework_areas_resubmitted(assessment):
             # Mark rework round as used
             assessment.rework_round_used = True
-            assessment.rework_submitted_at = now
             logger.info(
                 f"All rework areas resubmitted for assessment {assessment_id}. Rework round marked as used."
             )

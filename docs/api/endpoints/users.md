@@ -21,7 +21,7 @@ update frontend types.
 
 ## Role-Based Assignment System
 
-SINAG implements four distinct user roles with specific field requirements:
+SINAG implements five distinct user roles with specific field requirements:
 
 ### User Roles
 
@@ -30,37 +30,43 @@ SINAG implements four distinct user roles with specific field requirements:
    - No governance area or barangay assignments required
    - System-wide access to all features
 
-2. **VALIDATOR**
-   - DILG validators assigned to specific governance areas
-   - **Required field**: `validator_area_id` (governance area assignment)
-   - Can only validate assessments within assigned governance area
-   - Introduced November 2025 following DILG consultation
+2. **ASSESSOR** (Area-Specific)
+   - DILG assessors assigned to one of 6 governance areas
+   - **Required field**: `assessor_area_id` (governance area assignment)
+   - Can only review indicators within their assigned governance area
+   - 6 assessors for 6 governance areas
 
-3. **ASSESSOR**
-   - DILG assessors with flexible barangay access
-   - No pre-assigned governance areas
-   - Can select barangays arbitrarily during assessment workflow
-   - No governance area or barangay assignments required
+3. **VALIDATOR** (System-Wide)
+   - DILG validators with system-wide access to all governance areas
+   - No governance area assignment required
+   - Reviews all areas after assessors approve, determines Pass/Fail
 
 4. **BLGU_USER**
    - Barangay-level users who submit assessments
    - **Required field**: `barangay_id` (barangay assignment)
    - Limited to their assigned barangay's data
 
+5. **KATUPARAN_CENTER_USER** (External)
+   - External user from Katuparan Center with read-only analytics access
+   - No assignments required
+
 ### Assignment Validation Rules
 
 ```python
-VALIDATOR role   → Requires validator_area_id (governance area)
+ASSESSOR role    → Requires assessor_area_id (governance area)
                    Clears barangay_id automatically
 
 BLGU_USER role   → Requires barangay_id (barangay assignment)
-                   Clears validator_area_id automatically
+                   Clears assessor_area_id automatically
 
-ASSESSOR role    → No assignments required
-                   Clears both validator_area_id and barangay_id
+VALIDATOR role   → No assignments required (system-wide access)
+                   Clears both assessor_area_id and barangay_id
 
 MLGOO_DILG role  → No assignments required
-                   Clears both validator_area_id and barangay_id
+                   Clears both assessor_area_id and barangay_id
+
+KATUPARAN_CENTER_USER → No assignments required
+                        External read-only access
 ```
 
 ---
@@ -89,7 +95,7 @@ assignments, and account status.
   "name": "Juan Dela Cruz",
   "role": "BLGU_USER",
   "phone_number": "+63 917 123 4567",
-  "validator_area_id": null,
+  "assessor_area_id": null,
   "barangay_id": 10,
   "is_active": true,
   "is_superuser": false,
@@ -135,7 +141,7 @@ role or admin-controlled fields.
   "name": "Juan P. Dela Cruz",
   "role": "BLGU_USER",
   "phone_number": "+63 917 999 8888",
-  "validator_area_id": null,
+  "assessor_area_id": null,
   "barangay_id": 10,
   "is_active": true,
   "is_superuser": false,
@@ -183,7 +189,7 @@ filtering capabilities. Supports filtering by role, active status, and searching
       "name": "DILG Admin",
       "role": "MLGOO_DILG",
       "phone_number": "+63 917 111 1111",
-      "validator_area_id": null,
+      "assessor_area_id": null,
       "barangay_id": null,
       "is_active": true,
       "is_superuser": true,
@@ -193,11 +199,11 @@ filtering capabilities. Supports filtering by role, active status, and searching
     },
     {
       "id": 2,
-      "email": "validator@dilg.gov.ph",
+      "email": "assessor@dilg.gov.ph",
       "name": "Maria Santos",
-      "role": "VALIDATOR",
+      "role": "ASSESSOR",
       "phone_number": "+63 917 222 2222",
-      "validator_area_id": 1,
+      "assessor_area_id": 1,
       "barangay_id": null,
       "is_active": true,
       "is_superuser": false,
@@ -232,21 +238,21 @@ enforces assignment rules and returns 400 Bad Request for invalid combinations.
 
 **Role-Based Requirements**:
 
-- **VALIDATOR**: Must provide `validator_area_id` (governance area assignment)
+- **ASSESSOR**: Must provide `assessor_area_id` (governance area assignment)
 - **BLGU_USER**: Must provide `barangay_id` (barangay assignment)
-- **ASSESSOR**: No assignments required
+- **VALIDATOR**: No assignments required (system-wide access)
 - **MLGOO_DILG**: No assignments required
 
 **Request Body**:
 
 ```json
 {
-  "email": "new.validator@dilg.gov.ph",
+  "email": "new.assessor@dilg.gov.ph",
   "name": "Pedro Reyes",
   "password": "SecurePassword123!",
-  "role": "VALIDATOR",
+  "role": "ASSESSOR",
   "phone_number": "+63 917 333 3333",
-  "validator_area_id": 2,
+  "assessor_area_id": 2,
   "is_active": true,
   "is_superuser": false,
   "must_change_password": true
@@ -258,11 +264,11 @@ enforces assignment rules and returns 400 Bad Request for invalid combinations.
 ```json
 {
   "id": 51,
-  "email": "new.validator@dilg.gov.ph",
+  "email": "new.assessor@dilg.gov.ph",
   "name": "Pedro Reyes",
-  "role": "VALIDATOR",
+  "role": "ASSESSOR",
   "phone_number": "+63 917 333 3333",
-  "validator_area_id": 2,
+  "assessor_area_id": 2,
   "barangay_id": null,
   "is_active": true,
   "is_superuser": false,
@@ -274,7 +280,7 @@ enforces assignment rules and returns 400 Bad Request for invalid combinations.
 
 **Errors**:
 
-- `400 Bad Request`: Invalid role/assignment combination (e.g., VALIDATOR without validator_area_id)
+- `400 Bad Request`: Invalid role/assignment combination (e.g., ASSESSOR without assessor_area_id)
 - `403 Forbidden`: User does not have MLGOO_DILG role
 - `409 Conflict`: Email already exists
 
@@ -305,7 +311,7 @@ Get user by ID.
   "name": "Juan Dela Cruz",
   "role": "BLGU_USER",
   "phone_number": "+63 917 123 4567",
-  "validator_area_id": null,
+  "assessor_area_id": null,
   "barangay_id": 10,
   "is_active": true,
   "is_superuser": false,
@@ -336,9 +342,9 @@ Request for invalid role/assignment combinations.
 
 **Role Change Behavior**:
 
-- Changing to VALIDATOR: Clears `barangay_id`, requires `validator_area_id`
-- Changing to BLGU_USER: Clears `validator_area_id`, requires `barangay_id`
-- Changing to ASSESSOR or MLGOO_DILG: Clears both `validator_area_id` and `barangay_id`
+- Changing to ASSESSOR: Clears `barangay_id`, requires `assessor_area_id`
+- Changing to BLGU_USER: Clears `assessor_area_id`, requires `barangay_id`
+- Changing to VALIDATOR or MLGOO_DILG: Clears both `assessor_area_id` and `barangay_id`
 
 **Path Parameters**:
 
@@ -366,7 +372,7 @@ Request for invalid role/assignment combinations.
   "name": "Juan P. Dela Cruz Jr.",
   "role": "BLGU_USER",
   "phone_number": "+63 917 888 9999",
-  "validator_area_id": null,
+  "assessor_area_id": null,
   "barangay_id": 10,
   "is_active": true,
   "is_superuser": false,
@@ -410,7 +416,7 @@ in the database but cannot log in. Admins cannot deactivate their own account.
   "name": "Juan Dela Cruz",
   "role": "BLGU_USER",
   "phone_number": "+63 917 123 4567",
-  "validator_area_id": null,
+  "assessor_area_id": null,
   "barangay_id": 10,
   "is_active": false,
   "is_superuser": false,
@@ -453,7 +459,7 @@ Activate user by ID.
   "name": "Juan Dela Cruz",
   "role": "BLGU_USER",
   "phone_number": "+63 917 123 4567",
-  "validator_area_id": null,
+  "assessor_area_id": null,
   "barangay_id": 10,
   "is_active": true,
   "is_superuser": false,
@@ -550,29 +556,33 @@ active/inactive status, and recent user activity.
 ### UserRole Enum
 
 ```python
-MLGOO_DILG = "MLGOO_DILG"      # System administrator
-VALIDATOR = "VALIDATOR"         # Area-specific validator
-ASSESSOR = "ASSESSOR"           # Flexible assessor
-BLGU_USER = "BLGU_USER"         # Barangay user
+MLGOO_DILG = "MLGOO_DILG"                  # System administrator
+ASSESSOR = "ASSESSOR"                       # Area-specific assessor (6 for 6 areas)
+VALIDATOR = "VALIDATOR"                     # System-wide validator
+BLGU_USER = "BLGU_USER"                     # Barangay user
+KATUPARAN_CENTER_USER = "KATUPARAN_CENTER_USER"  # External analytics user
 ```
 
 ### User Fields
 
-| Field                | Type     | Required     | Description                 |
-| -------------------- | -------- | ------------ | --------------------------- |
-| id                   | integer  | auto         | Primary key                 |
-| email                | string   | yes          | Unique email address        |
-| name                 | string   | yes          | Full name                   |
-| password             | string   | yes (create) | Hashed password             |
-| role                 | UserRole | yes          | User role                   |
-| phone_number         | string   | no           | Contact number              |
-| validator_area_id    | integer  | conditional  | Required for VALIDATOR role |
-| barangay_id          | integer  | conditional  | Required for BLGU_USER role |
-| is_active            | boolean  | yes          | Account active status       |
-| is_superuser         | boolean  | no           | Superuser flag              |
-| must_change_password | boolean  | yes          | Force password change flag  |
-| created_at           | datetime | auto         | Creation timestamp          |
-| updated_at           | datetime | auto         | Last update timestamp       |
+| Field                | Type     | Required     | Description                      |
+| -------------------- | -------- | ------------ | -------------------------------- |
+| id                   | integer  | auto         | Primary key                      |
+| email                | string   | yes          | Unique email address             |
+| name                 | string   | yes          | Full name                        |
+| password             | string   | yes (create) | Hashed password                  |
+| role                 | UserRole | yes          | User role                        |
+| phone_number         | string   | no           | Contact number                   |
+| assessor_area_id     | integer  | conditional  | Required for ASSESSOR role       |
+| barangay_id          | integer  | conditional  | Required for BLGU_USER role      |
+| municipal_office_id  | integer  | no           | Municipal office assignment      |
+| preferred_language   | string   | no           | Language preference (ceb/fil/en) |
+| is_active            | boolean  | yes          | Account active status            |
+| is_superuser         | boolean  | no           | Superuser flag (legacy)          |
+| must_change_password | boolean  | yes          | Force password change flag       |
+| logo_url             | string   | no           | Profile logo URL                 |
+| created_at           | datetime | auto         | Creation timestamp               |
+| updated_at           | datetime | auto         | Last update timestamp            |
 
 ---
 
@@ -582,25 +592,29 @@ BLGU_USER = "BLGU_USER"         # Barangay user
 
 The system enforces these rules at the service layer:
 
-1. **VALIDATOR** role:
-   - MUST have `validator_area_id` (governance area assignment)
+1. **ASSESSOR** role:
+   - MUST have `assessor_area_id` (governance area assignment)
    - MUST NOT have `barangay_id`
    - Service automatically clears `barangay_id` if provided
 
 2. **BLGU_USER** role:
    - MUST have `barangay_id` (barangay assignment)
-   - MUST NOT have `validator_area_id`
-   - Service automatically clears `validator_area_id` if provided
+   - MUST NOT have `assessor_area_id`
+   - Service automatically clears `assessor_area_id` if provided
 
-3. **ASSESSOR** role:
-   - MUST NOT have `validator_area_id`
+3. **VALIDATOR** role:
+   - MUST NOT have `assessor_area_id` (system-wide access)
    - MUST NOT have `barangay_id`
    - Service automatically clears both fields
 
 4. **MLGOO_DILG** role:
-   - MUST NOT have `validator_area_id`
+   - MUST NOT have `assessor_area_id`
    - MUST NOT have `barangay_id`
    - Service automatically clears both fields
+
+5. **KATUPARAN_CENTER_USER** role:
+   - No assignments required
+   - External read-only access
 
 ### Password Security
 
@@ -620,26 +634,28 @@ The system enforces these rules at the service layer:
 
 ## Permission Matrix
 
-| Action           | BLGU_USER | ASSESSOR | VALIDATOR | MLGOO_DILG |
-| ---------------- | --------- | -------- | --------- | ---------- |
-| View own profile | ✓         | ✓        | ✓         | ✓          |
-| Edit own profile | ✓         | ✓        | ✓         | ✓          |
-| List all users   | -         | -        | -         | ✓          |
-| View any user    | -         | -        | -         | ✓          |
-| Create user      | -         | -        | -         | ✓          |
-| Edit any user    | -         | -        | -         | ✓          |
-| Deactivate user  | -         | -        | -         | ✓          |
-| Activate user    | -         | -        | -         | ✓          |
-| Reset password   | -         | -        | -         | ✓          |
-| View user stats  | -         | -        | -         | ✓          |
+| Action             | BLGU_USER | ASSESSOR | VALIDATOR | MLGOO_DILG | KATUPARAN_CENTER_USER |
+| ------------------ | --------- | -------- | --------- | ---------- | --------------------- |
+| View own profile   | Y         | Y        | Y         | Y          | Y                     |
+| Edit own profile   | Y         | Y        | Y         | Y          | Y                     |
+| Update language    | Y         | Y        | Y         | Y          | Y                     |
+| Upload/delete logo | Y         | Y        | Y         | Y          | Y                     |
+| List all users     | -         | -        | -         | Y          | -                     |
+| View any user      | -         | -        | -         | Y          | -                     |
+| Create user        | -         | -        | -         | Y          | -                     |
+| Edit any user      | -         | -        | -         | Y          | -                     |
+| Deactivate user    | -         | -        | -         | Y          | -                     |
+| Activate user      | -         | -        | -         | Y          | -                     |
+| Reset password     | -         | -        | -         | Y          | -                     |
+| View user stats    | -         | -        | -         | Y          | -                     |
 
 ---
 
 ## Notes
 
 - **Type Generation**: Always run `pnpm generate-types` after modifying user endpoints or schemas
-- **Role Migration**: When updating from legacy SUPERADMIN or AREA_ASSESSOR roles, use MLGOO_DILG
-  and VALIDATOR respectively
+- **Role Migration**: After January 2026 restructuring, ASSESSORs are area-specific (use
+  `assessor_area_id`) and VALIDATORs are system-wide (no area assignment)
 - **Assignment Enforcement**: The service layer (not the database) enforces role-based assignment
   rules
 - **Audit Trail**: All user changes are tracked via `updated_at` timestamp

@@ -40,9 +40,7 @@ export function InterventionsGrid({ interventions }: InterventionsGridProps) {
         <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
           <GraduationCap className="w-4 h-4 text-green-600" />
         </div>
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Suggested Interventions
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Suggested Interventions</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -56,9 +54,7 @@ export function InterventionsGrid({ interventions }: InterventionsGridProps) {
                 className="p-4 bg-[var(--muted)] rounded-lg border border-[var(--border)] hover:border-[var(--cityscape-yellow)] transition-colors"
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h4 className="font-medium text-[var(--foreground)]">
-                    {aiIntervention.title}
-                  </h4>
+                  <h4 className="font-medium text-[var(--foreground)]">{aiIntervention.title}</h4>
                   {aiIntervention.priority && (
                     <span
                       className={`px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0 ${getPriorityStyle(aiIntervention.priority)}`}
@@ -103,9 +99,7 @@ export function InterventionsGrid({ interventions }: InterventionsGridProps) {
               className="p-4 bg-[var(--muted)] rounded-lg border border-[var(--border)] hover:border-[var(--cityscape-yellow)] transition-colors"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <h4 className="font-medium text-[var(--foreground)]">
-                  {stdIntervention.title}
-                </h4>
+                <h4 className="font-medium text-[var(--foreground)]">{stdIntervention.title}</h4>
                 {stdIntervention.intervention_type && (
                   <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--text-secondary)] flex-shrink-0">
                     {stdIntervention.intervention_type}

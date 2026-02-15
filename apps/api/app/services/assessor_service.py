@@ -232,9 +232,15 @@ class AssessorService:
             if is_assessor and a.area_submission_status:
                 area_data = a.area_submission_status.get(str(assessor.assessor_area_id), {})
 
+            # Determine if this area is a rework resubmission
+            # Check both flags for robustness (handles data from before resubmitted_after_rework fix)
+            is_area_rework_resubmission = area_data.get(
+                "resubmitted_after_rework", False
+            ) or area_data.get("is_resubmission", False)
+
             if is_assessor:
                 # Use the area's submitted_at timestamp if it was resubmitted after rework
-                if area_data.get("resubmitted_after_rework", False):
+                if is_area_rework_resubmission:
                     resubmit_timestamp_str = area_data.get("submitted_at")
                     if resubmit_timestamp_str:
                         # Parse the ISO timestamp
@@ -306,8 +312,8 @@ class AssessorService:
             # FIX: Use per-area status for assessors instead of global rework_round_used flag
             # This ensures each assessor only sees "rework_pending" for their own area
             if is_assessor:
-                # For assessors: reuse area_data extracted earlier
-                if area_data.get("resubmitted_after_rework", False):
+                # For assessors: reuse is_area_rework_resubmission computed earlier
+                if is_area_rework_resubmission:
                     # BLGU has resubmitted for this area after rework request
                     submission_type = "rework_resubmission"
                 elif area_status == "rework":
@@ -344,6 +350,8 @@ class AssessorService:
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
                     "area_progress": area_progress,
+                    "reviewed_count": reviewed_count,
+                    "total_count": total_count,
                     # NEW: Re-review progress for rework resubmissions
                     "re_review_progress": re_review_progress,
                     # NEW: Submission type for Issue #5 (distinguish first vs rework)
@@ -527,16 +535,27 @@ class AssessorService:
 
         db.commit()
 
-        # Save public comment if provided
-        if public_comment:
-            public_feedback = FeedbackComment(
-                comment=public_comment,
-                comment_type="validation",
-                response_id=response_id,
-                assessor_id=assessor.id,
-                is_internal_note=False,
-            )
-            db.add(public_feedback)
+        # Save or clear public comment
+        if public_comment is not None:
+            # Always delete existing validation comments from this assessor first
+            # to prevent row accumulation (each save used to append a new row)
+            db.query(FeedbackComment).filter(
+                FeedbackComment.response_id == response_id,
+                FeedbackComment.assessor_id == assessor.id,
+                FeedbackComment.comment_type == "validation",
+                FeedbackComment.is_internal_note == False,  # noqa: E712
+            ).delete()
+
+            if public_comment.strip():
+                # Create new comment
+                public_feedback = FeedbackComment(
+                    comment=public_comment,
+                    comment_type="validation",
+                    response_id=response_id,
+                    assessor_id=assessor.id,
+                    is_internal_note=False,
+                )
+                db.add(public_feedback)
 
         db.commit()
 
@@ -899,6 +918,9 @@ class AssessorService:
                 else None,
                 "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"
                 if assessment.rework_requested_at
+                else None,
+                "auto_submitted_at": assessment.auto_submitted_at.isoformat() + "Z"
+                if assessment.auto_submitted_at
                 else None,
                 "rework_count": assessment.rework_count,
                 "rework_round_used": assessment.rework_round_used,
@@ -1309,6 +1331,10 @@ class AssessorService:
                 "annotated_mov_file_ids": [
                     mov.id for mov in all_movs_for_indicator if len(mov.annotations) > 0
                 ],
+                # List of MOV file IDs explicitly flagged for rework (toggle ON)
+                "flagged_mov_file_ids": [
+                    mov.id for mov in all_movs_for_indicator if mov.flagged_for_rework
+                ],
             }
             # DEBUG: Log requires_rework status
             self.logger.info(
@@ -1366,22 +1392,35 @@ class AssessorService:
             raise ValueError(f"Assessment {assessment_id} not found")
 
         # Verify assessment is in a valid status for area approval
-        # Valid statuses: SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK
+        # Valid statuses: DRAFT (per-area workflow), SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW, REWORK
+        # DRAFT is included because in per-area workflow, overall status stays DRAFT
+        # until ALL 6 areas are submitted, but individual areas can be submitted early
         valid_statuses = (
+            AssessmentStatus.DRAFT,
             AssessmentStatus.SUBMITTED,
             AssessmentStatus.SUBMITTED_FOR_REVIEW,
             AssessmentStatus.IN_REVIEW,
             AssessmentStatus.REWORK,
+            AssessmentStatus.NEEDS_REWORK,
         )
         if assessment.status not in valid_statuses:
             raise ValueError(
                 f"Assessment is in '{assessment.status.value}' status. "
-                f"Area approval is only allowed for assessments in SUBMITTED, "
+                f"Area approval is only allowed for assessments in DRAFT, SUBMITTED, "
                 f"SUBMITTED_FOR_REVIEW, IN_REVIEW, or REWORK status."
             )
 
         # Check current area status
         area_status = assessment.get_area_status(governance_area_id)
+
+        # Prevent approving an area that genuinely hasn't been submitted yet
+        # (global DRAFT + area "draft" means BLGU hasn't submitted this area)
+        if assessment.status == AssessmentStatus.DRAFT and area_status == "draft":
+            raise ValueError(
+                "This governance area has not been submitted yet. "
+                "The BLGU must submit this area before it can be approved."
+            )
+
         if area_status == "approved":
             return {
                 "success": True,
@@ -1441,7 +1480,9 @@ class AssessorService:
             assessment.area_assessor_approved = {}
 
         now = datetime.utcnow()
+        existing_area_data = assessment.area_submission_status.get(area_key, {})
         assessment.area_submission_status[area_key] = {
+            **existing_area_data,
             "status": "approved",
             "approved_at": now.isoformat(),
             "assessor_id": assessor.id,
@@ -1521,9 +1562,12 @@ class AssessorService:
             raise ValueError(f"Assessment {assessment_id} not found")
 
         # Verify assessment is in a valid status for area rework request
-        # Valid statuses: SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW
+        # Valid statuses: DRAFT (per-area workflow), SUBMITTED, SUBMITTED_FOR_REVIEW, IN_REVIEW
+        # DRAFT is included because in per-area workflow, overall status stays DRAFT
+        # until ALL 6 areas are submitted, but individual areas can be submitted early
         # Note: REWORK status means rework was already requested globally
         valid_statuses = (
+            AssessmentStatus.DRAFT,
             AssessmentStatus.SUBMITTED,
             AssessmentStatus.SUBMITTED_FOR_REVIEW,
             AssessmentStatus.IN_REVIEW,
@@ -1531,7 +1575,7 @@ class AssessorService:
         if assessment.status not in valid_statuses:
             raise ValueError(
                 f"Assessment is in '{assessment.status.value}' status. "
-                f"Area rework request is only allowed for assessments in SUBMITTED, "
+                f"Area rework request is only allowed for assessments in DRAFT, SUBMITTED, "
                 f"SUBMITTED_FOR_REVIEW, or IN_REVIEW status."
             )
 
@@ -1547,6 +1591,15 @@ class AssessorService:
 
         # Check current area status
         area_status = assessment.get_area_status(governance_area_id)
+
+        # Prevent rework on an area that genuinely hasn't been submitted yet
+        # (global DRAFT + area "draft" means BLGU hasn't submitted this area)
+        if assessment.status == AssessmentStatus.DRAFT and area_status == "draft":
+            raise ValueError(
+                "This governance area has not been submitted yet. "
+                "The BLGU must submit this area before it can be sent for rework."
+            )
+
         if area_status == "rework":
             raise ValueError("Area is already in rework status")
 

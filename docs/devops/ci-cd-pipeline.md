@@ -236,7 +236,8 @@ The web image is built separately for each environment to bake in the correct AP
 - **Production**: Uses `production` environment variables
 
 ```yaml
-build-args: NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }} NEXT_PUBLIC_API_V1_URL=${{
+build-args:
+  NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }} NEXT_PUBLIC_API_V1_URL=${{
   vars.NEXT_PUBLIC_API_V1_URL }}
 ```
 

@@ -130,8 +130,7 @@ export function CompletionFeedbackPanel({
 
       requiredFields.forEach((field) => {
         // Check completion_group first, then fallback to option_group
-        const completionGroup =
-          (field as any).completion_group || (field as any).option_group;
+        const completionGroup = (field as any).completion_group || (field as any).option_group;
         if (completionGroup === "shared") {
           sharedFields.push(field);
         } else if (completionGroup === "option_a") {

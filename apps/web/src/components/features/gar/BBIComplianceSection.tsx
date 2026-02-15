@@ -117,7 +117,6 @@ export function BBIComplianceSection({ data }: BBIComplianceSectionProps) {
       </div>
 
       {/* BBI Table */}
-      {/* BBI Table */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[600px]">
           <thead>

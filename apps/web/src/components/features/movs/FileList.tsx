@@ -13,6 +13,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Download,
   Eye,
@@ -22,6 +23,7 @@ import {
   Image,
   Loader2,
   MessageSquare,
+  StickyNote,
   RotateCw,
   Trash2,
 } from "lucide-react";
@@ -314,6 +316,7 @@ export function FileList({
               const fileAnnotations = getAnnotationsForFile(file.id);
               const hasAnnotations = fileAnnotations.length > 0;
               const mlgooFlagged = getMlgooFlaggedInfo(file.id);
+              const hasAssessorNotes = !!(file.assessor_notes && file.assessor_notes.trim());
               const needsReupload = hasAnnotations || mlgooFlagged.isFlagged;
 
               return (
@@ -325,7 +328,9 @@ export function FileList({
                       ? "border-2 border-red-400 bg-red-50/70 dark:border-red-500 dark:bg-red-950/30"
                       : hasAnnotations
                         ? "border-2 border-orange-400 bg-orange-50/70 dark:border-orange-500 dark:bg-orange-950/30"
-                        : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)]"
+                        : hasAssessorNotes
+                          ? "border-2 border-yellow-400 bg-yellow-50/70 dark:border-yellow-500 dark:bg-yellow-950/30"
+                          : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)]"
                   )}
                 >
                   {/* File Info Header */}
@@ -341,6 +346,11 @@ export function FileList({
                         <AlertCircle
                           className="h-5 w-5 text-orange-600 dark:text-orange-400"
                           aria-label="File needs re-upload"
+                        />
+                      ) : hasAssessorNotes ? (
+                        <AlertTriangle
+                          className="h-5 w-5 text-yellow-600 dark:text-yellow-400"
+                          aria-label="File has assessor notes"
                         />
                       ) : (
                         <CheckCircle2
@@ -359,7 +369,9 @@ export function FileList({
                                   "text-sm truncate max-w-[200px] cursor-default",
                                   hasAnnotations
                                     ? "font-semibold text-orange-900 dark:text-orange-100"
-                                    : "font-medium text-[var(--text-primary)]"
+                                    : hasAssessorNotes
+                                      ? "font-semibold text-yellow-900 dark:text-yellow-100"
+                                      : "font-medium text-[var(--text-primary)]"
                                 )}
                               >
                                 {file.file_name}
@@ -388,6 +400,15 @@ export function FileList({
                             Re-upload needed
                           </Badge>
                         )}
+                        {hasAssessorNotes && !mlgooFlagged.isFlagged && !hasAnnotations && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs shrink-0 border-yellow-500 bg-yellow-100 text-yellow-700 dark:border-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-300"
+                          >
+                            <StickyNote className="h-3 w-3 mr-1" />
+                            Has Notes
+                          </Badge>
+                        )}
                       </div>
                       {/* MLGOO flagged comment */}
                       {mlgooFlagged.isFlagged && mlgooFlagged.comment && (
@@ -404,6 +425,19 @@ export function FileList({
                         <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300 mt-1">
                           <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
                           <span>This file was flagged by MLGOO for re-upload</span>
+                        </div>
+                      )}
+                      {/* Assessor notes display */}
+                      {hasAssessorNotes && (
+                        <div className="flex items-start gap-2 text-xs text-yellow-700 dark:text-yellow-300 mt-1 bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded border border-yellow-200 dark:border-yellow-800">
+                          <StickyNote
+                            className="h-3.5 w-3.5 mt-0.5 flex-shrink-0"
+                            aria-hidden="true"
+                          />
+                          <div>
+                            <span className="font-medium">Assessor Note: </span>
+                            <span className="italic">&quot;{file.assessor_notes}&quot;</span>
+                          </div>
                         </div>
                       )}
                       {/* Annotation count and view feedback link */}
@@ -428,7 +462,9 @@ export function FileList({
                           "flex items-center gap-2 text-xs mt-1",
                           hasAnnotations
                             ? "text-orange-600/80 dark:text-orange-400/80"
-                            : "text-muted-foreground"
+                            : hasAssessorNotes
+                              ? "text-yellow-600/80 dark:text-yellow-400/80"
+                              : "text-muted-foreground"
                         )}
                       >
                         <span>{formatFileSize(file.file_size)}</span>
@@ -452,7 +488,9 @@ export function FileList({
                         ? "border-red-300 dark:border-red-700"
                         : hasAnnotations
                           ? "border-orange-300 dark:border-orange-700"
-                          : "border-[var(--border)]"
+                          : hasAssessorNotes
+                            ? "border-yellow-300 dark:border-yellow-700"
+                            : "border-[var(--border)]"
                     )}
                   >
                     <Button
@@ -537,14 +575,73 @@ export function FileList({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-auto bg-white">
-            {viewAnnotationsDialog.file && (
-              <SecureFileViewer
-                file={viewAnnotationsDialog.file}
-                annotations={viewAnnotationsDialog.annotations}
-                annotateEnabled={false}
-              />
-            )}
+          <div className="flex-1 overflow-hidden flex flex-row gap-4">
+            {/* Left: File Viewer */}
+            <div className="flex-1 overflow-auto bg-white">
+              {viewAnnotationsDialog.file && (
+                <SecureFileViewer
+                  file={viewAnnotationsDialog.file}
+                  annotations={viewAnnotationsDialog.annotations}
+                  annotateEnabled={false}
+                />
+              )}
+            </div>
+
+            {/* Right: Notes & Comments Sidebar */}
+            {viewAnnotationsDialog.file &&
+              (viewAnnotationsDialog.file.file_type?.includes("pdf") ||
+                viewAnnotationsDialog.file.file_type?.startsWith("image/")) && (
+                <div className="w-72 flex flex-col border-l border-gray-200 dark:border-gray-700 pl-4 shrink-0">
+                  {/* MOV Notes Section */}
+                  {viewAnnotationsDialog.file.assessor_notes &&
+                    viewAnnotationsDialog.file.assessor_notes.trim() && (
+                      <div className="mb-4">
+                        <h3 className="font-semibold text-sm mb-2 pb-2 border-b border-gray-200 dark:border-gray-700 text-[var(--foreground)] flex items-center gap-1.5">
+                          <StickyNote className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          MOV Notes
+                        </h3>
+                        <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+                          <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                            {viewAnnotationsDialog.file.assessor_notes}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Assessor Comments Section */}
+                  <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 text-[var(--foreground)]">
+                    Assessor Comments ({viewAnnotationsDialog.annotations.length})
+                  </h3>
+                  <div className="flex-1 overflow-y-auto space-y-3">
+                    {viewAnnotationsDialog.annotations.length === 0 ? (
+                      <div className="text-center py-8 text-sm text-muted-foreground">
+                        No comments from assessor yet.
+                      </div>
+                    ) : (
+                      viewAnnotationsDialog.annotations.map((ann: any, idx: number) => (
+                        <div
+                          key={ann.id || `ann-${idx}`}
+                          className="p-3 rounded-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
+                        >
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="shrink-0 font-bold text-yellow-600 dark:text-yellow-400 text-sm">
+                              #{idx + 1}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-2">
+                            {ann.comment || "(No comment)"}
+                          </p>
+                          {ann.page_number !== undefined && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Page {ann.page_number + 1}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
           </div>
         </DialogContent>
       </Dialog>

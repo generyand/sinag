@@ -45,9 +45,16 @@ export function DashboardHeader({ municipality }: DashboardHeaderProps) {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm">
               <div className="flex items-center gap-2 bg-[var(--card)]/60 backdrop-blur-sm px-3 py-2 sm:py-1.5 rounded-sm border border-[var(--border)] w-full sm:w-auto">
-                <Building2 className="h-4 w-4 flex-shrink-0" style={{ color: "var(--cityscape-yellow)" }} />
-                <span className="font-medium text-[var(--text-secondary)] text-xs sm:text-sm">Municipality:</span>
-                <span className="font-semibold text-[var(--foreground)] text-xs sm:text-sm truncate">{municipality}</span>
+                <Building2
+                  className="h-4 w-4 flex-shrink-0"
+                  style={{ color: "var(--cityscape-yellow)" }}
+                />
+                <span className="font-medium text-[var(--text-secondary)] text-xs sm:text-sm">
+                  Municipality:
+                </span>
+                <span className="font-semibold text-[var(--foreground)] text-xs sm:text-sm truncate">
+                  {municipality}
+                </span>
               </div>
             </div>
           </div>
@@ -56,7 +63,10 @@ export function DashboardHeader({ municipality }: DashboardHeaderProps) {
           <div className="flex items-start sm:items-center gap-4">
             <div className="bg-[var(--card)]/80 backdrop-blur-sm rounded-sm p-3 sm:p-4 shadow-sm border border-[var(--border)] w-full sm:w-auto">
               <div className="flex items-center gap-2 sm:gap-3">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style={{ color: "var(--cityscape-yellow)" }} />
+                <Calendar
+                  className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
+                  style={{ color: "var(--cityscape-yellow)" }}
+                />
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-[10px] sm:text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
                     Assessment Year
@@ -64,7 +74,9 @@ export function DashboardHeader({ municipality }: DashboardHeaderProps) {
                   {isLoading ? (
                     <div className="flex items-center gap-2 h-6 sm:h-8">
                       <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-[var(--muted-foreground)]" />
-                      <span className="text-xs sm:text-sm text-[var(--muted-foreground)]">Loading...</span>
+                      <span className="text-xs sm:text-sm text-[var(--muted-foreground)]">
+                        Loading...
+                      </span>
                     </div>
                   ) : hasMultipleYears ? (
                     <Select value={value} onValueChange={onChange}>

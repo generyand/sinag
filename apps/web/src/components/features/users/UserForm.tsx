@@ -1,48 +1,48 @@
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useBarangays } from "@/hooks/useBarangays";
 import { useGovernanceAreas } from "@/hooks/useGovernanceAreas";
 import { classifyError } from "@/lib/error-utils";
 import {
-    Barangay,
-    GovernanceArea,
-    MunicipalOfficeResponse,
-    UserAdminCreate,
-    UserAdminUpdate,
-    UserRole,
-    UserRoleOption,
-    getGetUsersQueryKey,
-    useGetLookupsRoles,
-    useGetMunicipalOffices,
-    usePostUsers,
-    usePostUsersUserIdResetPassword,
-    usePutUsersUserId,
+  Barangay,
+  GovernanceArea,
+  MunicipalOfficeResponse,
+  UserAdminCreate,
+  UserAdminUpdate,
+  UserRole,
+  UserRoleOption,
+  getGetUsersQueryKey,
+  useGetLookupsRoles,
+  useGetMunicipalOffices,
+  usePostUsers,
+  usePostUsersUserIdResetPassword,
+  usePutUsersUserId,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, RotateCcw } from "lucide-react";
@@ -98,7 +98,7 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
   const { data: municipalOfficesData, isLoading: isLoadingMunicipalOffices } =
     useGetMunicipalOffices(
       { governance_area_id: assessorAreaId ?? undefined, is_active: true },
-        // @ts-expect-error - Query key is generated internally by the hook
+      // @ts-expect-error - Query key is generated internally by the hook
       { query: { enabled: role === UserRole.ASSESSOR && assessorAreaId !== null } }
     );
 
@@ -406,7 +406,8 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
     );
   }, [initialValues?.id, resetPasswordMutation, queryClient, toast, DEFAULT_PASSWORD]);
 
-  const isLoading = createUserMutation.isPending || updateUserMutation.isPending || resetPasswordMutation.isPending;
+  const isLoading =
+    createUserMutation.isPending || updateUserMutation.isPending || resetPasswordMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -786,8 +787,13 @@ export function UserForm({ open, onOpenChange, initialValues, isEditing = false 
               Reset Password to Default?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[var(--muted-foreground)]">
-              This will reset the password for <strong>{nameRef.current?.value || "this user"}</strong> to the default password: <code className="bg-[var(--muted)] px-2 py-1 rounded text-sm font-mono">{DEFAULT_PASSWORD}</code>
-              <br /><br />
+              This will reset the password for{" "}
+              <strong>{nameRef.current?.value || "this user"}</strong> to the default password:{" "}
+              <code className="bg-[var(--muted)] px-2 py-1 rounded text-sm font-mono">
+                {DEFAULT_PASSWORD}
+              </code>
+              <br />
+              <br />
               The user will be required to change their password on the next login.
             </AlertDialogDescription>
           </AlertDialogHeader>

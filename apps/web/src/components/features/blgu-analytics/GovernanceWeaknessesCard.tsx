@@ -1,11 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import {
-  GovernanceWeakness,
-  isGovernanceWeakness,
-  isStringArray,
-} from "@/types/capdev";
+import { GovernanceWeakness, isGovernanceWeakness, isStringArray } from "@/types/capdev";
 
 interface GovernanceWeaknessesCardProps {
   weaknesses?: GovernanceWeakness[] | string[];
@@ -40,9 +36,7 @@ export function GovernanceWeaknessesCard({ weaknesses }: GovernanceWeaknessesCar
         <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
           <AlertTriangle className="w-4 h-4 text-red-600" />
         </div>
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          Areas for Improvement
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Areas for Improvement</h3>
       </div>
 
       <div className="space-y-3">
@@ -64,9 +58,7 @@ export function GovernanceWeaknessesCard({ weaknesses }: GovernanceWeaknessesCar
                     key={idx}
                     className="p-4 bg-[var(--muted)] rounded-lg border border-[var(--border)]"
                   >
-                    <p className="text-[var(--foreground)] text-base">
-                      {String(weakness)}
-                    </p>
+                    <p className="text-[var(--foreground)] text-base">{String(weakness)}</p>
                   </div>
                 );
               }
@@ -88,9 +80,7 @@ export function GovernanceWeaknessesCard({ weaknesses }: GovernanceWeaknessesCar
                       </span>
                     )}
                   </div>
-                  <p className="text-[var(--text-secondary)] text-sm">
-                    {weakness.description}
-                  </p>
+                  <p className="text-[var(--text-secondary)] text-sm">{weakness.description}</p>
                 </div>
               );
             })}

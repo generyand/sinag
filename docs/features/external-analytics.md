@@ -14,6 +14,8 @@ Available at `/api/v1/external/analytics/`:
 | `GET /top-failing-indicators` | Top 5 most frequently failed indicators               |
 | `GET /ai-insights/summary`    | Anonymized AI-generated recommendations               |
 | `GET /dashboard`              | Complete dashboard data in single request             |
+| `GET /bbi-trends`             | BBI functionality trends over time                    |
+| `GET /geographic/heatmap`     | Geographic heatmap data for visualization             |
 | `GET /export/csv`             | Download aggregated analytics as CSV                  |
 | `GET /export/pdf`             | Download aggregated analytics as PDF                  |
 

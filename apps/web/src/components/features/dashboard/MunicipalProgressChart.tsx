@@ -123,7 +123,9 @@ export function MunicipalProgressChart({ data, totalBarangays }: MunicipalProgre
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs sm:hidden">
                     <span className="text-[var(--muted-foreground)]">Completion</span>
-                    <span className="font-semibold text-[var(--foreground)]">{item.percentage}%</span>
+                    <span className="font-semibold text-[var(--foreground)]">
+                      {item.percentage}%
+                    </span>
                   </div>
                   <div className="h-3 sm:h-2.5 w-full bg-[var(--muted)]/30 rounded-full overflow-hidden">
                     <div

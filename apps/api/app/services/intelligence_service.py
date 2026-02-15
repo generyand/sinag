@@ -5,6 +5,7 @@ import json
 import re
 import threading
 import time
+from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
@@ -12,7 +13,7 @@ import google.generativeai as genai
 from loguru import logger
 from prometheus_client import Counter, Gauge, Histogram
 from pybreaker import CircuitBreaker, CircuitBreakerError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import settings
@@ -1819,7 +1820,7 @@ Focus on:
         """
         Build a structured prompt for Gemini API from rework feedback.
 
-        Analyzes all feedback provided by assessors (comments and MOV annotations)
+        Analyzes MOV-level notes and annotations from assessors and validators
         for indicators requiring rework and creates a comprehensive prompt for
         AI-powered summary generation.
 
@@ -1847,8 +1848,7 @@ Focus on:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses).joinedload(AssessmentResponse.feedback_comments),
-                joinedload(Assessment.responses).joinedload(AssessmentResponse.movs),
+                selectinload(Assessment.mov_files),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -1862,7 +1862,24 @@ Focus on:
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
-        # Get indicators requiring rework with all feedback
+        # Batch-fetch all annotations for this assessment's MOV files to avoid N+1 queries
+        active_mov_files = [mf for mf in assessment.mov_files if mf.deleted_at is None]
+        mov_file_ids = [mf.id for mf in active_mov_files]
+        all_annotations = (
+            db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id.in_(mov_file_ids)).all()
+            if mov_file_ids
+            else []
+        )
+        annotations_by_mov_id: dict[int, list] = defaultdict(list)
+        for a in all_annotations:
+            annotations_by_mov_id[a.mov_file_id].append(a)
+
+        # Build a lookup of MOV files by indicator_id
+        mov_files_by_indicator: dict[int, list] = defaultdict(list)
+        for mf in active_mov_files:
+            mov_files_by_indicator[mf.indicator_id].append(mf)
+
+        # Get indicators requiring rework with MOV-level feedback
         indicator_data = []
         for response in assessment.responses:
             if not response.requires_rework:
@@ -1871,33 +1888,35 @@ Focus on:
             indicator = response.indicator
             governance_area = indicator.governance_area
 
-            # Get public comments (exclude internal notes)
-            public_comments = [
-                {
-                    "assessor": (comment.assessor.name if comment.assessor else "Assessor"),
-                    "comment": comment.comment,
-                }
-                for comment in response.feedback_comments
-                if not comment.is_internal_note
-            ]
+            # Get MOV files for this indicator
+            indicator_mov_files = mov_files_by_indicator.get(indicator.id, [])
 
-            # Get MOV annotations for this response
+            # Collect MOV notes from assessors/validators
+            mov_notes = []
             mov_annotations = []
             affected_mov_files = set()
-            for mov in response.movs:
-                # Query annotations for this MOV file
-                annotations = (
-                    db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id == mov.id).all()
-                )
-                for annotation in annotations:
+
+            for mov_file in indicator_mov_files:
+                # Collect assessor_notes (MOV-level notes from assessors/validators)
+                if mov_file.assessor_notes and mov_file.assessor_notes.strip():
+                    mov_notes.append(
+                        {
+                            "filename": mov_file.file_name,
+                            "note": mov_file.assessor_notes.strip(),
+                        }
+                    )
+                    affected_mov_files.add(mov_file.file_name)
+
+                # Collect MOV annotations (from batch-fetched data)
+                for annotation in annotations_by_mov_id.get(mov_file.id, []):
                     mov_annotations.append(
                         {
-                            "filename": mov.original_filename,
+                            "filename": mov_file.file_name,
                             "comment": annotation.comment,
                             "page": annotation.page,
                         }
                     )
-                    affected_mov_files.add(mov.original_filename)
+                    affected_mov_files.add(mov_file.file_name)
 
             indicator_data.append(
                 {
@@ -1905,7 +1924,7 @@ Focus on:
                     "indicator_name": indicator.name,
                     "description": indicator.description,
                     "governance_area": governance_area.name,
-                    "public_comments": public_comments,
+                    "mov_notes": mov_notes,
                     "mov_annotations": mov_annotations,
                     "affected_movs": list(affected_mov_files),
                 }
@@ -1928,7 +1947,7 @@ BARANGAY INFORMATION:
 - Status: Rework Requested
 
 CONTEXT:
-An assessor has reviewed this barangay's assessment submission and identified issues that need to be addressed. Your task is to generate a clear, comprehensive, and actionable summary that helps the BLGU (Barangay Local Government Unit) understand exactly what needs to be fixed.
+Assessors and validators have reviewed this barangay's assessment submission and provided MOV-level feedback identifying issues that need to be addressed. Your task is to generate a clear, comprehensive, and actionable summary that helps the BLGU (Barangay Local Government Unit) understand exactly what needs to be fixed.
 
 INDICATORS REQUIRING REWORK:
 """
@@ -1940,15 +1959,17 @@ INDICATORS REQUIRING REWORK:
    - Description: {indicator["description"]}
 """
 
-            if indicator["public_comments"]:
-                prompt += "   - Assessor Comments:\n"
-                for comment in indicator["public_comments"]:
-                    prompt += f"     • {comment['assessor']}: {comment['comment']}\n"
+            if indicator["mov_notes"]:
+                prompt += "   - MOV Notes (Assessor/Validator Feedback):\n"
+                for note in indicator["mov_notes"]:
+                    prompt += f"     • {note['filename']}: {note['note']}\n"
 
             if indicator["mov_annotations"]:
-                prompt += "   - Document Issues (MOV Annotations):\n"
+                prompt += "   - Document Annotations (Assessor/Validator):\n"
                 for annotation in indicator["mov_annotations"]:
-                    page_info = f"(Page {annotation['page']})" if annotation["page"] else ""
+                    page_info = (
+                        f"(Page {annotation['page']})" if annotation["page"] is not None else ""
+                    )
                     prompt += (
                         f"     • {annotation['filename']} {page_info}: {annotation['comment']}\n"
                     )
@@ -1992,7 +2013,7 @@ GUIDELINES:
 2. Focus on actionable steps the BLGU can take immediately
 3. Prioritize issues that will have the biggest impact on compliance
 4. Use simple language that BLGU staff can easily understand
-5. For each indicator, extract the key issues from both comments and MOV annotations
+5. For each indicator, extract the key issues from both MOV notes and MOV annotations
 6. Suggest concrete actions (e.g., "Reupload budget ordinance with clearer dates" not "Fix budget document")
 7. List only the top 3-5 priority actions that address the most critical issues
 8. Estimate time realistically based on the complexity and number of issues
@@ -2181,7 +2202,8 @@ CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
 
         Unlike rework summaries which cover all indicators, calibration summaries
         focus only on indicators in the validator's governance area that were
-        marked as FAIL (Unmet).
+        marked as FAIL (Unmet). Uses MOV-level notes and annotations from both
+        assessors and validators as the data source.
 
         Args:
             db: Database session
@@ -2208,8 +2230,7 @@ CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
                 joinedload(Assessment.responses)
                 .joinedload(AssessmentResponse.indicator)
                 .joinedload(Indicator.governance_area),
-                joinedload(Assessment.responses).joinedload(AssessmentResponse.feedback_comments),
-                joinedload(Assessment.responses).joinedload(AssessmentResponse.movs),
+                selectinload(Assessment.mov_files),
             )
             .filter(Assessment.id == assessment_id)
             .first()
@@ -2229,6 +2250,23 @@ CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
         if assessment.blgu_user and assessment.blgu_user.barangay:
             barangay_name = assessment.blgu_user.barangay.name
 
+        # Batch-fetch all annotations for this assessment's MOV files to avoid N+1 queries
+        active_mov_files = [mf for mf in assessment.mov_files if mf.deleted_at is None]
+        mov_file_ids = [mf.id for mf in active_mov_files]
+        all_annotations = (
+            db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id.in_(mov_file_ids)).all()
+            if mov_file_ids
+            else []
+        )
+        annotations_by_mov_id: dict[int, list] = defaultdict(list)
+        for a in all_annotations:
+            annotations_by_mov_id[a.mov_file_id].append(a)
+
+        # Build a lookup of MOV files by indicator_id
+        mov_files_by_indicator: dict[int, list] = defaultdict(list)
+        for mf in active_mov_files:
+            mov_files_by_indicator[mf.indicator_id].append(mf)
+
         # Get indicators requiring calibration (only from the validator's governance area)
         # Filter to indicators that have requires_rework=True and are in the validator's area
         indicator_data = []
@@ -2240,33 +2278,35 @@ CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
             if not indicator or indicator.governance_area_id != governance_area_id:
                 continue
 
-            # Get public comments (exclude internal notes)
-            public_comments = [
-                {
-                    "assessor": (comment.assessor.name if comment.assessor else "Validator"),
-                    "comment": comment.comment,
-                }
-                for comment in response.feedback_comments
-                if not comment.is_internal_note
-            ]
+            # Get MOV files for this indicator
+            indicator_mov_files = mov_files_by_indicator.get(indicator.id, [])
 
-            # Get MOV annotations for this response
+            # Collect MOV notes from assessors/validators
+            mov_notes = []
             mov_annotations = []
             affected_mov_files = set()
-            for mov in response.movs:
-                # Query annotations for this MOV file
-                annotations = (
-                    db.query(MOVAnnotation).filter(MOVAnnotation.mov_file_id == mov.id).all()
-                )
-                for annotation in annotations:
+
+            for mov_file in indicator_mov_files:
+                # Collect assessor_notes (MOV-level notes from assessors/validators)
+                if mov_file.assessor_notes and mov_file.assessor_notes.strip():
+                    mov_notes.append(
+                        {
+                            "filename": mov_file.file_name,
+                            "note": mov_file.assessor_notes.strip(),
+                        }
+                    )
+                    affected_mov_files.add(mov_file.file_name)
+
+                # Collect MOV annotations (from batch-fetched data)
+                for annotation in annotations_by_mov_id.get(mov_file.id, []):
                     mov_annotations.append(
                         {
-                            "filename": mov.original_filename,
+                            "filename": mov_file.file_name,
                             "comment": annotation.comment,
                             "page": annotation.page,
                         }
                     )
-                    affected_mov_files.add(mov.original_filename)
+                    affected_mov_files.add(mov_file.file_name)
 
             indicator_data.append(
                 {
@@ -2274,7 +2314,7 @@ CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
                     "indicator_name": indicator.name,
                     "description": indicator.description,
                     "governance_area": governance_area_name,
-                    "public_comments": public_comments,
+                    "mov_notes": mov_notes,
                     "mov_annotations": mov_annotations,
                     "affected_movs": list(affected_mov_files),
                 }
@@ -2300,7 +2340,7 @@ BARANGAY INFORMATION:
 - Governance Area: {governance_area_name}
 
 CONTEXT:
-A validator has reviewed this barangay's assessment during table validation and identified specific issues in the "{governance_area_name}" governance area that need to be addressed. Unlike a full rework, calibration focuses only on specific indicators that were marked as "Unmet" (Failed) during validation.
+Assessors and validators have reviewed this barangay's assessment during table validation and provided MOV-level feedback identifying specific issues in the "{governance_area_name}" governance area that need to be addressed. Unlike a full rework, calibration focuses only on specific indicators that were marked as "Unmet" (Failed) during validation.
 
 Your task is to generate a clear, comprehensive, and actionable summary that helps the BLGU (Barangay Local Government Unit) understand exactly what needs to be fixed for this specific governance area.
 
@@ -2314,15 +2354,17 @@ INDICATORS REQUIRING CALIBRATION:
    - Description: {indicator["description"]}
 """
 
-            if indicator["public_comments"]:
-                prompt += "   - Validator Comments:\n"
-                for comment in indicator["public_comments"]:
-                    prompt += f"     • {comment['assessor']}: {comment['comment']}\n"
+            if indicator["mov_notes"]:
+                prompt += "   - MOV Notes (Assessor/Validator Feedback):\n"
+                for note in indicator["mov_notes"]:
+                    prompt += f"     • {note['filename']}: {note['note']}\n"
 
             if indicator["mov_annotations"]:
-                prompt += "   - Document Issues (MOV Annotations):\n"
+                prompt += "   - Document Annotations (Assessor/Validator):\n"
                 for annotation in indicator["mov_annotations"]:
-                    page_info = f"(Page {annotation['page']})" if annotation["page"] else ""
+                    page_info = (
+                        f"(Page {annotation['page']})" if annotation["page"] is not None else ""
+                    )
                     prompt += (
                         f"     • {annotation['filename']} {page_info}: {annotation['comment']}\n"
                     )
@@ -2367,7 +2409,7 @@ GUIDELINES:
 2. Focus on actionable steps the BLGU can take immediately
 3. Emphasize that this is a focused calibration, not a full rework
 4. Use simple language that BLGU staff can easily understand
-5. For each indicator, extract the key issues from both comments and MOV annotations
+5. For each indicator, extract the key issues from both MOV notes and MOV annotations
 6. Suggest concrete actions (e.g., "Reupload budget ordinance with clearer dates" not "Fix budget document")
 7. List only the top 3 priority actions that address the most critical issues
 8. Estimate time realistically - calibrations are typically faster than full reworks
@@ -3001,14 +3043,14 @@ NOW GENERATE the CapDev analysis based on the ACTUAL assessment data provided ab
         self, raw_comments: list[str], max_reasons: int = 5
     ) -> list[str]:
         """
-        Use AI to formulate raw feedback comments into proper descriptive sentences.
+        Use AI to formulate raw MOV notes/annotations into proper descriptive sentences.
 
-        This method takes raw assessor/validator feedback comments and transforms them
-        into well-formulated 3rd person sentences suitable for display on the MLGOO
+        This method takes raw assessor/validator MOV notes and annotations and transforms
+        them into well-formulated 3rd person sentences suitable for display on the MLGOO
         dashboard as "Top Reasons for Adjustment".
 
         Args:
-            raw_comments: List of raw feedback comment strings from assessors/validators
+            raw_comments: List of raw MOV note/annotation strings from assessors/validators
             max_reasons: Maximum number of reasons to return (default: 5)
 
         Returns:
@@ -3045,10 +3087,10 @@ NOW GENERATE the CapDev analysis based on the ACTUAL assessment data provided ab
         comments_list = chr(10).join(f"- {comment}" for comment in sanitized_comments)
         prompt = f"""You are analyzing assessment feedback from the SGLGB system.
 
-TASK: Transform these raw feedback comments from assessors/validators into
+TASK: Transform these raw MOV notes and annotations from assessors/validators into
 clear, well-formulated "reasons for adjustment" suitable for an MLGOO dashboard.
 
-RAW FEEDBACK COMMENTS:
+RAW MOV NOTES AND ANNOTATIONS:
 {comments_list}
 
 REQUIREMENTS:
@@ -3089,7 +3131,7 @@ EXAMPLE OUTPUT:
   "Certifications lacking proper signatures or authentication"
 ]
 
-Generate the formulated reasons based on the raw feedback above.
+Generate the formulated reasons based on the raw MOV notes above.
 Output ONLY the JSON array, no additional text.
 """
 

@@ -812,6 +812,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   calibrationRequestedAt={calibrationRequestedAt}
                   reworkRequestedAt={reworkRequestedAt}
                   separationLabel={separationLabel}
+                  readOnly
+                  calibrationFlags={calibrationFlags}
+                  onCalibrationFlagChange={(responseId, flagged) => {
+                    setCalibrationFlags((prev) => ({
+                      ...prev,
+                      [responseId]: flagged,
+                    }));
+                  }}
                   onAnnotationCreated={(responseId) => {
                     // Auto-enable calibration flag when annotation is added
                     setCalibrationFlags((prev) => ({
@@ -856,13 +864,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     setChecklistState((prev) => ({
                       ...prev,
                       [key]: value,
-                    }));
-                  }}
-                  calibrationFlags={calibrationFlags}
-                  onCalibrationFlagChange={(responseId, flagged) => {
-                    setCalibrationFlags((prev) => ({
-                      ...prev,
-                      [responseId]: flagged,
                     }));
                   }}
                 />
@@ -925,6 +926,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       calibrationRequestedAt={calibrationRequestedAt}
                       reworkRequestedAt={reworkRequestedAt}
                       separationLabel={separationLabel}
+                      readOnly
+                      calibrationFlags={calibrationFlags}
+                      onCalibrationFlagChange={(responseId, flagged) => {
+                        setCalibrationFlags((prev) => ({
+                          ...prev,
+                          [responseId]: flagged,
+                        }));
+                      }}
                       onAnnotationCreated={(responseId) => {
                         // Auto-enable calibration flag when annotation is added
                         setCalibrationFlags((prev) => ({
@@ -971,13 +980,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                           [key]: value,
                         }));
                       }}
-                      calibrationFlags={calibrationFlags}
-                      onCalibrationFlagChange={(responseId, flagged) => {
-                        setCalibrationFlags((prev) => ({
-                          ...prev,
-                          [responseId]: flagged,
-                        }));
-                      }}
                     />
                   </div>
                 )}
@@ -1006,6 +1008,14 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 calibrationRequestedAt={calibrationRequestedAt}
                 reworkRequestedAt={reworkRequestedAt}
                 separationLabel={separationLabel}
+                readOnly
+                calibrationFlags={calibrationFlags}
+                onCalibrationFlagChange={(responseId, flagged) => {
+                  setCalibrationFlags((prev) => ({
+                    ...prev,
+                    [responseId]: flagged,
+                  }));
+                }}
                 onAnnotationCreated={(responseId) => {
                   // Auto-enable calibration flag when annotation is added
                   setCalibrationFlags((prev) => ({
@@ -1051,13 +1061,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     setChecklistState((prev) => ({
                       ...prev,
                       [key]: value,
-                    }));
-                  }}
-                  calibrationFlags={calibrationFlags}
-                  onCalibrationFlagChange={(responseId, flagged) => {
-                    setCalibrationFlags((prev) => ({
-                      ...prev,
-                      [responseId]: flagged,
                     }));
                   }}
                 />
@@ -1116,7 +1119,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 allAreasCalibrated
                   ? "All governance areas have already been calibrated (max 1 calibration per area)"
                   : !Object.values(calibrationFlags).some((v) => v === true)
-                    ? "Flag at least one indicator for calibration using the toggle"
+                    ? "Flag at least one indicator for calibration using the toggle in the MOV viewer"
                     : calibratedAreaIds.length > 0
                       ? `${calibratedAreaIds.length} area(s) already calibrated. Only flag indicators from uncalibrated areas.`
                       : undefined

@@ -24,6 +24,8 @@ export interface BarangaySubmission {
   id: string;
   barangayName: string;
   areaProgress: number; // Progress percentage for the assessor's specific area
+  reviewedCount: number; // Number of indicators reviewed
+  totalCount: number; // Total number of indicators in scope
   // NEW: Unified status combining areaStatus and overallStatus into single column
   unifiedStatus: UnifiedStatus;
   // Re-review progress for rework resubmissions (0-100%)

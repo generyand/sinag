@@ -27,7 +27,7 @@ erDiagram
     users ||--o{ feedback_comments : "assessor writes"
     users ||--o{ audit_logs : "admin performs"
     users ||--o| barangays : "assigned to"
-    users ||--o| governance_areas : "validator assigned to"
+    users ||--o| governance_areas : "assessor assigned to"
     users ||--o{ deadline_overrides : "creator"
     users ||--o{ mov_files : "uploaded_by"
     users ||--o{ assessment_years : "activated_by"
@@ -37,7 +37,7 @@ erDiagram
 
     assessment_years ||--o{ assessments : "contains"
 
-    governance_areas ||--o{ users : "has validators"
+    governance_areas ||--o{ users : "has assessors"
     governance_areas ||--o{ indicators : "contains"
     governance_areas ||--o{ bbis : "defines"
 
@@ -66,11 +66,17 @@ erDiagram
         string name
         string phone_number
         enum role "MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER"
-        int validator_area_id FK
-        int barangay_id FK
+        int assessor_area_id FK "For ASSESSOR role only"
+        int municipal_office_id FK "Municipal office assignment"
+        int barangay_id FK "For BLGU_USER role only"
+        string preferred_language "ceb, fil, or en"
+        json preferences "User preferences (JSONB)"
         string hashed_password
         boolean must_change_password
         boolean is_active
+        boolean is_superuser "Legacy field"
+        string logo_url "Profile logo URL"
+        datetime logo_uploaded_at
         datetime created_at
         datetime updated_at
     }
@@ -240,7 +246,7 @@ erDiagram
 
     bbi_results {
         int id PK
-        enum status "HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL"
+        enum status "HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL, NON_FUNCTIONAL"
         json calculation_details
         int assessment_id FK
         int bbi_id FK
@@ -337,7 +343,7 @@ User authentication, role-based access control, and organizational assignments:
 ```mermaid
 erDiagram
     users ||--o| barangays : "BLGU_USER assigned to"
-    users ||--o| governance_areas : "VALIDATOR assigned to"
+    users ||--o| governance_areas : "ASSESSOR assigned to"
 
     users {
         int id PK "Primary key"
@@ -345,7 +351,7 @@ erDiagram
         string name "Full name"
         string phone_number "Contact number"
         enum role "MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER"
-        int validator_area_id FK "For VALIDATOR role only"
+        int assessor_area_id FK "For ASSESSOR role only"
         int barangay_id FK "For BLGU_USER role only"
         string hashed_password "bcrypt hashed"
         boolean must_change_password "Force password change on first login"
@@ -370,19 +376,20 @@ erDiagram
 
 **Role-Based Field Requirements:**
 
-| Role                    | Required Fields                              | Optional Fields | Purpose                                                               |
-| ----------------------- | -------------------------------------------- | --------------- | --------------------------------------------------------------------- |
-| `MLGOO_DILG`            | email, name, password                        | -               | System administrators with full access, final approval authority      |
-| `VALIDATOR`             | email, name, password, **validator_area_id** | -               | Area-specific validators (requires governance area assignment)        |
-| `ASSESSOR`              | email, name, password                        | -               | Flexible assessors (can work with any barangay)                       |
-| `BLGU_USER`             | email, name, password, **barangay_id**       | -               | Barangay users (requires barangay assignment)                         |
-| `KATUPARAN_CENTER_USER` | email, name, password                        | -               | External research users with read-only access to aggregated analytics |
+| Role                    | Required Fields                             | Optional Fields | Purpose                                                               |
+| ----------------------- | ------------------------------------------- | --------------- | --------------------------------------------------------------------- |
+| `MLGOO_DILG`            | email, name, password                       | -               | System administrators with full access, final approval authority      |
+| `ASSESSOR`              | email, name, password, **assessor_area_id** | -               | Area-specific assessors (requires governance area assignment)         |
+| `VALIDATOR`             | email, name, password                       | -               | System-wide validators (review all governance areas)                  |
+| `BLGU_USER`             | email, name, password, **barangay_id**      | -               | Barangay users (requires barangay assignment)                         |
+| `KATUPARAN_CENTER_USER` | email, name, password                       | -               | External research users with read-only access to aggregated analytics |
 
 **Business Rules:**
 
-1. **VALIDATOR role**: Must have `validator_area_id` set to a valid governance area
+1. **ASSESSOR role**: Must have `assessor_area_id` set to a valid governance area (6 assessors for 6
+   areas)
 2. **BLGU_USER role**: Must have `barangay_id` set to a valid barangay
-3. **ASSESSOR role**: No assignments required (can work with any barangay)
+3. **VALIDATOR role**: No area assignment required (system-wide access to all governance areas)
 4. **MLGOO_DILG role**: No assignments required (system-wide access, final approval authority)
 5. **KATUPARAN_CENTER_USER role**: No assignments required (read-only external access)
 6. **Email uniqueness**: Each email can only be used once across all roles
@@ -392,10 +399,10 @@ erDiagram
 **Example Queries:**
 
 ```sql
--- Get all validators for a specific governance area
+-- Get all assessors for a specific governance area
 SELECT u.* FROM users u
-WHERE u.role = 'VALIDATOR'
-  AND u.validator_area_id = 3
+WHERE u.role = 'ASSESSOR'
+  AND u.assessor_area_id = 3
   AND u.is_active = TRUE;
 
 -- Get all BLGU users for a barangay
@@ -404,11 +411,16 @@ WHERE u.role = 'BLGU_USER'
   AND u.barangay_id = 123
   AND u.is_active = TRUE;
 
--- Get user with governance area loaded (for validators)
+-- Get user with governance area loaded (for assessors)
 SELECT u.*, ga.name as area_name
 FROM users u
-JOIN governance_areas ga ON u.validator_area_id = ga.id
-WHERE u.id = 42 AND u.role = 'VALIDATOR';
+JOIN governance_areas ga ON u.assessor_area_id = ga.id
+WHERE u.id = 42 AND u.role = 'ASSESSOR';
+
+-- Get all system-wide validators
+SELECT u.* FROM users u
+WHERE u.role = 'VALIDATOR'
+  AND u.is_active = TRUE;
 ```
 
 ---
@@ -604,7 +616,7 @@ erDiagram
 
     bbi_results {
         int id PK
-        enum status "FUNCTIONAL, NON_FUNCTIONAL"
+        enum status "HIGHLY_FUNCTIONAL, MODERATELY_FUNCTIONAL, LOW_FUNCTIONAL, NON_FUNCTIONAL"
         json calculation_details "Audit trail of BBI calculation"
         int assessment_id FK
         int bbi_id FK
@@ -915,19 +927,17 @@ erDiagram
     }
 ```
 
-**9 Mandatory BBIs and Governance Area Mapping:**
+**7 Mandatory BBIs and Governance Area Mapping:**
 
-| BBI                                                   | Abbreviation | Governance Area               | Mapping Indicators |
-| ----------------------------------------------------- | ------------ | ----------------------------- | ------------------ |
-| Barangay Anti-Drug Abuse Council                      | BADAC        | Social Protection & Inclusion | 4.1, 4.2, 4.3      |
-| Barangay Council for Protection of Children           | BCPC         | Social Protection & Inclusion | 4.4, 4.5           |
-| Barangay Disaster Risk Reduction Management Committee | BDRRMC       | Disaster Intervention         | 2.1, 2.2, 2.3      |
-| Barangay Health Committee                             | BHC          | Social Protection & Inclusion | 4.6, 4.7           |
-| Barangay Nutrition Committee                          | BNC          | Social Protection & Inclusion | 4.8, 4.9           |
-| Barangay Peace & Order Committee                      | BPOC         | Social Protection & Inclusion | 4.10, 4.11         |
-| Lupong Tagapamayapa                                   | LT           | Social Protection & Inclusion | 4.12, 4.13         |
-| Sangguniang Kabataan                                  | SK           | Community Empowerment         | 5.1, 5.2, 5.3      |
-| Barangay Housing Committee                            | BHoC         | Environmental                 | 6.1, 6.2           |
+| BBI                                                       | Abbreviation | Indicator Code | Sub-indicators |
+| --------------------------------------------------------- | ------------ | -------------- | -------------- |
+| Barangay Disaster Risk Reduction and Management Committee | BDRRMC       | 2.1            | 4              |
+| Barangay Anti-Drug Abuse Council                          | BADAC        | 3.1            | 10             |
+| Barangay Peace and Order Committee                        | BPOC         | 3.2            | 3              |
+| Barangay Violence Against Women Desk                      | VAW Desk     | 4.1            | 7              |
+| Barangay Development Council                              | BDC          | 4.3            | 4              |
+| Barangay Council for the Protection of Children           | BCPC         | 4.5            | 6              |
+| Barangay Ecological Solid Waste Management Committee      | BESWMC       | 6.1            | 4              |
 
 **BBI Mapping Rules Example (JSON):**
 
@@ -959,15 +969,16 @@ erDiagram
 }
 ```
 
-**BBI 3-Tier Rating System (DILG MC 2024-417):**
+**BBI 4-Tier Rating System (DILG MC 2024-417):**
 
-BBI functionality is now determined by compliance rate using a 3-tier system:
+BBI functionality is determined by compliance rate using a 4-tier system:
 
 | Status                  | Compliance Rate | Description                                          |
 | ----------------------- | --------------- | ---------------------------------------------------- |
 | `HIGHLY_FUNCTIONAL`     | 75% - 100%      | Full or near-full compliance with all sub-indicators |
 | `MODERATELY_FUNCTIONAL` | 50% - 74%       | Partial compliance, some improvements needed         |
-| `LOW_FUNCTIONAL`        | Below 50%       | Significant gaps in compliance                       |
+| `LOW_FUNCTIONAL`        | 1% - 49%        | Significant gaps in compliance                       |
+| `NON_FUNCTIONAL`        | 0%              | No compliance with sub-indicators                    |
 
 **Compliance Rate Calculation:**
 
@@ -1172,7 +1183,7 @@ Critical indexes for query performance optimization:
 CREATE INDEX idx_users_email ON users(email); -- Unique constraint covers this
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_barangay_id ON users(barangay_id) WHERE barangay_id IS NOT NULL;
-CREATE INDEX idx_users_validator_area_id ON users(validator_area_id) WHERE validator_area_id IS NOT NULL;
+CREATE INDEX idx_users_assessor_area_id ON users(assessor_area_id) WHERE assessor_area_id IS NOT NULL;
 CREATE INDEX idx_users_is_active ON users(is_active);
 ```
 
@@ -1370,27 +1381,33 @@ AI-generated Capacity Development (CapDev) insights are stored in the `capdev_in
 
 The system supports the following notification types for workflow events:
 
-| Type                            | Trigger                        | Recipients           |
-| ------------------------------- | ------------------------------ | -------------------- |
-| `NEW_SUBMISSION`                | BLGU submits assessment        | All Assessors        |
-| `REWORK_REQUESTED`              | Assessor requests rework       | BLGU                 |
-| `REWORK_RESUBMITTED`            | BLGU resubmits after rework    | All Assessors        |
-| `READY_FOR_VALIDATION`          | Assessor finalizes             | Validator(s)         |
-| `CALIBRATION_REQUESTED`         | Validator requests calibration | BLGU                 |
-| `CALIBRATION_RESUBMITTED`       | BLGU resubmits calibration     | Same Validator       |
-| `VALIDATION_COMPLETED`          | Validator completes validation | MLGOO and BLGU       |
-| `READY_FOR_MLGOO_APPROVAL`      | All validators done            | MLGOO                |
-| `MLGOO_RECALIBRATION_REQUESTED` | MLGOO requests RE-calibration  | BLGU                 |
-| `ASSESSMENT_APPROVED`           | MLGOO approves assessment      | BLGU                 |
-| `DEADLINE_EXPIRED_LOCKED`       | Grace period expired           | BLGU (locked), MLGOO |
-| `GRACE_PERIOD_WARNING`          | Grace period expiring soon     | BLGU                 |
+| Type                            | Trigger                                   | Recipients           |
+| ------------------------------- | ----------------------------------------- | -------------------- |
+| `NEW_SUBMISSION`                | BLGU submits assessment                   | All Assessors        |
+| `REWORK_REQUESTED`              | Assessor requests rework                  | BLGU                 |
+| `REWORK_RESUBMITTED`            | BLGU resubmits after rework               | All Assessors        |
+| `READY_FOR_VALIDATION`          | Assessor finalizes                        | Validator(s)         |
+| `CALIBRATION_REQUESTED`         | Validator requests calibration            | BLGU                 |
+| `CALIBRATION_RESUBMITTED`       | BLGU resubmits calibration                | Same Validator       |
+| `VALIDATION_COMPLETED`          | Validator completes validation            | MLGOO and BLGU       |
+| `READY_FOR_MLGOO_APPROVAL`      | All validators done                       | MLGOO                |
+| `MLGOO_RECALIBRATION_REQUESTED` | MLGOO requests RE-calibration             | BLGU                 |
+| `ASSESSMENT_APPROVED`           | MLGOO approves assessment                 | BLGU                 |
+| `DEADLINE_EXPIRED_LOCKED`       | Grace period expired                      | BLGU (locked), MLGOO |
+| `GRACE_PERIOD_WARNING`          | Grace period expiring soon                | BLGU                 |
+| `SUBMISSION_REMINDER`           | MLGOO sends manual reminder               | BLGU                 |
+| `DEADLINE_REMINDER_7_DAYS`      | Automated reminder 7 days before deadline | BLGU                 |
+| `DEADLINE_REMINDER_3_DAYS`      | Automated reminder 3 days before deadline | BLGU                 |
+| `DEADLINE_REMINDER_1_DAY`       | Automated reminder 1 day before deadline  | BLGU                 |
+| `AUTO_SUBMITTED`                | Assessment auto-submitted at deadline     | BLGU                 |
 
 ---
 
 ## Notes
 
 - All diagrams reflect the actual SINAG database schema as of December 2025
-- Schema supports multi-tenancy through `barangay_id` and `validator_area_id` isolation
+- Schema supports multi-tenancy through `barangay_id` (BLGU_USER) and `assessor_area_id` (ASSESSOR)
+  isolation
 - Five user roles: MLGOO_DILG, VALIDATOR, ASSESSOR, BLGU_USER, KATUPARAN_CENTER_USER
 - JSONB fields (`form_schema`, `mapping_rules`, `capdev_insights`) enable dynamic, schema-less data
   storage
@@ -1402,4 +1419,4 @@ The system supports the following notification types for workflow events:
 - BBI functionality uses 3-tier rating system per DILG MC 2024-417
 - Calibration workflow supports both Validator calibration and MLGOO RE-calibration
 
-_Last updated: December 2025_
+_Last updated: February 2026_
