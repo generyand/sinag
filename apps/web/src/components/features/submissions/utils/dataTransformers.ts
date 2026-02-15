@@ -45,6 +45,8 @@ export interface SubmissionUIModel {
   lastUpdated: string;
   /** Number of governance areas approved by assessors (0-6) */
   areasApprovedCount: number;
+  /** Number of governance areas where assessors already made a decision (approved or rework) */
+  areasReviewedCount: number;
   /** Per-area assessor approval status: {"1": true, "2": false, ...} */
   areaApprovalStatus: Record<string, boolean>;
   /** Areas that have been sent for rework with assessor details */
@@ -76,6 +78,8 @@ interface ApiAssessment {
   area_assessor_approved?: Record<string, boolean>;
   /** Number of governance areas approved by assessors (0-6) */
   areas_approved_count?: number;
+  /** Number of governance areas already decided by assessors (approved or rework) */
+  areas_reviewed_count?: number;
   /** Areas that have been sent for rework with assessor details */
   area_rework_info?: Array<{
     governance_area_id: number;
@@ -92,6 +96,10 @@ interface ApiAssessment {
  */
 export function transformAssessmentToUI(assessment: ApiAssessment): SubmissionUIModel {
   const reviewers = transformReviewers(assessment.validators);
+  const areaApprovalStatus = assessment.area_assessor_approved ?? {};
+  const areaReworkInfo = transformAreaReworkInfo(assessment.area_rework_info);
+  const fallbackReviewedCount = calculateAreasReviewedCount(areaApprovalStatus, areaReworkInfo);
+
   return {
     id: assessment.id,
     barangayName: assessment.barangay_name ?? "Unknown",
@@ -101,9 +109,29 @@ export function transformAssessmentToUI(assessment: ApiAssessment): SubmissionUI
     assignedValidators: reviewers, // Backward compatibility
     lastUpdated: formatLastUpdated(assessment.updated_at),
     areasApprovedCount: assessment.areas_approved_count ?? 0,
-    areaApprovalStatus: assessment.area_assessor_approved ?? {},
-    areaReworkInfo: transformAreaReworkInfo(assessment.area_rework_info),
+    areasReviewedCount: assessment.areas_reviewed_count ?? fallbackReviewedCount,
+    areaApprovalStatus,
+    areaReworkInfo,
   };
+}
+
+/**
+ * Calculates assessor progress count from approved + rework areas.
+ * This keeps queue progress accurate even when an assessor sends an area for rework.
+ */
+function calculateAreasReviewedCount(
+  areaApprovalStatus: Record<string, boolean>,
+  areaReworkInfo: AreaReworkInfo[]
+): number {
+  const approvedAreaIds = new Set(
+    Object.entries(areaApprovalStatus)
+      .filter(([, isApproved]) => Boolean(isApproved))
+      .map(([areaId]) => areaId)
+  );
+
+  const reworkAreaIds = new Set(areaReworkInfo.map((area) => String(area.governanceAreaId)));
+
+  return new Set([...approvedAreaIds, ...reworkAreaIds]).size;
 }
 
 /**
@@ -436,18 +464,22 @@ export interface AreaWithAssessor {
 }
 
 /**
- * Gets the breakdown of approved vs missing governance areas with assessor names.
- * Shows which assessor has submitted their review for each area.
+ * Gets the breakdown of assessor decisions by governance area.
+ * Splits areas into reviewed, sent-for-rework, and missing buckets.
  */
 export function getAreasBreakdownWithAssessors(
   areaApprovalStatus: Record<string, boolean>,
-  reviewers: ReviewerInfo[]
+  reviewers: ReviewerInfo[],
+  areaReworkInfo: AreaReworkInfo[]
 ): {
-  approved: AreaWithAssessor[];
+  reviewed: AreaWithAssessor[];
+  sentForRework: AreaWithAssessor[];
   missing: AreaWithAssessor[];
 } {
-  const approved: AreaWithAssessor[] = [];
+  const reviewed: AreaWithAssessor[] = [];
+  const sentForRework: AreaWithAssessor[] = [];
   const missing: AreaWithAssessor[] = [];
+  const reworkAreaIds = new Set(areaReworkInfo.map((area) => area.governanceAreaId));
 
   // Create a map of governance area ID to assessor info
   const areaToAssessor = new Map<number, ReviewerInfo>();
@@ -461,8 +493,14 @@ export function getAreasBreakdownWithAssessors(
     const areaName = GOVERNANCE_AREA_SHORT_NAMES[i];
     const assessor = areaToAssessor.get(i);
 
-    if (areaApprovalStatus[String(i)]) {
-      approved.push({
+    if (reworkAreaIds.has(i)) {
+      sentForRework.push({
+        areaId: i,
+        areaName,
+        assessorName: assessor?.name,
+      });
+    } else if (areaApprovalStatus[String(i)]) {
+      reviewed.push({
         areaId: i,
         areaName,
         assessorName: assessor?.name,
@@ -476,5 +514,5 @@ export function getAreasBreakdownWithAssessors(
     }
   }
 
-  return { approved, missing };
+  return { reviewed, sentForRework, missing };
 }

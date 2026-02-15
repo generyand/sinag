@@ -10,7 +10,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.db.enums import AssessmentStatus, ValidationStatus
+from app.db.enums import AssessmentStatus, UserRole, ValidationStatus
 from app.db.models.assessment import (
     Assessment,
     AssessmentResponse,
@@ -68,6 +68,175 @@ class MLGOOService:
             return tuple(int(p) for p in parts)
         except (ValueError, AttributeError):
             return (999,)  # Put invalid codes at the end
+
+    def _build_assessment_progress_overview(
+        self, db: Session, assessment: Assessment, areas_data: dict[int, dict[str, Any]]
+    ) -> dict[str, Any]:
+        """
+        Build per-governance-area assessor and validator progress for MLGOO tracking.
+        """
+
+        area_submission_status = assessment.area_submission_status or {}
+        area_assessor_approved = assessment.area_assessor_approved or {}
+        area_ids = sorted(areas_data.keys())
+
+        # Fetch active assessors assigned to the governance areas in this assessment.
+        active_assessors = []
+        if area_ids:
+            active_assessors = (
+                db.query(User.id, User.name, User.assessor_area_id)
+                .filter(
+                    User.role == UserRole.ASSESSOR,
+                    User.assessor_area_id.in_(area_ids),
+                    User.is_active.is_(True),
+                )
+                .all()
+            )
+
+        assessor_by_area: dict[int, dict[str, Any]] = {}
+        assessor_name_by_id: dict[int, str] = {}
+        for assessor in active_assessors:
+            assessor_name_by_id[assessor.id] = assessor.name
+            if assessor.assessor_area_id is not None:
+                assessor_by_area[assessor.assessor_area_id] = {
+                    "id": assessor.id,
+                    "name": assessor.name,
+                }
+
+        # Include assessors referenced in area submission status (fallback for old assignments).
+        area_status_assessor_ids: set[int] = set()
+        for area_data in area_submission_status.values():
+            if not isinstance(area_data, dict):
+                continue
+            assessor_id = area_data.get("assessor_id")
+            if isinstance(assessor_id, int):
+                area_status_assessor_ids.add(assessor_id)
+
+        missing_assessor_ids = area_status_assessor_ids - set(assessor_name_by_id.keys())
+        if missing_assessor_ids:
+            missing_assessors = (
+                db.query(User.id, User.name).filter(User.id.in_(missing_assessor_ids)).all()
+            )
+            for assessor in missing_assessors:
+                assessor_name_by_id[assessor.id] = assessor.name
+
+        # Validators are system-wide in the current workflow.
+        active_validators = (
+            db.query(User.id, User.name)
+            .filter(User.role == UserRole.VALIDATOR, User.is_active.is_(True))
+            .order_by(User.id.asc())
+            .all()
+        )
+        active_validator_ids = [validator.id for validator in active_validators]
+        active_validator_names = [validator.name for validator in active_validators]
+
+        def assessor_label(status: str) -> str:
+            labels = {
+                "pending": "Awaiting Assessor",
+                "in_progress": "In Progress",
+                "reviewed": "Reviewed",
+                "sent_for_rework": "Sent for Rework",
+            }
+            return labels.get(status, "Awaiting Assessor")
+
+        def validator_label(status: str) -> str:
+            labels = {
+                "pending": "Awaiting Validation",
+                "in_progress": "In Progress",
+                "reviewed": "Validated",
+            }
+            return labels.get(status, "Awaiting Validation")
+
+        governance_areas_progress: list[dict[str, Any]] = []
+        assessors_completed_count = 0
+        validators_completed_count = 0
+
+        for area_id in area_ids:
+            area = areas_data.get(area_id, {})
+            indicators = area.get("indicators") or []
+            total_indicators = len(indicators)
+
+            validated_indicators = 0
+            for indicator in indicators:
+                raw_status = indicator.get("validation_status")
+                normalized = raw_status.upper() if isinstance(raw_status, str) else None
+                if normalized in ("PASS", "FAIL", "CONDITIONAL"):
+                    validated_indicators += 1
+
+            if total_indicators == 0 or validated_indicators == 0:
+                validator_status = "pending"
+                validator_progress_percent = 0
+            elif validated_indicators < total_indicators:
+                validator_status = "in_progress"
+                validator_progress_percent = round((validated_indicators / total_indicators) * 100)
+            else:
+                validator_status = "reviewed"
+                validator_progress_percent = 100
+                validators_completed_count += 1
+
+            area_key = str(area_id)
+            area_payload = area_submission_status.get(area_key, {})
+            raw_area_status = "draft"
+            area_assessor_id = None
+            if isinstance(area_payload, dict):
+                raw_area_status = str(area_payload.get("status", "draft")).lower()
+                raw_assessor_id = area_payload.get("assessor_id")
+                if isinstance(raw_assessor_id, int):
+                    area_assessor_id = raw_assessor_id
+
+            is_approved = bool(area_assessor_approved.get(area_key, False)) or raw_area_status == "approved"
+            if is_approved:
+                assessor_status = "reviewed"
+                assessor_progress_percent = 100
+                assessors_completed_count += 1
+            elif raw_area_status == "rework":
+                assessor_status = "sent_for_rework"
+                assessor_progress_percent = 100
+                assessors_completed_count += 1
+            elif raw_area_status == "in_review":
+                assessor_status = "in_progress"
+                assessor_progress_percent = 50
+            else:
+                assessor_status = "pending"
+                assessor_progress_percent = 0
+
+            assigned_assessor = assessor_by_area.get(area_id)
+            assessor_id = assigned_assessor["id"] if assigned_assessor else area_assessor_id
+            assessor_name = assigned_assessor["name"] if assigned_assessor else None
+            if assessor_name is None and isinstance(assessor_id, int):
+                assessor_name = assessor_name_by_id.get(assessor_id)
+
+            governance_areas_progress.append(
+                {
+                    "governance_area_id": area_id,
+                    "governance_area_name": area.get("name", f"Area {area_id}"),
+                    "total_indicators": total_indicators,
+                    "assessor": {
+                        "assessor_id": assessor_id,
+                        "assessor_name": assessor_name,
+                        "status": assessor_status,
+                        "progress_percent": assessor_progress_percent,
+                        "label": assessor_label(assessor_status),
+                    },
+                    "validator": {
+                        "validator_ids": active_validator_ids,
+                        "validator_names": active_validator_names,
+                        "status": validator_status,
+                        "reviewed_indicators": validated_indicators,
+                        "total_indicators": total_indicators,
+                        "progress_percent": validator_progress_percent,
+                        "label": validator_label(validator_status),
+                    },
+                }
+            )
+
+        return {
+            "active_assessors_count": len(active_assessors),
+            "active_validators_count": len(active_validators),
+            "assessors_completed_count": assessors_completed_count,
+            "validators_completed_count": validators_completed_count,
+            "governance_areas": governance_areas_progress,
+        }
 
     def _build_rework_calibration_summary(
         self, db: Session, assessment: Assessment
@@ -1199,6 +1368,10 @@ class MLGOOService:
             "is_locked_for_deadline": assessment.is_locked_for_deadline,
             # Rework/Calibration summary (detailed info for display)
             "rework_calibration_summary": self._build_rework_calibration_summary(db, assessment),
+            # Area-by-area assessor/validator progress (for MLGOO tracking tab)
+            "assessment_progress": self._build_assessment_progress_overview(
+                db, assessment, areas_data
+            ),
         }
 
     def unlock_assessment(

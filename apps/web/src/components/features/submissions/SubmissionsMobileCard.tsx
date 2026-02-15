@@ -27,9 +27,13 @@ interface SubmissionsMobileCardProps {
  * Assessors progress row with tooltip showing detailed breakdown.
  */
 function AssessorsProgressRow({ submission }: { submission: SubmissionUIModel }) {
-  const { areasApprovedCount, areaApprovalStatus, reviewers } = submission;
-  const isComplete = areasApprovedCount === 6;
-  const { approved, missing } = getAreasBreakdownWithAssessors(areaApprovalStatus, reviewers);
+  const { areasReviewedCount, areaApprovalStatus, reviewers, areaReworkInfo } = submission;
+  const isComplete = areasReviewedCount === 6;
+  const { reviewed, sentForRework, missing } = getAreasBreakdownWithAssessors(
+    areaApprovalStatus,
+    reviewers,
+    areaReworkInfo
+  );
 
   return (
     <div className="flex items-center gap-2">
@@ -39,7 +43,7 @@ function AssessorsProgressRow({ submission }: { submission: SubmissionUIModel })
           isComplete ? "text-green-600 dark:text-green-400 font-medium" : "text-[var(--foreground)]"
         }
       >
-        {areasApprovedCount}/6
+        {areasReviewedCount}/6
       </span>
       {isComplete ? (
         <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
@@ -67,13 +71,33 @@ function AssessorsProgressRow({ submission }: { submission: SubmissionUIModel })
             className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-xs"
           >
             <div className="space-y-3 text-xs">
-              {approved.length > 0 && (
+              {reviewed.length > 0 && (
                 <div>
                   <div className="font-semibold text-green-600 dark:text-green-400 mb-1.5">
-                    Reviewed ({approved.length}):
+                    Reviewed ({reviewed.length}):
                   </div>
                   <ul className="space-y-1 ml-2">
-                    {approved.map((area) => (
+                    {reviewed.map((area) => (
+                      <li key={area.areaId} className="text-[var(--foreground)]">
+                        <span className="font-medium">{area.areaName}</span>
+                        {area.assessorName && (
+                          <span className="text-[var(--muted-foreground)]">
+                            {" "}
+                            — {area.assessorName}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sentForRework.length > 0 && (
+                <div>
+                  <div className="font-semibold text-orange-600 dark:text-orange-400 mb-1.5">
+                    Sent for Rework ({sentForRework.length}):
+                  </div>
+                  <ul className="space-y-1 ml-2">
+                    {sentForRework.map((area) => (
                       <li key={area.areaId} className="text-[var(--foreground)]">
                         <span className="font-medium">{area.areaName}</span>
                         {area.assessorName && (

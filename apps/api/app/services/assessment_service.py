@@ -3562,6 +3562,23 @@ class AssessmentService:
                 traceback.print_exc()
                 validators = []
 
+            area_assessor_approved = assessment.area_assessor_approved or {}
+            area_submission_status = assessment.area_submission_status or {}
+
+            # Assessor progress for queue tracking:
+            # - approved areas count as reviewed
+            # - rework areas also count as reviewed (assessor already made a decision)
+            approved_area_ids = {
+                str(area_id)
+                for area_id, is_approved in area_assessor_approved.items()
+                if is_approved
+            }
+            rework_area_ids = {
+                str(area_id)
+                for area_id, area_data in area_submission_status.items()
+                if isinstance(area_data, dict) and area_data.get("status") == "rework"
+            }
+
             assessment_list.append(
                 {
                     "id": assessment.id,
@@ -3586,10 +3603,12 @@ class AssessmentService:
                     "is_mlgoo_recalibration": assessment.is_mlgoo_recalibration,
                     "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
                     # Per-area assessor approval tracking
-                    "area_assessor_approved": assessment.area_assessor_approved or {},
+                    "area_assessor_approved": area_assessor_approved,
                     "areas_approved_count": sum(
-                        1 for v in (assessment.area_assessor_approved or {}).values() if v
+                        1 for v in area_assessor_approved.values() if v
                     ),
+                    # Assessor decisions made (approved + sent for rework)
+                    "areas_reviewed_count": len(approved_area_ids | rework_area_ids),
                     # Per-area rework info (which assessors sent for rework)
                     "area_rework_info": self._get_area_rework_info(
                         db, assessment.area_submission_status

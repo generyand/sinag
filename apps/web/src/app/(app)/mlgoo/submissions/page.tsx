@@ -54,12 +54,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
  * Row 2: Validator status based on assessment phase
  */
 function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel }) {
-  const { areasApprovedCount, areaApprovalStatus, reviewers } = submission;
-  const isComplete = areasApprovedCount === 6;
+  const { areasReviewedCount, areaApprovalStatus, reviewers, areaReworkInfo } = submission;
+  const isComplete = areasReviewedCount === 6;
 
   // Use shared utility functions
   const validatorDisplay = getValidatorDisplayStatus(submission);
-  const { approved, missing } = getAreasBreakdownWithAssessors(areaApprovalStatus, reviewers);
+  const { reviewed, sentForRework, missing } = getAreasBreakdownWithAssessors(
+    areaApprovalStatus,
+    reviewers,
+    areaReworkInfo
+  );
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -76,7 +80,7 @@ function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel
                     : "text-[var(--foreground)]"
                 }
               >
-                {areasApprovedCount}/6
+                {areasReviewedCount}/6
               </span>
               {isComplete ? (
                 <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
@@ -94,13 +98,33 @@ function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel
             className="bg-[var(--card)] border border-[var(--border)] shadow-lg p-3 max-w-sm"
           >
             <div className="space-y-3 text-xs">
-              {approved.length > 0 && (
+              {reviewed.length > 0 && (
                 <div>
                   <div className="font-semibold text-green-600 dark:text-green-400 mb-1.5">
-                    Reviewed ({approved.length}):
+                    Reviewed ({reviewed.length}):
                   </div>
                   <ul className="space-y-1 ml-2">
-                    {approved.map((area) => (
+                    {reviewed.map((area) => (
+                      <li key={area.areaId} className="text-[var(--foreground)]">
+                        <span className="font-medium">{area.areaName}</span>
+                        {area.assessorName && (
+                          <span className="text-[var(--muted-foreground)]">
+                            {" "}
+                            — {area.assessorName}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sentForRework.length > 0 && (
+                <div>
+                  <div className="font-semibold text-orange-600 dark:text-orange-400 mb-1.5">
+                    Sent for Rework ({sentForRework.length}):
+                  </div>
+                  <ul className="space-y-1 ml-2">
+                    {sentForRework.map((area) => (
                       <li key={area.areaId} className="text-[var(--foreground)]">
                         <span className="font-medium">{area.areaName}</span>
                         {area.assessorName && (
