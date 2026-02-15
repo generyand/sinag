@@ -60,6 +60,34 @@ export type AssessorAnalyticsResponseGovernanceAreaName = string | null;
 
 
 /**
+ * AssessorProgressItem
+ */
+export interface AssessorProgressItem {
+  assessor_id: AssessorProgressItemAssessorId;
+  assessor_name: AssessorProgressItemAssessorName;
+  status: string;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  progress_percent: number;
+  label: string;
+}
+
+
+/**
+ * AssessorProgressItemAssessorId
+ */
+export type AssessorProgressItemAssessorId = number | null;
+
+
+/**
+ * AssessorProgressItemAssessorName
+ */
+export type AssessorProgressItemAssessorName = string | null;
+
+
+/**
  * AssessorQueueItem
  */
 export interface AssessorQueueItem {

@@ -3612,9 +3612,7 @@ class AssessmentService:
                     "mlgoo_recalibration_count": assessment.mlgoo_recalibration_count,
                     # Per-area assessor approval tracking
                     "area_assessor_approved": area_assessor_approved,
-                    "areas_approved_count": sum(
-                        1 for v in area_assessor_approved.values() if v
-                    ),
+                    "areas_approved_count": sum(1 for v in area_assessor_approved.values() if v),
                     # Assessor decisions made (approved + sent for rework)
                     "areas_reviewed_count": len(approved_area_ids | rework_area_ids),
                     # Per-area rework info (which assessors sent for rework)

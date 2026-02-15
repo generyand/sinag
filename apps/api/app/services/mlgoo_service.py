@@ -184,7 +184,9 @@ class MLGOOService:
                 if isinstance(raw_assessor_id, int):
                     area_assessor_id = raw_assessor_id
 
-            is_approved = bool(area_assessor_approved.get(area_key, False)) or raw_area_status == "approved"
+            is_approved = (
+                bool(area_assessor_approved.get(area_key, False)) or raw_area_status == "approved"
+            )
             if is_approved:
                 assessor_status = "reviewed"
                 assessor_progress_percent = 100

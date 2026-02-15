@@ -1903,6 +1903,26 @@ export interface TrendData {
 
 
 /**
+ * ValidatorProgressItem
+ */
+export interface ValidatorProgressItem {
+  validator_ids?: number[];
+  validator_names?: string[];
+  status: string;
+  /** @minimum 0 */
+  reviewed_indicators?: number;
+  /** @minimum 0 */
+  total_indicators?: number;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  progress_percent: number;
+  label: string;
+}
+
+
+/**
  * WorkflowMetrics
  */
 export interface WorkflowMetrics {

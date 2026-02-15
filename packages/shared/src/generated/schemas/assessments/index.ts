@@ -13,6 +13,8 @@ import type { GovernanceAreaDetailItem } from '../common';
 import type { ReworkCalibrationSummary } from '../common';
 import type { GovernanceAreaBreakdown } from '../common';
 import type { AppSchemasYearConfigUserNested } from '../users';
+import type { AssessorProgressItem } from '../assessor';
+import type { ValidatorProgressItem } from '../common';
 
 /**
  * ActivateYearResponseAssessmentsCreated
@@ -419,6 +421,7 @@ export interface AssessmentDetailResponse {
   grace_period_expires_at: AssessmentDetailResponseGracePeriodExpiresAt;
   is_locked_for_deadline: boolean;
   rework_calibration_summary?: AssessmentDetailResponseReworkCalibrationSummary;
+  assessment_progress?: AssessmentDetailResponseAssessmentProgress;
 }
 
 
@@ -432,6 +435,12 @@ export type AssessmentDetailResponseAreaResults = AssessmentDetailResponseAreaRe
  * AssessmentDetailResponseAreaResultsAnyOf
  */
 export type AssessmentDetailResponseAreaResultsAnyOf = { [key: string]: unknown };
+
+
+/**
+ * AssessmentDetailResponseAssessmentProgress
+ */
+export type AssessmentDetailResponseAssessmentProgress = AssessmentProgressOverview | null;
 
 
 /**
@@ -687,6 +696,22 @@ export type AssessmentIndicatorSnapshotResponseRemarkSchemaResolvedAnyOf = { [ke
  * AssessmentIndicatorSnapshotResponseTechnicalNotesResolved
  */
 export type AssessmentIndicatorSnapshotResponseTechnicalNotesResolved = string | null;
+
+
+/**
+ * AssessmentProgressOverview
+ */
+export interface AssessmentProgressOverview {
+  /** @minimum 0 */
+  active_assessors_count?: number;
+  /** @minimum 0 */
+  active_validators_count?: number;
+  /** @minimum 0 */
+  assessors_completed_count?: number;
+  /** @minimum 0 */
+  validators_completed_count?: number;
+  governance_areas?: GovernanceAreaAssessmentProgressItem[];
+}
 
 
 /**
@@ -1922,6 +1947,19 @@ export type GetGarAssessmentsParams = {
  */
 year?: number | null;
 };
+
+
+/**
+ * GovernanceAreaAssessmentProgressItem
+ */
+export interface GovernanceAreaAssessmentProgressItem {
+  governance_area_id: number;
+  governance_area_name: string;
+  /** @minimum 0 */
+  total_indicators: number;
+  assessor: AssessorProgressItem;
+  validator: ValidatorProgressItem;
+}
 
 
 /**
