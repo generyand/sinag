@@ -16,6 +16,8 @@ from app.schemas.admin import (
     AssessmentCycleUpdate,
     AuditLogListResponse,
     AuditLogResponse,
+    AutoSubmitDetail,
+    AutoSubmitResponse,
     BarangayDeadlineStatusResponse,
     DeadlineOverrideCreate,
     DeadlineOverrideListResponse,
@@ -691,6 +693,104 @@ async def export_deadline_overrides_csv(
             "Content-Disposition": f"attachment; filename=deadline_overrides_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
         },
     )
+
+
+# ============================================================================
+# Auto-Submit Endpoints
+# ============================================================================
+
+
+@router.post(
+    "/trigger-auto-submit",
+    response_model=AutoSubmitResponse,
+    tags=["admin"],
+    summary="Trigger auto-submit for overdue DRAFT assessments",
+    description="Manually trigger auto-submit for all DRAFT assessments past the Phase 1 deadline. Useful when Celery is not running. Requires MLGOO_DILG role.",
+)
+async def trigger_auto_submit(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_mlgoo_dilg),
+):
+    """
+    Manually trigger auto-submit for overdue DRAFT assessments.
+
+    Finds all DRAFT assessments for the active year where the Phase 1 deadline
+    has passed and auto-submits them (same logic as the Celery worker).
+
+    **Authentication:** Requires MLGOO_DILG role.
+
+    **Returns:**
+    - Count and details of auto-submitted assessments
+    """
+    from datetime import UTC
+
+    from fastapi import HTTPException, status
+    from sqlalchemy import and_
+    from sqlalchemy.orm import joinedload
+
+    from app.db.enums import AssessmentStatus
+    from app.db.models import Assessment
+    from app.db.models.system import AssessmentYear
+    from app.workers.deadline_worker import _auto_submit_assessment
+
+    now = datetime.now(UTC)
+
+    # Get the active assessment year
+    active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
+
+    if not active_year:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active assessment year found",
+        )
+
+    if not active_year.phase1_deadline:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No phase1_deadline set for year {active_year.year}",
+        )
+
+    phase1_deadline = active_year.phase1_deadline
+    if phase1_deadline.tzinfo is None:
+        phase1_deadline = phase1_deadline.replace(tzinfo=UTC)
+
+    if now < phase1_deadline:
+        return AutoSubmitResponse(auto_submitted_count=0, details=[])
+
+    # Find all DRAFT assessments that haven't been auto-submitted
+    draft_assessments = (
+        db.query(Assessment)
+        .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+        .filter(
+            and_(
+                Assessment.assessment_year == active_year.year,
+                Assessment.status == AssessmentStatus.DRAFT,
+                Assessment.auto_submitted_at.is_(None),
+            )
+        )
+        .all()
+    )
+
+    details: list[AutoSubmitDetail] = []
+
+    for assessment in draft_assessments:
+        try:
+            barangay_name = "Unknown Barangay"
+            if assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            _auto_submit_assessment(db, assessment, now)
+            db.flush()
+            details.append(
+                AutoSubmitDetail(assessment_id=assessment.id, barangay_name=barangay_name)
+            )
+        except Exception:
+            # Skip failed assessments, continue with the rest
+            continue
+
+    db.commit()
+
+    return AutoSubmitResponse(auto_submitted_count=len(details), details=details)
 
 
 # ============================================================================

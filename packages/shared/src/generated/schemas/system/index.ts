@@ -11,6 +11,7 @@ import type { AnonymizedInsight } from '../common';
 import type { ApprovalQueueItem } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
+import type { AutoSubmitDetail } from '../common';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseAreaAssessorStatus } from '../assessor';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
@@ -223,6 +224,17 @@ export type AuditLogResponseEntityId = number | null;
  * AuditLogResponseIpAddress
  */
 export type AuditLogResponseIpAddress = string | null;
+
+
+/**
+ * AutoSubmitResponse
+ */
+export interface AutoSubmitResponse {
+  /** Number of assessments auto-submitted */
+  auto_submitted_count: number;
+  /** Details of each auto-submitted assessment */
+  details?: AutoSubmitDetail[];
+}
 
 
 /**

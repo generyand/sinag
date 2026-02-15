@@ -106,6 +106,27 @@ class AdminErrorResponse(BaseModel):
 
 
 # ============================================================================
+# Auto-Submit Schemas
+# ============================================================================
+
+
+class AutoSubmitDetail(BaseModel):
+    """Detail for a single auto-submitted assessment."""
+
+    assessment_id: int
+    barangay_name: str
+
+
+class AutoSubmitResponse(BaseModel):
+    """Response schema for the admin trigger-auto-submit endpoint."""
+
+    auto_submitted_count: int = Field(..., description="Number of assessments auto-submitted")
+    details: list[AutoSubmitDetail] = Field(
+        default_factory=list, description="Details of each auto-submitted assessment"
+    )
+
+
+# ============================================================================
 # Assessment Cycle Schemas
 # ============================================================================
 

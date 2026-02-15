@@ -18,12 +18,20 @@ export interface AreaStatusResponse {
   all_areas_approved: boolean;
 }
 
+// Per-area assessor status from the dashboard endpoint
+interface AreaAssessorStatusItem {
+  governance_area_id: number;
+  rework_used?: boolean;
+  calibration_used?: boolean;
+}
+
 interface TreeNavigatorProps {
   assessment: Assessment;
   selectedIndicatorId: string | null;
   onIndicatorSelect: (indicatorId: string) => void;
   areaStatusData?: AreaStatusResponse | null;
   onAreaSubmitSuccess?: () => void;
+  areaAssessorStatus?: AreaAssessorStatusItem[];
 }
 
 export function TreeNavigator({
@@ -32,6 +40,7 @@ export function TreeNavigator({
   onIndicatorSelect,
   areaStatusData,
   onAreaSubmitSuccess,
+  areaAssessorStatus,
 }: TreeNavigatorProps) {
   // Load expanded state from sessionStorage or auto-expand first incomplete
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(() => {
@@ -50,6 +59,20 @@ export function TreeNavigator({
       return "draft";
     },
     [areaStatusData]
+  );
+
+  // Build a lookup for remaining rework/calibration attempts per area
+  const getRemainingAttempts = useCallback(
+    (areaId: string): { reworkLeft: boolean; calibrationLeft: boolean } | undefined => {
+      if (!areaAssessorStatus) return undefined;
+      const areaInfo = areaAssessorStatus.find((a) => String(a.governance_area_id) === areaId);
+      if (!areaInfo) return undefined;
+      return {
+        reworkLeft: !areaInfo.rework_used,
+        calibrationLeft: !areaInfo.calibration_used,
+      };
+    },
+    [areaAssessorStatus]
   );
 
   // Save expanded state when it changes
@@ -165,6 +188,7 @@ export function TreeNavigator({
                   areaStatus={getAreaStatus(area.id)}
                   assessmentStatus={assessment.status}
                   onAreaSubmitSuccess={onAreaSubmitSuccess}
+                  remainingAttempts={getRemainingAttempts(area.id)}
                 />
 
                 {/* Indicators (when expanded) - Render hierarchical tree */}

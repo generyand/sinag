@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import { FileList } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ const ImageAnnotator = dynamic(() => import("@/components/shared/ImageAnnotator"
  * Inner component that fetches signed URL and renders the appropriate file viewer.
  * Separated to allow conditional rendering with hooks.
  */
-function SecureFileContent({
+const SecureFileContent = React.memo(function SecureFileContent({
   file,
   annotationsLoading,
   pdfAnnotations,
@@ -142,7 +143,7 @@ function SecureFileContent({
       </Button>
     </div>
   );
-}
+});
 
 interface MiddleMovFilesPanelProps {
   assessment: AssessmentDetailsResponse;
@@ -378,7 +379,7 @@ export function MiddleMovFilesPanel({
     updateFeedbackMutation.mutate({
       movFileId: selectedFile.id,
       data: {
-        assessor_notes: assessorNotes || null,
+        assessor_notes: assessorNotes,
         flagged_for_rework: flaggedForRework,
       },
     });
@@ -424,128 +425,134 @@ export function MiddleMovFilesPanel({
   };
 
   // Transform annotations from backend format to PdfAnnotator format
+  const safeAnnotations = Array.isArray(annotations) ? annotations : [];
   const pdfAnnotations = React.useMemo(() => {
-    return (
-      (annotations as any[])?.map((ann: any) => ({
-        id: String(ann.id),
-        type: "pdfRect" as const,
-        page: ann.page ?? ann.page_number ?? 0, // Backend returns 'page', not 'page_number'
-        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-        rects: ann.rects,
-        comment: ann.comment || "",
-        createdAt: ann.created_at || new Date().toISOString(),
-      })) || []
-    );
-  }, [annotations]);
+    return safeAnnotations.map((ann: any) => ({
+      id: String(ann.id),
+      type: "pdfRect" as const,
+      page: ann.page ?? ann.page_number ?? 0, // Backend returns 'page', not 'page_number'
+      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+      rects: ann.rects,
+      comment: ann.comment || "",
+      createdAt: ann.created_at || new Date().toISOString(),
+    }));
+  }, [safeAnnotations]);
 
   // Transform annotations for ImageAnnotator
   const imageAnnotations = React.useMemo(() => {
-    return (
-      (annotations as any[])?.map((ann: any) => ({
-        id: String(ann.id),
-        rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
-        comment: ann.comment || "",
-        createdAt: ann.created_at || new Date().toISOString(),
-      })) || []
-    );
-  }, [annotations]);
+    return safeAnnotations.map((ann: any) => ({
+      id: String(ann.id),
+      rect: ann.rect || { x: 0, y: 0, w: 10, h: 10 },
+      comment: ann.comment || "",
+      createdAt: ann.created_at || new Date().toISOString(),
+    }));
+  }, [safeAnnotations]);
 
-  const handleAddAnnotation = async (annotation: any) => {
-    if (!selectedFile?.id) return;
+  const handleAddAnnotation = React.useCallback(
+    async (annotation: any) => {
+      if (!selectedFile?.id) return;
 
-    console.log("[MiddleMovFilesPanel] handleAddAnnotation called, expandedId:", expandedId);
+      console.log("[MiddleMovFilesPanel] handleAddAnnotation called, expandedId:", expandedId);
 
-    try {
-      // For images, annotation won't have a 'page' property
-      const isImageAnnotation = !("page" in annotation);
+      try {
+        // For images, annotation won't have a 'page' property
+        const isImageAnnotation = !("page" in annotation);
 
-      await createAnnotation({
-        mov_file_id: selectedFile.id,
-        annotation_type: isImageAnnotation ? "imageRect" : "pdfRect",
-        page: annotation.page ?? 0,
-        rect: annotation.rect,
-        rects: annotation.rects || undefined,
-        comment: annotation.comment || "",
-      });
+        await createAnnotation({
+          mov_file_id: selectedFile.id,
+          annotation_type: isImageAnnotation ? "imageRect" : "pdfRect",
+          page: annotation.page ?? 0,
+          rect: annotation.rect,
+          rects: annotation.rects || undefined,
+          comment: annotation.comment || "",
+        });
 
-      // Notify parent that annotation was created (for auto-toggling rework/calibration flag)
-      console.log(
-        "[MiddleMovFilesPanel] Annotation created, calling onAnnotationCreated:",
-        expandedId,
-        "movFileId:",
-        selectedFile.id
-      );
-      if (expandedId && onAnnotationCreated && selectedFile?.id) {
-        onAnnotationCreated(expandedId, selectedFile.id);
-      } else {
-        console.warn(
-          "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+        // Notify parent that annotation was created (for auto-toggling rework/calibration flag)
+        console.log(
+          "[MiddleMovFilesPanel] Annotation created, calling onAnnotationCreated:",
           expandedId,
-          "selectedFile.id:",
-          selectedFile?.id,
-          "onAnnotationCreated:",
-          !!onAnnotationCreated
+          "movFileId:",
+          selectedFile.id
         );
+        if (expandedId && onAnnotationCreated && selectedFile?.id) {
+          onAnnotationCreated(expandedId, selectedFile.id);
+        } else {
+          console.warn(
+            "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+            expandedId,
+            "selectedFile.id:",
+            selectedFile?.id,
+            "onAnnotationCreated:",
+            !!onAnnotationCreated
+          );
+        }
+      } catch (error) {
+        console.error("[MiddleMovFilesPanel] Failed to create annotation:", error);
       }
-    } catch (error) {
-      console.error("[MiddleMovFilesPanel] Failed to create annotation:", error);
-    }
-  };
+    },
+    [selectedFile?.id, expandedId, onAnnotationCreated, createAnnotation]
+  );
 
   // Wrapper for deleteAnnotation that calls the callback
-  const handleDeleteAnnotation = async (annotationId: number) => {
-    // Calculate remaining count BEFORE deletion (since annotations state is stale after mutation)
-    const currentCount = annotations?.length ?? 0;
-    const remainingCountForFile = Math.max(0, currentCount - 1);
+  const handleDeleteAnnotation = React.useCallback(
+    async (annotationId: number) => {
+      // Calculate remaining count BEFORE deletion (since annotations state is stale after mutation)
+      const currentCount = Array.isArray(annotations) ? annotations.length : 0;
+      const remainingCountForFile = Math.max(0, currentCount - 1);
 
-    console.log(
-      "[MiddleMovFilesPanel] handleDeleteAnnotation - annotationId:",
-      annotationId,
-      "expandedId:",
-      expandedId,
-      "movFileId:",
-      selectedFile?.id,
-      "currentCount:",
-      currentCount,
-      "willHaveRemaining:",
-      remainingCountForFile
-    );
+      console.log(
+        "[MiddleMovFilesPanel] handleDeleteAnnotation - annotationId:",
+        annotationId,
+        "expandedId:",
+        expandedId,
+        "movFileId:",
+        selectedFile?.id,
+        "currentCount:",
+        currentCount,
+        "willHaveRemaining:",
+        remainingCountForFile
+      );
 
-    try {
-      await deleteAnnotation(annotationId);
-      console.log("[MiddleMovFilesPanel] Annotation deleted successfully");
+      try {
+        await deleteAnnotation(annotationId);
+        console.log("[MiddleMovFilesPanel] Annotation deleted successfully");
 
-      // Notify parent that annotation was deleted (with file-level tracking)
-      if (expandedId && onAnnotationDeleted && selectedFile?.id) {
-        console.log(
-          "[MiddleMovFilesPanel] Calling onAnnotationDeleted with movFileId:",
-          selectedFile.id,
-          "remaining:",
-          remainingCountForFile
-        );
-        onAnnotationDeleted(expandedId, selectedFile.id, remainingCountForFile);
-      } else {
-        console.warn(
-          "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
-          expandedId,
-          "selectedFile.id:",
-          selectedFile?.id,
-          "onAnnotationDeleted:",
-          !!onAnnotationDeleted
-        );
+        // Notify parent that annotation was deleted (with file-level tracking)
+        if (expandedId && onAnnotationDeleted && selectedFile?.id) {
+          console.log(
+            "[MiddleMovFilesPanel] Calling onAnnotationDeleted with movFileId:",
+            selectedFile.id,
+            "remaining:",
+            remainingCountForFile
+          );
+          onAnnotationDeleted(expandedId, selectedFile.id, remainingCountForFile);
+        } else {
+          console.warn(
+            "[MiddleMovFilesPanel] Cannot notify parent - expandedId:",
+            expandedId,
+            "selectedFile.id:",
+            selectedFile?.id,
+            "onAnnotationDeleted:",
+            !!onAnnotationDeleted
+          );
+        }
+      } catch (error) {
+        console.error("[MiddleMovFilesPanel] Failed to delete annotation:", error);
       }
-    } catch (error) {
-      console.error("[MiddleMovFilesPanel] Failed to delete annotation:", error);
-    }
-  };
+    },
+    [safeAnnotations.length, expandedId, selectedFile?.id, deleteAnnotation, onAnnotationDeleted]
+  );
 
   // Wrapper for PdfAnnotator's onDelete which passes string ID
-  const handleDeleteAnnotationFromPdf = (annotationIdStr: string) => {
-    const annotationId = parseInt(annotationIdStr, 10);
-    if (!isNaN(annotationId)) {
-      handleDeleteAnnotation(annotationId);
-    }
-  };
+  const handleDeleteAnnotationFromPdf = React.useCallback(
+    (annotationIdStr: string) => {
+      const annotationId = parseInt(annotationIdStr, 10);
+      if (!isNaN(annotationId)) {
+        handleDeleteAnnotation(annotationId);
+      }
+    },
+    [handleDeleteAnnotation]
+  );
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -613,7 +620,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No new files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -636,7 +643,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No existing files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -663,7 +670,7 @@ export function MiddleMovFilesPanel({
                   canDelete={false}
                   loading={false}
                   emptyMessage="No previous files"
-                  movAnnotations={annotations as any[]}
+                  movAnnotations={safeAnnotations}
                 />
               </div>
             )}
@@ -689,7 +696,7 @@ export function MiddleMovFilesPanel({
             canDelete={false}
             loading={false}
             emptyMessage="No files uploaded yet"
-            movAnnotations={annotations as any[]}
+            movAnnotations={safeAnnotations}
           />
         )}
       </div>
@@ -749,11 +756,14 @@ export function MiddleMovFilesPanel({
               {/* Comments Sidebar - Hidden on mobile, visible on desktop */}
               {(selectedFile.file_type === "application/pdf" ||
                 selectedFile.file_type?.startsWith("image/")) && (
-                <div className="hidden md:flex w-80 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4">
+                <div
+                  key={`sidebar-${selectedFile.id}`}
+                  className="hidden md:flex w-80 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4"
+                >
                   {/* Assessor Feedback Section */}
                   <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <h3 className="font-semibold text-sm mb-3 text-slate-900 dark:text-slate-100">
-                      Assessor Feedback
+                      MOV Notes
                     </h3>
 
                     {feedbackLoading ? (
@@ -763,17 +773,10 @@ export function MiddleMovFilesPanel({
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {/* Assessor's Notes */}
                         <div className="space-y-2">
-                          <Label
-                            htmlFor="assessor-notes"
-                            className="text-xs font-medium text-slate-700 dark:text-slate-300"
-                          >
-                            Assessor&apos;s Notes
-                          </Label>
                           <Textarea
                             id="assessor-notes"
-                            placeholder="Add notes about this MOV..."
+                            placeholder="Describe the specific issue with this file (e.g., missing signature, incorrect date, or blurry scan)..."
                             value={assessorNotes}
                             onChange={(e) => handleNotesChange(e.target.value)}
                             className="min-h-[80px] text-sm resize-none"

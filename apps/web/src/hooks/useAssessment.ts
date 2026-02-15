@@ -137,6 +137,7 @@ export function useCurrentAssessment() {
     feedback_comments?: Array<{
       comment: string;
     }>;
+    has_mov_notes?: boolean;
     children?: Array<IndicatorNode>;
   }
 
@@ -286,6 +287,7 @@ export function useCurrentAssessment() {
       assessorComment: indicator.feedback_comments?.[0]?.comment,
       responseId: indicator.response?.id ?? null,
       requiresRework: indicator.response?.requires_rework === true,
+      hasMovNotes: indicator.has_mov_notes === true,
       // Use form schema from backend, fallback to simple compliance if not available
       formSchema: indicator.form_schema || {
         properties: {

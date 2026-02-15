@@ -292,6 +292,15 @@ export const AreaType = {
 
 
 /**
+ * AutoSubmitDetail
+ */
+export interface AutoSubmitDetail {
+  assessment_id: number;
+  barangay_name: string;
+}
+
+
+/**
  * AvailableCycle
  */
 export interface AvailableCycle {

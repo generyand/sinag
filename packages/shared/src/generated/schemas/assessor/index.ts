@@ -22,6 +22,10 @@ export interface AreaAssessorStatus {
   is_assessed: boolean;
   /** Area submission status: 'approved', 'rework', 'submitted', 'in_review', or null if pending */
   status?: AreaAssessorStatusStatus;
+  /** True if this area's single rework round has already been used */
+  rework_used?: boolean;
+  /** True if this area has already been calibrated by a validator */
+  calibration_used?: boolean;
 }
 
 
@@ -65,6 +69,8 @@ export interface AssessorQueueItem {
   status: string;
   updated_at: string;
   area_progress?: number;
+  reviewed_count?: number;
+  total_count?: number;
   re_review_progress?: number;
   governance_area_id?: AssessorQueueItemGovernanceAreaId;
   governance_area_name?: AssessorQueueItemGovernanceAreaName;

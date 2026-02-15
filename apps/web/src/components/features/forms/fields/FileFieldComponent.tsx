@@ -26,7 +26,7 @@ import {
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, StickyNote, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -1269,6 +1269,23 @@ export function FileFieldComponent({
             {(selectedFileForPreview.file_type === "application/pdf" ||
               selectedFileForPreview.file_type?.startsWith("image/")) && (
               <div className="w-80 flex flex-col border-l border-gray-200 dark:border-gray-700 pl-4">
+                {/* MOV Notes Section */}
+                {selectedFileForPreview.assessor_notes &&
+                  selectedFileForPreview.assessor_notes.trim() && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-sm mb-2 pb-2 border-b border-gray-200 dark:border-gray-700 text-[var(--foreground)] flex items-center gap-1.5">
+                        <StickyNote className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        MOV Notes
+                      </h3>
+                      <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+                        <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                          {selectedFileForPreview.assessor_notes}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Assessor Comments Section */}
                 <h3 className="font-semibold text-sm mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 text-[var(--foreground)]">
                   Assessor Comments (
                   {

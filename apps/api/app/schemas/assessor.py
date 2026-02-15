@@ -16,6 +16,8 @@ class AssessorQueueItem(BaseModel):
     status: str  # Per-area status for assessors (SUBMITTED, IN_REVIEW, REWORK, APPROVED)
     updated_at: datetime
     area_progress: int = 0  # Progress percentage (0-100) of indicators reviewed
+    reviewed_count: int = 0  # Number of indicators reviewed by assessor/validator
+    total_count: int = 0  # Total number of indicators in scope
     re_review_progress: int = (
         0  # Progress percentage (0-100) for re-reviewing after rework resubmission
     )

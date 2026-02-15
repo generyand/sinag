@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import {
   Accordion,
@@ -1670,11 +1671,11 @@ export function RightAssessorPanel({
 
                       <div className="space-y-1">
                         <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                          {isValidator ? "Validator's Findings" : "Assessor's Notes"}
+                          {isValidator ? "Validator's Findings" : "General Feedback"}
                         </div>
                         <Textarea
                           {...register(`${key}.publicComment` as const)}
-                          placeholder="Add notes or feedback about this indicator..."
+                          placeholder="Provide an overall summary of the required changes or general instructions for this indicator..."
                           className={errorsFor ? "border-red-500" : undefined}
                         />
                         {errorsFor ? (

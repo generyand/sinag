@@ -92,7 +92,7 @@ export function useMovAnnotations(movFileId: number | null) {
   };
 
   return {
-    annotations: annotationsData ?? [],
+    annotations: Array.isArray(annotationsData) ? annotationsData : [],
     isLoading,
     error,
     createAnnotation,

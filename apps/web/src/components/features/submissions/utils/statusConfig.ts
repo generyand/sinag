@@ -242,7 +242,64 @@ export const UNIFIED_STATUS_CONFIG: Record<UnifiedStatus, UnifiedStatusConfig> =
 };
 
 /**
- * Filter options for unified status in Assessor/Validator dashboard.
+ * Validator-specific unified status config.
+ * Uses validation terminology instead of assessment terminology.
+ */
+export const VALIDATOR_UNIFIED_STATUS_CONFIG: Record<UnifiedStatus, UnifiedStatusConfig> = {
+  awaiting_assessment: {
+    label: "Awaiting Validation",
+    bgColor: "var(--kpi-blue-bg)",
+    textColor: "var(--kpi-blue-text)",
+    actionLabel: "Start Validation",
+    actionVariant: "default",
+    actionColorClass:
+      "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white",
+  },
+  assessment_in_progress: {
+    label: "Validation In Progress",
+    bgColor: "var(--kpi-blue-bg)",
+    textColor: "var(--kpi-blue-text)",
+    actionLabel: "Continue Validation",
+    actionVariant: "outline",
+    actionColorClass: "border-2 border-blue-600 text-blue-600 hover:bg-blue-50",
+  },
+  sent_for_rework: {
+    label: "Sent for Calibration",
+    bgColor: "var(--muted)",
+    textColor: "var(--text-muted)",
+    actionLabel: "View",
+    actionVariant: "ghost",
+    actionColorClass: "text-[var(--text-muted)] hover:text-[var(--foreground)]",
+  },
+  awaiting_re_review: {
+    label: "Awaiting Re-Validation",
+    bgColor: "var(--kpi-orange-bg)",
+    textColor: "var(--kpi-orange-text)",
+    actionLabel: "Re-Validate",
+    actionVariant: "default",
+    actionColorClass:
+      "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white",
+  },
+  re_assessment_in_progress: {
+    label: "Re-Validation in Progress",
+    bgColor: "var(--kpi-orange-bg)",
+    textColor: "var(--kpi-orange-text)",
+    actionLabel: "Resume Re-Validation",
+    actionVariant: "outline",
+    actionColorClass: "border-2 border-orange-500 text-orange-500 hover:bg-orange-50",
+  },
+  reviewed: {
+    label: "Validated",
+    bgColor: "var(--kpi-green-bg)",
+    textColor: "var(--kpi-green-text)",
+    actionLabel: "View",
+    actionVariant: "ghost",
+    actionColorClass: "text-[var(--text-muted)] hover:text-[var(--foreground)]",
+  },
+};
+
+/**
+ * Filter options for unified status in Assessor dashboard.
  */
 export const UNIFIED_STATUS_FILTER_OPTIONS = [
   {
@@ -267,6 +324,34 @@ export const UNIFIED_STATUS_FILTER_OPTIONS = [
     color: "bg-orange-100 text-orange-800",
   },
   { value: "reviewed", label: "Reviewed", color: "bg-green-100 text-green-800" },
+] as const;
+
+/**
+ * Filter options for unified status in Validator dashboard.
+ */
+export const VALIDATOR_UNIFIED_STATUS_FILTER_OPTIONS = [
+  {
+    value: "awaiting_assessment",
+    label: "Awaiting Validation",
+    color: "bg-blue-100 text-blue-800",
+  },
+  {
+    value: "assessment_in_progress",
+    label: "Validation In Progress",
+    color: "bg-blue-100 text-blue-800",
+  },
+  { value: "sent_for_rework", label: "Sent for Calibration", color: "bg-gray-100 text-gray-800" },
+  {
+    value: "awaiting_re_review",
+    label: "Awaiting Re-Validation",
+    color: "bg-orange-100 text-orange-800",
+  },
+  {
+    value: "re_assessment_in_progress",
+    label: "Re-Validation in Progress",
+    color: "bg-orange-100 text-orange-800",
+  },
+  { value: "reviewed", label: "Validated", color: "bg-green-100 text-green-800" },
 ] as const;
 
 /**
