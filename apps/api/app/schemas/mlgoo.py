@@ -267,6 +267,48 @@ class GovernanceAreaDetailItem(BaseModel):
     indicators: list[IndicatorDetailItem]
 
 
+class AssessorProgressItem(BaseModel):
+    """Assessor progress details for a governance area."""
+
+    assessor_id: int | None
+    assessor_name: str | None
+    status: str  # pending, in_progress, reviewed, sent_for_rework
+    progress_percent: int = Field(ge=0, le=100)
+    label: str
+
+
+class ValidatorProgressItem(BaseModel):
+    """Validator progress details for a governance area."""
+
+    validator_ids: list[int] = Field(default_factory=list)
+    validator_names: list[str] = Field(default_factory=list)
+    status: str  # pending, in_progress, reviewed
+    reviewed_indicators: int = Field(default=0, ge=0)
+    total_indicators: int = Field(default=0, ge=0)
+    progress_percent: int = Field(ge=0, le=100)
+    label: str
+
+
+class GovernanceAreaAssessmentProgressItem(BaseModel):
+    """Combined assessor + validator progress for one governance area."""
+
+    governance_area_id: int
+    governance_area_name: str
+    total_indicators: int = Field(ge=0)
+    assessor: AssessorProgressItem
+    validator: ValidatorProgressItem
+
+
+class AssessmentProgressOverview(BaseModel):
+    """Progress summary used by MLGOO Assessment Progress tab."""
+
+    active_assessors_count: int = Field(default=0, ge=0)
+    active_validators_count: int = Field(default=0, ge=0)
+    assessors_completed_count: int = Field(default=0, ge=0)
+    validators_completed_count: int = Field(default=0, ge=0)
+    governance_areas: list[GovernanceAreaAssessmentProgressItem] = Field(default_factory=list)
+
+
 class AssessmentDetailResponse(BaseModel):
     """Detailed assessment information for MLGOO review."""
 
@@ -305,6 +347,8 @@ class AssessmentDetailResponse(BaseModel):
     is_locked_for_deadline: bool
     # Rework/Calibration summary (detailed info for display)
     rework_calibration_summary: ReworkCalibrationSummary | None = None
+    # Assessor/Validator progress (for MLGOO "Assessment Progress" tab)
+    assessment_progress: AssessmentProgressOverview | None = None
 
     class Config:
         from_attributes = True
