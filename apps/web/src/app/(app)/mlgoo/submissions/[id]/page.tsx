@@ -315,6 +315,37 @@ function getProgressFillClass(status?: string): string {
   }
 }
 
+function isAssessorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
+  const validationStatus = (indicator.validation_status || "").toUpperCase();
+  return (
+    indicator.requires_rework === true ||
+    indicator.is_completed === true ||
+    validationStatus === "PASS" ||
+    validationStatus === "FAIL" ||
+    validationStatus === "CONDITIONAL"
+  );
+}
+
+function isValidatorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
+  const validationStatus = (indicator.validation_status || "").toUpperCase();
+  return (
+    validationStatus === "PASS" || validationStatus === "FAIL" || validationStatus === "CONDITIONAL"
+  );
+}
+
+function getValidationStatusLabel(status?: string | null): string {
+  switch ((status || "").toUpperCase()) {
+    case "PASS":
+      return "Pass";
+    case "FAIL":
+      return "Fail";
+    case "CONDITIONAL":
+      return "Conditional";
+    default:
+      return "Pending";
+  }
+}
+
 export default function SubmissionDetailsPage() {
   const { isAuthenticated } = useAuthStore();
   const params = useParams();
@@ -343,6 +374,11 @@ export default function SubmissionDetailsPage() {
 
   // State for expanded indicators in recalibration mode (to show MOV files)
   const [expandedIndicators, setExpandedIndicators] = React.useState<Set<number>>(new Set());
+
+  // State for expanded progress dropdowns per governance area and phase
+  const [expandedProgressDetails, setExpandedProgressDetails] = React.useState<
+    Record<string, boolean>
+  >({});
 
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
@@ -556,6 +592,14 @@ export default function SubmissionDetailsPage() {
       }
       return newSet;
     });
+  };
+
+  const toggleProgressDetail = (governanceAreaId: number, phase: "assessor" | "validator") => {
+    const key = `${governanceAreaId}-${phase}`;
+    setExpandedProgressDetails((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
   // Handle override validation status
@@ -865,53 +909,55 @@ export default function SubmissionDetailsPage() {
   });
 
   // Assessment Progress (Assessor + Validator) tab data
-  const fallbackProgressAreas: GovernanceAreaAssessmentProgressData[] = governanceAreas.map((ga: any) => {
-    const indicators = ga.indicators || [];
-    const totalIndicatorsForArea = indicators.length;
-    const validatedIndicatorsForArea = indicators.filter((ind: any) =>
-      ["PASS", "FAIL", "CONDITIONAL"].includes((ind.validation_status || "").toUpperCase())
-    ).length;
+  const fallbackProgressAreas: GovernanceAreaAssessmentProgressData[] = governanceAreas.map(
+    (ga: any) => {
+      const indicators = ga.indicators || [];
+      const totalIndicatorsForArea = indicators.length;
+      const validatedIndicatorsForArea = indicators.filter((ind: any) =>
+        ["PASS", "FAIL", "CONDITIONAL"].includes((ind.validation_status || "").toUpperCase())
+      ).length;
 
-    let fallbackValidatorStatus = "pending";
-    let fallbackValidatorLabel = "Awaiting Validation";
-    let fallbackValidatorProgress = 0;
+      let fallbackValidatorStatus = "pending";
+      let fallbackValidatorLabel = "Awaiting Validation";
+      let fallbackValidatorProgress = 0;
 
-    if (totalIndicatorsForArea > 0 && validatedIndicatorsForArea > 0) {
-      if (validatedIndicatorsForArea >= totalIndicatorsForArea) {
-        fallbackValidatorStatus = "reviewed";
-        fallbackValidatorLabel = "Validated";
-        fallbackValidatorProgress = 100;
-      } else {
-        fallbackValidatorStatus = "in_progress";
-        fallbackValidatorLabel = "In Progress";
-        fallbackValidatorProgress = Math.round(
-          (validatedIndicatorsForArea / totalIndicatorsForArea) * 100
-        );
+      if (totalIndicatorsForArea > 0 && validatedIndicatorsForArea > 0) {
+        if (validatedIndicatorsForArea >= totalIndicatorsForArea) {
+          fallbackValidatorStatus = "reviewed";
+          fallbackValidatorLabel = "Validated";
+          fallbackValidatorProgress = 100;
+        } else {
+          fallbackValidatorStatus = "in_progress";
+          fallbackValidatorLabel = "In Progress";
+          fallbackValidatorProgress = Math.round(
+            (validatedIndicatorsForArea / totalIndicatorsForArea) * 100
+          );
+        }
       }
-    }
 
-    return {
-      governance_area_id: ga.id,
-      governance_area_name: ga.name,
-      total_indicators: totalIndicatorsForArea,
-      assessor: {
-        assessor_id: null,
-        assessor_name: null,
-        status: "pending",
-        progress_percent: 0,
-        label: "Awaiting Assessor",
-      },
-      validator: {
-        validator_ids: [],
-        validator_names: [],
-        status: fallbackValidatorStatus,
-        reviewed_indicators: validatedIndicatorsForArea,
+      return {
+        governance_area_id: ga.id,
+        governance_area_name: ga.name,
         total_indicators: totalIndicatorsForArea,
-        progress_percent: fallbackValidatorProgress,
-        label: fallbackValidatorLabel,
-      },
-    };
-  });
+        assessor: {
+          assessor_id: null,
+          assessor_name: null,
+          status: "pending",
+          progress_percent: 0,
+          label: "Awaiting Assessor",
+        },
+        validator: {
+          validator_ids: [],
+          validator_names: [],
+          status: fallbackValidatorStatus,
+          reviewed_indicators: validatedIndicatorsForArea,
+          total_indicators: totalIndicatorsForArea,
+          progress_percent: fallbackValidatorProgress,
+          label: fallbackValidatorLabel,
+        },
+      };
+    }
+  );
 
   const fallbackAssessmentProgress: AssessmentProgressOverviewData = {
     active_assessors_count: governanceAreas.length,
@@ -1909,8 +1955,7 @@ export default function SubmissionDetailsPage() {
                         Assessment Progress Monitoring
                       </h2>
                       <p className="text-sm text-[var(--muted-foreground)] mt-1">
-                        Real-time progress of assigned assessors and validators per governance
-                        area.
+                        Real-time progress of assigned assessors and validators per governance area.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1952,41 +1997,64 @@ export default function SubmissionDetailsPage() {
                 {[...assessmentProgress.governance_areas]
                   .sort((a, b) => a.governance_area_id - b.governance_area_id)
                   .map((areaProgress) => {
-                    const assessorStatus = (areaProgress.assessor.status || "pending").toLowerCase();
-                    const validatorStatus = (areaProgress.validator.status || "pending").toLowerCase();
-                    const assessorName = areaProgress.assessor.assessor_name || "Unassigned Assessor";
-                    const validatorNames = areaProgress.validator.validator_names || [];
-                    const validatorDisplayName =
-                      validatorNames.length === 0
-                        ? "Unassigned Validator"
-                        : validatorNames.length === 1
-                          ? validatorNames[0]
-                          : `${validatorNames[0]} +${validatorNames.length - 1}`;
-                    const assessorProgressPercent = Math.max(
-                      0,
-                      Math.min(100, areaProgress.assessor.progress_percent || 0)
-                    );
-                    const validatorProgressPercent = Math.max(
-                      0,
-                      Math.min(100, areaProgress.validator.progress_percent || 0)
-                    );
+                    const assessorStatus = (
+                      areaProgress.assessor.status || "pending"
+                    ).toLowerCase();
+                    const validatorStatus = (
+                      areaProgress.validator.status || "pending"
+                    ).toLowerCase();
+                    const assessorName =
+                      areaProgress.assessor.assessor_name || "Unassigned Assessor";
+                    const validatorDisplayName = "Validators";
                     const assessorTotalIndicators = areaProgress.total_indicators || 0;
-                    const assessorReviewedIndicators = ["reviewed", "sent_for_rework"].includes(
-                      assessorStatus
-                    )
+                    const fallbackAssessorReviewedIndicators = [
+                      "reviewed",
+                      "sent_for_rework",
+                    ].includes(assessorStatus)
                       ? assessorTotalIndicators
                       : assessorStatus === "in_progress"
                         ? Math.min(
                             assessorTotalIndicators,
                             Math.max(
                               1,
-                              Math.round((assessorProgressPercent / 100) * assessorTotalIndicators)
+                              Math.round(
+                                ((areaProgress.assessor.progress_percent || 0) / 100) *
+                                  assessorTotalIndicators
+                              )
                             )
                           )
                         : 0;
-                    const validatorReviewedIndicators = areaProgress.validator.reviewed_indicators || 0;
+                    const fallbackValidatorReviewedIndicators =
+                      areaProgress.validator.reviewed_indicators || 0;
                     const validatorTotalIndicators =
-                      areaProgress.validator.total_indicators || areaProgress.total_indicators;
+                      areaProgress.validator.total_indicators || areaProgress.total_indicators || 0;
+                    const areaDetails = governanceAreas.find(
+                      (ga: any) => ga.id === areaProgress.governance_area_id
+                    );
+                    const sortedIndicators = [
+                      ...((areaDetails?.indicators || []) as IndicatorDetailItem[]),
+                    ].sort((a, b) =>
+                      (a.indicator_code || "").localeCompare(b.indicator_code || "", undefined, {
+                        numeric: true,
+                        sensitivity: "base",
+                      })
+                    );
+                    const assessorReviewedIndicators =
+                      sortedIndicators.length > 0
+                        ? sortedIndicators.filter(isAssessorIndicatorCompleted).length
+                        : fallbackAssessorReviewedIndicators;
+                    const validatorReviewedIndicators =
+                      sortedIndicators.length > 0
+                        ? sortedIndicators.filter(isValidatorIndicatorCompleted).length
+                        : fallbackValidatorReviewedIndicators;
+                    const assessorProgressPercent =
+                      assessorTotalIndicators > 0
+                        ? Math.round((assessorReviewedIndicators / assessorTotalIndicators) * 100)
+                        : Math.max(0, Math.min(100, areaProgress.assessor.progress_percent || 0));
+                    const validatorProgressPercent =
+                      validatorTotalIndicators > 0
+                        ? Math.round((validatorReviewedIndicators / validatorTotalIndicators) * 100)
+                        : Math.max(0, Math.min(100, areaProgress.validator.progress_percent || 0));
                     const areaDone =
                       ["reviewed", "sent_for_rework"].includes(assessorStatus) &&
                       validatorStatus === "reviewed";
@@ -2016,6 +2084,14 @@ export default function SubmissionDetailsPage() {
                         : validatorStatus === "in_progress"
                           ? "In Review"
                           : "Pending";
+                    const assessorDetailKey = `${areaProgress.governance_area_id}-assessor`;
+                    const validatorDetailKey = `${areaProgress.governance_area_id}-validator`;
+                    const assessorDetailExpanded = Boolean(
+                      expandedProgressDetails[assessorDetailKey]
+                    );
+                    const validatorDetailExpanded = Boolean(
+                      expandedProgressDetails[validatorDetailKey]
+                    );
 
                     return (
                       <Card
@@ -2040,7 +2116,18 @@ export default function SubmissionDetailsPage() {
                           </div>
 
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <div className="rounded-sm border border-gray-200 dark:border-slate-700 p-3 space-y-2.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleProgressDetail(areaProgress.governance_area_id, "assessor")
+                              }
+                              aria-expanded={assessorDetailExpanded}
+                              className={`w-full text-left rounded-sm border p-3 space-y-2.5 transition-all ${
+                                assessorDetailExpanded
+                                  ? "border-blue-300 bg-blue-50/70 shadow-sm ring-1 ring-blue-200"
+                                  : "border-gray-200 dark:border-slate-700 hover:border-blue-200 hover:bg-blue-50/30"
+                              }`}
+                            >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="min-w-0">
                                   <p className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold mb-0.5">
@@ -2050,11 +2137,18 @@ export default function SubmissionDetailsPage() {
                                     {assessorName}
                                   </p>
                                 </div>
-                                <span
-                                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getProgressBadgeClass(assessorStatus)}`}
-                                >
-                                  {assessorStatusText}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getProgressBadgeClass(assessorStatus)}`}
+                                  >
+                                    {assessorStatusText}
+                                  </span>
+                                  {assessorDetailExpanded ? (
+                                    <ChevronUp className="h-4 w-4 text-blue-600" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4 text-blue-600" />
+                                  )}
+                                </div>
                               </div>
                               <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div
@@ -2065,23 +2159,41 @@ export default function SubmissionDetailsPage() {
                               <p className="text-xs text-[var(--muted-foreground)] text-right">
                                 {assessorReviewedIndicators}/{assessorTotalIndicators}
                               </p>
-                            </div>
+                            </button>
 
-                            <div className="rounded-sm border border-gray-200 dark:border-slate-700 p-3 space-y-2.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleProgressDetail(areaProgress.governance_area_id, "validator")
+                              }
+                              aria-expanded={validatorDetailExpanded}
+                              className={`w-full text-left rounded-sm border p-3 space-y-2.5 transition-all ${
+                                validatorDetailExpanded
+                                  ? "border-green-300 bg-green-50/70 shadow-sm ring-1 ring-green-200"
+                                  : "border-gray-200 dark:border-slate-700 hover:border-green-200 hover:bg-green-50/30"
+                              }`}
+                            >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="min-w-0">
                                   <p className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)] font-semibold mb-0.5">
-                                    Phase 2 Validator
+                                    Phase 2 Validators
                                   </p>
                                   <p className="text-sm font-medium text-[var(--foreground)] truncate">
                                     {validatorDisplayName}
                                   </p>
                                 </div>
-                                <span
-                                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getProgressBadgeClass(validatorStatus)}`}
-                                >
-                                  {validatorStatusText}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getProgressBadgeClass(validatorStatus)}`}
+                                  >
+                                    {validatorStatusText}
+                                  </span>
+                                  {validatorDetailExpanded ? (
+                                    <ChevronUp className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4 text-green-600" />
+                                  )}
+                                </div>
                               </div>
                               <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div
@@ -2092,8 +2204,134 @@ export default function SubmissionDetailsPage() {
                               <p className="text-xs text-[var(--muted-foreground)] text-right">
                                 {validatorReviewedIndicators}/{validatorTotalIndicators} indicators
                               </p>
-                            </div>
+                            </button>
                           </div>
+
+                          {assessorDetailExpanded && (
+                            <div className="rounded-sm border border-blue-200 bg-blue-50/50 overflow-hidden">
+                              <div className="h-1 bg-blue-500" />
+                              <div className="px-3 py-3 space-y-2.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-[10px] uppercase tracking-wide font-semibold text-blue-700">
+                                    Assessor Completion Detail
+                                  </p>
+                                  <p className="text-[10px] uppercase tracking-wide text-blue-600/80">
+                                    Required by Checklist
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  {sortedIndicators.length === 0 ? (
+                                    <p className="text-xs text-blue-700/80">
+                                      No indicator details available for this area yet.
+                                    </p>
+                                  ) : (
+                                    sortedIndicators.map((indicator) => {
+                                      const isCompleted = isAssessorIndicatorCompleted(indicator);
+                                      const detailStatus = indicator.requires_rework
+                                        ? "Rework"
+                                        : "Complete";
+
+                                      return (
+                                        <div
+                                          key={`assessor-detail-${areaProgress.governance_area_id}-${indicator.indicator_id}`}
+                                          className="flex items-center justify-between gap-3 py-2 border-b border-blue-100 last:border-b-0"
+                                        >
+                                          <div className="min-w-0 flex items-start gap-2">
+                                            <span className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded bg-white/80 border border-blue-200 text-[10px] font-semibold text-blue-700">
+                                              {indicator.indicator_code || "N/A"}
+                                            </span>
+                                            <p className="text-xs text-[var(--foreground)] leading-relaxed">
+                                              {formatIndicatorName(
+                                                indicator.indicator_name,
+                                                assessment.cycle_year
+                                              )}
+                                            </p>
+                                          </div>
+                                          <div className="shrink-0 flex items-center gap-1.5">
+                                            <span
+                                              className={`text-[11px] font-medium ${
+                                                isCompleted ? "text-emerald-700" : "text-slate-500"
+                                              }`}
+                                            >
+                                              {isCompleted ? detailStatus : "Pending"}
+                                            </span>
+                                            {isCompleted ? (
+                                              <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                            ) : (
+                                              <XCircle className="h-4 w-4 text-slate-400" />
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {validatorDetailExpanded && (
+                            <div className="rounded-sm border border-green-200 bg-green-50/50 overflow-hidden">
+                              <div className="h-1 bg-green-500" />
+                              <div className="px-3 py-3 space-y-2.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-[10px] uppercase tracking-wide font-semibold text-green-700">
+                                    Validator Completion Detail
+                                  </p>
+                                  <p className="text-[10px] uppercase tracking-wide text-green-600/80">
+                                    Required by Checklist
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  {sortedIndicators.length === 0 ? (
+                                    <p className="text-xs text-green-700/80">
+                                      No indicator details available for this area yet.
+                                    </p>
+                                  ) : (
+                                    sortedIndicators.map((indicator) => {
+                                      const isCompleted = isValidatorIndicatorCompleted(indicator);
+                                      const detailStatus = getValidationStatusLabel(
+                                        indicator.validation_status
+                                      );
+
+                                      return (
+                                        <div
+                                          key={`validator-detail-${areaProgress.governance_area_id}-${indicator.indicator_id}`}
+                                          className="flex items-center justify-between gap-3 py-2 border-b border-green-100 last:border-b-0"
+                                        >
+                                          <div className="min-w-0 flex items-start gap-2">
+                                            <span className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded bg-white/80 border border-green-200 text-[10px] font-semibold text-green-700">
+                                              {indicator.indicator_code || "N/A"}
+                                            </span>
+                                            <p className="text-xs text-[var(--foreground)] leading-relaxed">
+                                              {formatIndicatorName(
+                                                indicator.indicator_name,
+                                                assessment.cycle_year
+                                              )}
+                                            </p>
+                                          </div>
+                                          <div className="shrink-0 flex items-center gap-1.5">
+                                            <span
+                                              className={`text-[11px] font-medium ${
+                                                isCompleted ? "text-emerald-700" : "text-slate-500"
+                                              }`}
+                                            >
+                                              {detailStatus}
+                                            </span>
+                                            {isCompleted ? (
+                                              <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                            ) : (
+                                              <XCircle className="h-4 w-4 text-slate-400" />
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     );
