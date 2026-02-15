@@ -316,17 +316,27 @@ function getProgressFillClass(status?: string): string {
 }
 
 function isAssessorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
-  const validationStatus = (indicator.validation_status || "").toUpperCase();
+  const indicatorWithProgress = indicator as IndicatorDetailItem & {
+    assessor_reviewed?: boolean;
+  };
+  if (typeof indicatorWithProgress.assessor_reviewed === "boolean") {
+    return indicatorWithProgress.assessor_reviewed;
+  }
+
   return (
     indicator.requires_rework === true ||
-    indicator.is_completed === true ||
-    validationStatus === "PASS" ||
-    validationStatus === "FAIL" ||
-    validationStatus === "CONDITIONAL"
+    Boolean(indicator.assessor_remarks && indicator.assessor_remarks.trim().length > 0)
   );
 }
 
 function isValidatorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
+  const indicatorWithProgress = indicator as IndicatorDetailItem & {
+    validator_reviewed?: boolean;
+  };
+  if (typeof indicatorWithProgress.validator_reviewed === "boolean") {
+    return indicatorWithProgress.validator_reviewed;
+  }
+
   const validationStatus = (indicator.validation_status || "").toUpperCase();
   return (
     validationStatus === "PASS" || validationStatus === "FAIL" || validationStatus === "CONDITIONAL"

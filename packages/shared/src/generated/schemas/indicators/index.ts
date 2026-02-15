@@ -486,6 +486,8 @@ export interface IndicatorDetailItem {
   validation_status: IndicatorDetailItemValidationStatus;
   assessor_remarks: IndicatorDetailItemAssessorRemarks;
   is_completed: boolean;
+  assessor_reviewed?: boolean;
+  validator_reviewed?: boolean;
   is_recalibration_target: boolean;
   requires_rework?: boolean;
   flagged_for_calibration?: boolean;

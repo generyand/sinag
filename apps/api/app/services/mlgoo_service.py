@@ -156,8 +156,16 @@ class MLGOOService:
             indicators = area.get("indicators") or []
             total_indicators = len(indicators)
 
+            assessor_reviewed_indicators = 0
             validated_indicators = 0
             for indicator in indicators:
+                if indicator.get("assessor_reviewed") is True:
+                    assessor_reviewed_indicators += 1
+
+                if indicator.get("validator_reviewed") is True:
+                    validated_indicators += 1
+                    continue
+
                 raw_status = indicator.get("validation_status")
                 normalized = raw_status.upper() if isinstance(raw_status, str) else None
                 if normalized in ("PASS", "FAIL", "CONDITIONAL"):
@@ -189,18 +197,25 @@ class MLGOOService:
             )
             if is_approved:
                 assessor_status = "reviewed"
+                assessor_reviewed_indicators = total_indicators
                 assessor_progress_percent = 100
                 assessors_completed_count += 1
             elif raw_area_status == "rework":
                 assessor_status = "sent_for_rework"
+                assessor_reviewed_indicators = total_indicators
                 assessor_progress_percent = 100
                 assessors_completed_count += 1
             elif raw_area_status == "in_review":
                 assessor_status = "in_progress"
-                assessor_progress_percent = 50
+                assessor_progress_percent = (
+                    round((assessor_reviewed_indicators / total_indicators) * 100)
+                    if total_indicators > 0
+                    else 0
+                )
             else:
                 assessor_status = "pending"
                 assessor_progress_percent = 0
+                assessor_reviewed_indicators = 0
 
             assigned_assessor = assessor_by_area.get(area_id)
             assessor_id = assigned_assessor["id"] if assigned_assessor else area_assessor_id
@@ -1266,6 +1281,17 @@ class MLGOOService:
             # Check if there's an existing response for this indicator
             response = response_by_indicator.get(indicator.id)
 
+            response_data = (
+                response.response_data
+                if response and isinstance(response.response_data, dict)
+                else {}
+            )
+            assessor_reviewed = bool(
+                response_data
+                and any(key.startswith("assessor_val_") for key in response_data.keys())
+            )
+            validator_reviewed = bool(response and response.validation_status is not None)
+
             # Count statuses (only for indicators with responses and validation status)
             if response and response.validation_status:
                 status_val = (
@@ -1293,6 +1319,8 @@ class MLGOOService:
                 else None,
                 "assessor_remarks": response.assessor_remarks if response else None,
                 "is_completed": response.is_completed if response else False,
+                "assessor_reviewed": assessor_reviewed,
+                "validator_reviewed": validator_reviewed,
                 "is_recalibration_target": bool(
                     assessment.mlgoo_recalibration_indicator_ids
                     and indicator.id in assessment.mlgoo_recalibration_indicator_ids
