@@ -1302,6 +1302,9 @@ class AssessorService:
                         "has_annotations": len(mov_file.annotations) > 0,
                         # Validator view: Mark rejected files (files with annotations that were replaced)
                         "is_rejected": mov_file.id in rejected_file_ids,
+                        # Assessor notes and rework flag for frontend validation
+                        "assessor_notes": mov_file.assessor_notes,
+                        "flagged_for_rework": mov_file.flagged_for_rework,
                     }
                     # Use the filtered_movs list created above (already filtered by rework timestamp)
                     for mov_file in filtered_movs
@@ -1636,6 +1639,26 @@ class AssessorService:
             db.query(GovernanceArea).filter(GovernanceArea.id == governance_area_id).first()
         )
         governance_area_name = governance_area.name if governance_area else "Unknown"
+
+        # Validate flagged MOV files have assessor notes
+        flagged_without_notes_count = (
+            db.query(MOVFile)
+            .join(Indicator, MOVFile.indicator_id == Indicator.id)
+            .filter(
+                MOVFile.assessment_id == assessment_id,
+                Indicator.governance_area_id == governance_area_id,
+                MOVFile.flagged_for_rework == True,  # noqa: E712
+                or_(MOVFile.assessor_notes == None, func.trim(MOVFile.assessor_notes) == ""),
+            )
+            .count()
+        )
+
+        if flagged_without_notes_count > 0:
+            raise ValueError(
+                f"Cannot send for rework: {flagged_without_notes_count} flagged MOV file(s) "
+                f"have empty MOV Notes. Please add notes to each flagged MOV file "
+                f"describing the specific issues before sending for rework."
+            )
 
         # Update area status to rework
         # Note: area_key is already defined above when checking per-area rework usage
@@ -2084,6 +2107,28 @@ class AssessorService:
             raise ValueError(
                 "At least one indicator must be flagged for calibration. "
                 "Use the 'Flag for Calibration' toggle on indicators that need corrections."
+            )
+
+        # Validate flagged indicators have validator comments
+        flagged_response_ids = [r.id for r in flagged_responses]
+        responses_with_comments = set(
+            row[0]
+            for row in db.query(FeedbackComment.response_id)
+            .filter(
+                FeedbackComment.response_id.in_(flagged_response_ids),
+                FeedbackComment.assessor_id == validator.id,
+                FeedbackComment.comment_type == "validation",
+                FeedbackComment.is_internal_note == False,  # noqa: E712
+            )
+            .all()
+        )
+
+        missing_count = len(flagged_response_ids) - len(responses_with_comments)
+        if missing_count > 0:
+            raise ValueError(
+                f"Cannot submit for calibration: {missing_count} flagged indicator(s) "
+                f"are missing comments. Please add a comment to each flagged indicator "
+                f"explaining what needs to be corrected before submitting for calibration."
             )
 
         # Get the governance area IDs of the flagged indicators

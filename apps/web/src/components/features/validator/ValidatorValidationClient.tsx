@@ -612,6 +612,24 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const onCalibrate = async () => {
+    // Validate flagged indicators have comments
+    const flaggedResponseIds = Object.entries(calibrationFlags)
+      .filter(([, flagged]) => flagged === true)
+      .map(([id]) => Number(id));
+
+    const flaggedWithoutComments = flaggedResponseIds.filter((responseId) => {
+      const comment = form[responseId]?.publicComment;
+      return !comment || comment.trim().length === 0;
+    });
+
+    if (flaggedWithoutComments.length > 0) {
+      toast.error("Missing Calibration Comments", {
+        description: `${flaggedWithoutComments.length} flagged indicator(s) are missing comments. Please add a comment to each flagged indicator explaining what needs to be corrected.`,
+        duration: 7000,
+      });
+      return;
+    }
+
     // Show immediate feedback that the process started
     toast.loading("Submitting for calibration...", { id: "calibrate-toast" });
 

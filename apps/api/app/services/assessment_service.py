@@ -2066,12 +2066,36 @@ class AssessmentService:
                     else set()
                 )
 
+                # Collect governance area IDs that need full progress reset.
+                # Rework resubmission: areas just reset from "rework" → "submitted" above.
+                # Calibration resubmission: areas flagged for calibration.
+                rework_area_ids: set[int] = set()
+                if is_rework_resubmission and assessment.area_submission_status:
+                    for area_key, area_data in assessment.area_submission_status.items():
+                        if isinstance(area_data, dict) and area_data.get(
+                            "resubmitted_after_rework"
+                        ):
+                            try:
+                                rework_area_ids.add(int(area_key))
+                            except (ValueError, TypeError):
+                                pass
+
+                if is_calibration_resubmission:
+                    rework_area_ids.update(assessment.calibrated_area_ids or [])
+
                 for response in assessment.responses:
-                    # For MLGOO recalibration: clear validation_status for recalibrated indicators
-                    # For regular rework: clear validation_status for requires_rework indicators
+                    # Clear progress for:
+                    # 1. Indicators explicitly flagged requires_rework
+                    # 2. Indicators targeted by MLGOO recalibration
+                    # 3. ALL indicators in reworked/calibrated areas (catches comment-only rework)
                     should_clear = (
                         response.requires_rework
                         or response.indicator_id in recalibration_indicator_ids
+                        or (
+                            rework_area_ids
+                            and response.indicator
+                            and response.indicator.governance_area_id in rework_area_ids
+                        )
                     )
 
                     if should_clear:
@@ -2110,6 +2134,15 @@ class AssessmentService:
                             self.logger.info(
                                 f"[RESUBMISSION] Cleared checklist and assessor_remarks for response {response.id} "
                                 f"(requires_rework=True) - AWAITING RE-REVIEW"
+                            )
+                        elif (
+                            rework_area_ids
+                            and response.indicator
+                            and response.indicator.governance_area_id in rework_area_ids
+                        ):
+                            self.logger.info(
+                                f"[AREA RESET] Cleared checklist and assessor_remarks for response {response.id} "
+                                f"(area {response.indicator.governance_area_id} in rework/calibration areas)"
                             )
 
             db.commit()

@@ -984,6 +984,39 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         });
         return;
       }
+
+      // Validate flagged MOV files have assessor notes
+      const movsWithoutNotes: string[] = [];
+
+      for (const responseId of Object.keys(reworkFlags)) {
+        const response = responses.find((r) => r.id === Number(responseId));
+        if (!response) continue;
+
+        const movs = (response.movs as AnyRecord[]) || [];
+        for (const mov of movs) {
+          if (
+            mov.flagged_for_rework === true &&
+            (!mov.assessor_notes || !String(mov.assessor_notes).trim())
+          ) {
+            const indicatorName =
+              response.indicator?.indicator_code ||
+              response.indicator?.name ||
+              `Indicator ${response.indicator_id}`;
+            movsWithoutNotes.push(indicatorName);
+            break; // One per indicator is enough for the message
+          }
+        }
+      }
+
+      if (movsWithoutNotes.length > 0) {
+        toast({
+          title: "Missing MOV Notes",
+          description: `${movsWithoutNotes.length} indicator(s) have flagged MOV files without notes. Please open each flagged MOV and add notes describing the issue.`,
+          variant: "destructive",
+          duration: 7000,
+        });
+        return;
+      }
     }
 
     // Show processing toast
