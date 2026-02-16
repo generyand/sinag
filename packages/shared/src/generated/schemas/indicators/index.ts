@@ -167,6 +167,24 @@ export type BLGUDashboardResponseMovAnnotationsByIndicatorAnyOfItem = { [key: st
 
 
 /**
+ * BLGUDashboardResponseMovNotesByIndicator
+ */
+export type BLGUDashboardResponseMovNotesByIndicator = BLGUDashboardResponseMovNotesByIndicatorAnyOf | null;
+
+
+/**
+ * BLGUDashboardResponseMovNotesByIndicatorAnyOf
+ */
+export type BLGUDashboardResponseMovNotesByIndicatorAnyOf = {[key: string]: BLGUDashboardResponseMovNotesByIndicatorAnyOfItem[]};
+
+
+/**
+ * BLGUDashboardResponseMovNotesByIndicatorAnyOfItem
+ */
+export type BLGUDashboardResponseMovNotesByIndicatorAnyOfItem = { [key: string]: unknown };
+
+
+/**
  * BodyTestCalculationApiV1IndicatorsTestCalculationPost
  */
 export interface BodyTestCalculationApiV1IndicatorsTestCalculationPost {

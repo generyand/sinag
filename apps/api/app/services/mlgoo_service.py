@@ -202,9 +202,11 @@ class MLGOOService:
                 assessors_completed_count += 1
             elif raw_area_status == "rework":
                 assessor_status = "sent_for_rework"
-                assessor_reviewed_indicators = total_indicators
-                assessor_progress_percent = 100
-                assessors_completed_count += 1
+                assessor_progress_percent = (
+                    round((assessor_reviewed_indicators / total_indicators) * 100)
+                    if total_indicators > 0
+                    else 0
+                )
             elif raw_area_status == "in_review":
                 assessor_status = "in_progress"
                 assessor_progress_percent = (
@@ -1286,11 +1288,50 @@ class MLGOOService:
                 if response and isinstance(response.response_data, dict)
                 else {}
             )
+            area_rework_resubmitted_at: datetime | None = None
+            if assessment.area_submission_status and indicator.governance_area_id is not None:
+                area_payload = assessment.area_submission_status.get(
+                    str(indicator.governance_area_id), {}
+                )
+                if isinstance(area_payload, dict) and area_payload.get("resubmitted_after_rework"):
+                    submitted_at_raw = area_payload.get("submitted_at")
+                    if isinstance(submitted_at_raw, str):
+                        try:
+                            area_rework_resubmitted_at = datetime.fromisoformat(
+                                submitted_at_raw.replace("Z", "+00:00")
+                            ).replace(tzinfo=None)
+                        except ValueError:
+                            area_rework_resubmitted_at = None
+
             assessor_reviewed = bool(
                 response_data
                 and any(key.startswith("assessor_val_") for key in response_data.keys())
             )
             validator_reviewed = bool(response and response.validation_status is not None)
+
+            # Rework/calibration indicators are not considered reviewed until re-reviewed after resubmission.
+            if response and response.requires_rework:
+                assessor_reviewed = False
+                validator_reviewed = False
+
+            if (
+                response
+                and assessor_reviewed
+                and area_rework_resubmitted_at
+                and (not response.updated_at or response.updated_at < area_rework_resubmitted_at)
+            ):
+                assessor_reviewed = False
+
+            if (
+                response
+                and validator_reviewed
+                and assessment.calibration_submitted_at
+                and (
+                    not response.updated_at
+                    or response.updated_at < assessment.calibration_submitted_at
+                )
+            ):
+                validator_reviewed = False
 
             # Count statuses (only for indicators with responses and validation status)
             if response and response.validation_status:

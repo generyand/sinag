@@ -126,16 +126,23 @@ export function Phase1Section({
     dashboardData.rework_count || 0
   );
 
+  const hasAreaLevelRework = ((dashboardData as any).area_assessor_status || []).some(
+    (area: any) => String(area?.status || "").toLowerCase() === "rework"
+  );
+
   // Phase 1 is editable only during DRAFT or assessor rework (not calibration, not MLGOO recalibration)
   const isEditable =
     dashboardData.status === "DRAFT" ||
     ((dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
       !dashboardData.is_calibration_rework &&
-      !isMlgooRecalibration);
+      !isMlgooRecalibration) ||
+    (hasAreaLevelRework && !dashboardData.is_calibration_rework && !isMlgooRecalibration);
 
   // Show rework feedback only for assessor rework (not calibration, not MLGOO recalibration)
   const showReworkFeedback =
-    (dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
+    (dashboardData.status === "REWORK" ||
+      dashboardData.status === "NEEDS_REWORK" ||
+      hasAreaLevelRework) &&
     !dashboardData.is_calibration_rework &&
     !isMlgooRecalibration;
 

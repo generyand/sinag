@@ -115,10 +115,22 @@ export function AssessmentContentPanel({
     areaSubmissionStatus === "in_review" ||
     areaSubmissionStatus === "approved";
 
+  const selectedIndicatorIdNum = Number(selectedIndicator.id);
+  const indicatorMovNotes =
+    (dashboardData?.mov_notes_by_indicator || {})[selectedIndicatorIdNum] ||
+    (dashboardData?.mov_notes_by_indicator || {})[String(selectedIndicatorIdNum)] ||
+    [];
+  const hasActionableMovFeedback =
+    (movAnnotations[selectedIndicatorIdNum] || []).length > 0 ||
+    (Array.isArray(indicatorMovNotes) && indicatorMovNotes.length > 0);
+
+  // If there is MOV-level feedback, keep this indicator editable so BLGU can upload replacements.
+  const shouldUnlockForFeedback = selectedIndicator.requiresRework || hasActionableMovFeedback;
+
   const indicatorLocked =
     isLocked ||
     isLockedDueToCalibration ||
-    isLockedDueToAreaSubmission ||
+    (isLockedDueToAreaSubmission && !shouldUnlockForFeedback) ||
     (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);
 
   // Get MOV annotations for the selected indicator

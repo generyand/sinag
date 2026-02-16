@@ -326,10 +326,12 @@ def get_blgu_dashboard(
     # Convert governance area groups to list
     governance_areas_list = list(governance_area_groups.values())
 
-    # Collect MOV annotations for all non-DRAFT assessments (not just REWORK).
-    # BLGUs submit per governance area, so they need to see assessor feedback at all times.
+    # Collect MOV annotations and MOV notes for all non-DRAFT assessments.
+    # BLGUs submit per governance area, so they need to see feedback at all times.
     mov_annotations_by_indicator = None
+    mov_notes_by_indicator = None
     annotations_by_indicator_dict: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    mov_notes_by_indicator_dict: dict[int, list[dict[str, Any]]] = defaultdict(list)
 
     if assessment.status != AssessmentStatus.DRAFT:
         from app.db.models.assessment import MOVAnnotation
@@ -348,13 +350,53 @@ def get_blgu_dashboard(
         for annotation in all_annotations:
             annotations_by_mov_file[annotation.mov_file_id].append(annotation)
 
-        # Group annotations by indicator_id
+        # Group annotations + MOV notes by indicator_id
         for response in assessment.responses:
             mov_files_for_indicator = [
                 mf for mf in assessment.mov_files if mf.indicator_id == response.indicator_id
             ]
 
             for mov_file in mov_files_for_indicator:
+                if mov_file.assessor_notes and mov_file.assessor_notes.strip():
+                    mov_notes_by_indicator_dict[response.indicator_id].append(
+                        {
+                            "mov_file_id": mov_file.id,
+                            "mov_filename": mov_file.file_name,
+                            "note": mov_file.assessor_notes,
+                            "note_type": "assessor_rework",
+                            "flagged": bool(mov_file.flagged_for_rework),
+                            "created_at": mov_file.flagged_at.isoformat() + "Z"
+                            if mov_file.flagged_at
+                            else mov_file.uploaded_at.isoformat() + "Z"
+                            if mov_file.uploaded_at
+                            else None,
+                            "indicator_id": response.indicator_id,
+                            "indicator_name": year_resolver.resolve_string(response.indicator.name)
+                            if year_resolver
+                            else response.indicator.name,
+                        }
+                    )
+
+                if mov_file.validator_notes and mov_file.validator_notes.strip():
+                    mov_notes_by_indicator_dict[response.indicator_id].append(
+                        {
+                            "mov_file_id": mov_file.id,
+                            "mov_filename": mov_file.file_name,
+                            "note": mov_file.validator_notes,
+                            "note_type": "validator_calibration",
+                            "flagged": bool(mov_file.flagged_for_calibration),
+                            "created_at": mov_file.calibration_flagged_at.isoformat() + "Z"
+                            if mov_file.calibration_flagged_at
+                            else mov_file.uploaded_at.isoformat() + "Z"
+                            if mov_file.uploaded_at
+                            else None,
+                            "indicator_id": response.indicator_id,
+                            "indicator_name": year_resolver.resolve_string(response.indicator.name)
+                            if year_resolver
+                            else response.indicator.name,
+                        }
+                    )
+
                 for annotation in annotations_by_mov_file.get(mov_file.id, []):
                     annotations_by_indicator_dict[response.indicator_id].append(
                         {
@@ -380,6 +422,9 @@ def get_blgu_dashboard(
         mov_annotations_by_indicator = (
             dict(annotations_by_indicator_dict) if annotations_by_indicator_dict else None
         )
+        mov_notes_by_indicator = (
+            dict(mov_notes_by_indicator_dict) if mov_notes_by_indicator_dict else None
+        )
 
         # Update mov_annotation_count in governance_area_groups
         for area_id, area_data in governance_area_groups.items():
@@ -388,10 +433,18 @@ def get_blgu_dashboard(
                 annotation_count = len(annotations_by_indicator_dict.get(indicator_id, []))
                 indicator_data["mov_annotation_count"] = annotation_count
 
-    # Rework-specific data: comments and addressed indicators (only during REWORK)
+    # Rework/calibration-specific data: comments and addressed indicators
     rework_comments = None
     addressed_indicator_ids = None
-    if assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]:
+    area_submission_status_payload = assessment.area_submission_status or {}
+    has_pending_area_rework = any(
+        isinstance(v, dict) and str(v.get("status", "")).lower() == "rework"
+        for v in area_submission_status_payload.values()
+    )
+    if (
+        assessment.status in [AssessmentStatus.REWORK, AssessmentStatus.NEEDS_REWORK]
+        or has_pending_area_rework
+    ):
         # Collect all feedback comments from all responses (excluding internal notes)
         comments_list = []
         for response in assessment.responses:
@@ -414,32 +467,72 @@ def get_blgu_dashboard(
                         }
                     )
 
+        # Also include MOV Notes as rework/calibration feedback items so BLGU sees
+        # file-level guidance consistently in dashboard cards.
+        for indicator_notes in mov_notes_by_indicator_dict.values():
+            for note_item in indicator_notes:
+                note_text = (note_item.get("note") or "").strip()
+                if not note_text:
+                    continue
+                comments_list.append(
+                    {
+                        "comment": note_text,
+                        "comment_type": note_item.get("note_type"),
+                        "indicator_id": note_item.get("indicator_id"),
+                        "indicator_name": note_item.get("indicator_name"),
+                        "created_at": note_item.get("created_at"),
+                    }
+                )
+
         rework_comments = comments_list if comments_list else None
 
-        # Calculate addressed_indicator_ids - indicators with new uploads after rework request
+        # Calculate addressed_indicator_ids - indicators with new uploads after request timestamp
         addressed_indicator_ids = []
-        rework_requested_at = assessment.rework_requested_at
+        feedback_indicator_ids = set()
+        for comment_data in comments_list:
+            if comment_data.get("indicator_id"):
+                feedback_indicator_ids.add(comment_data["indicator_id"])
+        for indicator_id in annotations_by_indicator_dict.keys():
+            feedback_indicator_ids.add(indicator_id)
+        for indicator_id in mov_notes_by_indicator_dict.keys():
+            feedback_indicator_ids.add(indicator_id)
 
-        if rework_requested_at:
-            feedback_indicator_ids = set()
+        # Build per-governance-area rework timestamps for per-area assessor workflow.
+        area_rework_requested_at: dict[int, datetime] = {}
+        for area_key, area_data in area_submission_status_payload.items():
+            if not isinstance(area_data, dict):
+                continue
+            raw_ts = area_data.get("rework_requested_at")
+            if not isinstance(raw_ts, str):
+                continue
+            try:
+                parsed = datetime.fromisoformat(raw_ts.replace("Z", "+00:00")).replace(tzinfo=None)
+                area_rework_requested_at[int(area_key)] = parsed
+            except (ValueError, TypeError):
+                continue
 
-            for comment_data in comments_list:
-                if comment_data.get("indicator_id"):
-                    feedback_indicator_ids.add(comment_data["indicator_id"])
+        for indicator_id in feedback_indicator_ids:
+            response = response_lookup.get(indicator_id)
+            area_id = (
+                response.indicator.governance_area_id if response and response.indicator else None
+            )
+            request_timestamp = (
+                area_rework_requested_at.get(area_id)
+                if area_id in area_rework_requested_at
+                else assessment.calibration_requested_at or assessment.rework_requested_at
+            )
+            if not request_timestamp:
+                continue
 
-            for indicator_id in annotations_by_indicator_dict.keys():
-                feedback_indicator_ids.add(indicator_id)
-
-            for indicator_id in feedback_indicator_ids:
-                has_new_files = any(
-                    mf.indicator_id == indicator_id
-                    and mf.uploaded_at
-                    and mf.uploaded_at > rework_requested_at
-                    and mf.deleted_at is None
-                    for mf in assessment.mov_files
-                )
-                if has_new_files:
-                    addressed_indicator_ids.append(indicator_id)
+            has_new_files = any(
+                mf.indicator_id == indicator_id
+                and mf.uploaded_at
+                and mf.uploaded_at > request_timestamp
+                and mf.deleted_at is None
+                for mf in assessment.mov_files
+            )
+            if has_new_files:
+                addressed_indicator_ids.append(indicator_id)
 
     # PARALLEL CALIBRATION: Get all pending calibration info
     # pending_calibrations is a list of calibration requests from different validators
@@ -1001,7 +1094,7 @@ def get_blgu_dashboard(
     # Only populated when assessment is beyond DRAFT status (submitted for review)
     # =========================================================================
     area_assessor_status = None
-    if assessment.status != AssessmentStatus.DRAFT:
+    if assessment.status != AssessmentStatus.DRAFT or assessment.area_submission_status:
         # Get all governance areas
         all_governance_areas_for_status = db.query(GovernanceArea).order_by(GovernanceArea.id).all()
 
@@ -1096,6 +1189,7 @@ def get_blgu_dashboard(
         if assessment.calibration_submitted_at
         else None,  # When BLGU resubmitted after calibration (locks resubmit button)
         "mov_annotations_by_indicator": mov_annotations_by_indicator,  # MOV annotations grouped by indicator
+        "mov_notes_by_indicator": mov_notes_by_indicator,  # MOV notes grouped by indicator
         "addressed_indicator_ids": addressed_indicator_ids,  # Indicators with feedback that have new uploads after rework
         # AI Summary for rework/calibration guidance
         "ai_summary": ai_summary,

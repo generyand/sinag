@@ -212,13 +212,18 @@ class AssessorService:
                     1
                     for r in area_responses
                     if r.response_data
+                    and not r.requires_rework
                     and any(k.startswith("assessor_val_") for k in r.response_data.keys())
                 )
                 total_count = len(area_responses)
             else:
                 # Validator: progress based on all indicators (system-wide)
                 area_responses = a.responses
-                reviewed_count = sum(1 for r in area_responses if r.validation_status is not None)
+                reviewed_count = sum(
+                    1
+                    for r in area_responses
+                    if r.validation_status is not None and not r.requires_rework
+                )
                 total_count = len(area_responses)
 
             area_progress = round((reviewed_count / total_count * 100) if total_count > 0 else 0)
@@ -254,6 +259,7 @@ class AssessorService:
                                 1
                                 for r in area_responses
                                 if r.response_data
+                                and not r.requires_rework
                                 and any(
                                     k.startswith("assessor_val_") for k in r.response_data.keys()
                                 )
@@ -275,6 +281,7 @@ class AssessorService:
                         1
                         for r in area_responses
                         if r.validation_status is not None
+                        and not r.requires_rework
                         and r.updated_at
                         and r.updated_at >= a.calibration_submitted_at
                     )

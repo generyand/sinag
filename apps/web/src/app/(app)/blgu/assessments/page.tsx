@@ -216,6 +216,11 @@ export default function BLGUAssessmentsPage() {
         (areaData) => areaData?.status === "draft" || !areaData?.status
       )
     : false;
+  const hasAnyReworkArea = hasPerAreaTracking
+    ? Object.values(typedAreaStatusData?.area_submission_status || {}).some(
+        (areaData) => areaData?.status === "rework"
+      )
+    : false;
 
   // Assessment is fully locked only when:
   // 1. Status is in a locked state (submitted, validated, etc.) AND
@@ -224,7 +229,7 @@ export default function BLGUAssessmentsPage() {
     (normalizedStatus === "submitted" ||
       normalizedStatus === "submitted-for-review" ||
       normalizedStatus === "in-review") &&
-    (!hasPerAreaTracking || !hasAnyDraftArea);
+    (!hasPerAreaTracking || (!hasAnyDraftArea && !hasAnyReworkArea));
 
   // Always show locked banner for these statuses (past the submission phase)
   const isPastSubmission =
@@ -279,7 +284,7 @@ export default function BLGUAssessmentsPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Desktop & Tablet (md+): Left Sidebar Tree Navigation */}
         <nav
-          className="hidden md:block w-48 lg:w-48 xl:w-56 flex-shrink-0"
+          className="hidden md:block w-60 lg:w-64 xl:w-72 flex-shrink-0"
           aria-label="Assessment navigation sidebar"
         >
           <TreeNavigator

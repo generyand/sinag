@@ -15,6 +15,7 @@ import type { AutoSubmitDetail } from '../common';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseAreaAssessorStatus } from '../assessor';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
+import type { BLGUDashboardResponseMovNotesByIndicator } from '../indicators';
 import type { BLGUDashboardResponseAddressedIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationMovFileIds } from '../movs';
@@ -291,6 +292,8 @@ export interface BLGUDashboardResponse {
   rework_comments?: BLGUDashboardResponseReworkComments;
   /** MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations) */
   mov_annotations_by_indicator?: BLGUDashboardResponseMovAnnotationsByIndicator;
+  /** MOV notes grouped by indicator ID, including assessor and validator notes with file metadata. */
+  mov_notes_by_indicator?: BLGUDashboardResponseMovNotesByIndicator;
   /** List of indicator IDs that have been addressed after rework was requested. An indicator is considered 'addressed' when BLGU uploads new MOV files after rework_requested_at. Use this (not is_complete) to determine if an indicator is 'Fixed' in the rework workflow. */
   addressed_indicator_ids?: BLGUDashboardResponseAddressedIndicatorIds;
   /** AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages. */

@@ -369,6 +369,10 @@ class BLGUDashboardResponse(BaseModel):
         None,
         description="MOV annotations grouped by indicator ID - shows which MOVs assessor highlighted/commented on (null if no annotations)",
     )
+    mov_notes_by_indicator: dict[int, list[dict[str, Any]]] | None = Field(
+        None,
+        description="MOV notes grouped by indicator ID, including assessor and validator notes with file metadata.",
+    )
 
     # Epic 5.0: Track which rework indicators have been addressed by BLGU
     addressed_indicator_ids: list[int] | None = Field(

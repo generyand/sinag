@@ -323,10 +323,7 @@ function isAssessorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
     return indicatorWithProgress.assessor_reviewed;
   }
 
-  return (
-    indicator.requires_rework === true ||
-    Boolean(indicator.assessor_remarks && indicator.assessor_remarks.trim().length > 0)
-  );
+  return Boolean(indicator.assessor_remarks && indicator.assessor_remarks.trim().length > 0);
 }
 
 function isValidatorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {

@@ -90,6 +90,16 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
   // For REWORK: Show indicators with assessor feedback (comments OR annotations)
   const failedIndicators = useMemo<FailedIndicator[]>(() => {
     const indicatorMap = new Map<number, FailedIndicator>();
+    const movNotesByIndicator = ((dashboardData as any).mov_notes_by_indicator || {}) as Record<
+      string,
+      Array<{
+        note?: string;
+        note_type?: string;
+        indicator_id?: number;
+        indicator_name?: string;
+        created_at?: string | null;
+      }>
+    >;
 
     // Get addressed indicator IDs from backend - these are indicators where
     // BLGU uploaded new files AFTER rework was requested
@@ -318,6 +328,44 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
           }
         }
         indicatorMap.get(comment.indicator_id)?.comments.push(comment);
+      });
+
+      // Add indicators from MOV Notes (assessor/validator file-level notes)
+      Object.entries(movNotesByIndicator).forEach(([indicatorIdStr, notes]) => {
+        const indicatorId = Number(indicatorIdStr);
+        if (!indicatorMap.has(indicatorId)) {
+          const indicator = findIndicator(indicatorId);
+          if (indicator) {
+            indicatorMap.set(indicatorId, {
+              indicator_id: indicatorId,
+              indicator_name: indicator.indicator_name,
+              governance_area_id: indicator.governance_area_id,
+              governance_area_name: indicator.governance_area_name,
+              is_complete: indicator.is_complete,
+              is_addressed: addressedIds.has(indicatorId),
+              comments: [],
+              annotations: [],
+              total_feedback_items: 0,
+              has_mov_issues: false,
+              has_field_issues: false,
+              route_path: `/blgu/assessments?indicator=${indicatorId}`,
+            });
+          }
+        }
+
+        const failed = indicatorMap.get(indicatorId);
+        if (failed) {
+          const normalizedNotes = (notes || [])
+            .filter((n) => typeof n?.note === "string" && n.note.trim().length > 0)
+            .map((n) => ({
+              comment: n.note!,
+              comment_type: n.note_type || "mov_note",
+              indicator_id: indicatorId,
+              indicator_name: n.indicator_name || failed.indicator_name,
+              created_at: n.created_at || null,
+            }));
+          failed.comments.push(...(normalizedNotes as any));
+        }
       });
 
       // Add indicators from MOV annotations
