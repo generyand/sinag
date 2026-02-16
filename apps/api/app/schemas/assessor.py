@@ -149,24 +149,31 @@ class AnnotationResponse(BaseModel):
 
 
 class MOVAssessorFeedbackUpdate(BaseModel):
-    """Request schema for updating per-MOV assessor feedback.
+    """Request schema for updating per-MOV feedback.
 
-    Assessors can add general notes and flag individual MOV files for rework.
-    The flag auto-toggles ON when notes are added, but can be manually toggled OFF.
+    Assessors and validators have separate MOV notes and flags:
+    - Assessors: assessor_notes + flagged_for_rework
+    - Validators: validator_notes + flagged_for_calibration
     """
 
     assessor_notes: str | None = None
     flagged_for_rework: bool | None = None
+    validator_notes: str | None = None
+    flagged_for_calibration: bool | None = None
 
 
 class MOVAssessorFeedbackResponse(BaseModel):
-    """Response schema for per-MOV assessor feedback."""
+    """Response schema for per-MOV feedback (assessor + validator fields)."""
 
     mov_file_id: int
     assessor_notes: str | None = None
     flagged_for_rework: bool = False
     flagged_by_assessor_id: int | None = None
     flagged_at: datetime | None = None
+    validator_notes: str | None = None
+    flagged_for_calibration: bool = False
+    flagged_by_validator_id: int | None = None
+    calibration_flagged_at: datetime | None = None
 
     class Config:
         from_attributes = True

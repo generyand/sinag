@@ -255,6 +255,10 @@ export interface MOVAssessorFeedbackResponse {
   flagged_for_rework?: boolean;
   flagged_by_assessor_id?: MOVAssessorFeedbackResponseFlaggedByAssessorId;
   flagged_at?: MOVAssessorFeedbackResponseFlaggedAt;
+  validator_notes?: MOVAssessorFeedbackResponseValidatorNotes;
+  flagged_for_calibration?: boolean;
+  flagged_by_validator_id?: MOVAssessorFeedbackResponseFlaggedByValidatorId;
+  calibration_flagged_at?: MOVAssessorFeedbackResponseCalibrationFlaggedAt;
 }
 
 
@@ -262,6 +266,12 @@ export interface MOVAssessorFeedbackResponse {
  * MOVAssessorFeedbackResponseAssessorNotes
  */
 export type MOVAssessorFeedbackResponseAssessorNotes = string | null;
+
+
+/**
+ * MOVAssessorFeedbackResponseCalibrationFlaggedAt
+ */
+export type MOVAssessorFeedbackResponseCalibrationFlaggedAt = string | null;
 
 
 /**
@@ -277,11 +287,25 @@ export type MOVAssessorFeedbackResponseFlaggedByAssessorId = number | null;
 
 
 /**
+ * MOVAssessorFeedbackResponseFlaggedByValidatorId
+ */
+export type MOVAssessorFeedbackResponseFlaggedByValidatorId = number | null;
+
+
+/**
+ * MOVAssessorFeedbackResponseValidatorNotes
+ */
+export type MOVAssessorFeedbackResponseValidatorNotes = string | null;
+
+
+/**
  * MOVAssessorFeedbackUpdate
  */
 export interface MOVAssessorFeedbackUpdate {
   assessor_notes?: MOVAssessorFeedbackUpdateAssessorNotes;
   flagged_for_rework?: MOVAssessorFeedbackUpdateFlaggedForRework;
+  validator_notes?: MOVAssessorFeedbackUpdateValidatorNotes;
+  flagged_for_calibration?: MOVAssessorFeedbackUpdateFlaggedForCalibration;
 }
 
 
@@ -292,9 +316,21 @@ export type MOVAssessorFeedbackUpdateAssessorNotes = string | null;
 
 
 /**
+ * MOVAssessorFeedbackUpdateFlaggedForCalibration
+ */
+export type MOVAssessorFeedbackUpdateFlaggedForCalibration = boolean | null;
+
+
+/**
  * MOVAssessorFeedbackUpdateFlaggedForRework
  */
 export type MOVAssessorFeedbackUpdateFlaggedForRework = boolean | null;
+
+
+/**
+ * MOVAssessorFeedbackUpdateValidatorNotes
+ */
+export type MOVAssessorFeedbackUpdateValidatorNotes = string | null;
 
 
 /**

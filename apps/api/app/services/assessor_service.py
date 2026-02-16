@@ -1305,6 +1305,9 @@ class AssessorService:
                         # Assessor notes and rework flag for frontend validation
                         "assessor_notes": mov_file.assessor_notes,
                         "flagged_for_rework": mov_file.flagged_for_rework,
+                        # Validator notes and calibration flag for frontend validation
+                        "validator_notes": mov_file.validator_notes,
+                        "flagged_for_calibration": mov_file.flagged_for_calibration,
                     }
                     # Use the filtered_movs list created above (already filtered by rework timestamp)
                     for mov_file in filtered_movs
@@ -3498,9 +3501,11 @@ class AssessorService:
         self,
         db: Session,
         mov_file_id: int,
-        assessor_id: int,
+        reviewer: User,
         assessor_notes: str | None = None,
         flagged_for_rework: bool | None = None,
+        validator_notes: str | None = None,
+        flagged_for_calibration: bool | None = None,
     ) -> dict:
         """
         Update assessor notes and rework flag for a specific MOV file.
@@ -3511,9 +3516,11 @@ class AssessorService:
         Args:
             db: Database session
             mov_file_id: ID of the MOV file to update
-            assessor_id: ID of the assessor making the update
+            reviewer: Current reviewer (assessor or validator)
             assessor_notes: Optional general notes about this MOV
             flagged_for_rework: Optional flag indicating MOV needs rework
+            validator_notes: Optional validator notes about this MOV
+            flagged_for_calibration: Optional flag indicating MOV needs calibration
 
         Returns:
             dict with updated MOV feedback data
@@ -3527,31 +3534,83 @@ class AssessorService:
         if not mov_file:
             raise ValueError(f"MOV file {mov_file_id} not found")
 
-        # Update assessor notes if provided
-        if assessor_notes is not None:
-            mov_file.assessor_notes = assessor_notes if assessor_notes.strip() else None
+        is_validator = reviewer.role == UserRole.VALIDATOR
 
-        # Determine flagged_for_rework value
-        # If explicitly set, use that value
-        # Otherwise, auto-toggle ON if notes were just added (and not empty)
-        if flagged_for_rework is not None:
-            new_flag_value = flagged_for_rework
-        elif assessor_notes is not None and assessor_notes.strip():
-            # Auto-toggle ON when notes are added
-            new_flag_value = True
-        else:
-            # Keep existing value
-            new_flag_value = mov_file.flagged_for_rework
+        if is_validator:
+            # Validator updates only validator fields
+            if validator_notes is not None:
+                mov_file.validator_notes = validator_notes if validator_notes.strip() else None
 
-        # Update flag and tracking fields
-        if new_flag_value != mov_file.flagged_for_rework:
-            mov_file.flagged_for_rework = new_flag_value
-            if new_flag_value:
-                mov_file.flagged_by_assessor_id = assessor_id
-                mov_file.flagged_at = datetime.utcnow()
+            if flagged_for_calibration is not None:
+                new_flag_value = flagged_for_calibration
+            elif validator_notes is not None and validator_notes.strip():
+                new_flag_value = True
             else:
-                # Keep the flagged_by info for history, just clear the flag
-                mov_file.flagged_at = None
+                new_flag_value = mov_file.flagged_for_calibration
+
+            if new_flag_value != mov_file.flagged_for_calibration:
+                mov_file.flagged_for_calibration = new_flag_value
+                if new_flag_value:
+                    mov_file.flagged_by_validator_id = reviewer.id
+                    mov_file.calibration_flagged_at = datetime.utcnow()
+                else:
+                    mov_file.calibration_flagged_at = None
+        else:
+            # Assessor updates only assessor fields
+            if assessor_notes is not None:
+                mov_file.assessor_notes = assessor_notes if assessor_notes.strip() else None
+
+            if flagged_for_rework is not None:
+                new_flag_value = flagged_for_rework
+            elif assessor_notes is not None and assessor_notes.strip():
+                new_flag_value = True
+            else:
+                new_flag_value = mov_file.flagged_for_rework
+
+            if new_flag_value != mov_file.flagged_for_rework:
+                mov_file.flagged_for_rework = new_flag_value
+                if new_flag_value:
+                    mov_file.flagged_by_assessor_id = reviewer.id
+                    mov_file.flagged_at = datetime.utcnow()
+                else:
+                    mov_file.flagged_at = None
+
+        # Keep indicator-level flags in sync with MOV-level flags.
+        linked_response = (
+            db.query(AssessmentResponse)
+            .filter(
+                AssessmentResponse.assessment_id == mov_file.assessment_id,
+                AssessmentResponse.indicator_id == mov_file.indicator_id,
+            )
+            .first()
+        )
+        if linked_response:
+            if is_validator:
+                has_any_calibration_flag = (
+                    db.query(MOVFile.id)
+                    .filter(
+                        MOVFile.assessment_id == mov_file.assessment_id,
+                        MOVFile.indicator_id == mov_file.indicator_id,
+                        MOVFile.deleted_at.is_(None),
+                        MOVFile.flagged_for_calibration.is_(True),
+                    )
+                    .first()
+                    is not None
+                )
+                linked_response.flagged_for_calibration = has_any_calibration_flag
+            else:
+                has_any_rework_flag = (
+                    db.query(MOVFile.id)
+                    .filter(
+                        MOVFile.assessment_id == mov_file.assessment_id,
+                        MOVFile.indicator_id == mov_file.indicator_id,
+                        MOVFile.deleted_at.is_(None),
+                        MOVFile.flagged_for_rework.is_(True),
+                    )
+                    .first()
+                    is not None
+                )
+                linked_response.requires_rework = has_any_rework_flag
 
         db.commit()
         db.refresh(mov_file)
@@ -3562,6 +3621,10 @@ class AssessorService:
             "flagged_for_rework": mov_file.flagged_for_rework,
             "flagged_by_assessor_id": mov_file.flagged_by_assessor_id,
             "flagged_at": mov_file.flagged_at,
+            "validator_notes": mov_file.validator_notes,
+            "flagged_for_calibration": mov_file.flagged_for_calibration,
+            "flagged_by_validator_id": mov_file.flagged_by_validator_id,
+            "calibration_flagged_at": mov_file.calibration_flagged_at,
         }
 
     def get_mov_assessor_feedback(
@@ -3593,6 +3656,10 @@ class AssessorService:
             "flagged_for_rework": mov_file.flagged_for_rework,
             "flagged_by_assessor_id": mov_file.flagged_by_assessor_id,
             "flagged_at": mov_file.flagged_at,
+            "validator_notes": mov_file.validator_notes,
+            "flagged_for_calibration": mov_file.flagged_for_calibration,
+            "flagged_by_validator_id": mov_file.flagged_by_validator_id,
+            "calibration_flagged_at": mov_file.calibration_flagged_at,
         }
 
 

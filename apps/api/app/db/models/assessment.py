@@ -649,12 +649,20 @@ class MOVFile(Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     flagged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Validator-specific MOV feedback is tracked separately from assessor feedback
+    validator_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    flagged_for_calibration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    flagged_by_validator_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    calibration_flagged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     assessment = relationship("Assessment", back_populates="mov_files")
     indicator = relationship("Indicator", back_populates="mov_files")
     uploader = relationship("User", foreign_keys=[uploaded_by])
     flagged_by = relationship("User", foreign_keys=[flagged_by_assessor_id])
+    calibration_flagged_by = relationship("User", foreign_keys=[flagged_by_validator_id])
 
 
 class FeedbackComment(Base):

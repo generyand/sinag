@@ -830,9 +830,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   calibrationRequestedAt={calibrationRequestedAt}
                   reworkRequestedAt={reworkRequestedAt}
                   separationLabel={separationLabel}
-                  readOnly
-                  calibrationFlags={calibrationFlags}
-                  onCalibrationFlagChange={(responseId, flagged) => {
+                  onReworkFlagSaved={(responseId, _movFileId, flagged) => {
                     setCalibrationFlags((prev) => ({
                       ...prev,
                       [responseId]: flagged,
@@ -845,7 +843,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       [responseId]: true,
                     }));
                   }}
-                  onAnnotationDeleted={(responseId, remainingCount) => {
+                  onAnnotationDeleted={(responseId, _movFileId, remainingCount) => {
                     // Auto-disable calibration flag when ALL annotations are removed
                     if (remainingCount === 0) {
                       setCalibrationFlags((prev) => ({
@@ -944,9 +942,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       calibrationRequestedAt={calibrationRequestedAt}
                       reworkRequestedAt={reworkRequestedAt}
                       separationLabel={separationLabel}
-                      readOnly
-                      calibrationFlags={calibrationFlags}
-                      onCalibrationFlagChange={(responseId, flagged) => {
+                      onReworkFlagSaved={(responseId, _movFileId, flagged) => {
                         setCalibrationFlags((prev) => ({
                           ...prev,
                           [responseId]: flagged,
@@ -959,7 +955,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                           [responseId]: true,
                         }));
                       }}
-                      onAnnotationDeleted={(responseId, remainingCount) => {
+                      onAnnotationDeleted={(responseId, _movFileId, remainingCount) => {
                         // Auto-disable calibration flag when ALL annotations are removed
                         if (remainingCount === 0) {
                           setCalibrationFlags((prev) => ({
@@ -1026,9 +1022,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 calibrationRequestedAt={calibrationRequestedAt}
                 reworkRequestedAt={reworkRequestedAt}
                 separationLabel={separationLabel}
-                readOnly
-                calibrationFlags={calibrationFlags}
-                onCalibrationFlagChange={(responseId, flagged) => {
+                onReworkFlagSaved={(responseId, _movFileId, flagged) => {
                   setCalibrationFlags((prev) => ({
                     ...prev,
                     [responseId]: flagged,
@@ -1041,7 +1035,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     [responseId]: true,
                   }));
                 }}
-                onAnnotationDeleted={(responseId, remainingCount) => {
+                onAnnotationDeleted={(responseId, _movFileId, remainingCount) => {
                   // Auto-disable calibration flag when ALL annotations are removed
                   if (remainingCount === 0) {
                     setCalibrationFlags((prev) => ({

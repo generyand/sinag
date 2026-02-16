@@ -317,6 +317,10 @@ export function FileList({
               const hasAnnotations = fileAnnotations.length > 0;
               const mlgooFlagged = getMlgooFlaggedInfo(file.id);
               const hasAssessorNotes = !!(file.assessor_notes && file.assessor_notes.trim());
+              const hasValidatorNotes = !!(
+                (file as any).validator_notes && String((file as any).validator_notes).trim()
+              );
+              const hasMovNotes = hasAssessorNotes || hasValidatorNotes;
               const isFlaggedForRework = !!(file as any).flagged_for_rework;
               const needsReupload = hasAnnotations || mlgooFlagged.isFlagged || isFlaggedForRework;
 
@@ -331,7 +335,7 @@ export function FileList({
                         ? "border-2 border-orange-400 bg-orange-50/70 dark:border-orange-500 dark:bg-orange-950/30"
                         : isFlaggedForRework
                           ? "border-2 border-orange-400 bg-orange-50/70 dark:border-orange-500 dark:bg-orange-950/30"
-                          : hasAssessorNotes
+                          : hasMovNotes
                             ? "border-2 border-yellow-400 bg-yellow-50/70 dark:border-yellow-500 dark:bg-yellow-950/30"
                             : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--hover)]"
                   )}
@@ -355,10 +359,10 @@ export function FileList({
                           className="h-5 w-5 text-orange-600 dark:text-orange-400"
                           aria-label="File flagged for rework"
                         />
-                      ) : hasAssessorNotes ? (
+                      ) : hasMovNotes ? (
                         <AlertTriangle
                           className="h-5 w-5 text-yellow-600 dark:text-yellow-400"
-                          aria-label="File has assessor notes"
+                          aria-label="File has MOV notes"
                         />
                       ) : (
                         <CheckCircle2
@@ -377,7 +381,7 @@ export function FileList({
                                   "text-sm truncate max-w-[200px] cursor-default",
                                   hasAnnotations || isFlaggedForRework
                                     ? "font-semibold text-orange-900 dark:text-orange-100"
-                                    : hasAssessorNotes
+                                    : hasMovNotes
                                       ? "font-semibold text-yellow-900 dark:text-yellow-100"
                                       : "font-medium text-[var(--text-primary)]"
                                 )}
@@ -417,7 +421,7 @@ export function FileList({
                             Flagged for Rework
                           </Badge>
                         )}
-                        {hasAssessorNotes &&
+                        {hasMovNotes &&
                           !mlgooFlagged.isFlagged &&
                           !hasAnnotations &&
                           !isFlaggedForRework && (
@@ -460,6 +464,20 @@ export function FileList({
                           </div>
                         </div>
                       )}
+                      {hasValidatorNotes && (
+                        <div className="flex items-start gap-2 text-xs text-yellow-700 dark:text-yellow-300 mt-1 bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded border border-yellow-200 dark:border-yellow-800">
+                          <StickyNote
+                            className="h-3.5 w-3.5 mt-0.5 flex-shrink-0"
+                            aria-hidden="true"
+                          />
+                          <div>
+                            <span className="font-medium">Validator Note: </span>
+                            <span className="italic">
+                              &quot;{String((file as any).validator_notes)}&quot;
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       {/* Annotation count and view feedback link */}
                       {hasAnnotations && (
                         <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300 mt-1">
@@ -482,7 +500,7 @@ export function FileList({
                           "flex items-center gap-2 text-xs mt-1",
                           hasAnnotations || isFlaggedForRework
                             ? "text-orange-600/80 dark:text-orange-400/80"
-                            : hasAssessorNotes
+                            : hasMovNotes
                               ? "text-yellow-600/80 dark:text-yellow-400/80"
                               : "text-muted-foreground"
                         )}
@@ -508,7 +526,7 @@ export function FileList({
                         ? "border-red-300 dark:border-red-700"
                         : hasAnnotations || isFlaggedForRework
                           ? "border-orange-300 dark:border-orange-700"
-                          : hasAssessorNotes
+                          : hasMovNotes
                             ? "border-yellow-300 dark:border-yellow-700"
                             : "border-[var(--border)]"
                     )}
@@ -623,6 +641,20 @@ export function FileList({
                         <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
                           <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
                             {viewAnnotationsDialog.file.assessor_notes}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  {(viewAnnotationsDialog.file as any).validator_notes &&
+                    String((viewAnnotationsDialog.file as any).validator_notes).trim() && (
+                      <div className="mb-4">
+                        <h3 className="font-semibold text-sm mb-2 pb-2 border-b border-gray-200 dark:border-gray-700 text-[var(--foreground)] flex items-center gap-1.5">
+                          <StickyNote className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          Validator Notes
+                        </h3>
+                        <div className="p-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+                          <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed">
+                            {String((viewAnnotationsDialog.file as any).validator_notes)}
                           </p>
                         </div>
                       </div>

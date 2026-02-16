@@ -9,13 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
+import { useAuthStore } from "@/store/useAuthStore";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
 import {
   getGetAssessorMovsMovFileIdFeedbackQueryKey,
   useGetAssessorMovsMovFileIdFeedback,
   usePatchAssessorMovsMovFileIdFeedback,
 } from "@sinag/shared";
-import { AlertCircle, AlertTriangle, FileIcon, Loader2, Save, X } from "lucide-react";
+import { AlertTriangle, FileIcon, Loader2, Save, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
 import toast from "react-hot-toast";
@@ -164,10 +165,6 @@ interface MiddleMovFilesPanelProps {
   ) => void;
   /** Callback when rework flag is saved (for updating progress indicator) */
   onReworkFlagSaved?: (responseId: number, movFileId: number, flagged: boolean) => void;
-  /** When true, hides assessor-only feedback editing (used in Validator view) */
-  readOnly?: boolean;
-  /** Calibration flag state per indicator (validators only) */
-  calibrationFlags?: Record<number, boolean>;
   /** Callback when validator toggles calibration flag (validators only) */
   onCalibrationFlagChange?: (responseId: number, flagged: boolean) => void;
 }
@@ -183,10 +180,11 @@ export function MiddleMovFilesPanel({
   onAnnotationCreated,
   onAnnotationDeleted,
   onReworkFlagSaved,
-  readOnly = false,
-  calibrationFlags,
   onCalibrationFlagChange,
 }: MiddleMovFilesPanelProps) {
+  const { user } = useAuthStore();
+  const isValidator = user?.role === "VALIDATOR";
+
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
@@ -253,9 +251,25 @@ export function MiddleMovFilesPanel({
         has_annotations: mov.has_annotations === true, // Flag for files with annotations
         assessor_notes: mov.assessor_notes || null,
         flagged_for_rework: mov.flagged_for_rework === true,
+        validator_notes: mov.validator_notes || null,
+        flagged_for_calibration: mov.flagged_for_calibration === true,
       };
     });
   }, [selectedResponse, effectiveTimestamp]);
+
+  const hasReviewerNotes = React.useCallback(
+    (file: AnyRecord) =>
+      isValidator
+        ? Boolean(file.validator_notes && String(file.validator_notes).trim())
+        : Boolean(file.assessor_notes && String(file.assessor_notes).trim()),
+    [isValidator]
+  );
+
+  const hasReviewerFlag = React.useCallback(
+    (file: AnyRecord) =>
+      isValidator ? file.flagged_for_calibration === true : file.flagged_for_rework === true,
+    [isValidator]
+  );
 
   // Separate files into:
   // - newFiles: Files uploaded AFTER rework/calibration (replacement files)
@@ -270,10 +284,13 @@ export function MiddleMovFilesPanel({
     const newUploads = movFiles.filter((f: any) => f.isNew);
     const oldUploads = movFiles.filter((f: any) => !f.isNew);
 
-    // Check if any old files have explicit rejection flags
+    // Check if any old files have explicit rejection/note flags
     const hasExplicitRejection = oldUploads.some(
       (f: any) =>
-        f.is_rejected === true || f.has_annotations === true || f.flagged_for_rework === true
+        f.is_rejected === true ||
+        f.has_annotations === true ||
+        hasReviewerFlag(f) ||
+        hasReviewerNotes(f)
     );
 
     let rejected: any[] = [];
@@ -283,11 +300,17 @@ export function MiddleMovFilesPanel({
       // Use is_rejected, has_annotations, or flagged_for_rework flag to determine rejection
       rejected = oldUploads.filter(
         (f: any) =>
-          f.is_rejected === true || f.has_annotations === true || f.flagged_for_rework === true
+          f.is_rejected === true ||
+          f.has_annotations === true ||
+          hasReviewerFlag(f) ||
+          hasReviewerNotes(f)
       );
       accepted = oldUploads.filter(
         (f: any) =>
-          f.is_rejected !== true && f.has_annotations !== true && f.flagged_for_rework !== true
+          f.is_rejected !== true &&
+          f.has_annotations !== true &&
+          !hasReviewerFlag(f) &&
+          !hasReviewerNotes(f)
       );
     } else {
       // No explicit rejection flags on any old files
@@ -302,7 +325,7 @@ export function MiddleMovFilesPanel({
       acceptedOldFiles: accepted,
       rejectedOldFiles: rejected,
     };
-  }, [movFiles, effectiveTimestamp]);
+  }, [movFiles, effectiveTimestamp, hasReviewerFlag, hasReviewerNotes]);
 
   // State for PDF annotation modal
   const [selectedFile, setSelectedFile] = React.useState<any | null>(null);
@@ -316,19 +339,19 @@ export function MiddleMovFilesPanel({
     deleteAnnotation,
   } = useMovAnnotations(selectedFile?.id || null);
 
-  // State for per-MOV assessor feedback
-  const [assessorNotes, setAssessorNotes] = React.useState("");
-  const [flaggedForRework, setFlaggedForRework] = React.useState(false);
+  // State for per-MOV reviewer feedback
+  const [movNotes, setMovNotes] = React.useState("");
+  const [movFlagged, setMovFlagged] = React.useState(false);
   const [feedbackDirty, setFeedbackDirty] = React.useState(false);
 
-  // Fetch existing feedback when a file is selected (assessor only)
+  // Fetch existing feedback when a file is selected
   const movFileId = selectedFile?.id || 0;
   const { data: feedbackData, isLoading: feedbackLoading } = useGetAssessorMovsMovFileIdFeedback(
     movFileId,
     {
       query: {
         queryKey: getGetAssessorMovsMovFileIdFeedbackQueryKey(movFileId),
-        enabled: !readOnly && !!selectedFile?.id && isAnnotating,
+        enabled: !!selectedFile?.id && isAnnotating,
         staleTime: 0, // Always refetch when opening
       },
     }
@@ -340,13 +363,16 @@ export function MiddleMovFilesPanel({
       onSuccess: (_data, variables) => {
         toast.success("Feedback saved");
         setFeedbackDirty(false);
-        // Notify parent about rework flag change for progress indicator update
+        const flaggedValue = isValidator
+          ? (variables.data as AnyRecord).flagged_for_calibration
+          : (variables.data as AnyRecord).flagged_for_rework;
+
+        // Notify parent about flag change for progress indicator update
         if (expandedId && onReworkFlagSaved) {
-          onReworkFlagSaved(
-            expandedId,
-            variables.movFileId,
-            variables.data.flagged_for_rework ?? false
-          );
+          onReworkFlagSaved(expandedId, variables.movFileId, flaggedValue ?? false);
+        }
+        if (isValidator && expandedId && onCalibrationFlagChange) {
+          onCalibrationFlagChange(expandedId, flaggedValue ?? false);
         }
       },
       onError: (error: any) => {
@@ -358,34 +384,46 @@ export function MiddleMovFilesPanel({
   // Sync local state with fetched data
   React.useEffect(() => {
     if (feedbackData) {
-      setAssessorNotes(feedbackData.assessor_notes || "");
-      setFlaggedForRework(feedbackData.flagged_for_rework || false);
+      const nextNotes = isValidator
+        ? ((feedbackData as AnyRecord).validator_notes as string) || ""
+        : ((feedbackData as AnyRecord).assessor_notes as string) || "";
+      const nextFlagged = isValidator
+        ? Boolean((feedbackData as AnyRecord).flagged_for_calibration)
+        : Boolean((feedbackData as AnyRecord).flagged_for_rework);
+      setMovNotes(nextNotes);
+      setMovFlagged(nextFlagged);
       setFeedbackDirty(false);
     }
-  }, [feedbackData]);
+  }, [feedbackData, isValidator]);
 
   // Reset feedback state when closing modal
   React.useEffect(() => {
     if (!isAnnotating) {
-      setAssessorNotes("");
-      setFlaggedForRework(false);
+      setMovNotes("");
+      setMovFlagged(false);
       setFeedbackDirty(false);
     }
   }, [isAnnotating]);
 
   // Auto-toggle flag when notes are added
   const handleNotesChange = (value: string) => {
-    setAssessorNotes(value);
+    setMovNotes(value);
     setFeedbackDirty(true);
     // Auto-enable flag when notes are added (if not already enabled)
-    if (value.trim() && !flaggedForRework) {
-      setFlaggedForRework(true);
+    if (value.trim() && !movFlagged) {
+      setMovFlagged(true);
+      if (isValidator && expandedId && onCalibrationFlagChange) {
+        onCalibrationFlagChange(expandedId, true);
+      }
     }
   };
 
   const handleFlagChange = (checked: boolean) => {
-    setFlaggedForRework(checked);
+    setMovFlagged(checked);
     setFeedbackDirty(true);
+    if (isValidator && expandedId && onCalibrationFlagChange) {
+      onCalibrationFlagChange(expandedId, checked);
+    }
   };
 
   const handleSaveFeedback = () => {
@@ -393,8 +431,10 @@ export function MiddleMovFilesPanel({
     updateFeedbackMutation.mutate({
       movFileId: selectedFile.id,
       data: {
-        assessor_notes: assessorNotes,
-        flagged_for_rework: flaggedForRework,
+        assessor_notes: isValidator ? undefined : movNotes,
+        flagged_for_rework: isValidator ? undefined : movFlagged,
+        validator_notes: isValidator ? movNotes : undefined,
+        flagged_for_calibration: isValidator ? movFlagged : undefined,
       },
     });
   };
@@ -702,16 +742,49 @@ export function MiddleMovFilesPanel({
               )}
           </div>
         ) : (
-          /* Normal mode: Show all files */
-          <FileList
-            files={movFiles}
-            onPreview={handlePreview}
-            onDownload={handleDownload}
-            canDelete={false}
-            loading={false}
-            emptyMessage="No files uploaded yet"
-            movAnnotations={safeAnnotations}
-          />
+          /* Normal mode: separate files with MOV notes into Previous Files */
+          <div className="space-y-4">
+            <div className="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                  Uploaded Files
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                  {movFiles.filter((file) => !hasReviewerNotes(file)).length} file
+                  {movFiles.filter((file) => !hasReviewerNotes(file)).length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <FileList
+                files={movFiles.filter((file) => !hasReviewerNotes(file))}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+                canDelete={false}
+                loading={false}
+                emptyMessage="No active files"
+                movAnnotations={safeAnnotations}
+              />
+            </div>
+            {movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file)).length >
+              0 && (
+              <div className="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400" />
+                  <span className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
+                    Previous Files
+                  </span>
+                </div>
+                <FileList
+                  files={movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file))}
+                  onPreview={handlePreview}
+                  onDownload={handleDownload}
+                  canDelete={false}
+                  loading={false}
+                  emptyMessage="No previous files"
+                  movAnnotations={safeAnnotations}
+                />
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -774,81 +847,13 @@ export function MiddleMovFilesPanel({
                   key={`sidebar-${selectedFile.id}`}
                   className="hidden md:flex w-80 shrink-0 flex-col border-l border-slate-200 dark:border-slate-700 pl-4"
                 >
-                  {/* Assessor Feedback Section */}
+                  {/* Reviewer Feedback Section */}
                   <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <h3 className="font-semibold text-sm mb-3 text-slate-900 dark:text-slate-100">
                       MOV Notes
                     </h3>
 
-                    {readOnly ? (
-                      /* Read-only view for Validator: show assessor notes + calibration flag toggle */
-                      <div className="space-y-3">
-                        {selectedFile.assessor_notes?.trim() ? (
-                          <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
-                            <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
-                              {selectedFile.assessor_notes}
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                            No assessor notes for this file.
-                          </p>
-                        )}
-                        {selectedFile.flagged_for_rework && (
-                          <div className="flex items-center gap-2 p-2 rounded-md bg-orange-50 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-700">
-                            <AlertTriangle className="h-4 w-4 text-orange-500" />
-                            <span className="text-sm text-orange-700 dark:text-orange-300">
-                              Flagged for rework by assessor
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Flag for Calibration toggle (validators only) */}
-                        {onCalibrationFlagChange && expandedId && (
-                          <div
-                            className={`flex items-center justify-between p-3 rounded-md border ${
-                              calibrationFlags?.[expandedId]
-                                ? "bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700"
-                                : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <AlertCircle
-                                className={`h-4 w-4 ${calibrationFlags?.[expandedId] ? "text-orange-500" : "text-slate-400"}`}
-                              />
-                              <Label
-                                htmlFor="flag-calibration"
-                                className={`text-sm font-medium cursor-pointer ${
-                                  calibrationFlags?.[expandedId]
-                                    ? "text-orange-700 dark:text-orange-300"
-                                    : "text-slate-600 dark:text-slate-400"
-                                }`}
-                              >
-                                Flag for Calibration
-                              </Label>
-                            </div>
-                            <Switch
-                              id="flag-calibration"
-                              checked={calibrationFlags?.[expandedId] ?? false}
-                              onCheckedChange={(checked) => {
-                                onCalibrationFlagChange(expandedId, checked);
-                              }}
-                              className={`${
-                                calibrationFlags?.[expandedId]
-                                  ? "data-[state=checked]:bg-orange-500"
-                                  : "data-[state=unchecked]:bg-slate-300 dark:data-[state=unchecked]:bg-slate-600"
-                              }`}
-                            />
-                          </div>
-                        )}
-
-                        {calibrationFlags?.[expandedId ?? 0] && (
-                          <p className="text-xs text-orange-600 dark:text-orange-400">
-                            This indicator will be flagged for BLGU to revise
-                          </p>
-                        )}
-                      </div>
-                    ) : feedbackLoading ? (
+                    {feedbackLoading ? (
                       <div className="flex items-center gap-2 text-sm text-slate-500">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Loading...
@@ -859,50 +864,52 @@ export function MiddleMovFilesPanel({
                           <Textarea
                             id="assessor-notes"
                             placeholder="Describe the specific issue with this file (e.g., missing signature, incorrect date, or blurry scan)..."
-                            value={assessorNotes}
+                            value={movNotes}
                             onChange={(e) => handleNotesChange(e.target.value)}
                             className="min-h-[80px] text-sm resize-none"
                           />
                         </div>
 
-                        {/* Flag for Rework Toggle */}
+                        {/* Role-specific Toggle */}
                         <div
                           className={`flex items-center justify-between p-3 rounded-md border ${
-                            flaggedForRework
+                            movFlagged
                               ? "bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700"
                               : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                           }`}
                         >
                           <div className="flex items-center gap-2">
                             <AlertTriangle
-                              className={`h-4 w-4 ${flaggedForRework ? "text-orange-500" : "text-slate-400"}`}
+                              className={`h-4 w-4 ${movFlagged ? "text-orange-500" : "text-slate-400"}`}
                             />
                             <Label
                               htmlFor="flag-rework"
                               className={`text-sm font-medium cursor-pointer ${
-                                flaggedForRework
+                                movFlagged
                                   ? "text-orange-700 dark:text-orange-300"
                                   : "text-slate-600 dark:text-slate-400"
                               }`}
                             >
-                              Flag for Rework
+                              {isValidator ? "Flag for Calibration" : "Flag for Rework"}
                             </Label>
                           </div>
                           <Switch
                             id="flag-rework"
-                            checked={flaggedForRework}
+                            checked={movFlagged}
                             onCheckedChange={handleFlagChange}
                             className={`${
-                              flaggedForRework
+                              movFlagged
                                 ? "data-[state=checked]:bg-orange-500"
                                 : "data-[state=unchecked]:bg-slate-300 dark:data-[state=unchecked]:bg-slate-600"
                             }`}
                           />
                         </div>
 
-                        {flaggedForRework && (
+                        {movFlagged && (
                           <p className="text-xs text-orange-600 dark:text-orange-400">
-                            This MOV will be marked for BLGU to revise
+                            {isValidator
+                              ? "This MOV will be marked for BLGU calibration."
+                              : "This MOV will be marked for BLGU rework."}
                           </p>
                         )}
 

@@ -1897,12 +1897,24 @@ Focus on:
             affected_mov_files = set()
 
             for mov_file in indicator_mov_files:
-                # Collect assessor_notes (MOV-level notes from assessors/validators)
+                # Collect assessor MOV notes
                 if mov_file.assessor_notes and mov_file.assessor_notes.strip():
                     mov_notes.append(
                         {
                             "filename": mov_file.file_name,
                             "note": mov_file.assessor_notes.strip(),
+                            "source": "assessor",
+                        }
+                    )
+                    affected_mov_files.add(mov_file.file_name)
+
+                # Collect validator MOV notes
+                if getattr(mov_file, "validator_notes", None) and mov_file.validator_notes.strip():
+                    mov_notes.append(
+                        {
+                            "filename": mov_file.file_name,
+                            "note": mov_file.validator_notes.strip(),
+                            "source": "validator",
                         }
                     )
                     affected_mov_files.add(mov_file.file_name)
@@ -2287,12 +2299,24 @@ CRITICAL - POV AND SPECIFICITY REQUIREMENTS:
             affected_mov_files = set()
 
             for mov_file in indicator_mov_files:
-                # Collect assessor_notes (MOV-level notes from assessors/validators)
+                # Collect assessor MOV notes
                 if mov_file.assessor_notes and mov_file.assessor_notes.strip():
                     mov_notes.append(
                         {
                             "filename": mov_file.file_name,
                             "note": mov_file.assessor_notes.strip(),
+                            "source": "assessor",
+                        }
+                    )
+                    affected_mov_files.add(mov_file.file_name)
+
+                # Collect validator MOV notes
+                if getattr(mov_file, "validator_notes", None) and mov_file.validator_notes.strip():
+                    mov_notes.append(
+                        {
+                            "filename": mov_file.file_name,
+                            "note": mov_file.validator_notes.strip(),
+                            "source": "validator",
                         }
                     )
                     affected_mov_files.add(mov_file.file_name)

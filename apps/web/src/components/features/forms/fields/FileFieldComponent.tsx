@@ -677,6 +677,14 @@ export function FileFieldComponent({
   // Separate files based on rework timestamp
   const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
   const deletedFiles = allFiles.filter((f: any) => f.field_id === field.field_id && f.deleted_at);
+  const hasMovNotes = (file: any): boolean => {
+    const assessorNotes = file?.assessor_notes;
+    const validatorNotes = file?.validator_notes;
+    return Boolean(
+      (typeof assessorNotes === "string" && assessorNotes.trim()) ||
+      (typeof validatorNotes === "string" && validatorNotes.trim())
+    );
+  };
 
   // During REWORK status, separate old files from new files
   const isReworkStatus = normalizedStatus === "REWORK" || normalizedStatus === "NEEDS_REWORK";
@@ -852,6 +860,13 @@ export function FileFieldComponent({
         validOldFiles = oldFiles;
       }
     }
+
+    // Any old MOV with notes should be treated as previous/reference file.
+    const notedOldFiles = oldFiles.filter((f: any) => hasMovNotes(f));
+    invalidOldFiles = [...invalidOldFiles, ...notedOldFiles].filter(
+      (file, index, arr) => arr.findIndex((f: any) => String(f.id) === String(file.id)) === index
+    );
+    validOldFiles = validOldFiles.filter((f: any) => !hasMovNotes(f));
 
     previousFiles = [...deletedFiles, ...invalidOldFiles];
     // Keep new uploads separate from valid old files
@@ -1280,6 +1295,20 @@ export function FileFieldComponent({
                       <div className="p-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
                         <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
                           {selectedFileForPreview.assessor_notes}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                {(selectedFileForPreview as any).validator_notes &&
+                  String((selectedFileForPreview as any).validator_notes).trim() && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-sm mb-2 pb-2 border-b border-gray-200 dark:border-gray-700 text-[var(--foreground)] flex items-center gap-1.5">
+                        <StickyNote className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        Validator Notes
+                      </h3>
+                      <div className="p-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+                        <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed">
+                          {String((selectedFileForPreview as any).validator_notes)}
                         </p>
                       </div>
                     </div>

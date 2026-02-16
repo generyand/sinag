@@ -356,6 +356,36 @@ function getValidationStatusLabel(status?: string | null): string {
   }
 }
 
+function getAssessorIndicatorDetail(indicator: IndicatorDetailItem): {
+  label: string;
+  isPositive: boolean;
+} {
+  if (indicator.requires_rework) {
+    return { label: "Flagged for Rework", isPositive: false };
+  }
+
+  if (isAssessorIndicatorCompleted(indicator)) {
+    return { label: "Complete", isPositive: true };
+  }
+
+  return { label: "Pending", isPositive: false };
+}
+
+function getValidatorIndicatorDetail(indicator: IndicatorDetailItem): {
+  label: string;
+  isPositive: boolean;
+} {
+  if (indicator.flagged_for_calibration) {
+    return { label: "Flagged for Calibration", isPositive: false };
+  }
+
+  if (isValidatorIndicatorCompleted(indicator)) {
+    return { label: getValidationStatusLabel(indicator.validation_status), isPositive: true };
+  }
+
+  return { label: "Pending", isPositive: false };
+}
+
 export default function SubmissionDetailsPage() {
   const { isAuthenticated } = useAuthStore();
   const params = useParams();
@@ -2236,10 +2266,7 @@ export default function SubmissionDetailsPage() {
                                     </p>
                                   ) : (
                                     sortedIndicators.map((indicator) => {
-                                      const isCompleted = isAssessorIndicatorCompleted(indicator);
-                                      const detailStatus = indicator.requires_rework
-                                        ? "Rework"
-                                        : "Complete";
+                                      const detail = getAssessorIndicatorDetail(indicator);
 
                                       return (
                                         <div
@@ -2260,13 +2287,17 @@ export default function SubmissionDetailsPage() {
                                           <div className="shrink-0 flex items-center gap-1.5">
                                             <span
                                               className={`text-[11px] font-medium ${
-                                                isCompleted ? "text-emerald-700" : "text-slate-500"
+                                                detail.isPositive
+                                                  ? "text-emerald-700"
+                                                  : "text-slate-500"
                                               }`}
                                             >
-                                              {isCompleted ? detailStatus : "Pending"}
+                                              {detail.label}
                                             </span>
-                                            {isCompleted ? (
+                                            {detail.isPositive ? (
                                               <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                            ) : detail.label === "Flagged for Rework" ? (
+                                              <AlertTriangle className="h-4 w-4 text-orange-500" />
                                             ) : (
                                               <XCircle className="h-4 w-4 text-slate-400" />
                                             )}
@@ -2299,10 +2330,7 @@ export default function SubmissionDetailsPage() {
                                     </p>
                                   ) : (
                                     sortedIndicators.map((indicator) => {
-                                      const isCompleted = isValidatorIndicatorCompleted(indicator);
-                                      const detailStatus = getValidationStatusLabel(
-                                        indicator.validation_status
-                                      );
+                                      const detail = getValidatorIndicatorDetail(indicator);
 
                                       return (
                                         <div
@@ -2323,13 +2351,17 @@ export default function SubmissionDetailsPage() {
                                           <div className="shrink-0 flex items-center gap-1.5">
                                             <span
                                               className={`text-[11px] font-medium ${
-                                                isCompleted ? "text-emerald-700" : "text-slate-500"
+                                                detail.isPositive
+                                                  ? "text-emerald-700"
+                                                  : "text-slate-500"
                                               }`}
                                             >
-                                              {detailStatus}
+                                              {detail.label}
                                             </span>
-                                            {isCompleted ? (
+                                            {detail.isPositive ? (
                                               <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                            ) : detail.label === "Flagged for Calibration" ? (
+                                              <AlertTriangle className="h-4 w-4 text-amber-500" />
                                             ) : (
                                               <XCircle className="h-4 w-4 text-slate-400" />
                                             )}

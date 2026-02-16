@@ -1483,18 +1483,18 @@ export const useDeleteAssessorAnnotationsAnnotationId = <TError = HTTPValidation
       return useMutation(mutationOptions);
     }
     /**
- * Update assessor notes and rework flag for a specific MOV file.
+ * Update MOV notes and flag for a specific MOV file.
 
-Assessors can add general notes about a MOV file and flag it for rework.
-The rework flag auto-toggles ON when notes are added, but can be manually
-toggled OFF by the assessor.
+Assessors and validators maintain separate fields:
+- Assessor: notes + rework flag
+- Validator: notes + calibration flag
 
 **Path Parameters:**
 - mov_file_id: ID of the MOV file to update
 
 **Request Body:**
-- assessor_notes: Optional general notes about this MOV
-- flagged_for_rework: Optional flag indicating MOV needs rework
+- assessor_notes / flagged_for_rework (assessor fields)
+- validator_notes / flagged_for_calibration (validator fields)
 
 **Returns:** Updated MOV assessor feedback
 
@@ -1565,9 +1565,9 @@ export const usePatchAssessorMovsMovFileIdFeedback = <TError = HTTPValidationErr
       return useMutation(mutationOptions);
     }
     /**
- * Get assessor feedback for a specific MOV file.
+ * Get MOV feedback for a specific MOV file.
 
-Returns the assessor notes and rework flag for the specified MOV file.
+Returns assessor and validator note/flag fields for the specified MOV file.
 
 **Path Parameters:**
 - mov_file_id: ID of the MOV file

@@ -1673,7 +1673,7 @@ export function RightAssessorPanel({
                         </div>
                         <Textarea
                           {...register(`${key}.publicComment` as const)}
-                          placeholder="Provide an overall summary of the required changes or general instructions for this indicator..."
+                          placeholder={isValidator ? "Add notes or feedback about this indicator..." : "Provide an overall summary of the required changes or general instructions for this indicator..."}
                           className={errorsFor ? "border-red-500" : undefined}
                         />
                         {errorsFor ? (

@@ -228,7 +228,17 @@ export interface MOVFileResponse {
   flagged_for_rework?: boolean;
   flagged_by_assessor_id?: MOVFileResponseFlaggedByAssessorId;
   flagged_at?: MOVFileResponseFlaggedAt;
+  validator_notes?: MOVFileResponseValidatorNotes;
+  flagged_for_calibration?: boolean;
+  flagged_by_validator_id?: MOVFileResponseFlaggedByValidatorId;
+  calibration_flagged_at?: MOVFileResponseCalibrationFlaggedAt;
 }
+
+
+/**
+ * MOVFileResponseCalibrationFlaggedAt
+ */
+export type MOVFileResponseCalibrationFlaggedAt = string | null;
 
 
 /**
@@ -250,9 +260,21 @@ export type MOVFileResponseFlaggedAt = string | null;
 
 
 /**
+ * MOVFileResponseFlaggedByValidatorId
+ */
+export type MOVFileResponseFlaggedByValidatorId = number | null;
+
+
+/**
  * MOVFileResponseUploadedAt
  */
 export type MOVFileResponseUploadedAt = string | null;
+
+
+/**
+ * MOVFileResponseValidatorNotes
+ */
+export type MOVFileResponseValidatorNotes = string | null;
 
 
 /**

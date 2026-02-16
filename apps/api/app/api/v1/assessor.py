@@ -806,21 +806,21 @@ async def update_mov_assessor_feedback(
     mov_file_id: int,
     feedback: MOVAssessorFeedbackUpdate,
     db: Session = Depends(deps.get_db),
-    current_assessor: User = Depends(deps.get_current_assessor_user),
+    current_assessor: User = Depends(deps.get_current_assessor_or_validator),
 ):
     """
-    Update assessor notes and rework flag for a specific MOV file.
+    Update MOV notes and flag for a specific MOV file.
 
-    Assessors can add general notes about a MOV file and flag it for rework.
-    The rework flag auto-toggles ON when notes are added, but can be manually
-    toggled OFF by the assessor.
+    Assessors and validators maintain separate fields:
+    - Assessor: notes + rework flag
+    - Validator: notes + calibration flag
 
     **Path Parameters:**
     - mov_file_id: ID of the MOV file to update
 
     **Request Body:**
-    - assessor_notes: Optional general notes about this MOV
-    - flagged_for_rework: Optional flag indicating MOV needs rework
+    - assessor_notes / flagged_for_rework (assessor fields)
+    - validator_notes / flagged_for_calibration (validator fields)
 
     **Returns:** Updated MOV assessor feedback
 
@@ -832,9 +832,11 @@ async def update_mov_assessor_feedback(
         result = assessor_service.update_mov_assessor_feedback(
             db=db,
             mov_file_id=mov_file_id,
-            assessor_id=current_assessor.id,
+            reviewer=current_assessor,
             assessor_notes=feedback.assessor_notes,
             flagged_for_rework=feedback.flagged_for_rework,
+            validator_notes=feedback.validator_notes,
+            flagged_for_calibration=feedback.flagged_for_calibration,
         )
         return result
     except ValueError as e:
@@ -854,12 +856,12 @@ async def update_mov_assessor_feedback(
 async def get_mov_assessor_feedback(
     mov_file_id: int,
     db: Session = Depends(deps.get_db),
-    current_assessor: User = Depends(deps.get_current_assessor_user),
+    current_assessor: User = Depends(deps.get_current_assessor_or_validator),
 ):
     """
-    Get assessor feedback for a specific MOV file.
+    Get MOV feedback for a specific MOV file.
 
-    Returns the assessor notes and rework flag for the specified MOV file.
+    Returns assessor and validator note/flag fields for the specified MOV file.
 
     **Path Parameters:**
     - mov_file_id: ID of the MOV file

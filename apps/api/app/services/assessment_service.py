@@ -404,7 +404,7 @@ class AssessmentService:
             step_start = time.time()
             q3b = text("""
                 SELECT id, indicator_id, file_name, file_size, file_type, file_url, field_id, uploaded_at,
-                       assessor_notes, flagged_for_rework
+                       assessor_notes, flagged_for_rework, validator_notes, flagged_for_calibration
                 FROM mov_files
                 WHERE assessment_id = :assessment_id
                   AND deleted_at IS NULL
@@ -423,7 +423,14 @@ class AssessmentService:
                 mov_file_indicator_ids.add(ind_id)
                 assessor_notes = row[8]
                 flagged_for_rework = row[9]
-                if (assessor_notes and assessor_notes.strip()) or flagged_for_rework:
+                validator_notes = row[10]
+                flagged_for_calibration = row[11]
+                if (
+                    (assessor_notes and assessor_notes.strip())
+                    or flagged_for_rework
+                    or (validator_notes and validator_notes.strip())
+                    or flagged_for_calibration
+                ):
                     indicators_with_mov_notes.add(ind_id)
                 mov_files_by_indicator.setdefault(ind_id, []).append(
                     {
@@ -434,6 +441,10 @@ class AssessmentService:
                         "file_url": row[5],
                         "field_id": row[6],
                         "uploaded_at": row[7].isoformat() + "Z" if row[7] else None,
+                        "assessor_notes": assessor_notes,
+                        "flagged_for_rework": flagged_for_rework,
+                        "validator_notes": validator_notes,
+                        "flagged_for_calibration": flagged_for_calibration,
                     }
                 )
 
