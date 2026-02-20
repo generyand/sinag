@@ -123,9 +123,29 @@ export function AssessmentContentPanel({
   const hasActionableMovFeedback =
     (movAnnotations[selectedIndicatorIdNum] || []).length > 0 ||
     (Array.isArray(indicatorMovNotes) && indicatorMovNotes.length > 0);
+  const indicatorReworkComments = (dashboardData?.rework_comments || []).filter(
+    (comment: any) => Number(comment.indicator_id) === selectedIndicatorIdNum
+  );
+  const hasReworkComments = indicatorReworkComments.length > 0;
+  const hasIndicatorFeedback =
+    selectedIndicator.requiresRework || hasActionableMovFeedback || hasReworkComments;
+  const dashboardStatus = String(dashboardData?.status || "").toUpperCase();
+  const isGlobalReworkStatus = dashboardStatus === "REWORK" || dashboardStatus === "NEEDS_REWORK";
+  const reworkCount = Number(dashboardData?.rework_count ?? 0);
+  const isPerAreaReworkMode = reworkCount === 0;
+  const areaAssessorStatus = (dashboardData?.area_assessor_status || []).find(
+    (area: any) => Number(area.governance_area_id) === Number(selectedIndicator.governanceAreaId)
+  );
+  const areaIsInRework =
+    areaSubmissionStatus === "rework" || areaAssessorStatus?.status === "rework";
+
+  // Allow MOV re-upload per governance area/indicator without waiting for global compilation.
+  // This is the intended per-area workflow: area sent for rework + indicator has feedback.
+  const allowPerAreaReworkUpload =
+    areaIsInRework && hasIndicatorFeedback && (isPerAreaReworkMode || isGlobalReworkStatus);
 
   // If there is MOV-level feedback, keep this indicator editable so BLGU can upload replacements.
-  const shouldUnlockForFeedback = selectedIndicator.requiresRework || hasActionableMovFeedback;
+  const shouldUnlockForFeedback = hasIndicatorFeedback;
 
   const indicatorLocked =
     isLocked ||
@@ -176,6 +196,7 @@ export function AssessmentContentPanel({
             <RecursiveIndicator
               indicator={selectedIndicator}
               isLocked={indicatorLocked}
+              allowPerAreaReworkUpload={allowPerAreaReworkUpload}
               updateAssessmentData={updateAssessmentData}
               currentCode={navigation.current?.indicator.code}
               currentPosition={navigation.position}
