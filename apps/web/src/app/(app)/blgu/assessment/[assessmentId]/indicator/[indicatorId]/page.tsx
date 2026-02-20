@@ -106,10 +106,27 @@ export default function IndicatorFormPage() {
   const reworkComments = (dashboardData?.rework_comments || []).filter(
     (comment: any) => comment.indicator_id === indicatorId
   );
+  const movNotes = dashboardData?.mov_notes_by_indicator?.[indicatorId] || [];
 
   // Epic 5.0: Get MLGOO flagged MOV file IDs (for MLGOO recalibration workflow)
   const mlgooFlaggedFileIds: Array<{ mov_file_id: number; comment?: string | null }> =
     (dashboardData as any)?.mlgoo_recalibration_mov_file_ids || [];
+
+  const currentAreaStatus = ((dashboardData as any)?.area_assessor_status || []).find(
+    (area: any) => Number(area.governance_area_id) === Number(indicatorGovernanceAreaId)
+  );
+  const areaIsInRework = currentAreaStatus?.status === "rework";
+  const hasIndicatorMovFeedback =
+    movAnnotations.length > 0 || reworkComments.length > 0 || movNotes.length > 0;
+  const reworkCount = Number((dashboardData as any)?.rework_count ?? 0);
+  const dashboardStatus = String((dashboardData as any)?.status || "").toUpperCase();
+  const isGlobalReworkStatus = dashboardStatus === "REWORK" || dashboardStatus === "NEEDS_REWORK";
+  const isPerAreaReworkMode = reworkCount === 0;
+
+  // Per-area workflow: allow MOV re-upload even before global status becomes REWORK
+  // when the current area is already sent back for rework and this indicator has MOV feedback.
+  const allowPerAreaReworkUpload =
+    areaIsInRework && hasIndicatorMovFeedback && (isPerAreaReworkMode || isGlobalReworkStatus);
 
   // Handle save success - could redirect or show confirmation
   const handleSaveSuccess = () => {
@@ -290,6 +307,7 @@ export default function IndicatorFormPage() {
           indicatorId={indicatorId}
           onSaveSuccess={handleSaveSuccess}
           isLocked={isLocked || false}
+          allowPerAreaReworkUpload={allowPerAreaReworkUpload}
           movAnnotations={movAnnotations}
           reworkComments={reworkComments}
           mlgooFlaggedFileIds={mlgooFlaggedFileIds}

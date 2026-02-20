@@ -58,6 +58,8 @@ interface DynamicFormRendererProps {
   isLoading?: boolean;
   /** Epic 5.0: Locked state - disables form editing when assessment is submitted */
   isLocked?: boolean;
+  /** Allow MOV upload fields during per-area rework even if global assessment status is still submitted */
+  allowPerAreaReworkUpload?: boolean;
   /** Epic 5.0: MOV annotations for this indicator (for rework workflow) */
   movAnnotations?: any[];
   /** Epic 5.0: Rework comments for this indicator from dashboard (assessor feedback) */
@@ -90,6 +92,7 @@ export function DynamicFormRenderer({
   onIndicatorComplete,
   isLoading = false,
   isLocked = false,
+  allowPerAreaReworkUpload = false,
   movAnnotations = [],
   reworkComments = [],
   mlgooFlaggedFileIds = [],
@@ -838,6 +841,7 @@ export function DynamicFormRenderer({
             assessmentId={assessmentId}
             indicatorId={indicatorId}
             isLocked={isLocked}
+            allowPerAreaReworkUpload={allowPerAreaReworkUpload}
             movAnnotations={movAnnotations}
             reworkComments={reworkComments}
             uploadedFiles={uploadedFiles}
@@ -895,6 +899,7 @@ interface SectionRendererProps {
   assessmentId: number;
   indicatorId: number;
   isLocked: boolean;
+  allowPerAreaReworkUpload: boolean;
   movAnnotations: any[];
   reworkComments: any[]; // Epic 5.0: Added for Hybrid Logic
   uploadedFiles: MOVFileResponse[];
@@ -1049,6 +1054,7 @@ function SectionRenderer({
   assessmentId,
   indicatorId,
   isLocked,
+  allowPerAreaReworkUpload,
   movAnnotations,
   reworkComments,
   // uploadedFiles is kept in props for potential future UI use (showing all files)
@@ -1207,6 +1213,7 @@ function SectionRenderer({
                           assessmentId={assessmentId}
                           indicatorId={indicatorId}
                           isLocked={isLocked}
+                          allowPerAreaReworkUpload={allowPerAreaReworkUpload}
                           movAnnotations={movAnnotations}
                           reworkComments={reworkComments}
                           updateAssessmentData={updateAssessmentData}
@@ -1258,6 +1265,7 @@ function SectionRenderer({
                 assessmentId={assessmentId}
                 indicatorId={indicatorId}
                 isLocked={isLocked}
+                allowPerAreaReworkUpload={allowPerAreaReworkUpload}
                 movAnnotations={movAnnotations}
                 reworkComments={reworkComments}
                 updateAssessmentData={updateAssessmentData}
@@ -1282,6 +1290,7 @@ interface FieldRendererProps {
   assessmentId: number;
   indicatorId: number;
   isLocked: boolean;
+  allowPerAreaReworkUpload: boolean;
   movAnnotations: any[];
   reworkComments: any[]; // Epic 5.0: Added for Hybrid Logic
   updateAssessmentData?: (updater: (data: any) => any) => void;
@@ -1296,6 +1305,7 @@ function FieldRenderer({
   assessmentId,
   indicatorId,
   isLocked,
+  allowPerAreaReworkUpload,
   movAnnotations,
   reworkComments,
   updateAssessmentData,
@@ -1413,6 +1423,7 @@ function FieldRenderer({
           assessmentId={assessmentId}
           indicatorId={indicatorId}
           disabled={isLocked}
+          allowPerAreaReworkUpload={allowPerAreaReworkUpload}
           movAnnotations={movAnnotations}
           reworkComments={reworkComments}
           updateAssessmentData={updateAssessmentData}

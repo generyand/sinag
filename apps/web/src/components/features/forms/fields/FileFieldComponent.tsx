@@ -166,6 +166,8 @@ interface FileFieldComponentProps {
   movAnnotations?: any[];
   reworkComments?: any[]; // Epic 5.0: Added for Hybrid Logic
   updateAssessmentData?: (updater: (data: any) => any) => void; // For immediate UI updates
+  /** Per-area workflow override: allow uploads while global status is still submitted */
+  allowPerAreaReworkUpload?: boolean;
   /** MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
   mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
@@ -190,6 +192,7 @@ export function FileFieldComponent({
   movAnnotations = [],
   reworkComments = [],
   updateAssessmentData,
+  allowPerAreaReworkUpload = false,
   mlgooFlaggedFileIds = [],
 }: FileFieldComponentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -892,27 +895,30 @@ export function FileFieldComponent({
 
   // Can upload: Only BLGU users, only for DRAFT or REWORK/NEEDS_REWORK status, and not disabled
   const canUpload =
-    !disabled &&
+    (!disabled || allowPerAreaReworkUpload) &&
     isBLGU &&
     (normalizedStatus === "DRAFT" ||
       normalizedStatus === "REWORK" ||
-      normalizedStatus === "NEEDS_REWORK");
+      normalizedStatus === "NEEDS_REWORK" ||
+      allowPerAreaReworkUpload);
 
   // Can delete: Only BLGU users, only for DRAFT or REWORK/NEEDS_REWORK status, and not disabled
   const canDelete =
-    !disabled &&
+    (!disabled || allowPerAreaReworkUpload) &&
     isBLGU &&
     (normalizedStatus === "DRAFT" ||
       normalizedStatus === "REWORK" ||
-      normalizedStatus === "NEEDS_REWORK");
+      normalizedStatus === "NEEDS_REWORK" ||
+      allowPerAreaReworkUpload);
 
   // Can rotate: Same rules as delete - only BLGU users during DRAFT or REWORK status
   const canRotate =
-    !disabled &&
+    (!disabled || allowPerAreaReworkUpload) &&
     isBLGU &&
     (normalizedStatus === "DRAFT" ||
       normalizedStatus === "REWORK" ||
-      normalizedStatus === "NEEDS_REWORK");
+      normalizedStatus === "NEEDS_REWORK" ||
+      allowPerAreaReworkUpload);
 
   // Reason why upload is disabled
   const uploadDisabledReason = !canUpload
@@ -920,7 +926,7 @@ export function FileFieldComponent({
       normalizedStatus === "VALIDATED" ||
       normalizedStatus === "SUBMITTED" ||
       normalizedStatus === "COMPLETED"
-      ? "File uploads are disabled for submitted or validated assessments"
+      ? "File uploads are disabled until this indicator is flagged and sent for rework"
       : !isBLGU
         ? "Only BLGU users can upload files"
         : null
