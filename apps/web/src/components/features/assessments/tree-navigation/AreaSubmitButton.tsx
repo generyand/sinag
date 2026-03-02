@@ -164,21 +164,10 @@ export function AreaSubmitButton({
       );
     }
 
-    // Show rework badge if area needs rework but is not complete
-    if (isRework && !isComplete) {
-      return (
-        <Badge
-          variant="secondary"
-          className="text-[10px] px-1.5 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-        >
-          <AlertCircle className="h-2.5 w-2.5 mr-1" />
-          Rework
-        </Badge>
-      );
-    }
-
-    // Show submit/resubmit button only when area is complete and in actionable state
-    if (isComplete && (areaStatus === "draft" || isRework)) {
+    // Show submit/resubmit button:
+    // - Submit: only when complete and in draft
+    // - Resubmit: always visible for rework areas (backend performs final validation)
+    if ((areaStatus === "draft" && isComplete) || isRework) {
       return (
         <Button
           size="sm"
