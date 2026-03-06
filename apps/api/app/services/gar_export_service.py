@@ -481,10 +481,16 @@ class GARExportService:
 
                 # Footer text
                 canvas.setFont("Helvetica-Bold", 7)
-                canvas.drawCentredString(center_x, footer_y + 42, "\u201cMatino, Mahusay at Maaasahan\u201d")
+                canvas.drawCentredString(
+                    center_x, footer_y + 42, "\u201cMatino, Mahusay at Maaasahan\u201d"
+                )
                 canvas.setFont("Helvetica", 6.5)
-                canvas.drawCentredString(center_x, footer_y + 32, "MLGRC, Liga Bldg., Municipal Hall Compound")
-                canvas.drawCentredString(center_x, footer_y + 23, "Prk. 9 Brgy. Poblacion, Sulop, Davao del Sur")
+                canvas.drawCentredString(
+                    center_x, footer_y + 32, "MLGRC, Liga Bldg., Municipal Hall Compound"
+                )
+                canvas.drawCentredString(
+                    center_x, footer_y + 23, "Prk. 9 Brgy. Poblacion, Sulop, Davao del Sur"
+                )
                 canvas.setFont("Helvetica", 6.5)
                 canvas.setFillColor(colors.blue)
                 canvas.drawCentredString(center_x, footer_y + 14, "sulopdilg2021@gmail.com")
@@ -497,14 +503,30 @@ class GARExportService:
                 # MLGRC logo (left of footer text)
                 if mlgrc_logo:
                     try:
-                        canvas.drawImage(mlgrc_logo, 0.6 * inch, footer_y + 12, width=40, height=40, preserveAspectRatio=True, mask="auto")
+                        canvas.drawImage(
+                            mlgrc_logo,
+                            0.6 * inch,
+                            footer_y + 12,
+                            width=40,
+                            height=40,
+                            preserveAspectRatio=True,
+                            mask="auto",
+                        )
                     except Exception:
                         pass
 
                 # ISO logo (right of footer text)
                 if iso_logo:
                     try:
-                        canvas.drawImage(iso_logo, page_w - 0.6 * inch - 40, footer_y + 12, width=40, height=40, preserveAspectRatio=True, mask="auto")
+                        canvas.drawImage(
+                            iso_logo,
+                            page_w - 0.6 * inch - 40,
+                            footer_y + 12,
+                            width=40,
+                            height=40,
+                            preserveAspectRatio=True,
+                            mask="auto",
+                        )
                     except Exception:
                         pass
 
@@ -523,22 +545,46 @@ class GARExportService:
 
             # Styles
             header_text_style = ParagraphStyle(
-                "HeaderText", parent=styles["Normal"], fontSize=8, alignment=1, leading=10,
+                "HeaderText",
+                parent=styles["Normal"],
+                fontSize=8,
+                alignment=1,
+                leading=10,
             )
             header_bold_style = ParagraphStyle(
-                "HeaderBold", parent=styles["Normal"], fontSize=9, alignment=1, leading=11, fontName="Helvetica-Bold",
+                "HeaderBold",
+                parent=styles["Normal"],
+                fontSize=9,
+                alignment=1,
+                leading=11,
+                fontName="Helvetica-Bold",
             )
             title_style = ParagraphStyle(
-                "GARTitle", parent=styles["Heading1"], fontSize=12, alignment=1, spaceAfter=4,
+                "GARTitle",
+                parent=styles["Heading1"],
+                fontSize=12,
+                alignment=1,
+                spaceAfter=4,
             )
             subtitle_style = ParagraphStyle(
-                "GARSubtitle", parent=styles["Normal"], fontSize=10, alignment=1, spaceAfter=2,
+                "GARSubtitle",
+                parent=styles["Normal"],
+                fontSize=10,
+                alignment=1,
+                spaceAfter=2,
             )
             cell_style = ParagraphStyle(
-                "CellStyle", parent=styles["Normal"], fontSize=8, leading=10,
+                "CellStyle",
+                parent=styles["Normal"],
+                fontSize=8,
+                leading=10,
             )
             result_style = ParagraphStyle(
-                "ResultStyle", parent=styles["Normal"], fontSize=7, leading=9, alignment=1,
+                "ResultStyle",
+                parent=styles["Normal"],
+                fontSize=7,
+                leading=9,
+                alignment=1,
             )
 
             # === HEADER: Logos + Government Letterhead ===
@@ -555,10 +601,14 @@ class GARExportService:
 
             if any(logo_row):
                 logo_table = Table([logo_row], colWidths=[logo_size + 10, logo_size + 10])
-                logo_table.setStyle(TableStyle([
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ]))
+                logo_table.setStyle(
+                    TableStyle(
+                        [
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ]
+                    )
+                )
                 # Wrap in outer table to center the logo pair
                 outer = Table([[logo_table]], colWidths=[page_w - 1.0 * inch])
                 outer.setStyle(TableStyle([("ALIGN", (0, 0), (0, 0), "CENTER")]))
@@ -567,24 +617,47 @@ class GARExportService:
 
             # Government letterhead text
             elements.append(Paragraph("Republic of the Philippines", header_text_style))
-            elements.append(Paragraph("<b>DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT</b>", header_bold_style))
-            elements.append(Paragraph("Region XI \u2013 Province of Davao del Sur", header_text_style))
-            elements.append(Paragraph("Office of the Municipal Local Government Operations Officer", header_text_style))
-            elements.append(Paragraph("Municipal Local Governance Resource and peace Center", header_text_style))
+            elements.append(
+                Paragraph(
+                    "<b>DEPARTMENT OF THE INTERIOR AND LOCAL GOVERNMENT</b>", header_bold_style
+                )
+            )
+            elements.append(
+                Paragraph("Region XI \u2013 Province of Davao del Sur", header_text_style)
+            )
+            elements.append(
+                Paragraph(
+                    "Office of the Municipal Local Government Operations Officer", header_text_style
+                )
+            )
+            elements.append(
+                Paragraph("Municipal Local Governance Resource and peace Center", header_text_style)
+            )
             elements.append(Paragraph("Municipality of Sulop", header_text_style))
             elements.append(Spacer(1, 4))
-            elements.append(Paragraph("<i>\u201cHiniusang Pangatungdanan\u201d</i>", ParagraphStyle(
-                "Tagline", parent=styles["Normal"], fontSize=10, alignment=1, fontName="Helvetica-Oblique",
-            )))
+            elements.append(
+                Paragraph(
+                    "<i>\u201cHiniusang Pangatungdanan\u201d</i>",
+                    ParagraphStyle(
+                        "Tagline",
+                        parent=styles["Normal"],
+                        fontSize=10,
+                        alignment=1,
+                        fontName="Helvetica-Oblique",
+                    ),
+                )
+            )
             elements.append(Spacer(1, 12))
 
             # === REPORT TITLE ===
             elements.append(Paragraph(gar_data.cycle_year, title_style))
             elements.append(Paragraph("BARANGAY GOVERNANCE ASSESSMENT REPORT", title_style))
-            elements.append(Paragraph(
-                f"<i>Barangay {gar_data.barangay_name}, {gar_data.municipality}, {gar_data.province}</i>",
-                subtitle_style,
-            ))
+            elements.append(
+                Paragraph(
+                    f"<i>Barangay {gar_data.barangay_name}, {gar_data.municipality}, {gar_data.province}</i>",
+                    subtitle_style,
+                )
+            )
             elements.append(Spacer(1, 14))
 
             # Color definitions
@@ -609,15 +682,17 @@ class GARExportService:
                 table_data.append([Paragraph(f"<b>{area_title}</b>", cell_style), ""])
                 # Column headers with result legend
                 result_header = (
-                    '<b>RESULT</b><br/>'
+                    "<b>RESULT</b><br/>"
                     '<font size="6">(<font color="green">met</font>, '
                     '<font color="#CC8800">considered</font>, '
                     '<font color="red">unmet</font>)</font>'
                 )
-                table_data.append([
-                    Paragraph("<b>INDICATORS</b>", cell_style),
-                    Paragraph(result_header, result_style),
-                ])
+                table_data.append(
+                    [
+                        Paragraph("<b>INDICATORS</b>", cell_style),
+                        Paragraph(result_header, result_style),
+                    ]
+                )
 
                 style_commands = [
                     ("SPAN", (0, 0), (1, 0)),
@@ -638,7 +713,9 @@ class GARExportService:
 
                 for indicator in area.indicators:
                     indent = "&nbsp;&nbsp;" * indicator.indent_level
-                    indicator_text = f"{indent}<b>{indicator.indicator_code}</b> {indicator.indicator_name}"
+                    indicator_text = (
+                        f"{indent}<b>{indicator.indicator_code}</b> {indicator.indicator_name}"
+                    )
 
                     # Result text for non-header indicators
                     result_text = ""
@@ -646,19 +723,29 @@ class GARExportService:
                         status_upper = indicator.validation_status.upper()
                         if status_upper == "PASS":
                             result_text = "Met"
-                            style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), met_color))
+                            style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), met_color)
+                            )
                         elif status_upper == "CONDITIONAL":
                             result_text = "Cons."
-                            style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), considered_color))
+                            style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), considered_color)
+                            )
                         elif status_upper == "FAIL":
                             result_text = "Unmet"
-                            style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), unmet_color))
+                            style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), unmet_color)
+                            )
 
-                    result_cell = Paragraph(f"<b>{result_text}</b>", result_style) if result_text else ""
+                    result_cell = (
+                        Paragraph(f"<b>{result_text}</b>", result_style) if result_text else ""
+                    )
                     table_data.append([Paragraph(indicator_text, cell_style), result_cell])
 
                     if indicator.is_header:
-                        style_commands.append(("BACKGROUND", (0, row_idx), (0, row_idx), colors.Color(0.9, 0.97, 0.9)))
+                        style_commands.append(
+                            ("BACKGROUND", (0, row_idx), (0, row_idx), colors.Color(0.9, 0.97, 0.9))
+                        )
 
                     row_idx += 1
 
@@ -669,15 +756,23 @@ class GARExportService:
                         if item.validation_result:
                             if item.validation_result == "met":
                                 checklist_result = "Met"
-                                style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), met_color))
+                                style_commands.append(
+                                    ("BACKGROUND", (1, row_idx), (1, row_idx), met_color)
+                                )
                             elif item.validation_result == "considered":
                                 checklist_result = "Cons."
-                                style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), considered_color))
+                                style_commands.append(
+                                    ("BACKGROUND", (1, row_idx), (1, row_idx), considered_color)
+                                )
                             elif item.validation_result == "unmet":
                                 checklist_result = "Unmet"
-                                style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), unmet_color))
+                                style_commands.append(
+                                    ("BACKGROUND", (1, row_idx), (1, row_idx), unmet_color)
+                                )
 
-                        result_cell = Paragraph(checklist_result, result_style) if checklist_result else ""
+                        result_cell = (
+                            Paragraph(checklist_result, result_style) if checklist_result else ""
+                        )
                         table_data.append([Paragraph(item_text, cell_style), result_cell])
                         row_idx += 1
 
@@ -688,10 +783,12 @@ class GARExportService:
                     result_color = met_color if area.overall_result == "Passed" else unmet_color
                     style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), result_color))
                 style_commands.append(("BACKGROUND", (0, row_idx), (0, row_idx), header_color))
-                table_data.append([
-                    Paragraph("<b>OVERALL RESULT</b>", cell_style),
-                    Paragraph(f"<b>{overall_text}</b>", result_style),
-                ])
+                table_data.append(
+                    [
+                        Paragraph("<b>OVERALL RESULT</b>", cell_style),
+                        Paragraph(f"<b>{overall_text}</b>", result_style),
+                    ]
+                )
 
                 col_widths = [indicator_col_w, result_col_w]
                 table = Table(table_data, colWidths=col_widths)
@@ -718,42 +815,56 @@ class GARExportService:
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                 ]
 
-                summary_data.append([
-                    Paragraph("<b>Core Governance Area</b>", cell_style),
-                    Paragraph("<b>Result</b>", cell_style),
-                ])
+                summary_data.append(
+                    [
+                        Paragraph("<b>Core Governance Area</b>", cell_style),
+                        Paragraph("<b>Result</b>", cell_style),
+                    ]
+                )
                 summary_style_commands.append(("BACKGROUND", (0, 0), (1, 0), colors.lightgrey))
 
                 row_idx = 1
                 for item in gar_data.summary:
                     if item.area_type == "Core":
                         result_text = item.result.upper() if item.result else ""
-                        summary_data.append([
-                            Paragraph(item.area_name, cell_style),
-                            Paragraph(f"<b>{result_text}</b>", result_style),
-                        ])
+                        summary_data.append(
+                            [
+                                Paragraph(item.area_name, cell_style),
+                                Paragraph(f"<b>{result_text}</b>", result_style),
+                            ]
+                        )
                         if item.result:
                             rc = met_color if item.result == "Passed" else unmet_color
-                            summary_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), rc))
+                            summary_style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), rc)
+                            )
                         row_idx += 1
 
-                summary_data.append([
-                    Paragraph("<b>Essential Governance Area</b>", cell_style),
-                    Paragraph("<b>Result</b>", cell_style),
-                ])
-                summary_style_commands.append(("BACKGROUND", (0, row_idx), (1, row_idx), colors.lightgrey))
+                summary_data.append(
+                    [
+                        Paragraph("<b>Essential Governance Area</b>", cell_style),
+                        Paragraph("<b>Result</b>", cell_style),
+                    ]
+                )
+                summary_style_commands.append(
+                    ("BACKGROUND", (0, row_idx), (1, row_idx), colors.lightgrey)
+                )
                 row_idx += 1
 
                 for item in gar_data.summary:
                     if item.area_type == "Essential":
                         result_text = item.result.upper() if item.result else ""
-                        summary_data.append([
-                            Paragraph(item.area_name, cell_style),
-                            Paragraph(f"<b>{result_text}</b>", result_style),
-                        ])
+                        summary_data.append(
+                            [
+                                Paragraph(item.area_name, cell_style),
+                                Paragraph(f"<b>{result_text}</b>", result_style),
+                            ]
+                        )
                         if item.result:
                             rc = met_color if item.result == "Passed" else unmet_color
-                            summary_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), rc))
+                            summary_style_commands.append(
+                                ("BACKGROUND", (1, row_idx), (1, row_idx), rc)
+                            )
                         row_idx += 1
 
                 summary_col_widths = [content_width - 1.5 * inch, 1.5 * inch]
@@ -780,18 +891,24 @@ class GARExportService:
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                 ]
 
-                bbi_table_data.append([
-                    Paragraph("<b>BBI FUNCTIONALITY COMPLIANCE (DILG MC 2024-417)</b>", cell_style),
-                    "",
-                ])
+                bbi_table_data.append(
+                    [
+                        Paragraph(
+                            "<b>BBI FUNCTIONALITY COMPLIANCE (DILG MC 2024-417)</b>", cell_style
+                        ),
+                        "",
+                    ]
+                )
                 bbi_style_commands.append(("SPAN", (0, 0), (1, 0)))
                 bbi_style_commands.append(("BACKGROUND", (0, 0), (1, 0), bbi_header_color))
                 bbi_style_commands.append(("ALIGN", (0, 0), (1, 0), "CENTER"))
 
-                bbi_table_data.append([
-                    Paragraph("<b>BBI</b>", cell_style),
-                    Paragraph("<b>COMPLIANCE</b>", cell_style),
-                ])
+                bbi_table_data.append(
+                    [
+                        Paragraph("<b>BBI</b>", cell_style),
+                        Paragraph("<b>COMPLIANCE</b>", cell_style),
+                    ]
+                )
                 bbi_style_commands.append(("BACKGROUND", (0, 1), (1, 1), colors.lightgrey))
                 bbi_style_commands.append(("ALIGN", (0, 1), (1, 1), "CENTER"))
 
@@ -801,34 +918,55 @@ class GARExportService:
                     rating_label = ""
                     if "HIGHLY" in rating:
                         rating_label = "Highly"
-                        bbi_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), bbi_highly_color))
+                        bbi_style_commands.append(
+                            ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_highly_color)
+                        )
                     elif "MODERATELY" in rating:
                         rating_label = "Moderate"
-                        bbi_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), bbi_mod_color))
+                        bbi_style_commands.append(
+                            ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_mod_color)
+                        )
                     elif "LOW" in rating:
                         rating_label = "Low"
-                        bbi_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), bbi_low_color))
+                        bbi_style_commands.append(
+                            ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_low_color)
+                        )
 
-                    bbi_table_data.append([
-                        Paragraph(f"{bbi.bbi_abbreviation} - {bbi.bbi_name}", cell_style),
-                        Paragraph(f"<b>{round(bbi.compliance_percentage)}%</b> ({rating_label})", result_style),
-                    ])
+                    bbi_table_data.append(
+                        [
+                            Paragraph(f"{bbi.bbi_abbreviation} - {bbi.bbi_name}", cell_style),
+                            Paragraph(
+                                f"<b>{round(bbi.compliance_percentage)}%</b> ({rating_label})",
+                                result_style,
+                            ),
+                        ]
+                    )
                     bbi_style_commands.append(("ALIGN", (1, row_idx), (1, row_idx), "CENTER"))
                     row_idx += 1
 
                 avg_pct = gar_data.bbi_compliance.summary.average_compliance_percentage
-                bbi_table_data.append([
-                    Paragraph("<b>AVERAGE COMPLIANCE</b>", cell_style),
-                    Paragraph(f"<b>{round(avg_pct)}%</b>", result_style),
-                ])
-                bbi_style_commands.append(("BACKGROUND", (0, row_idx), (0, row_idx), bbi_header_color))
+                bbi_table_data.append(
+                    [
+                        Paragraph("<b>AVERAGE COMPLIANCE</b>", cell_style),
+                        Paragraph(f"<b>{round(avg_pct)}%</b>", result_style),
+                    ]
+                )
+                bbi_style_commands.append(
+                    ("BACKGROUND", (0, row_idx), (0, row_idx), bbi_header_color)
+                )
                 bbi_style_commands.append(("ALIGN", (1, row_idx), (1, row_idx), "CENTER"))
                 if avg_pct >= 75:
-                    bbi_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), bbi_highly_color))
+                    bbi_style_commands.append(
+                        ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_highly_color)
+                    )
                 elif avg_pct >= 50:
-                    bbi_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), bbi_mod_color))
+                    bbi_style_commands.append(
+                        ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_mod_color)
+                    )
                 else:
-                    bbi_style_commands.append(("BACKGROUND", (1, row_idx), (1, row_idx), bbi_low_color))
+                    bbi_style_commands.append(
+                        ("BACKGROUND", (1, row_idx), (1, row_idx), bbi_low_color)
+                    )
 
                 bbi_col_widths = [content_width - 1.5 * inch, 1.5 * inch]
                 bbi_table = Table(bbi_table_data, colWidths=bbi_col_widths)
@@ -836,7 +974,10 @@ class GARExportService:
                 elements.append(bbi_table)
 
                 legend_style = ParagraphStyle(
-                    "BBILegend", parent=styles["Normal"], fontSize=8, spaceAfter=4,
+                    "BBILegend",
+                    parent=styles["Normal"],
+                    fontSize=8,
+                    spaceAfter=4,
                 )
                 elements.append(Spacer(1, 8))
                 summary_text = (
@@ -845,10 +986,12 @@ class GARExportService:
                     f"{gar_data.bbi_compliance.summary.low_functional_count} Low Functional"
                 )
                 elements.append(Paragraph(summary_text, legend_style))
-                elements.append(Paragraph(
-                    "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, &lt;50% = Low Functional",
-                    legend_style,
-                ))
+                elements.append(
+                    Paragraph(
+                        "Rating: 75%+ = Highly Functional, 50-74% = Moderately Functional, &lt;50% = Low Functional",
+                        legend_style,
+                    )
+                )
 
             # Build PDF with footer on every page
             doc.build(elements, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
