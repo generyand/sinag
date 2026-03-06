@@ -6,7 +6,6 @@ import {
   VALIDATOR_UNIFIED_STATUS_FILTER_OPTIONS,
 } from "@/components/features/submissions/utils/statusConfig";
 import { useAssessorQueue } from "@/hooks/useAssessor";
-import { useAssessorGovernanceArea } from "@/hooks/useAssessorGovernanceArea";
 import {
   BarangaySubmission,
   SubmissionsData,
@@ -14,7 +13,7 @@ import {
   SubmissionsKPI,
   UnifiedStatus,
 } from "@/types/submissions";
-import { AssessorQueueItem, useGetAssessorStats } from "@sinag/shared";
+import { AssessorQueueItem } from "@sinag/shared";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -63,9 +62,7 @@ function mapToUnifiedStatus(item: AssessorQueueItem): UnifiedStatus {
 
 export default function ValidatorSubmissionsPage() {
   const router = useRouter();
-  const { governanceAreaName, isLoading: governanceAreaLoading } = useAssessorGovernanceArea();
   const { data: queueData, isLoading: queueLoading, error: queueError } = useAssessorQueue();
-  const { data: statsData } = useGetAssessorStats();
 
   const [filters, setFilters] = useState<SubmissionsFilter>({
     search: "",
@@ -102,18 +99,16 @@ export default function ValidatorSubmissionsPage() {
         (s) =>
           s.unifiedStatus === "sent_for_rework" || s.unifiedStatus === "re_assessment_in_progress"
       ).length,
-      validated:
-        (statsData as { validated_count?: number })?.validated_count ??
-        submissions.filter((s) => s.unifiedStatus === "reviewed").length,
+      validated: submissions.filter((s) => s.unifiedStatus === "reviewed").length,
       avgReviewTime: 0, // Not provided by API, default to 0
     };
 
     return {
       kpi,
       submissions,
-      governanceArea: governanceAreaName || "Unknown",
+      governanceArea: "All Governance Areas",
     };
-  }, [queueData, queueLoading, governanceAreaName, statsData]);
+  }, [queueData, queueLoading]);
 
   // Filter submissions based on search and status
   const filteredSubmissions = useMemo(() => {
@@ -146,7 +141,7 @@ export default function ValidatorSubmissionsPage() {
   };
 
   // Show loading if governance area or queue is loading
-  if (governanceAreaLoading || queueLoading) {
+  if (queueLoading) {
     return (
       <div className="space-y-8">
         <div className="animate-pulse">
@@ -198,7 +193,17 @@ export default function ValidatorSubmissionsPage() {
             Your current validation workload and progress summary
           </p>
         </header>
-        <KPICards kpi={submissionsData.kpi} />
+        <KPICards
+          kpi={submissionsData.kpi}
+          labels={{
+            awaitingReviewTitle: "Awaiting Your Validation",
+            awaitingReviewDescription: "Submissions ready for final validation",
+            inReworkTitle: "In Calibration",
+            inReworkDescription: "Sent for calibration",
+            validatedTitle: "Validated by You",
+            validatedDescription: "Final validation completed",
+          }}
+        />
       </section>
 
       {/* Enhanced Filtering & Search Bar */}
@@ -256,6 +261,7 @@ export default function ValidatorSubmissionsPage() {
             submissions={filteredSubmissions}
             onSubmissionClick={handleSubmissionClick}
             statusConfig={VALIDATOR_UNIFIED_STATUS_CONFIG}
+            progressColumnHeader="Validation Progress"
           />
         ) : (
           <div className="text-center py-16 px-6" role="status" aria-label="No submissions found">
