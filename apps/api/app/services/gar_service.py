@@ -7,6 +7,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.year_resolver import YearPlaceholderResolver, get_year_resolver
 from app.db.enums import AssessmentStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
@@ -132,9 +133,21 @@ class GARService:
         # Build response data for each governance area
         gar_areas = []
         summary = []
+        year_resolver: YearPlaceholderResolver | None = None
+
+        # Resolve dynamic year placeholders (e.g., {CY_CURRENT_YEAR}) using this assessment's year.
+        try:
+            year_resolver = get_year_resolver(db, year=assessment.assessment_year)
+        except Exception as e:
+            self.logger.warning(
+                "Failed to initialize year resolver for GAR assessment %s (year %s): %s",
+                assessment_id,
+                assessment.assessment_year,
+                e,
+            )
 
         for area in governance_areas:
-            gar_area = self._build_governance_area_data(db, assessment, area)
+            gar_area = self._build_governance_area_data(db, assessment, area, year_resolver)
             gar_areas.append(gar_area)
 
             # Add to summary
@@ -178,6 +191,7 @@ class GARService:
         db: Session,
         assessment: Assessment,
         area: GovernanceArea,
+        year_resolver: YearPlaceholderResolver | None = None,
     ) -> GARGovernanceArea:
         """Build GAR data for a single governance area."""
 
@@ -220,23 +234,33 @@ class GARService:
             # Build checklist items with validation results - FILTER to only minimum requirements
             gar_checklist = []
             for item in checklist_items:
+                resolved_label = (
+                    year_resolver.resolve_string(item.label) if year_resolver else item.label
+                ) or item.label
+
                 # Filter: only include minimum requirements, not MOV items or profiling-only items
                 if not self._is_minimum_requirement(
-                    item.label, item.item_type, indicator.indicator_code, item.is_profiling_only
+                    resolved_label, item.item_type, indicator.indicator_code, item.is_profiling_only
                 ):
                     continue
 
                 validation_result = self._get_checklist_validation_result(item, response)
 
                 # Transform label for GAR display (specific indicators only)
-                display_label = self._get_gar_display_label(indicator.indicator_code, item.label)
+                display_label = self._get_gar_display_label(
+                    indicator.indicator_code, resolved_label
+                )
 
                 gar_checklist.append(
                     GARChecklistItem(
                         item_id=item.item_id,
                         label=display_label,
                         item_type=item.item_type or "checkbox",
-                        group_name=item.group_name,
+                        group_name=(
+                            year_resolver.resolve_string(item.group_name)
+                            if year_resolver
+                            else item.group_name
+                        ),
                         validation_result=validation_result,
                         display_order=item.display_order,
                     )
@@ -278,7 +302,12 @@ class GARService:
                 GARIndicator(
                     indicator_id=indicator.id,
                     indicator_code=indicator.indicator_code,
-                    indicator_name=indicator.name,
+                    indicator_name=(
+                        year_resolver.resolve_string(indicator.name)
+                        if year_resolver
+                        else indicator.name
+                    )
+                    or indicator.name,
                     validation_status=validation_status,
                     checklist_items=gar_checklist,
                     is_header=is_header,
