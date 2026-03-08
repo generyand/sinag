@@ -86,6 +86,7 @@ def test_get_gar_data_resolves_year_placeholders(db_session):
     db_session.commit()
 
     gar_data = gar_service.get_gar_data(db_session, assessment.id)
+    assert gar_data.cycle_year == "CY 2026 SGLGB (PY 2025)"
 
     indicator_row = next(
         i for i in gar_data.governance_areas[0].indicators if i.indicator_id == indicator.id

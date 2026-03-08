@@ -159,8 +159,9 @@ class GARService:
                 )
             )
 
-        # Determine cycle year from assessment or use default
-        cycle_year = "CY 2025 SGLGB (PY 2024)"
+        # Determine cycle year from the assessment year (used by BGAR tab + exported PDF header)
+        current_year = assessment.assessment_year
+        cycle_year = f"CY {current_year} SGLGB (PY {current_year - 1})"
 
         # Get BBI compliance data (DILG MC 2024-417)
         bbi_compliance = None
