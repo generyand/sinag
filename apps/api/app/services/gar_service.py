@@ -22,6 +22,7 @@ from app.schemas.gar import (
     GARSummaryItem,
 )
 from app.services.bbi_service import bbi_service
+from app.services.checklist_utils import calculate_governance_area_result
 
 
 class GARService:
@@ -134,6 +135,7 @@ class GARService:
         gar_areas = []
         summary = []
         year_resolver: YearPlaceholderResolver | None = None
+        stored_area_results: dict[str, str] = {}
 
         # Resolve dynamic year placeholders (e.g., {CY_CURRENT_YEAR}) using this assessment's year.
         try:
@@ -146,8 +148,33 @@ class GARService:
                 e,
             )
 
+        # Prefer persisted classification results when available (source of truth for completed
+        # assessments). Normalize casing/legacy values to "Passed"/"Failed".
+        if isinstance(assessment.area_results, dict):
+            for area_name, result in assessment.area_results.items():
+                if not isinstance(area_name, str) or not isinstance(result, str):
+                    continue
+                normalized = result.strip().lower()
+                if normalized in {"passed", "pass"}:
+                    stored_area_results[area_name] = "Passed"
+                elif normalized in {"failed", "fail"}:
+                    stored_area_results[area_name] = "Failed"
+
         for area in governance_areas:
             gar_area = self._build_governance_area_data(db, assessment, area, year_resolver)
+
+            # 1) Use persisted area classification when present.
+            # 2) Fallback to deterministic computation so BGAR/PDF never shows blank verdict cells.
+            if area.name in stored_area_results:
+                gar_area.overall_result = stored_area_results[area.name]
+            elif gar_area.overall_result is None:
+                indicator_statuses = [
+                    ind.validation_status
+                    for ind in gar_area.indicators
+                    if not ind.is_header and not ind.is_profiling_only
+                ]
+                gar_area.overall_result = calculate_governance_area_result(indicator_statuses)
+
             gar_areas.append(gar_area)
 
             # Add to summary
@@ -290,14 +317,16 @@ class GARService:
             indent_level = self._get_indent_level(indicator.indicator_code)
 
             # Check if this is a header indicator (has children in FILTERED list)
-            # Recalculate based on filtered indicators, not all_indicators
-            is_header = any(
-                i.indicator_code
-                and i.indicator_code.startswith(indicator.indicator_code + ".")
-                and self._get_indicator_depth(i.indicator_code)
-                == self._get_indicator_depth(indicator.indicator_code) + 1
-                for i in indicators
-            )
+            # Prefer parent_id relationship (authoritative). Fall back to code-prefix for legacy data.
+            is_header = any(i.parent_id == indicator.id for i in indicators)
+            if not is_header and indicator.indicator_code:
+                is_header = any(
+                    i.indicator_code
+                    and i.indicator_code.startswith(indicator.indicator_code + ".")
+                    and self._get_indicator_depth(i.indicator_code)
+                    == self._get_indicator_depth(indicator.indicator_code) + 1
+                    for i in indicators
+                )
 
             gar_indicators.append(
                 GARIndicator(
@@ -394,15 +423,22 @@ class GARService:
 
                 return False
 
-            all_passed = all(
-                is_indicator_passed(i) for i in leaf_indicators if i.validation_status is not None
-            )
-            has_any_fail = any(is_indicator_failed(i) for i in leaf_indicators)
+            # Build effective statuses then use shared area-result calculation helper.
+            # This avoids blank/null results in export when some indicators have no explicit status.
+            effective_statuses: list[str | None] = []
+            for leaf_indicator in leaf_indicators:
+                if is_indicator_failed(leaf_indicator):
+                    effective_statuses.append("FAIL")
+                elif is_indicator_passed(leaf_indicator):
+                    effective_statuses.append(
+                        "CONDITIONAL"
+                        if leaf_indicator.validation_status == "CONDITIONAL"
+                        else "PASS"
+                    )
+                else:
+                    effective_statuses.append(None)
 
-            if has_any_fail:
-                overall_result = "Failed"
-            elif all_passed and all(i.validation_status is not None for i in leaf_indicators):
-                overall_result = "Passed"
+            overall_result = calculate_governance_area_result(effective_statuses)
 
         # Determine area type and number
         # Convert enum value to title case ("CORE" -> "Core") for consistent display
@@ -768,14 +804,19 @@ class GARService:
             if gar_indicator.validation_status:
                 continue
 
-            # Find ALL children from all_indicators (including hidden depth-4+)
+            # Find ALL direct children (including hidden depth-4+) using parent_id first.
             children_indicators = [
-                i
-                for i in all_indicators
-                if i.indicator_code
-                and i.indicator_code.startswith(gar_indicator.indicator_code + ".")
-                and i.indicator_code.count(".") == gar_indicator.indicator_code.count(".") + 1
+                i for i in all_indicators if i.parent_id == gar_indicator.indicator_id
             ]
+            if not children_indicators and gar_indicator.indicator_code:
+                # Legacy fallback for data without reliable parent_id links.
+                children_indicators = [
+                    i
+                    for i in all_indicators
+                    if i.indicator_code
+                    and i.indicator_code.startswith(gar_indicator.indicator_code + ".")
+                    and i.indicator_code.count(".") == gar_indicator.indicator_code.count(".") + 1
+                ]
 
             if not children_indicators:
                 continue
