@@ -165,3 +165,4 @@ test.db
 *.db
 docs/temporary/
 .gemini/
+.worktrees/

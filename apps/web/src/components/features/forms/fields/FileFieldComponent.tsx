@@ -4,6 +4,7 @@
 "use client";
 
 import { FileList } from "@/components/features/movs/FileList";
+import { fetchSignedUrl } from "@/hooks/useSignedUrl";
 import { FileListWithDelete } from "@/components/features/movs/FileListWithDelete";
 import { FileUpload } from "@/components/features/movs/FileUpload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -602,20 +603,11 @@ export function FileFieldComponent({
 
   const handleDownload = async (file: MOVFileResponse) => {
     try {
-      // First fetch a signed URL for secure access
-      const signedUrlResponse = await fetch(`/api/v1/movs/files/${file.id}/signed-url`, {
-        credentials: "include",
-      });
-      if (!signedUrlResponse.ok) {
-        throw new Error("Failed to get download URL");
-      }
-      const { signed_url } = await signedUrlResponse.json();
+      const signedUrl = await fetchSignedUrl(file.id);
 
-      // Then fetch the file using the signed URL
-      const response = await fetch(signed_url);
+      const response = await fetch(signedUrl);
       const blob = await response.blob();
 
-      // Create a blob URL and trigger download
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
@@ -624,7 +616,6 @@ export function FileFieldComponent({
       link.click();
       document.body.removeChild(link);
 
-      // Clean up the blob URL
       window.URL.revokeObjectURL(blobUrl);
 
       toast.success("File downloaded successfully");

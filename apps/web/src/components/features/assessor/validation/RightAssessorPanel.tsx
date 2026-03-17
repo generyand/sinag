@@ -562,7 +562,7 @@ export function RightAssessorPanel({
   const isValidator = userRole === "VALIDATOR";
   const isAssessor = userRole === "ASSESSOR";
 
-  // Zod schema: require publicComment when status is Fail/Conditional
+  // Zod schema: require publicComment when status is Fail/Conditional (assessors only)
   const ResponseSchema = z
     .object({
       status: z.enum(["Pass", "Fail", "Conditional"]).optional(),
@@ -570,6 +570,7 @@ export function RightAssessorPanel({
     })
     .refine(
       (val) => {
+        if (isValidator) return true;
         if (!val.status) return true;
         if (val.status === "Fail" || val.status === "Conditional") {
           return !!val.publicComment && val.publicComment.trim().length > 0;
