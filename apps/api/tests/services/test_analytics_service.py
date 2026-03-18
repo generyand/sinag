@@ -3,7 +3,7 @@
 Tests for analytics service layer - dashboard KPI calculations
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -16,6 +16,7 @@ from app.db.models import (
     Indicator,
     User,
 )
+from app.db.models.system import AssessmentYear
 from app.services.analytics_service import analytics_service
 
 
@@ -365,6 +366,54 @@ def test_get_dashboard_kpis_cycle_filtering(
     # Assert - should return data structure
     assert result is not None
     assert hasattr(result, "overall_compliance_rate")
+
+
+def test_calculate_top_rework_reasons_includes_mlgoo_recalibration_comments(db_session):
+    """MLGOO recalibration comments should appear in top adjustment reasons."""
+    assessment_year = AssessmentYear(
+        year=2025,
+        assessment_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+        assessment_period_end=datetime(2025, 12, 31, tzinfo=UTC),
+        is_active=True,
+        is_published=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+
+    barangay = Barangay(name="Recalibration Barangay")
+    db_session.add(barangay)
+    db_session.commit()
+    db_session.refresh(barangay)
+
+    user = User(
+        email="recalibration@test.com",
+        name="Recalibration User",
+        hashed_password="hashed",
+        role=UserRole.BLGU_USER,
+        barangay_id=barangay.id,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    assessment = Assessment(
+        blgu_user_id=user.id,
+        assessment_year=assessment_year.year,
+        mlgoo_recalibration_count=1,
+        mlgoo_recalibration_comments="Required MOV attachments were incomplete for final review.",
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    result = analytics_service._calculate_top_rework_reasons(db_session, None)
+
+    assert result is not None
+    assert result.total_adjustment_assessments == 1
+    assert len(result.reasons) == 1
+    assert result.reasons[0].reason == "Required MOV attachments were incomplete for final review."
+    assert result.reasons[0].count == 1
+    assert result.reasons[0].affected_barangays[0].barangay_name == "Recalibration Barangay"
 
 
 # =============================================================================

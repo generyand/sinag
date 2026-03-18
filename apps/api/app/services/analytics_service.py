@@ -643,12 +643,17 @@ class AnalyticsService:
             Assessment.assessment_year == assessment_year if assessment_year is not None else True
         )
 
-        # Count assessments with adjustments (rework OR calibration) at database level
+        # Count assessments with adjustments (rework, validator calibration,
+        # or MLGOO recalibration) at database level
         # Use DISTINCT count to avoid double-counting assessments with both
         adjustment_count = (
             db.query(func.count(Assessment.id))
             .filter(
-                or_(Assessment.rework_count > 0, Assessment.calibration_count > 0),
+                or_(
+                    Assessment.rework_count > 0,
+                    Assessment.calibration_count > 0,
+                    Assessment.mlgoo_recalibration_count > 0,
+                ),
                 year_filter,
             )
             .scalar()
@@ -658,14 +663,18 @@ class AnalyticsService:
         if adjustment_count == 0:
             return None
 
-        # PERFORMANCE FIX: Only query assessments that actually have rework OR calibration
+        # PERFORMANCE FIX: Only query assessments that actually have adjustments
         # This avoids loading all assessments into memory
         # Eager load blgu_user->barangay chain to avoid N+1 queries when building affected_barangays
         assessments = (
             db.query(Assessment)
             .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
             .filter(
-                or_(Assessment.rework_count > 0, Assessment.calibration_count > 0),
+                or_(
+                    Assessment.rework_count > 0,
+                    Assessment.calibration_count > 0,
+                    Assessment.mlgoo_recalibration_count > 0,
+                ),
                 year_filter,
             )
             .all()
@@ -756,9 +765,9 @@ class AnalyticsService:
                             if issue and issue.strip():
                                 reason_to_assessments[issue.strip()].append(assessment)
 
-        # Also include MOV notes and annotations from assessments that have adjustments
-        # but are MISSING their AI summaries. This ensures assessor/validator feedback
-        # is always included even when the rework_summary generation failed.
+        # Also include comments and MOV notes from assessments that have adjustments
+        # but are missing their AI summaries. This ensures assessor/validator/MLGOO
+        # feedback is still surfaced even when summary generation failed.
         assessments_missing_summaries = [
             a
             for a in assessments
@@ -768,6 +777,11 @@ class AnalyticsService:
                 and a.calibration_count > 0
                 and not a.calibration_summary
                 and not a.calibration_summaries_by_area
+            )
+            or (
+                a.mlgoo_recalibration_count
+                and a.mlgoo_recalibration_count > 0
+                and a.mlgoo_recalibration_comments
             )
         ]
 
@@ -798,6 +812,17 @@ class AnalyticsService:
 
             raw_notes_fallback: list[str] = []
             note_to_assessments_fallback: dict[str, list[Assessment]] = defaultdict(list)
+
+            for assessment in assessments_missing_summaries:
+                if (
+                    assessment.mlgoo_recalibration_count
+                    and assessment.mlgoo_recalibration_count > 0
+                    and assessment.mlgoo_recalibration_comments
+                    and assessment.mlgoo_recalibration_comments.strip()
+                ):
+                    comment_text = assessment.mlgoo_recalibration_comments.strip()
+                    raw_notes_fallback.append(comment_text)
+                    note_to_assessments_fallback[comment_text].append(assessment)
 
             for mf in fallback_mov_files:
                 if mf.assessor_notes and mf.assessor_notes.strip():
@@ -853,7 +878,8 @@ class AnalyticsService:
             f"across {len(reason_to_assessments)} unique issues"
         )
 
-        # If still no reasons, fall back to ALL MOV notes/annotations with AI formulation
+        # If still no reasons, fall back to all available comments/MOV notes/annotations
+        # with AI formulation.
         if not reason_to_assessments:
             # Get MOV notes and annotations from assessments with adjustments
             assessment_ids_with_adjustments = [a.id for a in assessments]
@@ -885,6 +911,17 @@ class AnalyticsService:
                 # Collect raw notes for AI formulation
                 raw_notes: list[str] = []
                 note_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
+
+                for assessment in assessments:
+                    if (
+                        assessment.mlgoo_recalibration_count
+                        and assessment.mlgoo_recalibration_count > 0
+                        and assessment.mlgoo_recalibration_comments
+                        and assessment.mlgoo_recalibration_comments.strip()
+                    ):
+                        comment_text = assessment.mlgoo_recalibration_comments.strip()
+                        raw_notes.append(comment_text)
+                        note_to_assessments[comment_text].append(assessment)
 
                 for mf in mov_files_with_notes:
                     if mf.assessor_notes and mf.assessor_notes.strip():
