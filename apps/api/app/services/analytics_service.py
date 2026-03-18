@@ -2,6 +2,7 @@
 # Business logic for analytics and dashboard KPI calculations
 
 import logging
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal
@@ -60,6 +61,83 @@ class ReportsFilters:
 
 class AnalyticsService:
     """Service class for analytics and dashboard KPI calculations."""
+
+    _ADJUSTMENT_FILLER_PATTERNS = [
+        re.compile(r"\b(thank you|thanks|salamat po|salamat|pls|please|po)\b", re.IGNORECASE),
+        re.compile(r"^[\s\-\.\)\(]+"),
+        re.compile(r"\s+"),
+    ]
+
+    def _normalize_adjustment_reason(self, raw_text: str) -> str | None:
+        """
+        Convert raw adjustment comments into concise, dashboard-safe reason statements.
+
+        This is used only when AI-generated summaries or AI reformulation are unavailable.
+        """
+        if not raw_text or not raw_text.strip():
+            return None
+
+        cleaned = raw_text.strip()
+        for pattern in self._ADJUSTMENT_FILLER_PATTERNS:
+            replacement = " " if pattern.pattern == r"\s+" else ""
+            cleaned = pattern.sub(replacement, cleaned).strip()
+
+        cleaned = cleaned.rstrip(" .,:;!-")
+        lowered = cleaned.lower()
+
+        if not cleaned:
+            return None
+
+        if "kr form 2" in lowered:
+            return "KR Form 2 requires correction or replacement"
+
+        if "alteration" in lowered:
+            return "Submitted documents contain alterations or require clean replacements"
+
+        if (
+            re.search(r"\b20\d{2}\b", cleaned)
+            and any(token in lowered for token in ["dapat", "wrong year", "incorrect year"])
+        ) or re.fullmatch(r"20\d{2}\s+dapat", lowered):
+            return "Submitted documents reference the wrong assessment year"
+
+        if any(
+            token in lowered
+            for token in ["without affixed signature", "walay pirma", "no signature"]
+        ):
+            if "cert" in lowered:
+                return "Certification documents were uploaded without the required signatures"
+            return "Required documents were uploaded without the required signatures"
+
+        if "mov" in lowered and any(
+            token in lowered
+            for token in ["attach", "upload", "needed", "kulang", "incomplete", "50%"]
+        ):
+            return (
+                "Required MOV attachments are incomplete or below the required submission threshold"
+            )
+
+        if len(cleaned) <= 4:
+            return None
+
+        if cleaned[0].islower():
+            cleaned = cleaned[0].upper() + cleaned[1:]
+
+        if not cleaned.endswith("."):
+            cleaned = f"{cleaned}."
+
+        return cleaned
+
+    def _aggregate_fallback_adjustment_reasons(
+        self, note_to_assessments: dict[str, list[Assessment]]
+    ) -> dict[str, list[Assessment]]:
+        """Aggregate raw notes into normalized fallback reasons."""
+        normalized: dict[str, list[Assessment]] = {}
+        for note_text, assessment_list in note_to_assessments.items():
+            reason = self._normalize_adjustment_reason(note_text)
+            if not reason:
+                continue
+            normalized.setdefault(reason, []).extend(assessment_list)
+        return normalized
 
     def get_dashboard_kpis(
         self, db: Session, assessment_year: int | None = None
@@ -705,6 +783,7 @@ class AnalyticsService:
         from collections import defaultdict
 
         reason_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
+        generated_by_ai = False
 
         def extract_key_issues_from_summary(summary: dict) -> list[str]:
             """Extract key_issues from a multi-language summary structure."""
@@ -746,6 +825,7 @@ class AnalyticsService:
                 for issue in issues:
                     if issue and issue.strip():
                         reason_to_assessments[issue.strip()].append(assessment)
+                        generated_by_ai = True
 
             # Extract key_issues from calibration_summary
             if assessment.calibration_summary and isinstance(assessment.calibration_summary, dict):
@@ -753,6 +833,7 @@ class AnalyticsService:
                 for issue in issues:
                     if issue and issue.strip():
                         reason_to_assessments[issue.strip()].append(assessment)
+                        generated_by_ai = True
 
             # Extract key_issues from calibration_summaries_by_area
             if assessment.calibration_summaries_by_area and isinstance(
@@ -764,6 +845,7 @@ class AnalyticsService:
                         for issue in issues:
                             if issue and issue.strip():
                                 reason_to_assessments[issue.strip()].append(assessment)
+                                generated_by_ai = True
 
         # Also include comments and MOV notes from assessments that have adjustments
         # but are missing their AI summaries. This ensures assessor/validator/MLGOO
@@ -858,6 +940,7 @@ class AnalyticsService:
 
                     for reason in formulated:
                         reason_to_assessments[reason].extend(all_fallback_assessments)
+                    generated_by_ai = True
 
                     logger.info(
                         f"📊 Included {len(formulated)} assessor/validator reasons from "
@@ -866,9 +949,12 @@ class AnalyticsService:
                     )
                 else:
                     logger.warning(
-                        "⚠️ AI formulation failed for missing-summary fallback, using raw MOV notes"
+                        "⚠️ AI formulation failed for missing-summary fallback, using normalized MOV reasons"
                     )
-                    for note_text, assessment_list in note_to_assessments_fallback.items():
+                    normalized_reasons = self._aggregate_fallback_adjustment_reasons(
+                        note_to_assessments_fallback
+                    )
+                    for note_text, assessment_list in normalized_reasons.items():
                         reason_to_assessments[note_text].extend(assessment_list)
 
         # Debug logging: track extracted reasons
@@ -962,6 +1048,7 @@ class AnalyticsService:
                         # Associate all assessments with each formulated reason
                         for reason in formulated_reasons:
                             reason_to_assessments[reason] = all_affected_assessments.copy()
+                        generated_by_ai = True
 
                         logger.info(
                             f"📊 AI formulated {len(formulated_reasons)} reasons "
@@ -969,9 +1056,14 @@ class AnalyticsService:
                             f"across {len(all_affected_assessments)} assessments"
                         )
                     else:
-                        # AI formulation failed, fall back to raw MOV notes
-                        logger.warning("⚠️ AI formulation failed, falling back to raw MOV notes")
-                        for note_text, assessment_list in note_to_assessments.items():
+                        # AI formulation failed, fall back to normalized MOV notes
+                        logger.warning(
+                            "⚠️ AI formulation failed, falling back to normalized MOV reasons"
+                        )
+                        normalized_reasons = self._aggregate_fallback_adjustment_reasons(
+                            note_to_assessments
+                        )
+                        for note_text, assessment_list in normalized_reasons.items():
                             reason_to_assessments[note_text] = assessment_list
 
         # Build TopReworkReason objects with affected barangays
@@ -1018,7 +1110,7 @@ class AnalyticsService:
         return TopReworkReasons(
             reasons=all_reasons,
             total_adjustment_assessments=adjustment_count,
-            generated_by_ai=bool(reason_to_assessments),
+            generated_by_ai=generated_by_ai,
         )
 
     def _get_total_barangays(self, db: Session) -> int:

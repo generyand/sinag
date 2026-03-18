@@ -4,6 +4,7 @@ Tests for analytics service layer - dashboard KPI calculations
 """
 
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -368,8 +369,12 @@ def test_get_dashboard_kpis_cycle_filtering(
     assert hasattr(result, "overall_compliance_rate")
 
 
-def test_calculate_top_rework_reasons_includes_mlgoo_recalibration_comments(db_session):
-    """MLGOO recalibration comments should appear in top adjustment reasons."""
+@patch("app.services.intelligence_service.intelligence_service.formulate_adjustment_reasons")
+def test_calculate_top_rework_reasons_includes_mlgoo_recalibration_comments(
+    mock_formulate_adjustment_reasons, db_session
+):
+    """MLGOO recalibration comments should be normalized into dashboard-safe reasons."""
+    mock_formulate_adjustment_reasons.return_value = []
     assessment_year = AssessmentYear(
         year=2025,
         assessment_period_start=datetime(2025, 1, 1, tzinfo=UTC),
@@ -411,9 +416,76 @@ def test_calculate_top_rework_reasons_includes_mlgoo_recalibration_comments(db_s
     assert result is not None
     assert result.total_adjustment_assessments == 1
     assert len(result.reasons) == 1
-    assert result.reasons[0].reason == "Required MOV attachments were incomplete for final review."
+    assert (
+        result.reasons[0].reason
+        == "Required MOV attachments are incomplete or below the required submission threshold"
+    )
     assert result.reasons[0].count == 1
+    assert result.generated_by_ai is False
     assert result.reasons[0].affected_barangays[0].barangay_name == "Recalibration Barangay"
+
+
+@patch("app.services.intelligence_service.intelligence_service.formulate_adjustment_reasons")
+def test_calculate_top_rework_reasons_marks_ai_generated_when_using_ai_summaries(
+    mock_formulate_adjustment_reasons, db_session
+):
+    """AI summary key_issues should be surfaced and marked as AI-generated."""
+    mock_formulate_adjustment_reasons.return_value = []
+    assessment_year = AssessmentYear(
+        year=2025,
+        assessment_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+        assessment_period_end=datetime(2025, 12, 31, tzinfo=UTC),
+        is_active=True,
+        is_published=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+
+    barangay = Barangay(name="AI Summary Barangay")
+    db_session.add(barangay)
+    db_session.commit()
+    db_session.refresh(barangay)
+
+    user = User(
+        email="ai-summary@test.com",
+        name="AI Summary User",
+        hashed_password="hashed",
+        role=UserRole.BLGU_USER,
+        barangay_id=barangay.id,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    assessment = Assessment(
+        blgu_user_id=user.id,
+        assessment_year=assessment_year.year,
+        rework_count=1,
+        rework_summary={
+            "en": {
+                "indicator_summaries": [
+                    {
+                        "indicator_name": "Annual Budget",
+                        "key_issues": [
+                            "Annual Budget documentation is incomplete or missing signatures"
+                        ],
+                    }
+                ]
+            }
+        },
+    )
+    db_session.add(assessment)
+    db_session.commit()
+
+    result = analytics_service._calculate_top_rework_reasons(db_session, None)
+
+    assert result is not None
+    assert result.generated_by_ai is True
+    assert len(result.reasons) == 1
+    assert (
+        result.reasons[0].reason
+        == "Annual Budget documentation is incomplete or missing signatures"
+    )
 
 
 # =============================================================================
