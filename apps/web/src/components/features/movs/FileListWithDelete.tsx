@@ -41,6 +41,8 @@ interface FileListWithDeleteProps {
   indicatorId?: number;
   /** Total required files for this field - if deleting makes count < required, mark incomplete */
   requiredFileCount?: number;
+  /** Total active files for this field, including files hidden behind UI toggles */
+  totalFilesCount?: number;
   /** MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
   mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
@@ -70,6 +72,7 @@ export function FileListWithDelete({
   assessmentId,
   indicatorId,
   requiredFileCount = 1,
+  totalFilesCount,
   mlgooFlaggedFileIds = [],
 }: FileListWithDeleteProps) {
   const [fileToDelete, setFileToDelete] = useState<number | null>(null);
@@ -95,7 +98,7 @@ export function FileListWithDelete({
         // OPTIMISTIC UPDATE: Immediately update cached assessment data
         // This ensures the UI updates instantly without waiting for refetch
         if (indicatorId) {
-          const remainingFilesCount = files.length - 1; // One file was just deleted
+          const remainingFilesCount = (totalFilesCount ?? files.length) - 1; // One file was just deleted
           const isNowIncomplete = remainingFilesCount < requiredFileCount;
 
           if (isNowIncomplete) {

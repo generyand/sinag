@@ -16,7 +16,16 @@ import {
   useGetAssessorMovsMovFileIdFeedback,
   usePatchAssessorMovsMovFileIdFeedback,
 } from "@sinag/shared";
-import { AlertTriangle, FileIcon, Loader2, Save, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  FileIcon,
+  History,
+  Loader2,
+  Save,
+  X,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
 import toast from "react-hot-toast";
@@ -170,6 +179,116 @@ interface MiddleMovFilesPanelProps {
 }
 
 type AnyRecord = Record<string, any>;
+
+function sortFilesByUploadedAtDesc<T extends { uploaded_at?: string | null }>(files: T[]): T[] {
+  return [...files].sort((a, b) => {
+    const aTime = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+    const bTime = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+    return bTime - aTime;
+  });
+}
+
+function ReviewFileSection({
+  title,
+  files,
+  historyLabel = "View file history",
+  badgeClassName,
+  titleClassName,
+  containerClassName,
+  description,
+  movAnnotations,
+  onPreview,
+  onDownload,
+}: {
+  title: string;
+  files: MOVFileResponse[];
+  historyLabel?: string;
+  badgeClassName?: string;
+  titleClassName?: string;
+  containerClassName: string;
+  description?: string;
+  movAnnotations: any[];
+  onPreview: (file: MOVFileResponse) => void;
+  onDownload: (file: MOVFileResponse) => void;
+}) {
+  const sortedFiles = React.useMemo(() => sortFilesByUploadedAtDesc(files), [files]);
+  const latestFile = sortedFiles.slice(0, 1);
+  const archivedFiles = sortedFiles.slice(1);
+  const [showHistory, setShowHistory] = React.useState(false);
+
+  React.useEffect(() => {
+    if (archivedFiles.length === 0 && showHistory) {
+      setShowHistory(false);
+    }
+  }, [archivedFiles.length, showHistory]);
+
+  if (sortedFiles.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={containerClassName}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className={titleClassName}>{title}</span>
+        <span className={badgeClassName}>
+          {sortedFiles.length} file{sortedFiles.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <FileList
+        files={latestFile}
+        onPreview={onPreview}
+        onDownload={onDownload}
+        canDelete={false}
+        loading={false}
+        emptyMessage=""
+        movAnnotations={movAnnotations}
+      />
+
+      {archivedFiles.length > 0 && (
+        <div className="mt-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-between px-3 py-2 h-auto text-left"
+            onClick={() => setShowHistory((prev) => !prev)}
+            aria-expanded={showHistory}
+          >
+            <span className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-200">
+              <History className="h-3.5 w-3.5" aria-hidden="true" />
+              {historyLabel}
+              <span className="text-slate-500 dark:text-slate-400 font-normal">
+                ({archivedFiles.length})
+              </span>
+            </span>
+            {showHistory ? (
+              <ChevronUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden="true" />
+            )}
+          </Button>
+
+          {showHistory && (
+            <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-3">
+              <FileList
+                files={archivedFiles}
+                onPreview={onPreview}
+                onDownload={onDownload}
+                canDelete={false}
+                loading={false}
+                emptyMessage=""
+                movAnnotations={movAnnotations}
+              />
+              {description && (
+                <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{description}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function MiddleMovFilesPanel({
   assessment,
@@ -601,6 +720,18 @@ export function MiddleMovFilesPanel({
     [handleDeleteAnnotation]
   );
 
+  const normalActiveFiles = React.useMemo(
+    () => sortFilesByUploadedAtDesc(movFiles.filter((file) => !hasReviewerNotes(file))),
+    [movFiles, hasReviewerNotes]
+  );
+  const normalPreviousFiles = React.useMemo(
+    () =>
+      sortFilesByUploadedAtDesc(
+        movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file))
+      ),
+    [movFiles, hasReviewerNotes, hasReviewerFlag]
+  );
+
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
       {/* Header */}
@@ -645,81 +776,50 @@ export function MiddleMovFilesPanel({
             </p>
           </div>
         ) : effectiveTimestamp ? (
-          /* Calibration/Rework mode: Show ALL files but highlight new ones */
-          /* Combine all files together - new files shown first with highlight, then old files */
           <div className="space-y-4">
-            {/* New Files Section - Highlighted (uploaded after rework/calibration request) */}
             {newFiles.length > 0 && (
-              <div className="rounded-sm border-2 border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
-                    New Files ({effectiveLabel})
-                  </span>
-                  <span className="text-xs text-emerald-600 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full">
-                    {newFiles.length} file{newFiles.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <FileList
-                  files={newFiles}
-                  onPreview={handlePreview}
-                  onDownload={handleDownload}
-                  canDelete={false}
-                  loading={false}
-                  emptyMessage="No new files"
-                  movAnnotations={safeAnnotations}
-                />
-              </div>
+              <ReviewFileSection
+                title={`Latest File (${effectiveLabel})`}
+                files={newFiles}
+                historyLabel="View newer upload history"
+                titleClassName="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide"
+                badgeClassName="text-xs text-emerald-600 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border-2 border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3"
+                description={`Older uploads made ${effectiveLabel.toLowerCase()} are kept in history.`}
+                movAnnotations={safeAnnotations}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+              />
             )}
 
-            {/* Existing Files Section - Files from before rework/calibration (accepted files that didn't need re-upload) */}
             {acceptedOldFiles.length > 0 && (
-              <div className="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                    Existing Files
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
-                    {acceptedOldFiles.length} file{acceptedOldFiles.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <FileList
-                  files={acceptedOldFiles}
-                  onPreview={handlePreview}
-                  onDownload={handleDownload}
-                  canDelete={false}
-                  loading={false}
-                  emptyMessage="No existing files"
-                  movAnnotations={safeAnnotations}
-                />
-              </div>
+              <ReviewFileSection
+                title="Existing File"
+                files={acceptedOldFiles}
+                historyLabel="View existing file history"
+                titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+                badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
+                description="Older accepted uploads are kept here for reference."
+                movAnnotations={safeAnnotations}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+              />
             )}
 
-            {/* Previous Files Section - Files that were replaced during rework/calibration (shown for reference) */}
             {rejectedOldFiles.length > 0 && (
-              <div className="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400" />
-                  <span className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
-                    Previous Files
-                  </span>
-                  <span className="text-xs text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full">
-                    {rejectedOldFiles.length} file{rejectedOldFiles.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <p className="text-xs text-red-600 dark:text-red-400 mb-3">
-                  These files were flagged during review and have been replaced with new uploads.
-                </p>
-                <FileList
-                  files={rejectedOldFiles}
-                  onPreview={handlePreview}
-                  onDownload={handleDownload}
-                  canDelete={false}
-                  loading={false}
-                  emptyMessage="No previous files"
-                  movAnnotations={safeAnnotations}
-                />
-              </div>
+              <ReviewFileSection
+                title="Previous File"
+                files={rejectedOldFiles}
+                historyLabel="View previous file history"
+                titleClassName="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide"
+                badgeClassName="text-xs text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75"
+                description="These files were flagged during review and replaced with newer uploads."
+                movAnnotations={safeAnnotations}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+              />
             )}
 
             {/* No files at all */}
@@ -735,47 +835,32 @@ export function MiddleMovFilesPanel({
               )}
           </div>
         ) : (
-          /* Normal mode: separate files with MOV notes into Previous Files */
           <div className="space-y-4">
-            <div className="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                  Uploaded Files
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
-                  {movFiles.filter((file) => !hasReviewerNotes(file)).length} file
-                  {movFiles.filter((file) => !hasReviewerNotes(file)).length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <FileList
-                files={movFiles.filter((file) => !hasReviewerNotes(file))}
+            <ReviewFileSection
+              title="Latest Upload"
+              files={normalActiveFiles}
+              historyLabel="View upload history"
+              titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+              badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
+              containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
+              description="Older uploads remain available in history."
+              movAnnotations={safeAnnotations}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+            />
+            {normalPreviousFiles.length > 0 && (
+              <ReviewFileSection
+                title="Previous File"
+                files={normalPreviousFiles}
+                historyLabel="View previous file history"
+                titleClassName="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide"
+                badgeClassName="text-xs text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75"
+                description="These files remain available for review because they have reviewer notes or flags."
+                movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
-                canDelete={false}
-                loading={false}
-                emptyMessage="No active files"
-                movAnnotations={safeAnnotations}
               />
-            </div>
-            {movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file)).length >
-              0 && (
-              <div className="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400" />
-                  <span className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
-                    Previous Files
-                  </span>
-                </div>
-                <FileList
-                  files={movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file))}
-                  onPreview={handlePreview}
-                  onDownload={handleDownload}
-                  canDelete={false}
-                  loading={false}
-                  emptyMessage="No previous files"
-                  movAnnotations={safeAnnotations}
-                />
-              </div>
             )}
           </div>
         )}
