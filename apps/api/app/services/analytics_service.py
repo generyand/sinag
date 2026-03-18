@@ -9,8 +9,6 @@ from typing import Literal
 from sqlalchemy import case, desc, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.core.cache import CACHE_TTL_DASHBOARD, cache
-
 logger = logging.getLogger(__name__)
 
 from app.db.enums import (
@@ -76,8 +74,10 @@ class AnalyticsService:
         Returns:
             DashboardKPIResponse containing all KPI data
 
-        PERFORMANCE: Results are cached in Redis for 30 minutes to reduce
-        database load and improve response times for the dashboard.
+        Returns fresh dashboard data for each request.
+
+        The MLGOO dashboard needs to reflect database changes immediately, so
+        this path intentionally does not read from or write to Redis.
         """
         # Get active year if not specified
         if assessment_year is None:
@@ -85,17 +85,7 @@ class AnalyticsService:
 
             assessment_year = assessment_year_service.get_active_year_number(db)
 
-        # Build cache key based on assessment_year
-        cache_key = f"dashboard_kpis:year_{assessment_year or 'all'}"
-
-        # Try to get from cache first
-        if cache.is_available:
-            cached_data = cache.get(cache_key)
-            if cached_data is not None:
-                logger.info(f"🎯 Dashboard KPIs cache HIT for {cache_key}")
-                return DashboardKPIResponse(**cached_data)
-
-        logger.info(f"📊 Computing dashboard KPIs (cache miss for {cache_key})")
+        logger.info(f"📊 Computing dashboard KPIs for year {assessment_year or 'all'}")
 
         # Calculate all KPIs
         overall_compliance = self._calculate_overall_compliance(db, assessment_year)
@@ -123,17 +113,6 @@ class AnalyticsService:
             bbi_analytics=bbi_analytics,
             total_barangays=total_barangays,
         )
-
-        # Cache the result for 30 minutes
-        if cache.is_available:
-            try:
-                # Convert Pydantic model to dict for caching
-                cache.set(cache_key, response.model_dump(), ttl=CACHE_TTL_DASHBOARD)
-                logger.info(
-                    f"💾 Dashboard KPIs cached for {cache_key} (TTL: {CACHE_TTL_DASHBOARD}s)"
-                )
-            except Exception as e:
-                logger.warning(f"⚠️  Failed to cache dashboard KPIs: {e}")
 
         return response
 
