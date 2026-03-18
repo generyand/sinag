@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationResponse } from "@sinag/shared";
@@ -34,7 +33,7 @@ export function NotificationPanel({
   onClose,
 }: NotificationPanelProps) {
   return (
-    <div className="w-[380px] max-h-[500px] flex flex-col bg-white rounded-md">
+    <div className="flex max-h-[min(32rem,calc(100vh-5rem))] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-md bg-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
@@ -70,7 +69,7 @@ export function NotificationPanel({
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1">
+      <div className="max-h-[min(24rem,calc(100vh-9rem))] overflow-y-auto">
         {isLoading && notifications.length === 0 ? (
           // Loading skeleton
           <div className="p-3 space-y-3">
@@ -109,7 +108,7 @@ export function NotificationPanel({
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Footer */}
       {totalCount > notifications.length && (
