@@ -218,6 +218,27 @@ export function Phase2Section({
               </div>
             </div>
 
+            {/* Primary action: keep submission visible before the user scrolls through feedback */}
+            <div className="sticky top-3 z-10 rounded-lg border border-purple-200 dark:border-purple-800 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm shadow-sm">
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <h4 className="font-medium text-[var(--foreground)]">Ready to submit?</h4>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Submit your calibration updates back to the validator once you finish the
+                    required corrections.
+                  </p>
+                </div>
+                <div className="w-full sm:w-auto sm:min-w-[220px]">
+                  <ResubmitAssessmentButton
+                    assessmentId={assessmentId}
+                    isComplete={dashboardData.completion_percentage === 100}
+                    isCalibrationRework={true}
+                    onSuccess={onRefetch}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* AI Summary Panel for Calibration */}
             {dashboardData.ai_summary && (
               <AISummaryPanel
@@ -236,16 +257,6 @@ export function Phase2Section({
                 assessmentId={assessmentId}
               />
             )}
-
-            {/* Submit for Calibration Button */}
-            <div className="flex gap-4">
-              <ResubmitAssessmentButton
-                assessmentId={assessmentId}
-                isComplete={dashboardData.completion_percentage === 100}
-                isCalibrationRework={true}
-                onSuccess={onRefetch}
-              />
-            </div>
           </>
         )}
 
