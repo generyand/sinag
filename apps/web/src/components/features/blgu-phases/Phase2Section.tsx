@@ -232,6 +232,7 @@ export function Phase2Section({
                   <ResubmitAssessmentButton
                     assessmentId={assessmentId}
                     isComplete={dashboardData.completion_percentage === 100}
+                    allowIncompleteSubmission={true}
                     isCalibrationRework={true}
                     onSuccess={onRefetch}
                   />

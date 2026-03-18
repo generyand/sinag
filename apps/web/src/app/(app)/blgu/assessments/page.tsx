@@ -303,6 +303,7 @@ export default function BLGUAssessmentsPage() {
                   <ResubmitAssessmentButton
                     assessmentId={parseInt(assessment.id)}
                     isComplete={(dashboardData?.completion_percentage || 0) === 100}
+                    allowIncompleteSubmission={true}
                     isCalibrationRework={true}
                     onSuccess={refetchDashboard}
                   />

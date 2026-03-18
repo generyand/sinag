@@ -50,6 +50,7 @@ import { classifyError } from "@/lib/error-utils";
 interface ResubmitAssessmentButtonProps {
   assessmentId: number;
   isComplete: boolean;
+  allowIncompleteSubmission?: boolean;
   isCalibrationRework?: boolean; // If true, submits to Validator instead of Assessor
   isMlgooRecalibration?: boolean; // If true, submits back to MLGOO (uses regular resubmit endpoint which auto-routes)
   onSuccess?: () => void;
@@ -58,6 +59,7 @@ interface ResubmitAssessmentButtonProps {
 export function ResubmitAssessmentButton({
   assessmentId,
   isComplete,
+  allowIncompleteSubmission = false,
   isCalibrationRework = false,
   isMlgooRecalibration = false,
   onSuccess,
@@ -130,10 +132,11 @@ export function ResubmitAssessmentButton({
     });
 
   const isPending = isCalibrationRework ? isCalibrationPending : isResubmitPending;
+  const canSubmitIncomplete =
+    allowIncompleteSubmission && (isCalibrationRework || isMlgooRecalibration);
 
   const handleResubmitClick = () => {
-    // Only show dialog if assessment is complete
-    if (isComplete) {
+    if (isComplete || canSubmitIncomplete) {
       setShowConfirmDialog(true);
     }
   };
@@ -146,7 +149,7 @@ export function ResubmitAssessmentButton({
     }
   };
 
-  const isButtonDisabled = !isComplete || isPending;
+  const isButtonDisabled = (!isComplete && !canSubmitIncomplete) || isPending;
 
   // Different button text and styling based on mode (calibration vs MLGOO vs regular)
   const buttonText = isMlgooRecalibration
@@ -183,7 +186,7 @@ export function ResubmitAssessmentButton({
   );
 
   // Wrap button in tooltip if disabled due to incomplete assessment
-  if (!isComplete && !isPending) {
+  if (!isComplete && !canSubmitIncomplete && !isPending) {
     return (
       <TooltipProvider>
         <Tooltip>
@@ -229,6 +232,21 @@ export function ResubmitAssessmentButton({
             <AlertDialogDescription asChild>
               <div className="space-y-3 pt-2">
                 <p className="text-sm text-muted-foreground">{dialogDescription}</p>
+
+                {!isComplete && canSubmitIncomplete && (
+                  <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-900">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                    <div className="text-xs space-y-1">
+                      <span className="font-semibold text-amber-700 dark:text-amber-400 block">
+                        Incomplete Submission Warning
+                      </span>
+                      <span className="text-amber-600 dark:text-amber-300 block">
+                        Some indicators are still incomplete. You may still submit now, and the
+                        reviewer will evaluate the latest calibration updates you have provided.
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {isMlgooRecalibration ? (
                   // MLGOO RE-calibration content
@@ -304,9 +322,13 @@ export function ResubmitAssessmentButton({
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
                     {isMlgooRecalibration
-                      ? "Please ensure all MLGOO re-calibration requirements have been addressed and all information is accurate."
+                      ? isComplete
+                        ? "Please ensure all MLGOO re-calibration requirements have been addressed and all information is accurate."
+                        : "Please confirm you want to proceed with the available MLGOO re-calibration updates."
                       : isCalibrationRework
-                        ? "Please ensure all calibration requirements have been addressed and all information is accurate."
+                        ? isComplete
+                          ? "Please ensure all calibration requirements have been addressed and all information is accurate."
+                          : "Please confirm you want to proceed with the available calibration updates."
                         : "Please ensure all rework requirements have been addressed and all information is accurate."}
                   </span>
                 </div>
