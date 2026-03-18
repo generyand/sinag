@@ -480,9 +480,19 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
   );
 
   useEffect(() => {
-    if (defaultExpandedAreaIds.length > 0) {
-      setExpandedAreas(new Set(defaultExpandedAreaIds));
+    if (defaultExpandedAreaIds.length === 0) {
+      return;
     }
+
+    setExpandedAreas((prev) => {
+      const prevKey = Array.from(prev)
+        .sort((a, b) => a - b)
+        .join(",");
+      if (prevKey === defaultExpandedAreaIdsKey) {
+        return prev;
+      }
+      return new Set(defaultExpandedAreaIds);
+    });
   }, [defaultExpandedAreaIdsKey, defaultExpandedAreaIds]);
 
   const toggleArea = (areaId: number) => {
