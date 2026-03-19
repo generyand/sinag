@@ -81,28 +81,37 @@ export function AssessmentTreeNode({
     if (type === "area") {
       const area = item as GovernanceArea;
       const logoPath = getGovernanceAreaLogo(area.code);
+      const isAreaInRework = areaStatus === "rework";
 
       // Use governance area logo if available
       if (logoPath) {
         return (
-          <div className="relative h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
-            <Image
-              src={logoPath}
-              alt={`${area.name} icon`}
-              width={20}
-              height={20}
-              className="object-contain"
-              priority
-            />
-            {/* Completion badge overlay */}
-            {progress && progress.percentage === 100 && (
-              <div
-                className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-sm border-2 border-[var(--card)]"
+          <div className="flex items-center gap-1.5">
+            {isAreaInRework && (
+              <AlertTriangle
+                className="h-3.5 w-3.5 text-amber-500 flex-shrink-0"
                 aria-hidden="true"
-              >
-                <CheckCircle className="h-full w-full text-white" aria-hidden="true" />
-              </div>
+              />
             )}
+            <div className="relative h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
+              <Image
+                src={logoPath}
+                alt={`${area.name} icon`}
+                width={20}
+                height={20}
+                className="object-contain"
+                priority
+              />
+              {/* Completion badge overlay */}
+              {progress && progress.percentage === 100 && (
+                <div
+                  className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-sm border-2 border-[var(--card)]"
+                  aria-hidden="true"
+                >
+                  <CheckCircle className="h-full w-full text-white" aria-hidden="true" />
+                </div>
+              )}
+            </div>
           </div>
         );
       }
@@ -112,6 +121,9 @@ export function AssessmentTreeNode({
         return <Folder className="h-4 w-4 text-[var(--text-secondary)]" aria-hidden="true" />;
       if (progress.percentage === 100) {
         return <CheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />;
+      }
+      if (isAreaInRework) {
+        return <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />;
       }
       return (
         <div className="relative h-4 w-4" aria-hidden="true">

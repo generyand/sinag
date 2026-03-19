@@ -457,20 +457,43 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     return { totalComments, totalAnnotations };
   }, [failedIndicators]);
 
-  // Auto-expand all governance areas on mount for better UX
-  // Use a stable dependency (stringified area IDs) to prevent infinite loops
-  const areaIdsKey = useMemo(() => {
-    return Array.from(failedByArea.keys()).sort().join(",");
-  }, [failedByArea]);
+  // Auto-expand governance areas on mount.
+  // For calibration, prioritize unresolved areas so users see where action is still needed.
+  // For other workflows, keep the previous behavior of expanding all areas.
+  const defaultExpandedAreaIds = useMemo(() => {
+    const sortedAreaIds = Array.from(failedByArea.keys()).sort((a, b) => a - b);
+    if (!isCalibration) {
+      return sortedAreaIds;
+    }
+
+    const areaIdsWithRemainingItems = sortedAreaIds.filter((areaId) => {
+      const indicators = failedByArea.get(areaId) || [];
+      return indicators.some((indicator) => !indicator.is_addressed);
+    });
+
+    return areaIdsWithRemainingItems.length > 0 ? areaIdsWithRemainingItems : sortedAreaIds;
+  }, [failedByArea, isCalibration]);
+
+  const defaultExpandedAreaIdsKey = useMemo(
+    () => defaultExpandedAreaIds.join(","),
+    [defaultExpandedAreaIds]
+  );
 
   useEffect(() => {
-    if (areaIdsKey) {
-      const allAreaIds = areaIdsKey.split(",").filter(Boolean).map(Number);
-      if (allAreaIds.length > 0) {
-        setExpandedAreas(new Set(allAreaIds));
-      }
+    if (defaultExpandedAreaIds.length === 0) {
+      return;
     }
-  }, [areaIdsKey, setExpandedAreas]);
+
+    setExpandedAreas((prev) => {
+      const prevKey = Array.from(prev)
+        .sort((a, b) => a - b)
+        .join(",");
+      if (prevKey === defaultExpandedAreaIdsKey) {
+        return prev;
+      }
+      return new Set(defaultExpandedAreaIds);
+    });
+  }, [defaultExpandedAreaIdsKey, defaultExpandedAreaIds]);
 
   const toggleArea = (areaId: number) => {
     setExpandedAreas((prev) => {

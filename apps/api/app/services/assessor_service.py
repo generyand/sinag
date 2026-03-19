@@ -218,11 +218,22 @@ class AssessorService:
                 total_count = len(area_responses)
             else:
                 # Validator: progress based on all indicators (system-wide)
+                # Match frontend isIndicatorReviewed logic: an indicator counts as
+                # reviewed if it has validation_status, validator checklist data,
+                # or is flagged for calibration
                 area_responses = a.responses
                 reviewed_count = sum(
                     1
                     for r in area_responses
-                    if r.validation_status is not None and not r.requires_rework
+                    if not r.requires_rework
+                    and (
+                        r.validation_status is not None
+                        or r.flagged_for_calibration
+                        or (
+                            r.response_data
+                            and any(k.startswith("validator_val_") for k in r.response_data.keys())
+                        )
+                    )
                 )
                 total_count = len(area_responses)
 
@@ -280,10 +291,19 @@ class AssessorService:
                     re_reviewed_count = sum(
                         1
                         for r in area_responses
-                        if r.validation_status is not None
-                        and not r.requires_rework
+                        if not r.requires_rework
                         and r.updated_at
                         and r.updated_at >= a.calibration_submitted_at
+                        and (
+                            r.validation_status is not None
+                            or r.flagged_for_calibration
+                            or (
+                                r.response_data
+                                and any(
+                                    k.startswith("validator_val_") for k in r.response_data.keys()
+                                )
+                            )
+                        )
                     )
                     re_review_progress = round(
                         (re_reviewed_count / total_count * 100) if total_count > 0 else 0

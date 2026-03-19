@@ -7,6 +7,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.year_resolver import YearPlaceholderResolver, get_year_resolver
 from app.db.enums import AssessmentStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
@@ -21,6 +22,7 @@ from app.schemas.gar import (
     GARSummaryItem,
 )
 from app.services.bbi_service import bbi_service
+from app.services.checklist_utils import calculate_governance_area_result
 
 
 class GARService:
@@ -132,9 +134,47 @@ class GARService:
         # Build response data for each governance area
         gar_areas = []
         summary = []
+        year_resolver: YearPlaceholderResolver | None = None
+        stored_area_results: dict[str, str] = {}
+
+        # Resolve dynamic year placeholders (e.g., {CY_CURRENT_YEAR}) using this assessment's year.
+        try:
+            year_resolver = get_year_resolver(db, year=assessment.assessment_year)
+        except Exception as e:
+            self.logger.warning(
+                "Failed to initialize year resolver for GAR assessment %s (year %s): %s",
+                assessment_id,
+                assessment.assessment_year,
+                e,
+            )
+
+        # Prefer persisted classification results when available (source of truth for completed
+        # assessments). Normalize casing/legacy values to "Passed"/"Failed".
+        if isinstance(assessment.area_results, dict):
+            for area_name, result in assessment.area_results.items():
+                if not isinstance(area_name, str) or not isinstance(result, str):
+                    continue
+                normalized = result.strip().lower()
+                if normalized in {"passed", "pass"}:
+                    stored_area_results[area_name] = "Passed"
+                elif normalized in {"failed", "fail"}:
+                    stored_area_results[area_name] = "Failed"
 
         for area in governance_areas:
-            gar_area = self._build_governance_area_data(db, assessment, area)
+            gar_area = self._build_governance_area_data(db, assessment, area, year_resolver)
+
+            # 1) Use persisted area classification when present.
+            # 2) Fallback to deterministic computation so BGAR/PDF never shows blank verdict cells.
+            if area.name in stored_area_results:
+                gar_area.overall_result = stored_area_results[area.name]
+            elif gar_area.overall_result is None:
+                indicator_statuses = [
+                    ind.validation_status
+                    for ind in gar_area.indicators
+                    if not ind.is_header and not ind.is_profiling_only
+                ]
+                gar_area.overall_result = calculate_governance_area_result(indicator_statuses)
+
             gar_areas.append(gar_area)
 
             # Add to summary
@@ -146,8 +186,9 @@ class GARService:
                 )
             )
 
-        # Determine cycle year from assessment or use default
-        cycle_year = "CY 2025 SGLGB (PY 2024)"
+        # Determine cycle year from the assessment year (used by BGAR tab + exported PDF header)
+        current_year = assessment.assessment_year
+        cycle_year = f"CY {current_year} SGLGB (PY {current_year - 1})"
 
         # Get BBI compliance data (DILG MC 2024-417)
         bbi_compliance = None
@@ -178,6 +219,7 @@ class GARService:
         db: Session,
         assessment: Assessment,
         area: GovernanceArea,
+        year_resolver: YearPlaceholderResolver | None = None,
     ) -> GARGovernanceArea:
         """Build GAR data for a single governance area."""
 
@@ -220,23 +262,33 @@ class GARService:
             # Build checklist items with validation results - FILTER to only minimum requirements
             gar_checklist = []
             for item in checklist_items:
+                resolved_label = (
+                    year_resolver.resolve_string(item.label) if year_resolver else item.label
+                ) or item.label
+
                 # Filter: only include minimum requirements, not MOV items or profiling-only items
                 if not self._is_minimum_requirement(
-                    item.label, item.item_type, indicator.indicator_code, item.is_profiling_only
+                    resolved_label, item.item_type, indicator.indicator_code, item.is_profiling_only
                 ):
                     continue
 
                 validation_result = self._get_checklist_validation_result(item, response)
 
                 # Transform label for GAR display (specific indicators only)
-                display_label = self._get_gar_display_label(indicator.indicator_code, item.label)
+                display_label = self._get_gar_display_label(
+                    indicator.indicator_code, resolved_label
+                )
 
                 gar_checklist.append(
                     GARChecklistItem(
                         item_id=item.item_id,
                         label=display_label,
                         item_type=item.item_type or "checkbox",
-                        group_name=item.group_name,
+                        group_name=(
+                            year_resolver.resolve_string(item.group_name)
+                            if year_resolver
+                            else item.group_name
+                        ),
                         validation_result=validation_result,
                         display_order=item.display_order,
                     )
@@ -265,20 +317,27 @@ class GARService:
             indent_level = self._get_indent_level(indicator.indicator_code)
 
             # Check if this is a header indicator (has children in FILTERED list)
-            # Recalculate based on filtered indicators, not all_indicators
-            is_header = any(
-                i.indicator_code
-                and i.indicator_code.startswith(indicator.indicator_code + ".")
-                and self._get_indicator_depth(i.indicator_code)
-                == self._get_indicator_depth(indicator.indicator_code) + 1
-                for i in indicators
-            )
+            # Prefer parent_id relationship (authoritative). Fall back to code-prefix for legacy data.
+            is_header = any(i.parent_id == indicator.id for i in indicators)
+            if not is_header and indicator.indicator_code:
+                is_header = any(
+                    i.indicator_code
+                    and i.indicator_code.startswith(indicator.indicator_code + ".")
+                    and self._get_indicator_depth(i.indicator_code)
+                    == self._get_indicator_depth(indicator.indicator_code) + 1
+                    for i in indicators
+                )
 
             gar_indicators.append(
                 GARIndicator(
                     indicator_id=indicator.id,
                     indicator_code=indicator.indicator_code,
-                    indicator_name=indicator.name,
+                    indicator_name=(
+                        year_resolver.resolve_string(indicator.name)
+                        if year_resolver
+                        else indicator.name
+                    )
+                    or indicator.name,
                     validation_status=validation_status,
                     checklist_items=gar_checklist,
                     is_header=is_header,
@@ -364,15 +423,22 @@ class GARService:
 
                 return False
 
-            all_passed = all(
-                is_indicator_passed(i) for i in leaf_indicators if i.validation_status is not None
-            )
-            has_any_fail = any(is_indicator_failed(i) for i in leaf_indicators)
+            # Build effective statuses then use shared area-result calculation helper.
+            # This avoids blank/null results in export when some indicators have no explicit status.
+            effective_statuses: list[str | None] = []
+            for leaf_indicator in leaf_indicators:
+                if is_indicator_failed(leaf_indicator):
+                    effective_statuses.append("FAIL")
+                elif is_indicator_passed(leaf_indicator):
+                    effective_statuses.append(
+                        "CONDITIONAL"
+                        if leaf_indicator.validation_status == "CONDITIONAL"
+                        else "PASS"
+                    )
+                else:
+                    effective_statuses.append(None)
 
-            if has_any_fail:
-                overall_result = "Failed"
-            elif all_passed and all(i.validation_status is not None for i in leaf_indicators):
-                overall_result = "Passed"
+            overall_result = calculate_governance_area_result(effective_statuses)
 
         # Determine area type and number
         # Convert enum value to title case ("CORE" -> "Core") for consistent display
@@ -738,14 +804,19 @@ class GARService:
             if gar_indicator.validation_status:
                 continue
 
-            # Find ALL children from all_indicators (including hidden depth-4+)
+            # Find ALL direct children (including hidden depth-4+) using parent_id first.
             children_indicators = [
-                i
-                for i in all_indicators
-                if i.indicator_code
-                and i.indicator_code.startswith(gar_indicator.indicator_code + ".")
-                and i.indicator_code.count(".") == gar_indicator.indicator_code.count(".") + 1
+                i for i in all_indicators if i.parent_id == gar_indicator.indicator_id
             ]
+            if not children_indicators and gar_indicator.indicator_code:
+                # Legacy fallback for data without reliable parent_id links.
+                children_indicators = [
+                    i
+                    for i in all_indicators
+                    if i.indicator_code
+                    and i.indicator_code.startswith(gar_indicator.indicator_code + ".")
+                    and i.indicator_code.count(".") == gar_indicator.indicator_code.count(".") + 1
+                ]
 
             if not children_indicators:
                 continue

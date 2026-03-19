@@ -45,6 +45,8 @@ interface IndicatorAccordionProps {
   onNext?: () => void;
   /** MOV annotations for rework workflow */
   movAnnotations?: any[];
+  /** Per-area workflow override: allow MOV upload in submitted states for flagged indicators */
+  allowPerAreaReworkUpload?: boolean;
   /** MOV file IDs flagged by MLGOO for recalibration */
   mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
@@ -61,6 +63,7 @@ export function IndicatorAccordion({
   onPrevious,
   onNext,
   movAnnotations = [],
+  allowPerAreaReworkUpload = false,
   mlgooFlaggedFileIds = [],
 }: IndicatorAccordionProps) {
   const { data: assessment } = useCurrentAssessment();
@@ -519,6 +522,7 @@ export function IndicatorAccordion({
                   onNext={onNext}
                   level={1}
                   movAnnotations={movAnnotations}
+                  allowPerAreaReworkUpload={allowPerAreaReworkUpload}
                 />
               ))}
             </div>
@@ -536,6 +540,7 @@ export function IndicatorAccordion({
                   assessmentId={parseInt(assessment.id)}
                   indicatorId={parseInt(indicator.id)}
                   isLocked={isLocked}
+                  allowPerAreaReworkUpload={allowPerAreaReworkUpload}
                   movAnnotations={movAnnotations}
                   reworkComments={(indicator as any).rework_comments}
                   mlgooFlaggedFileIds={mlgooFlaggedFileIds}
@@ -937,6 +942,7 @@ export function RecursiveIndicator({
   onNext,
   level = 0,
   movAnnotations = [],
+  allowPerAreaReworkUpload = false,
   mlgooFlaggedFileIds = [],
 }: RecursiveIndicatorProps) {
   return (
@@ -953,6 +959,7 @@ export function RecursiveIndicator({
         onPrevious={onPrevious}
         onNext={onNext}
         movAnnotations={movAnnotations}
+        allowPerAreaReworkUpload={allowPerAreaReworkUpload}
         mlgooFlaggedFileIds={mlgooFlaggedFileIds}
       />
     </div>

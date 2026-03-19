@@ -231,16 +231,50 @@ export function ReworkCalibrationSummarySection({
 }: ReworkCalibrationSummarySectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
-  // Memoize indicator counts to avoid recalculating on every render
-  const { totalIndicators, reworkCount, calibrationCount, mlgooRecalCount } = useMemo(() => {
+  // Memoize derived summary data to avoid recalculating on every render
+  const {
+    totalIndicators,
+    reworkCount,
+    calibrationCount,
+    mlgooRecalCount,
+    reworkRequesters,
+    reworkRequesterNames,
+  } = useMemo(() => {
     const indicators = summary?.rework_indicators ?? [];
+    const assessorNameSet = new Set<string>();
+
+    for (const indicator of indicators) {
+      if (indicator.status !== "rework") continue;
+
+      for (const comment of indicator.feedback_comments ?? []) {
+        if (comment.assessor_name?.trim()) {
+          assessorNameSet.add(comment.assessor_name.trim());
+        }
+      }
+
+      for (const annotation of indicator.mov_annotations ?? []) {
+        if (annotation.assessor_name?.trim()) {
+          assessorNameSet.add(annotation.assessor_name.trim());
+        }
+      }
+    }
+
+    // Keep legacy single-requester value as fallback.
+    if (assessorNameSet.size === 0 && summary?.rework_requested_by_name?.trim()) {
+      assessorNameSet.add(summary.rework_requested_by_name.trim());
+    }
+
+    const reworkRequesters = Array.from(assessorNameSet).sort((a, b) => a.localeCompare(b));
+
     return {
       totalIndicators: indicators.length,
       reworkCount: indicators.filter((i) => i.status === "rework").length,
       calibrationCount: indicators.filter((i) => i.status === "calibration").length,
       mlgooRecalCount: indicators.filter((i) => i.status === "mlgoo_recalibration").length,
+      reworkRequesters,
+      reworkRequesterNames: reworkRequesters.join(", "),
     };
-  }, [summary?.rework_indicators]);
+  }, [summary]);
 
   // Don't render if no summary data
   if (!summary) return null;
@@ -298,7 +332,7 @@ export function ReworkCalibrationSummarySection({
           {/* Requester Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Rework Requester */}
-            {summary.has_rework && summary.rework_requested_by_name && (
+            {summary.has_rework && reworkRequesters.length > 0 && (
               <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-orange-200 dark:border-orange-800">
                 <div className="flex items-center gap-2 mb-1">
                   <User className="h-4 w-4 text-orange-600" />
@@ -306,8 +340,11 @@ export function ReworkCalibrationSummarySection({
                     Rework Requested By
                   </span>
                 </div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {summary.rework_requested_by_name}
+                <p
+                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  title={reworkRequesterNames}
+                >
+                  {reworkRequesterNames}
                 </p>
                 {reworkRequestedAt && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

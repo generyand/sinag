@@ -2,14 +2,13 @@
 # Business logic for analytics and dashboard KPI calculations
 
 import logging
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal
 
 from sqlalchemy import case, desc, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
-
-from app.core.cache import CACHE_TTL_DASHBOARD, cache
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +62,83 @@ class ReportsFilters:
 class AnalyticsService:
     """Service class for analytics and dashboard KPI calculations."""
 
+    _ADJUSTMENT_FILLER_PATTERNS = [
+        re.compile(r"\b(thank you|thanks|salamat po|salamat|pls|please|po)\b", re.IGNORECASE),
+        re.compile(r"^[\s\-\.\)\(]+"),
+        re.compile(r"\s+"),
+    ]
+
+    def _normalize_adjustment_reason(self, raw_text: str) -> str | None:
+        """
+        Convert raw adjustment comments into concise, dashboard-safe reason statements.
+
+        This is used only when AI-generated summaries or AI reformulation are unavailable.
+        """
+        if not raw_text or not raw_text.strip():
+            return None
+
+        cleaned = raw_text.strip()
+        for pattern in self._ADJUSTMENT_FILLER_PATTERNS:
+            replacement = " " if pattern.pattern == r"\s+" else ""
+            cleaned = pattern.sub(replacement, cleaned).strip()
+
+        cleaned = cleaned.rstrip(" .,:;!-")
+        lowered = cleaned.lower()
+
+        if not cleaned:
+            return None
+
+        if "kr form 2" in lowered:
+            return "KR Form 2 requires correction or replacement"
+
+        if "alteration" in lowered:
+            return "Submitted documents contain alterations or require clean replacements"
+
+        if (
+            re.search(r"\b20\d{2}\b", cleaned)
+            and any(token in lowered for token in ["dapat", "wrong year", "incorrect year"])
+        ) or re.fullmatch(r"20\d{2}\s+dapat", lowered):
+            return "Submitted documents reference the wrong assessment year"
+
+        if any(
+            token in lowered
+            for token in ["without affixed signature", "walay pirma", "no signature"]
+        ):
+            if "cert" in lowered:
+                return "Certification documents were uploaded without the required signatures"
+            return "Required documents were uploaded without the required signatures"
+
+        if "mov" in lowered and any(
+            token in lowered
+            for token in ["attach", "upload", "needed", "kulang", "incomplete", "50%"]
+        ):
+            return (
+                "Required MOV attachments are incomplete or below the required submission threshold"
+            )
+
+        if len(cleaned) <= 4:
+            return None
+
+        if cleaned[0].islower():
+            cleaned = cleaned[0].upper() + cleaned[1:]
+
+        if not cleaned.endswith("."):
+            cleaned = f"{cleaned}."
+
+        return cleaned
+
+    def _aggregate_fallback_adjustment_reasons(
+        self, note_to_assessments: dict[str, list[Assessment]]
+    ) -> dict[str, list[Assessment]]:
+        """Aggregate raw notes into normalized fallback reasons."""
+        normalized: dict[str, list[Assessment]] = {}
+        for note_text, assessment_list in note_to_assessments.items():
+            reason = self._normalize_adjustment_reason(note_text)
+            if not reason:
+                continue
+            normalized.setdefault(reason, []).extend(assessment_list)
+        return normalized
+
     def get_dashboard_kpis(
         self, db: Session, assessment_year: int | None = None
     ) -> DashboardKPIResponse:
@@ -76,8 +152,10 @@ class AnalyticsService:
         Returns:
             DashboardKPIResponse containing all KPI data
 
-        PERFORMANCE: Results are cached in Redis for 30 minutes to reduce
-        database load and improve response times for the dashboard.
+        Returns fresh dashboard data for each request.
+
+        The MLGOO dashboard needs to reflect database changes immediately, so
+        this path intentionally does not read from or write to Redis.
         """
         # Get active year if not specified
         if assessment_year is None:
@@ -85,17 +163,7 @@ class AnalyticsService:
 
             assessment_year = assessment_year_service.get_active_year_number(db)
 
-        # Build cache key based on assessment_year
-        cache_key = f"dashboard_kpis:year_{assessment_year or 'all'}"
-
-        # Try to get from cache first
-        if cache.is_available:
-            cached_data = cache.get(cache_key)
-            if cached_data is not None:
-                logger.info(f"🎯 Dashboard KPIs cache HIT for {cache_key}")
-                return DashboardKPIResponse(**cached_data)
-
-        logger.info(f"📊 Computing dashboard KPIs (cache miss for {cache_key})")
+        logger.info(f"📊 Computing dashboard KPIs for year {assessment_year or 'all'}")
 
         # Calculate all KPIs
         overall_compliance = self._calculate_overall_compliance(db, assessment_year)
@@ -123,17 +191,6 @@ class AnalyticsService:
             bbi_analytics=bbi_analytics,
             total_barangays=total_barangays,
         )
-
-        # Cache the result for 30 minutes
-        if cache.is_available:
-            try:
-                # Convert Pydantic model to dict for caching
-                cache.set(cache_key, response.model_dump(), ttl=CACHE_TTL_DASHBOARD)
-                logger.info(
-                    f"💾 Dashboard KPIs cached for {cache_key} (TTL: {CACHE_TTL_DASHBOARD}s)"
-                )
-            except Exception as e:
-                logger.warning(f"⚠️  Failed to cache dashboard KPIs: {e}")
 
         return response
 
@@ -664,12 +721,17 @@ class AnalyticsService:
             Assessment.assessment_year == assessment_year if assessment_year is not None else True
         )
 
-        # Count assessments with adjustments (rework OR calibration) at database level
+        # Count assessments with adjustments (rework, validator calibration,
+        # or MLGOO recalibration) at database level
         # Use DISTINCT count to avoid double-counting assessments with both
         adjustment_count = (
             db.query(func.count(Assessment.id))
             .filter(
-                or_(Assessment.rework_count > 0, Assessment.calibration_count > 0),
+                or_(
+                    Assessment.rework_count > 0,
+                    Assessment.calibration_count > 0,
+                    Assessment.mlgoo_recalibration_count > 0,
+                ),
                 year_filter,
             )
             .scalar()
@@ -679,14 +741,18 @@ class AnalyticsService:
         if adjustment_count == 0:
             return None
 
-        # PERFORMANCE FIX: Only query assessments that actually have rework OR calibration
+        # PERFORMANCE FIX: Only query assessments that actually have adjustments
         # This avoids loading all assessments into memory
         # Eager load blgu_user->barangay chain to avoid N+1 queries when building affected_barangays
         assessments = (
             db.query(Assessment)
             .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
             .filter(
-                or_(Assessment.rework_count > 0, Assessment.calibration_count > 0),
+                or_(
+                    Assessment.rework_count > 0,
+                    Assessment.calibration_count > 0,
+                    Assessment.mlgoo_recalibration_count > 0,
+                ),
                 year_filter,
             )
             .all()
@@ -717,6 +783,7 @@ class AnalyticsService:
         from collections import defaultdict
 
         reason_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
+        generated_by_ai = False
 
         def extract_key_issues_from_summary(summary: dict) -> list[str]:
             """Extract key_issues from a multi-language summary structure."""
@@ -758,6 +825,7 @@ class AnalyticsService:
                 for issue in issues:
                     if issue and issue.strip():
                         reason_to_assessments[issue.strip()].append(assessment)
+                        generated_by_ai = True
 
             # Extract key_issues from calibration_summary
             if assessment.calibration_summary and isinstance(assessment.calibration_summary, dict):
@@ -765,6 +833,7 @@ class AnalyticsService:
                 for issue in issues:
                     if issue and issue.strip():
                         reason_to_assessments[issue.strip()].append(assessment)
+                        generated_by_ai = True
 
             # Extract key_issues from calibration_summaries_by_area
             if assessment.calibration_summaries_by_area and isinstance(
@@ -776,10 +845,11 @@ class AnalyticsService:
                         for issue in issues:
                             if issue and issue.strip():
                                 reason_to_assessments[issue.strip()].append(assessment)
+                                generated_by_ai = True
 
-        # Also include MOV notes and annotations from assessments that have adjustments
-        # but are MISSING their AI summaries. This ensures assessor/validator feedback
-        # is always included even when the rework_summary generation failed.
+        # Also include comments and MOV notes from assessments that have adjustments
+        # but are missing their AI summaries. This ensures assessor/validator/MLGOO
+        # feedback is still surfaced even when summary generation failed.
         assessments_missing_summaries = [
             a
             for a in assessments
@@ -789,6 +859,11 @@ class AnalyticsService:
                 and a.calibration_count > 0
                 and not a.calibration_summary
                 and not a.calibration_summaries_by_area
+            )
+            or (
+                a.mlgoo_recalibration_count
+                and a.mlgoo_recalibration_count > 0
+                and a.mlgoo_recalibration_comments
             )
         ]
 
@@ -819,6 +894,17 @@ class AnalyticsService:
 
             raw_notes_fallback: list[str] = []
             note_to_assessments_fallback: dict[str, list[Assessment]] = defaultdict(list)
+
+            for assessment in assessments_missing_summaries:
+                if (
+                    assessment.mlgoo_recalibration_count
+                    and assessment.mlgoo_recalibration_count > 0
+                    and assessment.mlgoo_recalibration_comments
+                    and assessment.mlgoo_recalibration_comments.strip()
+                ):
+                    comment_text = assessment.mlgoo_recalibration_comments.strip()
+                    raw_notes_fallback.append(comment_text)
+                    note_to_assessments_fallback[comment_text].append(assessment)
 
             for mf in fallback_mov_files:
                 if mf.assessor_notes and mf.assessor_notes.strip():
@@ -854,6 +940,7 @@ class AnalyticsService:
 
                     for reason in formulated:
                         reason_to_assessments[reason].extend(all_fallback_assessments)
+                    generated_by_ai = True
 
                     logger.info(
                         f"📊 Included {len(formulated)} assessor/validator reasons from "
@@ -862,9 +949,12 @@ class AnalyticsService:
                     )
                 else:
                     logger.warning(
-                        "⚠️ AI formulation failed for missing-summary fallback, using raw MOV notes"
+                        "⚠️ AI formulation failed for missing-summary fallback, using normalized MOV reasons"
                     )
-                    for note_text, assessment_list in note_to_assessments_fallback.items():
+                    normalized_reasons = self._aggregate_fallback_adjustment_reasons(
+                        note_to_assessments_fallback
+                    )
+                    for note_text, assessment_list in normalized_reasons.items():
                         reason_to_assessments[note_text].extend(assessment_list)
 
         # Debug logging: track extracted reasons
@@ -874,7 +964,8 @@ class AnalyticsService:
             f"across {len(reason_to_assessments)} unique issues"
         )
 
-        # If still no reasons, fall back to ALL MOV notes/annotations with AI formulation
+        # If still no reasons, fall back to all available comments/MOV notes/annotations
+        # with AI formulation.
         if not reason_to_assessments:
             # Get MOV notes and annotations from assessments with adjustments
             assessment_ids_with_adjustments = [a.id for a in assessments]
@@ -906,6 +997,17 @@ class AnalyticsService:
                 # Collect raw notes for AI formulation
                 raw_notes: list[str] = []
                 note_to_assessments: dict[str, list[Assessment]] = defaultdict(list)
+
+                for assessment in assessments:
+                    if (
+                        assessment.mlgoo_recalibration_count
+                        and assessment.mlgoo_recalibration_count > 0
+                        and assessment.mlgoo_recalibration_comments
+                        and assessment.mlgoo_recalibration_comments.strip()
+                    ):
+                        comment_text = assessment.mlgoo_recalibration_comments.strip()
+                        raw_notes.append(comment_text)
+                        note_to_assessments[comment_text].append(assessment)
 
                 for mf in mov_files_with_notes:
                     if mf.assessor_notes and mf.assessor_notes.strip():
@@ -946,6 +1048,7 @@ class AnalyticsService:
                         # Associate all assessments with each formulated reason
                         for reason in formulated_reasons:
                             reason_to_assessments[reason] = all_affected_assessments.copy()
+                        generated_by_ai = True
 
                         logger.info(
                             f"📊 AI formulated {len(formulated_reasons)} reasons "
@@ -953,9 +1056,14 @@ class AnalyticsService:
                             f"across {len(all_affected_assessments)} assessments"
                         )
                     else:
-                        # AI formulation failed, fall back to raw MOV notes
-                        logger.warning("⚠️ AI formulation failed, falling back to raw MOV notes")
-                        for note_text, assessment_list in note_to_assessments.items():
+                        # AI formulation failed, fall back to normalized MOV notes
+                        logger.warning(
+                            "⚠️ AI formulation failed, falling back to normalized MOV reasons"
+                        )
+                        normalized_reasons = self._aggregate_fallback_adjustment_reasons(
+                            note_to_assessments
+                        )
+                        for note_text, assessment_list in normalized_reasons.items():
                             reason_to_assessments[note_text] = assessment_list
 
         # Build TopReworkReason objects with affected barangays
@@ -1002,7 +1110,7 @@ class AnalyticsService:
         return TopReworkReasons(
             reasons=all_reasons,
             total_adjustment_assessments=adjustment_count,
-            generated_by_ai=bool(reason_to_assessments),
+            generated_by_ai=generated_by_ai,
         )
 
     def _get_total_barangays(self, db: Session) -> int:

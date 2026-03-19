@@ -44,7 +44,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
               className={cn(
                 "absolute -top-0.5 -right-0.5 flex items-center justify-center",
                 "min-w-[18px] h-[18px] px-1 rounded-full",
-                "bg-destructive text-destructive-foreground",
+                "bg-destructive text-white",
                 "text-[10px] font-medium"
               )}
             >
@@ -54,7 +54,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0 w-auto bg-white border border-gray-200 shadow-lg"
+        className="w-auto overflow-hidden border border-gray-200 bg-white p-0 shadow-lg"
         align="end"
         sideOffset={8}
       >

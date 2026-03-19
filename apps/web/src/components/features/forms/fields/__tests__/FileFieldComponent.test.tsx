@@ -442,4 +442,42 @@ describe("FileFieldComponent", () => {
     // Looking for "0.98 MB" format from the mock (1024000 / 1024 / 1024 = 0.977)
     expect(screen.getByText(/0\.98\s*MB/i)).toBeInTheDocument();
   });
+
+  it("should show only the latest upload by default and reveal older uploads in file history", async () => {
+    const sinag = await import("@sinag/shared");
+
+    vi.mocked(sinag.useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
+      data: {
+        files: [
+          {
+            id: 1,
+            file_name: "older-document.pdf",
+            field_id: "test_mov_upload",
+            file_size: 1024000,
+            uploaded_at: "2026-03-17T08:00:00.000Z",
+            file_url: "https://example.com/older.pdf",
+          },
+          {
+            id: 2,
+            file_name: "latest-document.pdf",
+            field_id: "test_mov_upload",
+            file_size: 2048000,
+            uploaded_at: "2026-03-18T08:00:00.000Z",
+            file_url: "https://example.com/latest.pdf",
+          },
+        ],
+      },
+      isLoading: false,
+      refetch: vi.fn(),
+    } as any);
+
+    renderComponent();
+
+    expect(screen.getByText("latest-document.pdf")).toBeInTheDocument();
+    expect(screen.queryByText("older-document.pdf")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /view file history/i }));
+
+    expect(screen.getByText("older-document.pdf")).toBeInTheDocument();
+  });
 });

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 30mm 25mm 25mm 25mm;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11pt;
+    color: #1a1a1a;
+    line-height: 1.6;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 2.5px solid #1a5632;
+  }
+
+  .header h1 {
+    font-size: 22pt;
+    font-weight: 700;
+    color: #1a5632;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .header .subtitle {
+    font-size: 12pt;
+    color: #555;
+    font-weight: 400;
+  }
+
+  .header .date {
+    font-size: 9.5pt;
+    color: #888;
+    margin-top: 8px;
+  }
+
+  .summary-box {
+    background: #f0f7f3;
+    border: 1px solid #c8ddd0;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+
+  .summary-box .label {
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #555;
+    margin-bottom: 6px;
+  }
+
+  .summary-box .amount {
+    font-size: 26pt;
+    font-weight: 700;
+    color: #1a5632;
+  }
+
+  .summary-box .amount-php {
+    font-size: 13pt;
+    color: #2d7a4a;
+    margin-top: 2px;
+  }
+
+  .summary-box .range {
+    font-size: 9.5pt;
+    color: #777;
+    margin-top: 8px;
+  }
+
+  h2 {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #1a5632;
+    margin: 28px 0 12px 0;
+    padding-bottom: 4px;
+    border-bottom: 1.5px solid #d4e5db;
+  }
+
+  h2:first-of-type {
+    margin-top: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    font-size: 10.5pt;
+  }
+
+  thead th {
+    background: #1a5632;
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 9.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  thead th:nth-child(2),
+  thead th:nth-child(3) {
+    text-align: right;
+  }
+
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  tbody td:nth-child(2),
+  tbody td:nth-child(3) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .total-row td {
+    font-weight: 700;
+    border-top: 2px solid #1a5632;
+    background: #f7faf8;
+    font-size: 11pt;
+  }
+
+  .note {
+    font-size: 9.5pt;
+    color: #666;
+    margin: 6px 0 20px 0;
+    line-height: 1.5;
+  }
+
+  .section-text {
+    font-size: 10.5pt;
+    color: #333;
+    margin-bottom: 12px;
+    line-height: 1.65;
+  }
+
+  .service-card {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .service-card .card {
+    flex: 1;
+    background: #fafafa;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+
+  .service-card .card .card-title {
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+
+  .service-card .card .card-desc {
+    font-size: 10pt;
+    color: #333;
+    line-height: 1.5;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  ul {
+    margin: 8px 0 16px 20px;
+    font-size: 10.5pt;
+    color: #333;
+  }
+
+  ul li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #ddd;
+    font-size: 8.5pt;
+    color: #999;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SINAG</h1>
+  <div class="subtitle">Monthly Operating Cost Breakdown</div>
+  <div class="date">As of March 2026 &bull; Based on February 2026 Billing Data</div>
+</div>
+
+<div class="summary-box">
+  <div class="label">Estimated Monthly Operating Cost</div>
+  <div class="amount">$71.00</div>
+  <div class="amount-php">approximately PHP 4,118.00</div>
+  <div class="range">Typical monthly range: $65 &ndash; $74 (PHP 3,770 &ndash; PHP 4,292)</div>
+</div>
+
+<h2>What You're Paying For</h2>
+
+<p class="section-text">
+  SINAG requires three services to run: a <strong>server</strong> to host the application,
+  a <strong>database and file storage</strong> service to store all assessment data and uploaded documents,
+  and an <strong>AI service</strong> for generating insights. Here is the cost for each:
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service</th>
+      <th>Monthly Cost (USD)</th>
+      <th>Monthly Cost (PHP)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Server Hosting (AWS)</td>
+      <td>$37.98</td>
+      <td>PHP 2,202.84</td>
+    </tr>
+    <tr>
+      <td>Database &amp; File Storage (Supabase)</td>
+      <td>$33.02</td>
+      <td>PHP 1,915.16</td>
+    </tr>
+    <tr>
+      <td>AI / Insights Service (Google Gemini)</td>
+      <td>$0.00</td>
+      <td>PHP 0.00</td>
+    </tr>
+    <tr class="total-row">
+      <td>Total</td>
+      <td>$71.00</td>
+      <td>PHP 4,118.00</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="note">
+  Exchange rate used: PHP 58.00 = USD 1.00. Actual amounts may vary slightly depending on the prevailing rate.
+  The AI service is currently on a free tier at no cost.
+</p>
+
+<h2 class="page-break">What Each Service Does</h2>
+
+<div class="service-card">
+  <div class="card">
+    <div class="card-title">Server Hosting</div>
+    <div class="card-desc">
+      Keeps the SINAG application running and accessible online 24/7. This is the computer in the cloud
+      that serves the website to all users.
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Database &amp; File Storage</div>
+    <div class="card-desc">
+      Stores all assessment records, user accounts, and uploaded documents (MOVs, logos, etc.).
+      Currently maintains two databases: one for the live system and one for testing.
+    </div>
+  </div>
+</div>
+<div class="service-card">
+  <div class="card">
+    <div class="card-title">AI / Insights Service</div>
+    <div class="card-desc">
+      Powers the intelligent features of SINAG such as automated analysis and recommendations.
+      Currently free of charge.
+    </div>
+  </div>
+</div>
+
+<h2>Monthly Cost Expectations</h2>
+
+<p class="section-text">
+  The monthly cost may vary slightly from month to month due to normal fluctuations in usage.
+  Based on current operations, you can expect:
+</p>
+
+<ul>
+  <li><strong>Typical month:</strong> $65 &ndash; $74 (PHP 3,770 &ndash; PHP 4,292)</li>
+  <li><strong>Most likely amount:</strong> around $71 (PHP 4,118)</li>
+  <li>Costs will only increase significantly if the system needs to handle substantially more users or data</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>Maintenance &amp; Consultation Rates</h2>
+
+<p class="section-text">
+  The rates below apply <strong>only when the UMDC IT Team requests assistance</strong> from the
+  project developers. These are <strong>not recurring monthly charges</strong> &mdash; they are billed
+  only when a service is actually provided.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service Type</th>
+      <th style="text-align: right" colspan="2">Rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Consultation / Technical Assessment</td>
+      <td colspan="2" style="text-align: right">PHP 500.00 / hour</td>
+    </tr>
+    <tr>
+      <td>Minor Bug Fixes / Small Changes</td>
+      <td colspan="2" style="text-align: right">PHP 500.00 / hour</td>
+    </tr>
+    <tr>
+      <td>Major New Features / Modules</td>
+      <td colspan="2" style="text-align: right">By quotation</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="section-text" style="margin-top: 16px;">
+  <strong>How it works:</strong>
+</p>
+
+<ul>
+  <li><strong>Consultation</strong> covers reviewing issues, diagnosing problems, and recommending solutions.</li>
+  <li><strong>Minor fixes and small changes</strong> are billed based on the actual hours spent.</li>
+  <li><strong>Major new features</strong> require a separate discussion and quotation before any work begins. These are not covered by the hourly rate.</li>
+</ul>
+
+<div class="footer">
+  SINAG &mdash; Seal of Good Local Governance for Barangays (SGLGB) Assessment Platform<br>
+  This document is for informational purposes. Figures are based on February 2026 billing data.
+</div>
+
+</body>
+</html>

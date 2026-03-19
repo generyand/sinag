@@ -5,6 +5,7 @@
  * files stored in private Supabase Storage buckets.
  */
 
+import { api } from "@/lib/api";
 import {
   getGetMovsFilesFileIdSignedUrlQueryKey,
   useGetMovsFilesFileIdSignedUrl,
@@ -72,14 +73,6 @@ export function useSignedUrl(fileId: number | null | undefined, options: UseSign
  * ```
  */
 export async function fetchSignedUrl(fileId: number): Promise<string> {
-  const response = await fetch(`/api/v1/movs/files/${fileId}/signed-url`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch signed URL: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.signed_url;
+  const response = await api.get<{ signed_url: string }>(`/api/v1/movs/files/${fileId}/signed-url`);
+  return response.data.signed_url;
 }

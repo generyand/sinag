@@ -4,11 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubmissionsKPI } from "@/types/submissions";
 import { CheckCircle, AlertCircle, FileText } from "lucide-react";
 
-interface KPICardsProps {
-  kpi: SubmissionsKPI;
+interface KPILabels {
+  awaitingReviewTitle?: string;
+  awaitingReviewDescription?: string;
+  inReworkTitle?: string;
+  inReworkDescription?: string;
+  validatedTitle?: string;
+  validatedDescription?: string;
 }
 
-export function KPICards({ kpi }: KPICardsProps) {
+interface KPICardsProps {
+  kpi: SubmissionsKPI;
+  labels?: KPILabels;
+}
+
+const DEFAULT_LABELS: Required<KPILabels> = {
+  awaitingReviewTitle: "Awaiting Your Review",
+  awaitingReviewDescription: "Submissions ready for assessment",
+  inReworkTitle: "Barangays in Rework",
+  inReworkDescription: "Addressing feedback",
+  validatedTitle: "Reviewed by You",
+  validatedDescription: "Completed and sent to validator",
+};
+
+export function KPICards({ kpi, labels: customLabels }: KPICardsProps) {
+  const labels = { ...DEFAULT_LABELS, ...customLabels };
   return (
     <div
       className="grid grid-cols-1 md:grid-cols-3 gap-4"
@@ -25,7 +45,7 @@ export function KPICards({ kpi }: KPICardsProps) {
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-semibold" style={{ color: "var(--kpi-blue-text)" }}>
-            Awaiting Your Review
+            {labels.awaitingReviewTitle}
           </CardTitle>
           <div
             className="p-2 rounded-sm group-hover:scale-110 transition-transform duration-200"
@@ -44,7 +64,7 @@ export function KPICards({ kpi }: KPICardsProps) {
             {kpi.awaitingReview}
           </div>
           <p className="text-xs font-medium opacity-70" style={{ color: "var(--kpi-blue-text)" }}>
-            Submissions ready for assessment
+            {labels.awaitingReviewDescription}
           </p>
           {kpi.awaitingReview > 0 && (
             <div
@@ -78,7 +98,7 @@ export function KPICards({ kpi }: KPICardsProps) {
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-semibold" style={{ color: "var(--kpi-orange-text)" }}>
-            Barangays in Rework
+            {labels.inReworkTitle}
           </CardTitle>
           <div
             className="p-2 rounded-sm group-hover:scale-110 transition-transform duration-200"
@@ -97,7 +117,7 @@ export function KPICards({ kpi }: KPICardsProps) {
             {kpi.inRework}
           </div>
           <p className="text-xs font-medium opacity-70" style={{ color: "var(--kpi-orange-text)" }}>
-            Addressing feedback
+            {labels.inReworkDescription}
           </p>
           {kpi.inRework > 0 && (
             <div
@@ -131,7 +151,7 @@ export function KPICards({ kpi }: KPICardsProps) {
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-semibold" style={{ color: "var(--kpi-green-text)" }}>
-            Reviewed by You
+            {labels.validatedTitle}
           </CardTitle>
           <div
             className="p-2 rounded-sm group-hover:scale-110 transition-transform duration-200"
@@ -150,7 +170,7 @@ export function KPICards({ kpi }: KPICardsProps) {
             {kpi.validated}
           </div>
           <p className="text-xs font-medium opacity-70" style={{ color: "var(--kpi-green-text)" }}>
-            Completed and sent to validator
+            {labels.validatedDescription}
           </p>
           {kpi.validated > 0 && (
             <div

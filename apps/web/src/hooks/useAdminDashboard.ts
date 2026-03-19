@@ -197,10 +197,19 @@ export function useAdminDashboard(options?: UseAdminDashboardOptions) {
   const yearToUse = options?.year ?? effectiveYear;
 
   // Pass year parameter to the API call
-  const query = useGetAnalyticsDashboard({
-    ...(options?.cycleId ? { cycle_id: options.cycleId } : {}),
-    ...(yearToUse ? { year: yearToUse } : {}),
-  });
+  const query = useGetAnalyticsDashboard(
+    {
+      ...(options?.cycleId ? { cycle_id: options.cycleId } : {}),
+      ...(yearToUse ? { year: yearToUse } : {}),
+    },
+    {
+      query: {
+        staleTime: 0,
+        refetchOnMount: "always",
+        refetchOnWindowFocus: true,
+      },
+    }
+  );
 
   // Transform the data when available
   const transformedData = query.data ? transformDashboardData(query.data) : undefined;

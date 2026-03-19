@@ -19,12 +19,14 @@ interface SubmissionsTableProps {
   submissions: BarangaySubmission[];
   onSubmissionClick: (submission: BarangaySubmission) => void;
   statusConfig?: Record<UnifiedStatus, UnifiedStatusConfig>;
+  progressColumnHeader?: string;
 }
 
 export function SubmissionsTable({
   submissions,
   onSubmissionClick,
   statusConfig = UNIFIED_STATUS_CONFIG,
+  progressColumnHeader = "Progress (in this Area)",
 }: SubmissionsTableProps) {
   // Get unified status badge using the provided config (assessor or validator)
   const getUnifiedStatusBadge = (status: UnifiedStatus) => {
@@ -125,7 +127,7 @@ export function SubmissionsTable({
               >
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full" aria-hidden="true"></div>
-                  <span>Progress (in this Area)</span>
+                  <span>{progressColumnHeader}</span>
                 </div>
               </TableHead>
               <TableHead

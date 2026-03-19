@@ -306,6 +306,12 @@ class AssessmentYearService:
             year_record.calibration_deadline = data.calibration_deadline
         if data.description is not None:
             year_record.description = data.description
+        if data.submission_window_days is not None:
+            year_record.submission_window_days = data.submission_window_days
+        if data.rework_window_days is not None:
+            year_record.rework_window_days = data.rework_window_days
+        if data.calibration_window_days is not None:
+            year_record.calibration_window_days = data.calibration_window_days
 
         db.commit()
         db.refresh(year_record)

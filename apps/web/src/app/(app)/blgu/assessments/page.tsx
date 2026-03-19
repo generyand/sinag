@@ -4,6 +4,7 @@ import {
   AssessmentHeader,
   AssessmentLockedBanner,
   AssessmentSkeleton,
+  ResubmitAssessmentButton,
 } from "@/components/features/assessments";
 import { AssessmentContentPanel } from "@/components/features/assessments/AssessmentContentPanel";
 import {
@@ -238,6 +239,10 @@ export default function BLGUAssessmentsPage() {
     normalizedStatus === "completed";
 
   const isLocked = isFullySubmitted || isPastSubmission;
+  const isCalibrationReworkActive =
+    (dashboardData?.status === "REWORK" || dashboardData?.status === "NEEDS_REWORK") &&
+    dashboardData?.is_calibration_rework === true &&
+    (dashboardData as any)?.is_mlgoo_recalibration !== true;
 
   // Get selected indicator
   const selectedIndicatorData = selectedIndicatorId
@@ -279,6 +284,35 @@ export default function BLGUAssessmentsPage() {
           />
         </div>
       </header>
+
+      {isCalibrationReworkActive && (
+        <div className="border-b border-[var(--border)] bg-[var(--card)]/95 backdrop-blur-sm">
+          <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/80 dark:bg-purple-950/20 p-4 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-base font-semibold text-[var(--foreground)]">
+                    Submit Your Calibration Updates
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    After updating the validator-requested indicators, submit your assessment here
+                    for calibration review.
+                  </p>
+                </div>
+                <div className="w-full lg:w-auto lg:min-w-[240px]">
+                  <ResubmitAssessmentButton
+                    assessmentId={parseInt(assessment.id)}
+                    isComplete={(dashboardData?.completion_percentage || 0) === 100}
+                    allowIncompleteSubmission={true}
+                    isCalibrationRework={true}
+                    onSuccess={refetchDashboard}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Split Panel Layout */}
       <div className="flex-1 flex overflow-hidden">

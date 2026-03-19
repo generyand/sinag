@@ -4,6 +4,7 @@
 "use client";
 
 import { FileList } from "@/components/features/movs/FileList";
+import { fetchSignedUrl } from "@/hooks/useSignedUrl";
 import { FileListWithDelete } from "@/components/features/movs/FileListWithDelete";
 import { FileUpload } from "@/components/features/movs/FileUpload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -26,7 +27,18 @@ import {
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, FileIcon, Info, Loader2, StickyNote, X } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  FileIcon,
+  History,
+  Info,
+  Loader2,
+  StickyNote,
+  X,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -166,6 +178,8 @@ interface FileFieldComponentProps {
   movAnnotations?: any[];
   reworkComments?: any[]; // Epic 5.0: Added for Hybrid Logic
   updateAssessmentData?: (updater: (data: any) => any) => void; // For immediate UI updates
+  /** Per-area workflow override: allow uploads while global status is still submitted */
+  allowPerAreaReworkUpload?: boolean;
   /** MOV file IDs flagged by MLGOO for recalibration - these need to be re-uploaded */
   mlgooFlaggedFileIds?: Array<{ mov_file_id: number; comment?: string | null }>;
 }
@@ -190,12 +204,14 @@ export function FileFieldComponent({
   movAnnotations = [],
   reworkComments = [],
   updateAssessmentData,
+  allowPerAreaReworkUpload = false,
   mlgooFlaggedFileIds = [],
 }: FileFieldComponentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showUploadHistory, setShowUploadHistory] = useState(false);
 
   // Ref to track progress interval for cleanup on unmount
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -599,20 +615,11 @@ export function FileFieldComponent({
 
   const handleDownload = async (file: MOVFileResponse) => {
     try {
-      // First fetch a signed URL for secure access
-      const signedUrlResponse = await fetch(`/api/v1/movs/files/${file.id}/signed-url`, {
-        credentials: "include",
-      });
-      if (!signedUrlResponse.ok) {
-        throw new Error("Failed to get download URL");
-      }
-      const { signed_url } = await signedUrlResponse.json();
+      const signedUrl = await fetchSignedUrl(file.id);
 
-      // Then fetch the file using the signed URL
-      const response = await fetch(signed_url);
+      const response = await fetch(signedUrl);
       const blob = await response.blob();
 
-      // Create a blob URL and trigger download
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
@@ -621,7 +628,6 @@ export function FileFieldComponent({
       link.click();
       document.body.removeChild(link);
 
-      // Clean up the blob URL
       window.URL.revokeObjectURL(blobUrl);
 
       toast.success("File downloaded successfully");
@@ -892,27 +898,30 @@ export function FileFieldComponent({
 
   // Can upload: Only BLGU users, only for DRAFT or REWORK/NEEDS_REWORK status, and not disabled
   const canUpload =
-    !disabled &&
+    (!disabled || allowPerAreaReworkUpload) &&
     isBLGU &&
     (normalizedStatus === "DRAFT" ||
       normalizedStatus === "REWORK" ||
-      normalizedStatus === "NEEDS_REWORK");
+      normalizedStatus === "NEEDS_REWORK" ||
+      allowPerAreaReworkUpload);
 
   // Can delete: Only BLGU users, only for DRAFT or REWORK/NEEDS_REWORK status, and not disabled
   const canDelete =
-    !disabled &&
+    (!disabled || allowPerAreaReworkUpload) &&
     isBLGU &&
     (normalizedStatus === "DRAFT" ||
       normalizedStatus === "REWORK" ||
-      normalizedStatus === "NEEDS_REWORK");
+      normalizedStatus === "NEEDS_REWORK" ||
+      allowPerAreaReworkUpload);
 
   // Can rotate: Same rules as delete - only BLGU users during DRAFT or REWORK status
   const canRotate =
-    !disabled &&
+    (!disabled || allowPerAreaReworkUpload) &&
     isBLGU &&
     (normalizedStatus === "DRAFT" ||
       normalizedStatus === "REWORK" ||
-      normalizedStatus === "NEEDS_REWORK");
+      normalizedStatus === "NEEDS_REWORK" ||
+      allowPerAreaReworkUpload);
 
   // Reason why upload is disabled
   const uploadDisabledReason = !canUpload
@@ -920,7 +929,7 @@ export function FileFieldComponent({
       normalizedStatus === "VALIDATED" ||
       normalizedStatus === "SUBMITTED" ||
       normalizedStatus === "COMPLETED"
-      ? "File uploads are disabled for submitted or validated assessments"
+      ? "File uploads are disabled until this indicator is flagged and sent for rework"
       : !isBLGU
         ? "Only BLGU users can upload files"
         : null
@@ -932,6 +941,24 @@ export function FileFieldComponent({
     allDisplayedFiles.some((f) => f.id === ann.mov_file_id)
   );
   const hasAnnotations = fieldAnnotations.length > 0;
+
+  const sortFilesByUploadedAtDesc = (fileList: MOVFileResponse[]) =>
+    [...fileList].sort((a, b) => {
+      const aTime = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+      const bTime = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+      return bTime - aTime;
+    });
+
+  const sortedFiles = sortFilesByUploadedAtDesc(files as MOVFileResponse[]);
+  const latestUploadedFiles = sortedFiles.slice(0, 1);
+  const archivedUploadedFiles = sortedFiles.slice(1);
+  const hasArchivedUploads = archivedUploadedFiles.length > 0;
+
+  useEffect(() => {
+    if (archivedUploadedFiles.length === 0 && showUploadHistory) {
+      setShowUploadHistory(false);
+    }
+  }, [archivedUploadedFiles.length, showUploadHistory]);
 
   return (
     <div className="space-y-4" id={`file-upload-${field.field_id}`}>
@@ -1129,13 +1156,14 @@ export function FileFieldComponent({
         >
           <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" />
           <AlertDescription className="text-green-700 dark:text-green-300">
-            File uploaded successfully! The file will appear in the list below.
+            File uploaded successfully. The latest file is shown below, and older uploads stay in
+            file history.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Uploaded Files List (New files during rework, or all files in other statuses) */}
-      {files.length > 0 && (
+      {/* Latest Uploaded File (New files during rework, or latest file in other statuses) */}
+      {latestUploadedFiles.length > 0 && (
         <section className="space-y-4 mt-6" aria-labelledby={`uploaded-files-${field.field_id}`}>
           <h4
             id={`uploaded-files-${field.field_id}`}
@@ -1145,14 +1173,14 @@ export function FileFieldComponent({
               <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
             )}
             <span className={isReworkStatus ? "text-green-600" : ""}>
-              {isReworkStatus ? "New Uploads" : "Uploaded Files"}
+              {isReworkStatus ? "Latest Rework Upload" : "Latest Upload"}
             </span>
             <span className="text-muted-foreground font-normal">
-              ({files.length} file{files.length !== 1 ? "s" : ""} uploaded)
+              ({latestUploadedFiles.length} file shown)
             </span>
           </h4>
           <FileListWithDelete
-            files={files}
+            files={latestUploadedFiles}
             onPreview={handlePreview}
             onDownload={handleDownload}
             canDelete={canDelete}
@@ -1164,8 +1192,58 @@ export function FileFieldComponent({
             assessmentId={assessmentId}
             indicatorId={indicatorId}
             requiredFileCount={field.required ? 1 : 0}
+            totalFilesCount={sortedFiles.length}
             mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
           />
+
+          {hasArchivedUploads && (
+            <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full justify-between px-4 py-3 h-auto text-left"
+                onClick={() => setShowUploadHistory((prev) => !prev)}
+                aria-expanded={showUploadHistory}
+                aria-controls={`upload-history-${field.field_id}`}
+              >
+                <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                  <History className="h-4 w-4" aria-hidden="true" />
+                  View file history
+                  <span className="text-muted-foreground font-normal">
+                    ({archivedUploadedFiles.length} older upload
+                    {archivedUploadedFiles.length !== 1 ? "s" : ""})
+                  </span>
+                </span>
+                {showUploadHistory ? (
+                  <ChevronUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                )}
+              </Button>
+
+              {showUploadHistory && (
+                <div
+                  id={`upload-history-${field.field_id}`}
+                  className="border-t border-slate-200 dark:border-slate-700 px-4 py-4"
+                >
+                  <FileList
+                    files={archivedUploadedFiles}
+                    onPreview={handlePreview}
+                    onDownload={handleDownload}
+                    canDelete={false}
+                    loading={isLoadingFiles}
+                    emptyMessage=""
+                    movAnnotations={movAnnotations}
+                    hideHeader={true}
+                    mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
+                  />
+                  <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">
+                    Older uploads are kept here for reference and audit history.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -1232,7 +1310,7 @@ export function FileFieldComponent({
       )}
 
       {/* Show message if delete is disabled for submitted/validated assessments */}
-      {files.length > 0 &&
+      {latestUploadedFiles.length > 0 &&
         !canDelete &&
         isBLGU &&
         (normalizedStatus === "SUBMITTED_FOR_REVIEW" ||
