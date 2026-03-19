@@ -4,6 +4,8 @@
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
+
 interface Rect {
   x: number;
   y: number;
@@ -199,6 +201,20 @@ export default function ImageAnnotator({
 
   return (
     <div className="relative h-full w-full flex flex-col bg-gray-100">
+      <div className="flex items-center justify-end border-b border-gray-200 bg-white/80 px-2 py-1.5">
+        <MovPreviewControls
+          zoom={1}
+          minZoom={0.5}
+          maxZoom={2}
+          zoomStep={0.1}
+          onZoomIn={() => {}}
+          onZoomOut={() => {}}
+          onReset={() => {}}
+          onRotateLeft={() => {}}
+          onRotateRight={() => {}}
+        />
+      </div>
+
       {/* Image Container */}
       <div
         ref={containerRef}

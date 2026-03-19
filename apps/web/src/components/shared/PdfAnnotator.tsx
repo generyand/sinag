@@ -12,6 +12,8 @@ import {
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
 import * as React from "react";
 
+import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
+
 interface PdfRect {
   x: number;
   y: number;
@@ -500,14 +502,29 @@ export default function PdfAnnotator({
   }, [focusAnnotationId, annotations]);
 
   return (
-    <div ref={containerRef} className="h-full w-full bg-white overflow-auto relative">
-      <Worker workerUrl="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-        <Viewer
-          fileUrl={url}
-          defaultScale={SpecialZoomLevel.PageWidth}
-          plugins={[highlightPluginInstance]}
+    <div className="flex h-full w-full flex-col bg-white">
+      <div className="flex items-center justify-end border-b border-slate-200 bg-slate-50/90 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900/60">
+        <MovPreviewControls
+          zoom={1}
+          minZoom={0.5}
+          maxZoom={2}
+          zoomStep={0.1}
+          onZoomIn={() => {}}
+          onZoomOut={() => {}}
+          onReset={() => {}}
+          onRotateLeft={() => {}}
+          onRotateRight={() => {}}
         />
-      </Worker>
+      </div>
+      <div ref={containerRef} className="min-h-0 flex-1 overflow-auto relative">
+        <Worker workerUrl="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+          <Viewer
+            fileUrl={url}
+            defaultScale={SpecialZoomLevel.PageWidth}
+            plugins={[highlightPluginInstance]}
+          />
+        </Worker>
+      </div>
     </div>
   );
 }
