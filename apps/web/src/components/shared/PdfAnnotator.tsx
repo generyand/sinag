@@ -505,10 +505,10 @@ export default function PdfAnnotator({
     <div className="flex h-full w-full flex-col bg-white">
       <div className="flex items-center justify-end border-b border-slate-200 bg-slate-50/90 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900/60">
         <MovPreviewControls
-          zoom={1}
-          minZoom={0.5}
-          maxZoom={2}
-          zoomStep={0.1}
+          zoom={100}
+          minZoom={50}
+          maxZoom={300}
+          zoomStep={25}
           onZoomIn={() => {}}
           onZoomOut={() => {}}
           onReset={() => {}}

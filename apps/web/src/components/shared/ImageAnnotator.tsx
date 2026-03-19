@@ -6,6 +6,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
 
+const DEFAULT_ZOOM = 100;
+const MIN_ZOOM = 50;
+const MAX_ZOOM = 300;
+const ZOOM_STEP = 25;
+
 interface Rect {
   x: number;
   y: number;
@@ -34,6 +39,7 @@ export default function ImageAnnotator({
   onAdd,
 }: ImageAnnotatorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentRect, setCurrentRect] = useState<Rect | null>(null);
@@ -42,18 +48,20 @@ export default function ImageAnnotator({
   const [comment, setComment] = useState("");
   const [pendingRect, setPendingRect] = useState<Rect | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [rotation, setRotation] = useState(0);
 
   // Layout state to avoid reading refs in render
   const [layout, setLayout] = useState<{
     image: DOMRect;
-    container: DOMRect;
+    stage: DOMRect;
   } | null>(null);
 
   const updateLayout = useCallback(() => {
-    if (imageRef.current && containerRef.current) {
+    if (imageRef.current && stageRef.current) {
       setLayout({
         image: imageRef.current.getBoundingClientRect(),
-        container: containerRef.current.getBoundingClientRect(),
+        stage: stageRef.current.getBoundingClientRect(),
       });
     }
   }, []);
@@ -67,6 +75,31 @@ export default function ImageAnnotator({
       window.removeEventListener("scroll", updateLayout, true);
     };
   }, [updateLayout]);
+
+  useEffect(() => {
+    setZoom(DEFAULT_ZOOM);
+    setRotation(0);
+    setIsDrawing(false);
+    setCurrentRect(null);
+    setStartPoint(null);
+    setShowCommentInput(false);
+    setComment("");
+    setPendingRect(null);
+    setImageLoaded(false);
+    setLayout(null);
+  }, [url]);
+
+  useEffect(() => {
+    if (!imageLoaded) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      updateLayout();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [imageLoaded, rotation, updateLayout, zoom]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -154,7 +187,7 @@ export default function ImageAnnotator({
       // Use layout state instead of refs
       if (!layout) return null;
 
-      const { image, container } = layout;
+      const { image, stage } = layout;
       // Also need to use layout for percentToPixel conversion to be consistent
       // percentToPixel helper uses refs, so we inline it or pass layout
       const pixel = {
@@ -167,8 +200,8 @@ export default function ImageAnnotator({
         y: ((rect.y + rect.h) / 100) * image.height,
       };
 
-      const imageOffsetX = image.left - container.left;
-      const imageOffsetY = image.top - container.top;
+      const imageOffsetX = image.left - stage.left;
+      const imageOffsetY = image.top - stage.top;
 
       return (
         <div
@@ -199,19 +232,40 @@ export default function ImageAnnotator({
     [layout]
   );
 
+  const handleZoomIn = useCallback(() => {
+    setZoom((currentZoom) => Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((currentZoom) => Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP));
+  }, []);
+
+  const handleRotateLeft = useCallback(() => {
+    setRotation((currentRotation) => (currentRotation + 270) % 360);
+  }, []);
+
+  const handleRotateRight = useCallback(() => {
+    setRotation((currentRotation) => (currentRotation + 90) % 360);
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    setZoom(DEFAULT_ZOOM);
+    setRotation(0);
+  }, []);
+
   return (
     <div className="relative h-full w-full flex flex-col bg-gray-100">
       <div className="flex items-center justify-end border-b border-gray-200 bg-white/80 px-2 py-1.5">
         <MovPreviewControls
-          zoom={1}
-          minZoom={0.5}
-          maxZoom={2}
-          zoomStep={0.1}
-          onZoomIn={() => {}}
-          onZoomOut={() => {}}
-          onReset={() => {}}
-          onRotateLeft={() => {}}
-          onRotateRight={() => {}}
+          zoom={zoom}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
+          zoomStep={ZOOM_STEP}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onReset={handleResetView}
+          onRotateLeft={handleRotateLeft}
+          onRotateRight={handleRotateRight}
         />
       </div>
 
@@ -231,32 +285,42 @@ export default function ImageAnnotator({
         }}
         style={{ cursor: annotateEnabled ? "crosshair" : "default" }}
       >
-        <img
-          ref={imageRef}
-          src={url}
-          alt="Annotatable image"
-          className="max-w-full max-h-full object-contain"
-          draggable={false}
-          onLoad={() => {
-            setImageLoaded(true);
-            updateLayout();
+        <div
+          ref={stageRef}
+          data-testid="image-annotator-stage"
+          className="relative inline-block"
+          style={{
+            transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
+            transformOrigin: "center center",
           }}
-        />
+        >
+          <img
+            ref={imageRef}
+            src={url}
+            alt="Annotatable image"
+            className="max-w-full max-h-full object-contain"
+            draggable={false}
+            onLoad={() => {
+              setImageLoaded(true);
+              updateLayout();
+            }}
+          />
 
-        {/* Render existing annotations */}
-        {imageLoaded &&
-          layout &&
-          (annotations || []).map((ann) => (
-            <React.Fragment key={ann.id}>
-              {renderRect(ann.rect, "#fbbf24", 0.2, ann.comment)}
-            </React.Fragment>
-          ))}
+          {/* Render existing annotations */}
+          {imageLoaded &&
+            layout &&
+            (annotations || []).map((ann) => (
+              <React.Fragment key={ann.id}>
+                {renderRect(ann.rect, "#fbbf24", 0.2, ann.comment)}
+              </React.Fragment>
+            ))}
 
-        {/* Render current drawing rectangle */}
-        {imageLoaded && layout && currentRect && renderRect(currentRect, "#3b82f6", 0.3)}
+          {/* Render current drawing rectangle */}
+          {imageLoaded && layout && currentRect && renderRect(currentRect, "#3b82f6", 0.3)}
 
-        {/* Render pending rectangle */}
-        {imageLoaded && layout && pendingRect && renderRect(pendingRect, "#10b981", 0.3)}
+          {/* Render pending rectangle */}
+          {imageLoaded && layout && pendingRect && renderRect(pendingRect, "#10b981", 0.3)}
+        </div>
       </div>
 
       {/* Comment Input Modal */}

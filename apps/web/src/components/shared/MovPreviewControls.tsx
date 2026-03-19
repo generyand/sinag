@@ -28,7 +28,7 @@ export function MovPreviewControls({
   onRotateLeft,
   onRotateRight,
 }: MovPreviewControlsProps) {
-  const zoomLabel = `${Math.round(zoom * 100)}%`;
+  const zoomLabel = `${Math.round(zoom)}%`;
 
   return (
     <div
@@ -45,7 +45,7 @@ export function MovPreviewControls({
         onClick={onZoomOut}
         disabled={zoom <= minZoom}
         aria-label="Zoom out"
-        title={`Zoom out by ${zoomStep * 100}%`}
+        title={`Zoom out by ${zoomStep}%`}
       >
         <Minus className="h-4 w-4" aria-hidden="true" />
       </Button>
@@ -63,7 +63,7 @@ export function MovPreviewControls({
         onClick={onZoomIn}
         disabled={zoom >= maxZoom}
         aria-label="Zoom in"
-        title={`Zoom in by ${zoomStep * 100}%`}
+        title={`Zoom in by ${zoomStep}%`}
       >
         <Plus className="h-4 w-4" aria-hidden="true" />
       </Button>
