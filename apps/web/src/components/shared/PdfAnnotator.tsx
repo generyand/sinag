@@ -1,7 +1,7 @@
 "use client";
 "use no memo";
 
-import { SpecialZoomLevel, Viewer, Worker } from "@react-pdf-viewer/core";
+import { RotateDirection, SpecialZoomLevel, Viewer, Worker } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import {
   highlightPlugin,
@@ -10,10 +10,12 @@ import {
   RenderHighlightTargetProps,
 } from "@react-pdf-viewer/highlight";
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
-import { RotateDirection, rotatePlugin } from "@react-pdf-viewer/rotate";
+import { rotatePlugin } from "@react-pdf-viewer/rotate";
 import { zoomPlugin } from "@react-pdf-viewer/zoom";
+import { RotateCcw, RotateCw } from "lucide-react";
 import * as React from "react";
 
+import { Button } from "@/components/ui/button";
 import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
 
 const DEFAULT_ZOOM = 100;
@@ -56,7 +58,7 @@ export default function PdfAnnotator({
 }: PdfAnnotatorProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
-  const [rotation, setRotation] = React.useState(0);
+  const [viewerStateKey, setViewerStateKey] = React.useState(0);
 
   // The highlight plugin provides selection -> trigger UI -> save data
   // NOTE: Do NOT memoize this with useMemo([], []) - the plugin has internal
@@ -472,44 +474,32 @@ export default function PdfAnnotator({
       );
     },
   });
-  const zoomPluginInstance = React.useMemo(() => zoomPlugin(), []);
-  const rotatePluginInstance = React.useMemo(() => rotatePlugin(), []);
+  // These plugin factories use hooks internally, so they must be called at
+  // component render time instead of inside useMemo/useState initializers.
+  void viewerStateKey;
+  const zoomPluginInstance = zoomPlugin();
+  const rotatePluginInstance = rotatePlugin();
 
-  const handleZoomIn = React.useCallback(() => {
+  const handleZoomIn = () => {
     setZoom((currentZoom) => {
       const nextZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
       zoomPluginInstance.zoomTo(nextZoom / 100);
       return nextZoom;
     });
-  }, [zoomPluginInstance]);
+  };
 
-  const handleZoomOut = React.useCallback(() => {
+  const handleZoomOut = () => {
     setZoom((currentZoom) => {
       const nextZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
       zoomPluginInstance.zoomTo(nextZoom / 100);
       return nextZoom;
     });
-  }, [zoomPluginInstance]);
+  };
 
-  const handleRotateLeft = React.useCallback(() => {
-    setRotation((currentRotation) => {
-      rotatePluginInstance.rotate(RotateDirection.Backward);
-      return (currentRotation + 270) % 360;
-    });
-  }, [rotatePluginInstance]);
-
-  const handleRotateRight = React.useCallback(() => {
-    setRotation((currentRotation) => {
-      rotatePluginInstance.rotate(RotateDirection.Forward);
-      return (currentRotation + 90) % 360;
-    });
-  }, [rotatePluginInstance]);
-
-  const handleResetView = React.useCallback(() => {
+  const handleResetView = () => {
     setZoom(DEFAULT_ZOOM);
-    setRotation(0);
-    zoomPluginInstance.zoomTo(DEFAULT_ZOOM / 100);
-  }, [zoomPluginInstance]);
+    setViewerStateKey((currentKey) => currentKey + 1);
+  };
 
   // Scroll to a specific annotation id when requested
   React.useEffect(() => {
@@ -550,7 +540,7 @@ export default function PdfAnnotator({
 
   React.useEffect(() => {
     setZoom(DEFAULT_ZOOM);
-    setRotation(0);
+    setViewerStateKey((currentKey) => currentKey + 1);
   }, [url]);
 
   return (
@@ -564,13 +554,46 @@ export default function PdfAnnotator({
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onReset={handleResetView}
-          onRotateLeft={handleRotateLeft}
-          onRotateRight={handleRotateRight}
+          onRotateLeft={() => {}}
+          onRotateRight={() => {}}
+          rotateLeftControl={
+            <rotatePluginInstance.Rotate direction={RotateDirection.Backward}>
+              {({ onClick }) => (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={onClick}
+                  aria-label="Rotate left"
+                >
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              )}
+            </rotatePluginInstance.Rotate>
+          }
+          rotateRightControl={
+            <rotatePluginInstance.Rotate direction={RotateDirection.Forward}>
+              {({ onClick }) => (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={onClick}
+                  aria-label="Rotate right"
+                >
+                  <RotateCw className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              )}
+            </rotatePluginInstance.Rotate>
+          }
         />
       </div>
       <div ref={containerRef} className="min-h-0 flex-1 overflow-auto relative">
         <Worker workerUrl="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
           <Viewer
+            key={`${url}-${viewerStateKey}`}
             fileUrl={url}
             defaultScale={SpecialZoomLevel.PageWidth}
             plugins={[highlightPluginInstance, zoomPluginInstance, rotatePluginInstance]}

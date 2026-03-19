@@ -2,7 +2,7 @@
 "use no memo";
 
 import * as React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
 
@@ -38,8 +38,6 @@ export default function ImageAnnotator({
   annotateEnabled = true,
   onAdd,
 }: ImageAnnotatorProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentRect, setCurrentRect] = useState<Rect | null>(null);
@@ -51,32 +49,7 @@ export default function ImageAnnotator({
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [rotation, setRotation] = useState(0);
 
-  // Layout state to avoid reading refs in render
-  const [layout, setLayout] = useState<{
-    image: DOMRect;
-    stage: DOMRect;
-  } | null>(null);
-
-  const updateLayout = useCallback(() => {
-    if (imageRef.current && stageRef.current) {
-      setLayout({
-        image: imageRef.current.getBoundingClientRect(),
-        stage: stageRef.current.getBoundingClientRect(),
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("resize", updateLayout);
-    // Also update on scroll as bounds might change
-    window.addEventListener("scroll", updateLayout, true);
-    return () => {
-      window.removeEventListener("resize", updateLayout);
-      window.removeEventListener("scroll", updateLayout, true);
-    };
-  }, [updateLayout]);
-
-  useEffect(() => {
+  React.useEffect(() => {
     setZoom(DEFAULT_ZOOM);
     setRotation(0);
     setIsDrawing(false);
@@ -86,68 +59,78 @@ export default function ImageAnnotator({
     setComment("");
     setPendingRect(null);
     setImageLoaded(false);
-    setLayout(null);
   }, [url]);
 
-  useEffect(() => {
-    if (!imageLoaded) return;
+  const getImagePoint = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!imageRef.current) return null;
 
-    const frame = window.requestAnimationFrame(() => {
-      updateLayout();
-    });
+      const image = imageRef.current;
+      const rect = image.getBoundingClientRect();
+      const baseWidth = image.clientWidth;
+      const baseHeight = image.clientHeight;
 
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [imageLoaded, rotation, updateLayout, zoom]);
+      if (!rect.width || !rect.height || !baseWidth || !baseHeight) return null;
+
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const scale = zoom / 100;
+      const radians = (-rotation * Math.PI) / 180;
+      const deltaX = (clientX - centerX) / scale;
+      const deltaY = (clientY - centerY) / scale;
+      const cos = Math.cos(radians);
+      const sin = Math.sin(radians);
+
+      return {
+        x: deltaX * cos - deltaY * sin + baseWidth / 2,
+        y: deltaX * sin + deltaY * cos + baseHeight / 2,
+        width: baseWidth,
+        height: baseHeight,
+      };
+    },
+    [rotation, zoom]
+  );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      // ... same logic using refs (events are safe) ...
-      if (!annotateEnabled || !imageRef.current) return;
-      const rect = imageRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+      if (!annotateEnabled) return;
+
+      const point = getImagePoint(e.clientX, e.clientY);
+      if (!point) return;
+
+      if (point.x < 0 || point.y < 0 || point.x > point.width || point.y > point.height) {
+        return;
+      }
+
       setIsDrawing(true);
-      setStartPoint({ x, y });
+      setStartPoint({ x: point.x, y: point.y });
       setCurrentRect(null);
     },
-    [annotateEnabled]
+    [annotateEnabled, getImagePoint]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDrawing || !startPoint || !imageRef.current) return;
-      const rect = imageRef.current.getBoundingClientRect();
-      const currentX = e.clientX - rect.left;
-      const currentY = e.clientY - rect.top;
-      const clampedCurrentX = Math.max(0, Math.min(currentX, rect.width));
-      const clampedCurrentY = Math.max(0, Math.min(currentY, rect.height));
+      if (!isDrawing || !startPoint) return;
 
+      const point = getImagePoint(e.clientX, e.clientY);
+      if (!point) return;
+
+      const clampedCurrentX = Math.max(0, Math.min(point.x, point.width));
+      const clampedCurrentY = Math.max(0, Math.min(point.y, point.height));
       const x = Math.min(startPoint.x, clampedCurrentX);
       const y = Math.min(startPoint.y, clampedCurrentY);
       const w = Math.abs(clampedCurrentX - startPoint.x);
       const h = Math.abs(clampedCurrentY - startPoint.y);
 
-      // Re-implement pixelToPercent logic inline or keep using the ref-based one since this is event handler
-      const percentStart = {
-        x: (x / rect.width) * 100,
-        y: (y / rect.height) * 100,
-      };
-      const percentEnd = {
-        x: ((x + w) / rect.width) * 100,
-        y: ((y + h) / rect.height) * 100,
-      };
-
       setCurrentRect({
-        x: percentStart.x,
-        y: percentStart.y,
-        w: percentEnd.x - percentStart.x,
-        h: percentEnd.y - percentStart.y,
+        x: (x / point.width) * 100,
+        y: (y / point.height) * 100,
+        w: (w / point.width) * 100,
+        h: (h / point.height) * 100,
       });
     },
-    [isDrawing, startPoint]
+    [getImagePoint, isDrawing, startPoint]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -155,25 +138,30 @@ export default function ImageAnnotator({
       setIsDrawing(false);
       return;
     }
+
     setIsDrawing(false);
     setStartPoint(null);
+
     if (currentRect.w > 1 && currentRect.h > 1) {
       setPendingRect(currentRect);
       setShowCommentInput(true);
     }
+
     setCurrentRect(null);
-  }, [isDrawing, currentRect]);
+  }, [currentRect, isDrawing]);
 
   const handleSaveAnnotation = useCallback(() => {
     if (!pendingRect || !comment.trim()) return;
+
     onAdd?.({
       rect: pendingRect,
       comment: comment.trim(),
     });
+
     setPendingRect(null);
     setComment("");
     setShowCommentInput(false);
-  }, [pendingRect, comment, onAdd]);
+  }, [comment, onAdd, pendingRect]);
 
   const handleCancelAnnotation = useCallback(() => {
     setPendingRect(null);
@@ -181,56 +169,32 @@ export default function ImageAnnotator({
     setShowCommentInput(false);
   }, []);
 
-  // Render a rectangle overlay with optional comment tooltip
-  const renderRect = useCallback(
-    (rect: Rect, color: string, opacity: number, comment?: string) => {
-      // Use layout state instead of refs
-      if (!layout) return null;
-
-      const { image, stage } = layout;
-      // Also need to use layout for percentToPixel conversion to be consistent
-      // percentToPixel helper uses refs, so we inline it or pass layout
-      const pixel = {
-        x: (rect.x / 100) * image.width,
-        y: (rect.y / 100) * image.height,
-      };
-
-      const pixelEnd = {
-        x: ((rect.x + rect.w) / 100) * image.width,
-        y: ((rect.y + rect.h) / 100) * image.height,
-      };
-
-      const imageOffsetX = image.left - stage.left;
-      const imageOffsetY = image.top - stage.top;
-
-      return (
-        <div
-          key={JSON.stringify(rect) /* Ensure key changes if rect changes */}
-          className="group"
-          style={{
-            position: "absolute",
-            left: `${imageOffsetX + pixel.x}px`,
-            top: `${imageOffsetY + pixel.y}px`,
-            width: `${pixelEnd.x - pixel.x}px`,
-            height: `${pixelEnd.y - pixel.y}px`,
-            border: `2px solid ${color}`,
-            backgroundColor: `${color}${Math.round(opacity * 255)
-              .toString(16)
-              .padStart(2, "0")}`,
-            borderRadius: "0.125rem",
-            pointerEvents: comment ? "auto" : "none",
-          }}
-        >
-          {comment && (
-            <div className="invisible group-hover:visible absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg p-2 text-sm text-gray-800 max-w-xs z-50 whitespace-pre-wrap">
-              {comment}
-            </div>
-          )}
-        </div>
-      );
-    },
-    [layout]
-  );
+  const renderRect = useCallback((rect: Rect, color: string, opacity: number, note?: string) => {
+    return (
+      <div
+        key={JSON.stringify(rect)}
+        className="group absolute"
+        style={{
+          left: `${rect.x}%`,
+          top: `${rect.y}%`,
+          width: `${rect.w}%`,
+          height: `${rect.h}%`,
+          border: `2px solid ${color}`,
+          backgroundColor: `${color}${Math.round(opacity * 255)
+            .toString(16)
+            .padStart(2, "0")}`,
+          borderRadius: "0.125rem",
+          pointerEvents: note ? "auto" : "none",
+        }}
+      >
+        {note && (
+          <div className="invisible group-hover:visible absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg p-2 text-sm text-gray-800 max-w-xs z-50 whitespace-pre-wrap">
+            {note}
+          </div>
+        )}
+      </div>
+    );
+  }, []);
 
   const handleZoomIn = useCallback(() => {
     setZoom((currentZoom) => Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP));
@@ -269,24 +233,21 @@ export default function ImageAnnotator({
         />
       </div>
 
-      {/* Image Container */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
-        ref={containerRef}
         className="flex-1 relative overflow-auto flex items-center justify-center"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={() => {
-          if (isDrawing) {
-            setIsDrawing(false);
-            setStartPoint(null);
-            setCurrentRect(null);
-          }
+          if (!isDrawing) return;
+          setIsDrawing(false);
+          setStartPoint(null);
+          setCurrentRect(null);
         }}
         style={{ cursor: annotateEnabled ? "crosshair" : "default" }}
       >
         <div
-          ref={stageRef}
           data-testid="image-annotator-stage"
           className="relative inline-block"
           style={{
@@ -294,42 +255,34 @@ export default function ImageAnnotator({
             transformOrigin: "center center",
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={imageRef}
             src={url}
-            alt="Annotatable image"
+            alt="Annotatable document"
             className="max-w-full max-h-full object-contain"
             draggable={false}
-            onLoad={() => {
-              setImageLoaded(true);
-              updateLayout();
-            }}
+            onLoad={() => setImageLoaded(true)}
           />
 
-          {/* Render existing annotations */}
-          {imageLoaded &&
-            layout &&
-            (annotations || []).map((ann) => (
-              <React.Fragment key={ann.id}>
-                {renderRect(ann.rect, "#fbbf24", 0.2, ann.comment)}
-              </React.Fragment>
-            ))}
-
-          {/* Render current drawing rectangle */}
-          {imageLoaded && layout && currentRect && renderRect(currentRect, "#3b82f6", 0.3)}
-
-          {/* Render pending rectangle */}
-          {imageLoaded && layout && pendingRect && renderRect(pendingRect, "#10b981", 0.3)}
+          <div className="absolute inset-0">
+            {imageLoaded &&
+              annotations.map((ann) => (
+                <React.Fragment key={ann.id}>
+                  {renderRect(ann.rect, "#fbbf24", 0.2, ann.comment)}
+                </React.Fragment>
+              ))}
+            {imageLoaded && currentRect && renderRect(currentRect, "#3b82f6", 0.3)}
+            {imageLoaded && pendingRect && renderRect(pendingRect, "#10b981", 0.3)}
+          </div>
         </div>
       </div>
 
-      {/* Comment Input Modal */}
       {showCommentInput && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-sm shadow-xl p-6 w-96 max-w-[90vw]">
             <h3 className="text-lg font-semibold mb-4">Add Comment</h3>
             <textarea
-              autoFocus
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Enter your comment for this annotation..."
@@ -360,7 +313,6 @@ export default function ImageAnnotator({
         </div>
       )}
 
-      {/* Instructions */}
       {annotateEnabled && !showCommentInput && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-sm">
           Click and drag to draw a rectangle, then add a comment

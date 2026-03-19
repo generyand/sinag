@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Minus, Plus, RotateCcw, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ interface MovPreviewControlsProps {
   onReset: () => void;
   onRotateLeft: () => void;
   onRotateRight: () => void;
+  rotateLeftControl?: ReactNode;
+  rotateRightControl?: ReactNode;
 }
 
 export function MovPreviewControls({
@@ -27,6 +30,8 @@ export function MovPreviewControls({
   onReset,
   onRotateLeft,
   onRotateRight,
+  rotateLeftControl,
+  rotateRightControl,
 }: MovPreviewControlsProps) {
   const zoomLabel = `${Math.round(zoom)}%`;
 
@@ -68,26 +73,30 @@ export function MovPreviewControls({
         <Plus className="h-4 w-4" aria-hidden="true" />
       </Button>
       <div className="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-8 w-8 p-0"
-        onClick={onRotateLeft}
-        aria-label="Rotate left"
-      >
-        <RotateCcw className="h-4 w-4" aria-hidden="true" />
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-8 w-8 p-0"
-        onClick={onRotateRight}
-        aria-label="Rotate right"
-      >
-        <RotateCw className="h-4 w-4" aria-hidden="true" />
-      </Button>
+      {rotateLeftControl ?? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={onRotateLeft}
+          aria-label="Rotate left"
+        >
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      )}
+      {rotateRightControl ?? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={onRotateRight}
+          aria-label="Rotate right"
+        >
+          <RotateCw className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      )}
       <Button
         type="button"
         variant="outline"
