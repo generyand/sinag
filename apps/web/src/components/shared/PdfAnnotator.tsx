@@ -10,9 +10,16 @@ import {
   RenderHighlightTargetProps,
 } from "@react-pdf-viewer/highlight";
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
+import { RotateDirection, rotatePlugin } from "@react-pdf-viewer/rotate";
+import { zoomPlugin } from "@react-pdf-viewer/zoom";
 import * as React from "react";
 
 import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
+
+const DEFAULT_ZOOM = 100;
+const MIN_ZOOM = 50;
+const MAX_ZOOM = 300;
+const ZOOM_STEP = 25;
 
 interface PdfRect {
   x: number;
@@ -48,6 +55,8 @@ export default function PdfAnnotator({
   focusAnnotationId,
 }: PdfAnnotatorProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
+  const [rotation, setRotation] = React.useState(0);
 
   // The highlight plugin provides selection -> trigger UI -> save data
   // NOTE: Do NOT memoize this with useMemo([], []) - the plugin has internal
@@ -463,6 +472,44 @@ export default function PdfAnnotator({
       );
     },
   });
+  const zoomPluginInstance = React.useMemo(() => zoomPlugin(), []);
+  const rotatePluginInstance = React.useMemo(() => rotatePlugin(), []);
+
+  const handleZoomIn = React.useCallback(() => {
+    setZoom((currentZoom) => {
+      const nextZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
+      zoomPluginInstance.zoomTo(nextZoom / 100);
+      return nextZoom;
+    });
+  }, [zoomPluginInstance]);
+
+  const handleZoomOut = React.useCallback(() => {
+    setZoom((currentZoom) => {
+      const nextZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
+      zoomPluginInstance.zoomTo(nextZoom / 100);
+      return nextZoom;
+    });
+  }, [zoomPluginInstance]);
+
+  const handleRotateLeft = React.useCallback(() => {
+    setRotation((currentRotation) => {
+      rotatePluginInstance.rotate(RotateDirection.Backward);
+      return (currentRotation + 270) % 360;
+    });
+  }, [rotatePluginInstance]);
+
+  const handleRotateRight = React.useCallback(() => {
+    setRotation((currentRotation) => {
+      rotatePluginInstance.rotate(RotateDirection.Forward);
+      return (currentRotation + 90) % 360;
+    });
+  }, [rotatePluginInstance]);
+
+  const handleResetView = React.useCallback(() => {
+    setZoom(DEFAULT_ZOOM);
+    setRotation(0);
+    zoomPluginInstance.zoomTo(DEFAULT_ZOOM / 100);
+  }, [zoomPluginInstance]);
 
   // Scroll to a specific annotation id when requested
   React.useEffect(() => {
@@ -501,19 +548,24 @@ export default function PdfAnnotator({
     }
   }, [focusAnnotationId, annotations]);
 
+  React.useEffect(() => {
+    setZoom(DEFAULT_ZOOM);
+    setRotation(0);
+  }, [url]);
+
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <div className="flex items-center justify-end border-b border-slate-200 bg-slate-50/90 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900/60">
         <MovPreviewControls
-          zoom={100}
-          minZoom={50}
-          maxZoom={300}
-          zoomStep={25}
-          onZoomIn={() => {}}
-          onZoomOut={() => {}}
-          onReset={() => {}}
-          onRotateLeft={() => {}}
-          onRotateRight={() => {}}
+          zoom={zoom}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
+          zoomStep={ZOOM_STEP}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onReset={handleResetView}
+          onRotateLeft={handleRotateLeft}
+          onRotateRight={handleRotateRight}
         />
       </div>
       <div ref={containerRef} className="min-h-0 flex-1 overflow-auto relative">
@@ -521,7 +573,7 @@ export default function PdfAnnotator({
           <Viewer
             fileUrl={url}
             defaultScale={SpecialZoomLevel.PageWidth}
-            plugins={[highlightPluginInstance]}
+            plugins={[highlightPluginInstance, zoomPluginInstance, rotatePluginInstance]}
           />
         </Worker>
       </div>
