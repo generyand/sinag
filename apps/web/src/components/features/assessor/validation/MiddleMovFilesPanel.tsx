@@ -46,6 +46,66 @@ const ImageAnnotator = dynamic(() => import("@/components/shared/ImageAnnotator"
   ),
 });
 
+function hasAssessorFileFeedback(file: AnyRecord): boolean {
+  return (
+    Boolean(file.assessor_notes && String(file.assessor_notes).trim()) ||
+    file.flagged_for_rework === true ||
+    file.has_annotations === true ||
+    file.is_rejected === true
+  );
+}
+
+function hasValidatorFileFeedback(file: AnyRecord): boolean {
+  return (
+    Boolean(file.validator_notes && String(file.validator_notes).trim()) ||
+    file.flagged_for_calibration === true
+  );
+}
+
+function getUploadedAtMs(file: AnyRecord): number {
+  const timestamp = file.uploaded_at ? new Date(String(file.uploaded_at)).getTime() : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function groupValidatorFilesForDisplay(files: AnyRecord[]): {
+  newFiles: AnyRecord[];
+  acceptedOldFiles: AnyRecord[];
+  rejectedOldFiles: AnyRecord[];
+} {
+  const newFiles: AnyRecord[] = [];
+  const acceptedOldFiles: AnyRecord[] = [];
+  const rejectedOldFiles: AnyRecord[] = [];
+
+  for (const file of files) {
+    const uploadedAt = getUploadedAtMs(file);
+    const hasNewerUpload = files.some((candidate) => getUploadedAtMs(candidate) > uploadedAt);
+    const hasAssessorFeedback = hasAssessorFileFeedback(file);
+    const hasValidatorFeedback = hasValidatorFileFeedback(file);
+
+    if (hasValidatorFeedback) {
+      if (hasNewerUpload) {
+        rejectedOldFiles.push(file);
+      } else {
+        acceptedOldFiles.push(file);
+      }
+      continue;
+    }
+
+    if (hasAssessorFeedback) {
+      rejectedOldFiles.push(file);
+      continue;
+    }
+
+    if (file.isNew) {
+      newFiles.push(file);
+    } else {
+      acceptedOldFiles.push(file);
+    }
+  }
+
+  return { newFiles, acceptedOldFiles, rejectedOldFiles };
+}
+
 /**
  * Inner component that fetches signed URL and renders the appropriate file viewer.
  * Separated to allow conditional rendering with hooks.
@@ -400,6 +460,10 @@ export function MiddleMovFilesPanel({
       return { newFiles: [], acceptedOldFiles: movFiles, rejectedOldFiles: [] };
     }
 
+    if (isValidator) {
+      return groupValidatorFilesForDisplay(movFiles);
+    }
+
     const newUploads = movFiles.filter((f: any) => f.isNew);
     const oldUploads = movFiles.filter((f: any) => !f.isNew);
 
@@ -444,7 +508,7 @@ export function MiddleMovFilesPanel({
       acceptedOldFiles: accepted,
       rejectedOldFiles: rejected,
     };
-  }, [movFiles, effectiveTimestamp, hasReviewerFlag, hasReviewerNotes]);
+  }, [movFiles, effectiveTimestamp, hasReviewerFlag, hasReviewerNotes, isValidator]);
 
   // State for PDF annotation modal
   const [selectedFile, setSelectedFile] = React.useState<any | null>(null);

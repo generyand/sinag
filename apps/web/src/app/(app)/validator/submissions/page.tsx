@@ -32,6 +32,10 @@ import { useMemo, useState } from "react";
  */
 function mapToUnifiedStatus(item: AssessorQueueItem): UnifiedStatus {
   const globalStatus = item.global_status?.toUpperCase();
+  const hasPendingCalibration =
+    item.submission_type === "rework_pending" ||
+    ((item.is_calibration_rework === true || (item.pending_calibrations_count ?? 0) > 0) &&
+      globalStatus === "REWORK");
 
   // Check if already reviewed/validated (validator completed)
   if (globalStatus === "VALIDATED" || globalStatus === "COMPLETED") {
@@ -39,7 +43,7 @@ function mapToUnifiedStatus(item: AssessorQueueItem): UnifiedStatus {
   }
 
   // Check submission type for rework states
-  if (item.submission_type === "rework_pending") {
+  if (hasPendingCalibration) {
     return "sent_for_rework";
   }
 
