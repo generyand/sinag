@@ -147,7 +147,7 @@ jobs:
             apps/api
 
       - name: Run Trivy vulnerability scanner (API)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: "sinag-api:scan"
           format: "table"
