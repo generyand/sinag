@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import pytest
+from sqlalchemy.dialects import postgresql
 
 from app.db.base import Base
 from app.db.enums import AreaType, AssessmentStatus, UserRole, ValidationStatus
@@ -160,3 +161,26 @@ def test_get_analytics_includes_active_assessor_area_work_in_per_area_workflow(d
     assert analytics["overview"]["total_assessed"] == 1
     assert analytics["workflow"]["total_reviewed"] == 1
     assert analytics["assessment_period"] == "SGLGB 2025"
+
+
+def test_assessor_analytics_query_uses_postgres_safe_distinct_on(db_session):
+    create_active_assessment_year(db_session, 2025)
+    _, indicator = create_governance_area_with_indicator(db_session, area_id=1)
+
+    query = (
+        db_session.query(Assessment)
+        .join(AssessmentResponse, AssessmentResponse.assessment_id == Assessment.id)
+        .join(Indicator, Indicator.id == AssessmentResponse.indicator_id)
+        .filter(Assessment.assessment_year == 2025)
+        .filter(Indicator.governance_area_id == indicator.governance_area_id)
+        .distinct(Assessment.id)
+    )
+
+    compiled = str(
+        query.statement.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+
+    assert "DISTINCT ON (assessments.id)" in compiled

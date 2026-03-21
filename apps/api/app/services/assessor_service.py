@@ -2825,7 +2825,9 @@ class AssessorService:
         if assessor.assessor_area_id is not None:
             query = query.filter(Indicator.governance_area_id == assessor.assessor_area_id)
 
-        assessments = query.distinct().all()
+        # Use DISTINCT ON for PostgreSQL compatibility. A plain DISTINCT across
+        # Assessment rows touches JSON columns and can fail in production.
+        assessments = query.distinct(Assessment.id).all()
 
         if assessor.role == UserRole.VALIDATOR:
             validator_statuses = {
