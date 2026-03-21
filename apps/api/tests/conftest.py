@@ -183,6 +183,7 @@ def db_engine():
     with engine.connect() as connection:
         connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
         Base.metadata.drop_all(bind=connection)
+        connection.exec_driver_sql("PRAGMA foreign_keys=ON")
 
 
 @pytest.fixture(scope="session")
