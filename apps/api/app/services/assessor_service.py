@@ -36,6 +36,120 @@ class AssessorService:
         """Initialize the assessor service"""
         self.logger = logging.getLogger(__name__)
 
+    @staticmethod
+    def _normalize_optional_text(value: str | None, *, strip: bool = False) -> str | None:
+        """Normalize optional text so empty values compare consistently."""
+        if value is None:
+            return None
+
+        normalized = value.strip() if strip else value
+        return normalized if normalized else None
+
+    @staticmethod
+    def _get_owned_validation_response_data(
+        assessor: User, response_data: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """Filter response_data to the keys owned by assessor/validator validation."""
+        if not response_data:
+            return {}
+
+        if assessor.role == UserRole.VALIDATOR:
+            owned_prefixes = ("validator_val_",)
+            owned_keys = set()
+        else:
+            owned_prefixes = ("assessor_val_",)
+            owned_keys = {"assessor_manual_rework_flag"}
+
+        return {
+            key: value
+            for key, value in response_data.items()
+            if key in owned_keys or key.startswith(owned_prefixes)
+        }
+
+    def _get_existing_validation_comment(
+        self, db: Session, response_id: int, assessor_id: int
+    ) -> str | None:
+        """Return the latest saved public validation comment for this reviewer."""
+        existing_comment = (
+            db.query(FeedbackComment)
+            .filter(
+                FeedbackComment.response_id == response_id,
+                FeedbackComment.assessor_id == assessor_id,
+                FeedbackComment.comment_type == "validation",
+                FeedbackComment.is_internal_note == False,  # noqa: E712
+            )
+            .order_by(FeedbackComment.created_at.desc(), FeedbackComment.id.desc())
+            .first()
+        )
+
+        return self._normalize_optional_text(
+            existing_comment.comment if existing_comment else None,
+            strip=True,
+        )
+
+    @staticmethod
+    def _has_meaningful_validation_value(value: Any) -> bool:
+        """Return True when a saved validation value reflects actual reviewer work."""
+        if value is True:
+            return True
+
+        if isinstance(value, str):
+            return value.strip() != ""
+
+        return False
+
+    def _has_meaningful_owned_validation_data(
+        self, assessor: User, response_data: dict[str, Any] | None
+    ) -> bool:
+        """Check whether response_data contains meaningful reviewer-owned validation inputs."""
+        owned_data = self._get_owned_validation_response_data(assessor, response_data)
+        return any(self._has_meaningful_validation_value(value) for value in owned_data.values())
+
+    def _is_validation_noop(
+        self,
+        db: Session,
+        response: AssessmentResponse,
+        assessor: User,
+        validation_status: ValidationStatus | None,
+        public_comment: str | None,
+        assessor_remarks: str | None,
+        response_data: dict[str, Any] | None,
+        flagged_for_calibration: bool | None,
+    ) -> bool:
+        """Check whether the request would leave persisted validation state unchanged."""
+        if validation_status is not None and response.validation_status != validation_status:
+            return False
+
+        if assessor_remarks is not None and self._normalize_optional_text(
+            response.assessor_remarks
+        ) != self._normalize_optional_text(assessor_remarks):
+            return False
+
+        if (
+            flagged_for_calibration is not None
+            and response.flagged_for_calibration != flagged_for_calibration
+        ):
+            return False
+
+        if public_comment is not None:
+            current_public_comment = self._get_existing_validation_comment(
+                db=db,
+                response_id=response.id,
+                assessor_id=assessor.id,
+            )
+            incoming_public_comment = self._normalize_optional_text(public_comment, strip=True)
+            if current_public_comment != incoming_public_comment:
+                return False
+
+        incoming_validation_data = self._get_owned_validation_response_data(assessor, response_data)
+        if incoming_validation_data:
+            existing_data = response.response_data or {}
+            for key, value in incoming_validation_data.items():
+                if existing_data.get(key) != value:
+                    return False
+
+        return True
+
     def get_assessor_queue(
         self, db: Session, assessor: User, assessment_year: int | None = None
     ) -> list[dict]:
@@ -206,14 +320,13 @@ class AssessorService:
                     for r in a.responses
                     if r.indicator and r.indicator.governance_area_id == assessor.assessor_area_id
                 ]
-                # Only count responses with actual assessor validation data (assessor_val_* keys)
-                # Not just any non-empty response_data (e.g., assessor_manual_rework_flag alone doesn't count)
+                # Only count responses with meaningful assessor validation data.
+                # False-only defaults or cleared fields should not make an indicator look reviewed.
                 reviewed_count = sum(
                     1
                     for r in area_responses
-                    if r.response_data
-                    and not r.requires_rework
-                    and any(k.startswith("assessor_val_") for k in r.response_data.keys())
+                    if not r.requires_rework
+                    and self._has_meaningful_owned_validation_data(assessor, r.response_data)
                 )
                 total_count = len(area_responses)
             else:
@@ -503,6 +616,30 @@ class AssessorService:
 
         logger.debug("response.response_data BEFORE update: %s", response.response_data)
 
+        validation_response_data = self._get_owned_validation_response_data(assessor, response_data)
+
+        if self._is_validation_noop(
+            db=db,
+            response=response,
+            assessor=assessor,
+            validation_status=validation_status,
+            public_comment=public_comment,
+            assessor_remarks=assessor_remarks,
+            response_data=validation_response_data,
+            flagged_for_calibration=flagged_for_calibration,
+        ):
+            logger.debug(
+                "Skipping no-op assessment validation save: response_id=%s assessor_id=%s",
+                response_id,
+                assessor.id,
+            )
+            return {
+                "success": True,
+                "message": "Assessment response validated successfully",
+                "assessment_response_id": response_id,
+                "validation_status": validation_status,
+            }
+
         # Update the validation status only if provided (validators only)
         if validation_status is not None:
             response.validation_status = validation_status
@@ -519,8 +656,8 @@ class AssessorService:
 
         # Update response_data if provided (for checklist data)
         # IMPORTANT: Merge with existing BLGU data, don't overwrite!
-        if response_data is not None:
-            logger.debug("Merging response_data. New validation data: %s", response_data)
+        if validation_response_data:
+            logger.debug("Merging response_data. New validation data: %s", validation_response_data)
 
             # Get existing BLGU response data or empty dict
             existing_data = response.response_data or {}
@@ -528,7 +665,7 @@ class AssessorService:
 
             # Merge: Assessor validation data takes precedence for matching keys
             # This preserves BLGU's assessment answers while adding assessor's validation checklist
-            merged_data = {**existing_data, **response_data}
+            merged_data = {**existing_data, **validation_response_data}
 
             response.response_data = merged_data
             logger.debug("response.response_data AFTER merge: %s", response.response_data)
