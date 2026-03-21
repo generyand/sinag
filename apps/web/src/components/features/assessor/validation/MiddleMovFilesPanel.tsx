@@ -1040,7 +1040,7 @@ export function MiddleMovFilesPanel({
                       : imageAnnotations.length}
                     )
                   </h3>
-                  <div className="flex-1 overflow-y-auto space-y-3">
+                  <div className="flex-1 space-y-3 overflow-y-auto pr-3">
                     {selectedFile.file_type === "application/pdf" ? (
                       // PDF Annotations
                       pdfAnnotations.length === 0 ? (
