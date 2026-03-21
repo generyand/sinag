@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MovPreviewHelp } from "@/components/shared/MovPreviewHelp";
 import { Download, FileText, Image, Video, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -55,6 +56,14 @@ export function FilePreviewerModal({
   const isPDF = (type: string) => {
     return type.toLowerCase() === "pdf";
   };
+
+  const previewMode = isPDF(detectedFileType)
+    ? "pdf"
+    : isImage(detectedFileType)
+      ? "image"
+      : isVideo(detectedFileType)
+        ? "video"
+        : "generic";
 
   const renderFileContent = () => {
     if (hasError) {
@@ -156,9 +165,12 @@ export function FilePreviewerModal({
             {getFileIcon(detectedFileType)}
             <span className="truncate">{fileName}</span>
           </DialogTitle>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <MovPreviewHelp mode={previewMode} enabled={isOpen} />
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="overflow-auto">{renderFileContent()}</div>

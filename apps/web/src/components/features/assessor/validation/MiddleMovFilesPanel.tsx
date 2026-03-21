@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
+import { cn } from "@/lib/utils";
 import { fetchSignedUrl, useSignedUrl } from "@/hooks/useSignedUrl";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { AssessmentDetailsResponse, MOVFileResponse } from "@sinag/shared";
@@ -23,6 +24,7 @@ import {
   FileIcon,
   History,
   Loader2,
+  LocateFixed,
   Save,
   X,
 } from "lucide-react";
@@ -55,6 +57,8 @@ const SecureFileContent = React.memo(function SecureFileContent({
   annotationsLoading,
   pdfAnnotations,
   imageAnnotations,
+  focusAnnotationId,
+  focusRequestNonce,
   onAddAnnotation,
   onDeleteAnnotation,
 }: {
@@ -62,6 +66,8 @@ const SecureFileContent = React.memo(function SecureFileContent({
   annotationsLoading: boolean;
   pdfAnnotations: any[];
   imageAnnotations: any[];
+  focusAnnotationId?: string | null;
+  focusRequestNonce?: number;
   onAddAnnotation: (annotation: any) => void;
   onDeleteAnnotation?: (id: string) => void;
 }) {
@@ -120,6 +126,8 @@ const SecureFileContent = React.memo(function SecureFileContent({
         url={url}
         annotateEnabled={true}
         annotations={pdfAnnotations}
+        focusAnnotationId={focusAnnotationId ?? undefined}
+        focusRequestNonce={focusRequestNonce}
         onAdd={onAddAnnotation}
         onDelete={onDeleteAnnotation}
       />
@@ -139,6 +147,8 @@ const SecureFileContent = React.memo(function SecureFileContent({
         url={url}
         annotateEnabled={true}
         annotations={imageAnnotations}
+        focusAnnotationId={focusAnnotationId ?? undefined}
+        focusRequestNonce={focusRequestNonce}
         onAdd={onAddAnnotation}
       />
     );
@@ -449,6 +459,8 @@ export function MiddleMovFilesPanel({
   // State for PDF annotation modal
   const [selectedFile, setSelectedFile] = React.useState<any | null>(null);
   const [isAnnotating, setIsAnnotating] = React.useState(false);
+  const [focusAnnotationId, setFocusAnnotationId] = React.useState<string | null>(null);
+  const [focusRequestNonce, setFocusRequestNonce] = React.useState(0);
 
   // Use the annotations hook for the selected file
   const {
@@ -563,6 +575,8 @@ export function MiddleMovFilesPanel({
     // The modal opens on top of the current view without any tab navigation
     setSelectedFile(file);
     setIsAnnotating(true);
+    setFocusAnnotationId(null);
+    setFocusRequestNonce(0);
   };
 
   const handleDownload = async (file: MOVFileResponse) => {
@@ -588,7 +602,14 @@ export function MiddleMovFilesPanel({
   const closeAnnotationModal = () => {
     setIsAnnotating(false);
     setSelectedFile(null);
+    setFocusAnnotationId(null);
+    setFocusRequestNonce(0);
   };
+
+  const handleFocusAnnotation = React.useCallback((annotationId: string) => {
+    setFocusAnnotationId(annotationId);
+    setFocusRequestNonce((current) => current + 1);
+  }, []);
 
   // Transform annotations from backend format to PdfAnnotator format
   const safeAnnotations = Array.isArray(annotations) ? annotations : [];
@@ -912,6 +933,8 @@ export function MiddleMovFilesPanel({
                     annotationsLoading={annotationsLoading}
                     pdfAnnotations={pdfAnnotations}
                     imageAnnotations={imageAnnotations}
+                    focusAnnotationId={focusAnnotationId}
+                    focusRequestNonce={focusRequestNonce}
                     onAddAnnotation={handleAddAnnotation}
                     onDeleteAnnotation={handleDeleteAnnotationFromPdf}
                   />
@@ -1028,27 +1051,68 @@ export function MiddleMovFilesPanel({
                         pdfAnnotations.map((ann, idx) => (
                           <div
                             key={ann.id}
-                            className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={focusAnnotationId === ann.id}
+                            className={cn(
+                              "relative rounded-sm border bg-slate-50 p-3 transition-colors duration-200 dark:bg-slate-800 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300",
+                              focusAnnotationId === ann.id
+                                ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/10"
+                                : "border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/70 dark:hover:border-slate-600 dark:hover:bg-slate-700/60"
+                            )}
+                            onClick={() => handleFocusAnnotation(ann.id)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                handleFocusAnnotation(ann.id);
+                              }
+                            }}
                           >
-                            <div className="flex items-start gap-2 mb-2">
-                              <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
-                                #{idx + 1}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
-                                className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                            <div className="group flex w-full min-w-0 items-start gap-3 pr-6 text-left">
+                              <div
+                                className={cn(
+                                  "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-sm transition-colors duration-200",
+                                  focusAnnotationId === ann.id
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                    : "bg-slate-100 text-slate-500 group-hover:bg-amber-100 group-hover:text-amber-700 dark:bg-slate-700 dark:text-slate-300 dark:group-hover:bg-amber-900/30 dark:group-hover:text-amber-300"
+                                )}
                               >
-                                <X className="h-3 w-3" />
-                              </Button>
+                                <LocateFixed className="h-4 w-4" aria-hidden="true" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400">
+                                  <span>Locate comment</span>
+                                  <span
+                                    className={cn(
+                                      "rounded-full px-2 py-0.5 text-[10px]",
+                                      focusAnnotationId === ann.id
+                                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                        : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                                    )}
+                                  >
+                                    #{idx + 1}
+                                  </span>
+                                </div>
+                                <p className="mb-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                  {ann.comment || "(No comment)"}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Page {ann.page + 1}
+                                </p>
+                              </div>
                             </div>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
-                              {ann.comment || "(No comment)"}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              Page {ann.page + 1}
-                            </p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteAnnotation(parseInt(ann.id));
+                              }}
+                              aria-label="Delete comment"
+                              className="absolute -right-2 -top-2 z-10 h-6 w-6 shrink-0 rounded-full border border-slate-200 bg-white p-0 text-red-600 shadow-sm hover:bg-red-50 hover:text-red-700 dark:border-slate-700 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
                           </div>
                         ))
                       )
@@ -1061,24 +1125,65 @@ export function MiddleMovFilesPanel({
                       imageAnnotations.map((ann, idx) => (
                         <div
                           key={ann.id}
-                          className="p-3 rounded-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={focusAnnotationId === ann.id}
+                          className={cn(
+                            "relative rounded-sm border bg-slate-50 p-3 transition-colors duration-200 dark:bg-slate-800 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300",
+                            focusAnnotationId === ann.id
+                              ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/10"
+                              : "border-slate-200 dark:border-slate-700 hover:border-slate-300 hover:bg-slate-100/70 dark:hover:border-slate-600 dark:hover:bg-slate-700/60"
+                          )}
+                          onClick={() => handleFocusAnnotation(ann.id)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleFocusAnnotation(ann.id);
+                            }
+                          }}
                         >
-                          <div className="flex items-start gap-2 mb-2">
-                            <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400 text-sm">
-                              #{idx + 1}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteAnnotation(parseInt(ann.id))}
-                              className="ml-auto shrink-0 h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                          <div className="group flex w-full min-w-0 items-start gap-3 pr-6 text-left">
+                            <div
+                              className={cn(
+                                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-sm transition-colors duration-200",
+                                focusAnnotationId === ann.id
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                  : "bg-slate-100 text-slate-500 group-hover:bg-amber-100 group-hover:text-amber-700 dark:bg-slate-700 dark:text-slate-300 dark:group-hover:bg-amber-900/30 dark:group-hover:text-amber-300"
+                              )}
                             >
-                              <X className="h-3 w-3" />
-                            </Button>
+                              <LocateFixed className="h-4 w-4" aria-hidden="true" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400">
+                                <span>Locate annotation</span>
+                                <span
+                                  className={cn(
+                                    "rounded-full px-2 py-0.5 text-[10px]",
+                                    focusAnnotationId === ann.id
+                                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                      : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                                  )}
+                                >
+                                  #{idx + 1}
+                                </span>
+                              </div>
+                              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                {ann.comment || "(No comment)"}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                            {ann.comment || "(No comment)"}
-                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDeleteAnnotation(parseInt(ann.id));
+                            }}
+                            aria-label="Delete annotation"
+                            className="absolute -right-2 -top-2 z-10 h-6 w-6 shrink-0 rounded-full border border-slate-200 bg-white p-0 text-red-600 shadow-sm hover:bg-red-50 hover:text-red-700 dark:border-slate-700 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
                       ))
                     )}

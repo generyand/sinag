@@ -12,10 +12,12 @@ import {
 import "@react-pdf-viewer/highlight/lib/styles/index.css";
 import { rotatePlugin } from "@react-pdf-viewer/rotate";
 import { zoomPlugin } from "@react-pdf-viewer/zoom";
-import { RotateCcw, RotateCw } from "lucide-react";
+import { Highlighter, RotateCcw, RotateCw, Square } from "lucide-react";
 import * as React from "react";
 
+import { AnnotationCommentDialog } from "@/components/shared/AnnotationCommentDialog";
 import { Button } from "@/components/ui/button";
+import { MovPreviewHelp } from "@/components/shared/MovPreviewHelp";
 import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
 
 const DEFAULT_ZOOM = 100;
@@ -29,6 +31,21 @@ interface PdfRect {
   w: number;
   h: number;
 }
+
+interface PdfDrawPreview {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+interface PdfDrawDraft {
+  page: number;
+  rect: PdfRect;
+  preview: PdfDrawPreview;
+}
+
+type PdfAnnotationMode = "highlight" | "draw";
 
 export interface PdfAnnotationItem {
   id: string;
@@ -47,6 +64,7 @@ interface PdfAnnotatorProps {
   onAdd: (annotation: PdfAnnotationItem) => void;
   onDelete?: (id: string) => void;
   focusAnnotationId?: string;
+  focusRequestNonce?: number;
 }
 
 export default function PdfAnnotator({
@@ -55,10 +73,23 @@ export default function PdfAnnotator({
   annotations,
   onAdd,
   focusAnnotationId,
+  focusRequestNonce,
 }: PdfAnnotatorProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = React.useState(DEFAULT_ZOOM);
   const [viewerStateKey, setViewerStateKey] = React.useState(0);
+  const [annotationMode, setAnnotationMode] = React.useState<PdfAnnotationMode>("highlight");
+  const [pendingAnnotation, setPendingAnnotation] = React.useState<Omit<
+    PdfAnnotationItem,
+    "comment"
+  > | null>(null);
+  const [drawStart, setDrawStart] = React.useState<{
+    pageEl: HTMLElement;
+    pageIndex: number;
+    clientX: number;
+    clientY: number;
+  } | null>(null);
+  const [currentDraw, setCurrentDraw] = React.useState<PdfDrawDraft | null>(null);
 
   // The highlight plugin provides selection -> trigger UI -> save data
   // NOTE: Do NOT memoize this with useMemo([], []) - the plugin has internal
@@ -86,15 +117,13 @@ export default function PdfAnnotator({
             width: "auto",
             height: "auto",
             zIndex: 10,
-            display: annotateEnabled ? "block" : "none",
+            display: annotateEnabled && annotationMode === "highlight" ? "block" : "none",
           }}
         >
           <button
             type="button"
             className="rounded bg-black/80 text-white text-xs px-2 py-1 cursor-pointer shadow"
             onClick={() => {
-              const comment =
-                window.prompt("Add a comment for this highlight (optional):", "") || "";
               const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
               // Try to get page index from highlightAreas first (most reliable)
@@ -368,13 +397,12 @@ export default function PdfAnnotator({
                       w: props.selectionRegion.width,
                       h: props.selectionRegion.height,
                     };
-              onAdd({
+              setPendingAnnotation({
                 id,
                 type: "pdfRect",
                 page: pageIndexFinal,
                 rect: primaryRect,
                 rects: rects.length > 0 ? rects : undefined,
-                comment,
                 createdAt: new Date().toISOString(),
               });
               // Clear selection if API provides a cancel function
@@ -437,6 +465,7 @@ export default function PdfAnnotator({
                     {sourceRects.map((r, i) => (
                       <div
                         key={i}
+                        data-ann-rect-id={i === 0 ? a.id : undefined}
                         style={{
                           position: "absolute",
                           ...rectCssFrom(r),
@@ -506,100 +535,396 @@ export default function PdfAnnotator({
     if (!focusAnnotationId) return;
     const root = containerRef.current;
     if (!root) return;
-    // Determine the page of the target annotation
+
     const safeAnns = Array.isArray(annotations) ? annotations : [];
     const target = safeAnns.find((a) => a.id === focusAnnotationId);
     const pageIndex = typeof target?.page === "number" ? target!.page : 0;
-    // pdf.js uses data-page-number (1-based)
-    const pageEl = root.querySelector(
-      `div[data-page-number="${pageIndex + 1}"]`
-    ) as HTMLElement | null;
-    if (pageEl && typeof pageEl.scrollIntoView === "function") {
-      pageEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      // After the page is centered, locate the exact highlight overlay and outline it
-      window.setTimeout(() => {
-        const el = root.querySelector(
-          `[data-ann-id="${CSS.escape(focusAnnotationId)}"]`
-        ) as HTMLElement | null;
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          try {
-            const rect = el.firstElementChild as HTMLElement | null;
-            if (rect) {
-              rect.style.outline = "2px solid #2563eb";
-              rect.style.outlineOffset = "2px";
-              window.setTimeout(() => {
-                rect.style.outline = "none";
-              }, 1200);
-            }
-          } catch {}
+
+    let cancelled = false;
+    const timers: number[] = [];
+
+    const focusHighlight = (attempt = 0) => {
+      if (cancelled) return;
+
+      const pageEl = root.querySelector(
+        `div[data-page-number="${pageIndex + 1}"]`
+      ) as HTMLElement | null;
+
+      if (pageEl && typeof pageEl.scrollIntoView === "function") {
+        pageEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      const targetRect = root.querySelector(
+        `[data-ann-rect-id="${CSS.escape(focusAnnotationId)}"]`
+      ) as HTMLElement | null;
+
+      if (!targetRect) {
+        if (attempt < 12) {
+          timers.push(window.setTimeout(() => focusHighlight(attempt + 1), 120));
         }
-      }, 150);
-    }
-  }, [focusAnnotationId, annotations]);
+        return;
+      }
+
+      targetRect.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+
+      const wrapper = root.querySelector(
+        `[data-ann-id="${CSS.escape(focusAnnotationId)}"]`
+      ) as HTMLElement | null;
+
+      try {
+        const parts = Array.from(wrapper?.children ?? []) as HTMLElement[];
+        if (parts.length === 0) return;
+
+        parts.forEach((part, index) => {
+          if (index === parts.length - 1) {
+            part.style.transform = "translate(-8px, -18px) scale(1.08)";
+            part.style.boxShadow = "0 0 0 3px rgba(245, 158, 11, 0.25)";
+            part.style.transition = "transform 180ms ease, box-shadow 180ms ease";
+          } else {
+            part.style.outline = "3px solid #f59e0b";
+            part.style.outlineOffset = "2px";
+            part.style.backgroundColor = "rgba(245, 158, 11, 0.45)";
+            part.style.boxShadow = "0 0 0 4px rgba(245, 158, 11, 0.2)";
+            part.style.transition =
+              "outline 180ms ease, background-color 180ms ease, box-shadow 180ms ease";
+          }
+        });
+
+        timers.push(
+          window.setTimeout(() => {
+            parts.forEach((part, index) => {
+              if (index === parts.length - 1) {
+                part.style.transform = "translate(-8px, -18px)";
+                part.style.boxShadow = "0 1px 2px rgba(0,0,0,0.2)";
+              } else {
+                part.style.outline = "none";
+                part.style.backgroundColor = "rgba(250, 204, 21, 0.35)";
+                part.style.boxShadow = "none";
+              }
+            });
+          }, 1400)
+        );
+      } catch {}
+    };
+
+    focusHighlight();
+
+    return () => {
+      cancelled = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [focusAnnotationId, focusRequestNonce, annotations]);
 
   React.useEffect(() => {
     setZoom(DEFAULT_ZOOM);
     setViewerStateKey((currentKey) => currentKey + 1);
+    setDrawStart(null);
+    setCurrentDraw(null);
+    setAnnotationMode("highlight");
   }, [url]);
 
+  const resolvePageIndex = React.useCallback((pageEl: HTMLElement) => {
+    const pageNumberAttr = pageEl.getAttribute("data-page-number");
+    if (pageNumberAttr) {
+      const parsed = Number.parseInt(pageNumberAttr, 10);
+      if (!Number.isNaN(parsed)) {
+        return Math.max(0, parsed - 1);
+      }
+    }
+
+    const container = containerRef.current;
+    if (!container) return 0;
+
+    const allPages = Array.from(container.querySelectorAll(".rpv-core__inner-page"));
+    const index = allPages.findIndex((node) => node === pageEl || node.contains(pageEl));
+    return index >= 0 ? index : 0;
+  }, []);
+
+  const findPageElementAtPoint = React.useCallback(
+    (clientX: number, clientY: number): HTMLElement | null => {
+      const candidates =
+        typeof document.elementsFromPoint === "function"
+          ? document.elementsFromPoint(clientX, clientY)
+          : [document.elementFromPoint(clientX, clientY)].filter(Boolean);
+
+      for (const candidate of candidates) {
+        let el = candidate as HTMLElement | null;
+        while (el) {
+          if (
+            el.getAttribute?.("data-page-number") ||
+            el.classList?.contains("rpv-core__inner-page") ||
+            el.classList?.contains("rpv-core__page-layer")
+          ) {
+            if (el.classList?.contains("rpv-core__page-layer")) {
+              return el.parentElement;
+            }
+            return el;
+          }
+          el = el.parentElement;
+        }
+      }
+
+      return null;
+    },
+    []
+  );
+
+  const buildDrawDraft = React.useCallback(
+    (
+      pageEl: HTMLElement,
+      pageIndex: number,
+      startClientX: number,
+      startClientY: number,
+      currentClientX: number,
+      currentClientY: number
+    ): PdfDrawDraft | null => {
+      const container = containerRef.current;
+      if (!container) return null;
+
+      const pageBox = pageEl.getBoundingClientRect();
+      const containerBox = container.getBoundingClientRect();
+
+      if (!pageBox.width || !pageBox.height) return null;
+
+      const clamp = (value: number, min: number, max: number) =>
+        Math.min(Math.max(value, min), max);
+
+      const startX = clamp(startClientX, pageBox.left, pageBox.right);
+      const startY = clamp(startClientY, pageBox.top, pageBox.bottom);
+      const endX = clamp(currentClientX, pageBox.left, pageBox.right);
+      const endY = clamp(currentClientY, pageBox.top, pageBox.bottom);
+
+      const left = Math.min(startX, endX);
+      const top = Math.min(startY, endY);
+      const width = Math.abs(endX - startX);
+      const height = Math.abs(endY - startY);
+
+      return {
+        page: pageIndex,
+        rect: {
+          x: ((left - pageBox.left) / pageBox.width) * 100,
+          y: ((top - pageBox.top) / pageBox.height) * 100,
+          w: (width / pageBox.width) * 100,
+          h: (height / pageBox.height) * 100,
+        },
+        preview: {
+          left: left - containerBox.left + container.scrollLeft,
+          top: top - containerBox.top + container.scrollTop,
+          width,
+          height,
+        },
+      };
+    },
+    []
+  );
+
+  const handleDrawStart = React.useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!annotateEnabled || annotationMode !== "draw") return;
+
+      const pageEl = findPageElementAtPoint(event.clientX, event.clientY);
+      if (!pageEl) return;
+
+      const pageIndex = resolvePageIndex(pageEl);
+      setDrawStart({
+        pageEl,
+        pageIndex,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+      setCurrentDraw(null);
+    },
+    [annotateEnabled, annotationMode, findPageElementAtPoint, resolvePageIndex]
+  );
+
+  const handleDrawMove = React.useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!drawStart) return;
+      const draft = buildDrawDraft(
+        drawStart.pageEl,
+        drawStart.pageIndex,
+        drawStart.clientX,
+        drawStart.clientY,
+        event.clientX,
+        event.clientY
+      );
+      setCurrentDraw(draft);
+    },
+    [buildDrawDraft, drawStart]
+  );
+
+  const finishDraw = React.useCallback(() => {
+    if (!drawStart || !currentDraw) {
+      setDrawStart(null);
+      setCurrentDraw(null);
+      return;
+    }
+
+    setDrawStart(null);
+
+    if (currentDraw.rect.w <= 1 || currentDraw.rect.h <= 1) {
+      setCurrentDraw(null);
+      return;
+    }
+
+    setPendingAnnotation({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: "pdfRect",
+      page: currentDraw.page,
+      rect: currentDraw.rect,
+      rects: [currentDraw.rect],
+      createdAt: new Date().toISOString(),
+    });
+    setCurrentDraw(null);
+  }, [currentDraw, drawStart]);
+
   return (
-    <div className="flex h-full w-full flex-col bg-white">
-      <div className="flex items-center justify-end border-b border-slate-200 bg-slate-50/90 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900/60">
-        <MovPreviewControls
-          zoom={zoom}
-          minZoom={MIN_ZOOM}
-          maxZoom={MAX_ZOOM}
-          zoomStep={ZOOM_STEP}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          onReset={handleResetView}
-          onRotateLeft={() => {}}
-          onRotateRight={() => {}}
-          rotateLeftControl={
-            <rotatePluginInstance.Rotate direction={RotateDirection.Backward}>
-              {({ onClick }) => (
+    <>
+      <div className="flex h-full w-full flex-col bg-white">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/90 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-900/60">
+          {annotateEnabled ? (
+            <div className="inline-flex flex-col items-start gap-1">
+              <div
+                className="inline-flex items-center rounded-md border border-slate-200 bg-white/90 p-1 shadow-sm"
+                role="group"
+                aria-label="PDF annotation mode"
+              >
                 <Button
                   type="button"
-                  variant="outline"
                   size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={onClick}
-                  aria-label="Rotate left"
+                  variant={annotationMode === "highlight" ? "default" : "ghost"}
+                  className="h-8 gap-1.5 px-3 text-xs"
+                  onClick={() => {
+                    setAnnotationMode("highlight");
+                    setDrawStart(null);
+                    setCurrentDraw(null);
+                  }}
                 >
-                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  <Highlighter className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Highlight text</span>
                 </Button>
-              )}
-            </rotatePluginInstance.Rotate>
-          }
-          rotateRightControl={
-            <rotatePluginInstance.Rotate direction={RotateDirection.Forward}>
-              {({ onClick }) => (
                 <Button
                   type="button"
-                  variant="outline"
                   size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={onClick}
-                  aria-label="Rotate right"
+                  variant={annotationMode === "draw" ? "default" : "ghost"}
+                  className="h-8 gap-1.5 px-3 text-xs"
+                  onClick={() => {
+                    setAnnotationMode("draw");
+                    setDrawStart(null);
+                    setCurrentDraw(null);
+                  }}
                 >
-                  <RotateCw className="h-4 w-4" aria-hidden="true" />
+                  <Square className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Draw box</span>
                 </Button>
-              )}
-            </rotatePluginInstance.Rotate>
-          }
-        />
-      </div>
-      <div ref={containerRef} className="min-h-0 flex-1 overflow-auto relative">
-        <Worker workerUrl="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-          <Viewer
-            key={`${url}-${viewerStateKey}`}
-            fileUrl={url}
-            defaultScale={SpecialZoomLevel.PageWidth}
-            plugins={[highlightPluginInstance, zoomPluginInstance, rotatePluginInstance]}
+              </div>
+              <p className="max-w-xs pl-1 text-xs leading-4 text-slate-500">
+                {annotationMode === "highlight"
+                  ? "Select text to mark a specific line or phrase."
+                  : "Drag to mark a photo, signature, or scanned section."}
+              </p>
+            </div>
+          ) : (
+            <div />
+          )}
+          <MovPreviewControls
+            zoom={zoom}
+            minZoom={MIN_ZOOM}
+            maxZoom={MAX_ZOOM}
+            zoomStep={ZOOM_STEP}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onReset={handleResetView}
+            onRotateLeft={() => {}}
+            onRotateRight={() => {}}
+            helpControl={<MovPreviewHelp mode="pdf" />}
+            rotateLeftControl={
+              <rotatePluginInstance.Rotate direction={RotateDirection.Backward}>
+                {({ onClick }) => (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={onClick}
+                    aria-label="Rotate left"
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                )}
+              </rotatePluginInstance.Rotate>
+            }
+            rotateRightControl={
+              <rotatePluginInstance.Rotate direction={RotateDirection.Forward}>
+                {({ onClick }) => (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={onClick}
+                    aria-label="Rotate right"
+                  >
+                    <RotateCw className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                )}
+              </rotatePluginInstance.Rotate>
+            }
           />
-        </Worker>
+        </div>
+        <div ref={containerRef} className="min-h-0 flex-1 overflow-auto relative">
+          <Worker workerUrl="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+            <Viewer
+              key={`${url}-${viewerStateKey}`}
+              fileUrl={url}
+              defaultScale={SpecialZoomLevel.PageWidth}
+              plugins={[highlightPluginInstance, zoomPluginInstance, rotatePluginInstance]}
+            />
+          </Worker>
+          {annotateEnabled && annotationMode === "draw" ? (
+            <div
+              data-testid="pdf-draw-layer"
+              className="absolute inset-0 z-20"
+              style={{ cursor: "crosshair" }}
+              onMouseDown={handleDrawStart}
+              onMouseMove={handleDrawMove}
+              onMouseUp={finishDraw}
+              onMouseLeave={() => {
+                setDrawStart(null);
+                setCurrentDraw(null);
+              }}
+            >
+              {currentDraw ? (
+                <div
+                  className="absolute rounded-[2px] border-2 border-blue-500 bg-blue-500/20"
+                  style={{
+                    left: currentDraw.preview.left,
+                    top: currentDraw.preview.top,
+                    width: currentDraw.preview.width,
+                    height: currentDraw.preview.height,
+                  }}
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
+      <AnnotationCommentDialog
+        open={pendingAnnotation !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingAnnotation(null);
+          }
+        }}
+        onSave={(comment) => {
+          if (!pendingAnnotation) return;
+          onAdd({
+            ...pendingAnnotation,
+            comment,
+          });
+          setPendingAnnotation(null);
+        }}
+      />
+    </>
   );
 }

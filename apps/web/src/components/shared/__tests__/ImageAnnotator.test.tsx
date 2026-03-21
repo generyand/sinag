@@ -73,4 +73,34 @@ describe("ImageAnnotator", () => {
     expect(handleAdd.mock.calls[0][0].rect.w).toBeCloseTo(50, 5);
     expect(handleAdd.mock.calls[0][0].rect.h).toBeCloseTo(60, 5);
   });
+
+  it("scrolls the selected annotation into view when focused from the sidebar", () => {
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    render(
+      <ImageAnnotator
+        url="/test-image.png"
+        annotateEnabled={false}
+        annotations={[
+          {
+            id: "ann-1",
+            rect: { x: 25, y: 30, w: 20, h: 15 },
+            comment: "Locate me",
+            createdAt: "2026-03-21T00:00:00.000Z",
+          },
+        ]}
+        focusAnnotationId="ann-1"
+        focusRequestNonce={1}
+      />
+    );
+
+    const image = screen.getByAltText("Annotatable document");
+    fireEvent.load(image);
+
+    expect(scrollIntoView).toHaveBeenCalled();
+
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+  });
 });

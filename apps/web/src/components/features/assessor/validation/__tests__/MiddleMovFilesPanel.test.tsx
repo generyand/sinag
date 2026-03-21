@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useMovAnnotations } from "@/hooks/useMovAnnotations";
 import { MiddleMovFilesPanel } from "../MiddleMovFilesPanel";
 
 vi.mock("@sinag/shared", () => ({
@@ -113,5 +114,34 @@ describe("MiddleMovFilesPanel", () => {
     expect(screen.getByRole("button", { name: /rotate left/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /rotate right/i })).toBeInTheDocument();
     expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("marks an annotation card as selected when clicked", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useMovAnnotations).mockReturnValue({
+      annotations: [
+        {
+          id: 77,
+          rect: { x: 10, y: 15, w: 20, h: 25 },
+          comment: "Focus this annotation",
+          created_at: "2026-03-21T00:00:00.000Z",
+        },
+      ],
+      isLoading: false,
+      createAnnotation: vi.fn(),
+      deleteAnnotation: vi.fn(),
+    });
+
+    render(wrap(<MiddleMovFilesPanel assessment={assessment as any} expandedId={101} />));
+
+    await user.click(screen.getByRole("button", { name: /preview evidence\.png/i }));
+    const locateButton = await screen.findByRole("button", { name: /locate annotation/i });
+
+    expect(locateButton).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(locateButton);
+
+    expect(locateButton).toHaveAttribute("aria-pressed", "true");
   });
 });

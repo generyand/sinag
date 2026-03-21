@@ -18,6 +18,7 @@ interface MovPreviewControlsProps {
   onRotateRight: () => void;
   rotateLeftControl?: ReactNode;
   rotateRightControl?: ReactNode;
+  helpControl?: ReactNode;
 }
 
 export function MovPreviewControls({
@@ -32,6 +33,7 @@ export function MovPreviewControls({
   onRotateRight,
   rotateLeftControl,
   rotateRightControl,
+  helpControl,
 }: MovPreviewControlsProps) {
   const zoomLabel = `${Math.round(zoom)}%`;
 
@@ -97,6 +99,12 @@ export function MovPreviewControls({
           <RotateCw className="h-4 w-4" aria-hidden="true" />
         </Button>
       )}
+      {helpControl ? (
+        <>
+          <div className="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
+          {helpControl}
+        </>
+      ) : null}
       <Button
         type="button"
         variant="outline"

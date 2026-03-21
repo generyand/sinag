@@ -10,11 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AnnotationCommentDialog } from "@/components/shared/AnnotationCommentDialog";
 import { Button } from "@/components/ui/button";
 import { AssessmentTreeNode } from "@/components/features/assessments/tree-navigation/AssessmentTreeNode";
 import type { AssessmentDetailsResponse } from "@sinag/shared";
 import type { GovernanceArea, Indicator } from "@/types/assessment";
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
+import { LocateFixed } from "lucide-react";
 import * as React from "react";
 import dynamic from "next/dynamic";
 const PdfAnnotator = dynamic(() => import("@/components/shared/PdfAnnotator"), { ssr: false });
@@ -50,6 +52,11 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
     h: number;
   } | null>(null);
   const [imageReady, setImageReady] = React.useState<boolean>(false);
+  const [pendingImageAnnotation, setPendingImageAnnotation] = React.useState<{
+    movFileId: number;
+    page: number;
+    rect: { x: number; y: number; w: number; h: number };
+  } | null>(null);
 
   // Get current MOV file ID for database-backed annotations
   const currentMovFileId = React.useMemo(() => {
@@ -257,20 +264,11 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
       h: (h / containerHeight) * 100,
     };
 
-    const comment = window.prompt("Add a comment for this highlight (optional):", "") || "";
-
-    // Save to database
-    try {
-      await createAnnotation({
-        mov_file_id: currentMovFileId,
-        annotation_type: "imageRect",
-        page: 0,
-        rect: pctRect,
-        comment,
-      });
-    } catch (error) {
-      console.error("Failed to create annotation:", error);
-    }
+    setPendingImageAnnotation({
+      movFileId: currentMovFileId,
+      page: 0,
+      rect: pctRect,
+    });
   };
 
   const onImageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -610,8 +608,11 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
                 </div>
                 {annotations.length > 0 ? (
                   <div className="rounded border border-black/10">
-                    <div className="px-3 py-2 text-sm font-medium bg-muted/40">
-                      Highlights & Comments
+                    <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm font-medium bg-muted/40">
+                      <span>Highlights & Comments</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        Click a comment to locate it
+                      </span>
                     </div>
                     <ul className="max-h-52 overflow-y-auto divide-y">
                       {annotations.map((a) => (
@@ -619,46 +620,59 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
                           key={a.id}
                           className="px-3 py-2 text-sm flex items-start justify-between gap-3"
                         >
-                          <div
-                            className="min-w-0 cursor-pointer"
+                          <button
+                            type="button"
+                            className="group flex min-w-0 flex-1 items-start gap-3 rounded-sm border border-transparent px-2 py-2 text-left transition-colors duration-200 hover:cursor-pointer hover:border-[var(--cityscape-yellow)]/30 hover:bg-[var(--cityscape-yellow)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cityscape-yellow)]/40"
                             onClick={() => setFocusAnnotationId(a.id)}
                             title="Click to locate highlight"
                           >
-                            <div className="text-xs text-muted-foreground">
-                              {a.type === "pdfRect" ? (
-                                (() => {
-                                  const first =
-                                    Array.isArray(a.rects) && a.rects.length > 0
-                                      ? a.rects[0]
-                                      : a.rect;
-                                  return (
-                                    <>
-                                      Page {a.page} — Rect: x{Math.round(first.x)}, y
-                                      {Math.round(first.y)}, w{Math.round(first.w)}, h
-                                      {Math.round(first.h)}
-                                      {Array.isArray(a.rects) && a.rects.length > 1
-                                        ? ` (+${a.rects.length - 1} more)`
-                                        : ""}
-                                    </>
-                                  );
-                                })()
-                              ) : (
-                                <>
-                                  Rect: x{Math.round(a.rect.x)}, y{Math.round(a.rect.y)}, w
-                                  {Math.round(a.rect.w)}, h{Math.round(a.rect.h)}
-                                </>
-                              )}
+                            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[var(--cityscape-yellow)]/12 text-[var(--cityscape-yellow-dark)] transition-colors duration-200 group-hover:bg-[var(--cityscape-yellow)]/20">
+                              <LocateFixed className="h-4 w-4" aria-hidden="true" />
                             </div>
-                            <div className="break-words">
-                              {a.comment || (
-                                <span className="text-muted-foreground">(no comment)</span>
-                              )}
+                            <div className="min-w-0">
+                              <div className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                <span>Locate highlight</span>
+                                <span className="rounded-full bg-[var(--cityscape-yellow)]/12 px-2 py-0.5 text-[10px] text-[var(--cityscape-yellow-dark)]">
+                                  {a.type === "pdfRect" ? `Page ${a.page}` : "Image"}
+                                </span>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {a.type === "pdfRect" ? (
+                                  (() => {
+                                    const first =
+                                      Array.isArray(a.rects) && a.rects.length > 0
+                                        ? a.rects[0]
+                                        : a.rect;
+                                    return (
+                                      <>
+                                        Page {a.page} — Rect: x{Math.round(first.x)}, y
+                                        {Math.round(first.y)}, w{Math.round(first.w)}, h
+                                        {Math.round(first.h)}
+                                        {Array.isArray(a.rects) && a.rects.length > 1
+                                          ? ` (+${a.rects.length - 1} more)`
+                                          : ""}
+                                      </>
+                                    );
+                                  })()
+                                ) : (
+                                  <>
+                                    Rect: x{Math.round(a.rect.x)}, y{Math.round(a.rect.y)}, w
+                                    {Math.round(a.rect.w)}, h{Math.round(a.rect.h)}
+                                  </>
+                                )}
+                              </div>
+                              <div className="mt-2 break-words text-sm text-[var(--foreground)]">
+                                {a.comment || (
+                                  <span className="text-muted-foreground">(no comment)</span>
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          </button>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
+                            aria-label="Delete comment"
                             onClick={() => onDeleteAnnotation(a.id)}
                           >
                             Delete
@@ -675,6 +689,32 @@ export function LeftSubmissionView({ assessment, expandedId, onToggle }: LeftSub
           </div>
         </DialogContent>
       </Dialog>
+      <AnnotationCommentDialog
+        open={pendingImageAnnotation !== null}
+        title="Add image annotation comment"
+        description="Add an optional note to explain what needs attention in this highlighted image area."
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingImageAnnotation(null);
+          }
+        }}
+        onSave={async (comment) => {
+          if (!pendingImageAnnotation) return;
+          try {
+            await createAnnotation({
+              mov_file_id: pendingImageAnnotation.movFileId,
+              annotation_type: "imageRect",
+              page: pendingImageAnnotation.page,
+              rect: pendingImageAnnotation.rect,
+              comment,
+            });
+          } catch (error) {
+            console.error("Failed to create annotation:", error);
+          } finally {
+            setPendingImageAnnotation(null);
+          }
+        }}
+      />
     </div>
   );
 }

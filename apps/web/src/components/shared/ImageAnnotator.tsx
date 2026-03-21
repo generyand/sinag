@@ -5,6 +5,7 @@ import * as React from "react";
 import { useCallback, useRef, useState } from "react";
 
 import { MovPreviewControls } from "@/components/shared/MovPreviewControls";
+import { MovPreviewHelp } from "@/components/shared/MovPreviewHelp";
 
 const DEFAULT_ZOOM = 100;
 const MIN_ZOOM = 50;
@@ -30,6 +31,8 @@ interface ImageAnnotatorProps {
   annotations?: ImageAnnotation[];
   annotateEnabled?: boolean;
   onAdd?: (annotation: { rect: Rect; comment: string }) => void;
+  focusAnnotationId?: string;
+  focusRequestNonce?: number;
 }
 
 export default function ImageAnnotator({
@@ -37,8 +40,11 @@ export default function ImageAnnotator({
   annotations = [],
   annotateEnabled = true,
   onAdd,
+  focusAnnotationId,
+  focusRequestNonce,
 }: ImageAnnotatorProps) {
   const imageRef = useRef<HTMLImageElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentRect, setCurrentRect] = useState<Rect | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
@@ -48,6 +54,7 @@ export default function ImageAnnotator({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [rotation, setRotation] = useState(0);
+  const [pulseAnnotationId, setPulseAnnotationId] = useState<string | null>(null);
 
   React.useEffect(() => {
     setZoom(DEFAULT_ZOOM);
@@ -59,7 +66,26 @@ export default function ImageAnnotator({
     setComment("");
     setPendingRect(null);
     setImageLoaded(false);
+    setPulseAnnotationId(null);
   }, [url]);
+
+  React.useEffect(() => {
+    if (!focusAnnotationId) return;
+
+    setPulseAnnotationId(null);
+
+    const startPulse = window.setTimeout(() => {
+      setPulseAnnotationId(focusAnnotationId);
+    }, 0);
+    const stopPulse = window.setTimeout(() => {
+      setPulseAnnotationId((current) => (current === focusAnnotationId ? null : current));
+    }, 900);
+
+    return () => {
+      window.clearTimeout(startPulse);
+      window.clearTimeout(stopPulse);
+    };
+  }, [focusAnnotationId, focusRequestNonce]);
 
   const getImagePoint = useCallback(
     (clientX: number, clientY: number) => {
@@ -169,32 +195,80 @@ export default function ImageAnnotator({
     setShowCommentInput(false);
   }, []);
 
-  const renderRect = useCallback((rect: Rect, color: string, opacity: number, note?: string) => {
-    return (
-      <div
-        key={JSON.stringify(rect)}
-        className="group absolute"
-        style={{
-          left: `${rect.x}%`,
-          top: `${rect.y}%`,
-          width: `${rect.w}%`,
-          height: `${rect.h}%`,
-          border: `2px solid ${color}`,
-          backgroundColor: `${color}${Math.round(opacity * 255)
-            .toString(16)
-            .padStart(2, "0")}`,
-          borderRadius: "0.125rem",
-          pointerEvents: note ? "auto" : "none",
-        }}
-      >
-        {note && (
-          <div className="invisible group-hover:visible absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg p-2 text-sm text-gray-800 max-w-xs z-50 whitespace-pre-wrap">
-            {note}
-          </div>
-        )}
-      </div>
-    );
-  }, []);
+  const renderRect = useCallback(
+    (
+      rect: Rect,
+      color: string,
+      opacity: number,
+      note?: string,
+      isFocused?: boolean,
+      annotationId?: string
+    ) => {
+      return (
+        <div
+          key={JSON.stringify(rect)}
+          className="group absolute"
+          data-ann-id={annotationId}
+          style={{
+            left: `${rect.x}%`,
+            top: `${rect.y}%`,
+            width: `${rect.w}%`,
+            height: `${rect.h}%`,
+            border: `2px solid ${color}`,
+            backgroundColor: `${color}${Math.round(opacity * 255)
+              .toString(16)
+              .padStart(2, "0")}`,
+            borderRadius: "0.125rem",
+            boxShadow: isFocused ? "0 0 0 4px rgba(245, 158, 11, 0.2)" : "none",
+            pointerEvents: note ? "auto" : "none",
+            transition:
+              "border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease",
+          }}
+        >
+          {note && (
+            <div className="invisible group-hover:visible absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-sm shadow-lg p-2 text-sm text-gray-800 max-w-xs z-50 whitespace-pre-wrap">
+              {note}
+            </div>
+          )}
+        </div>
+      );
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    if (!focusAnnotationId || !imageLoaded) return;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    const timers: number[] = [];
+
+    const focusAnnotation = (attempt = 0) => {
+      if (cancelled) return;
+
+      const target = container.querySelector(
+        `[data-ann-id="${CSS.escape(focusAnnotationId)}"]`
+      ) as HTMLElement | null;
+
+      if (!target) {
+        if (attempt < 12) {
+          timers.push(window.setTimeout(() => focusAnnotation(attempt + 1), 120));
+        }
+        return;
+      }
+
+      target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    };
+
+    focusAnnotation();
+
+    return () => {
+      cancelled = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [focusAnnotationId, focusRequestNonce, imageLoaded]);
 
   const handleZoomIn = useCallback(() => {
     setZoom((currentZoom) => Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP));
@@ -230,11 +304,13 @@ export default function ImageAnnotator({
           onReset={handleResetView}
           onRotateLeft={handleRotateLeft}
           onRotateRight={handleRotateRight}
+          helpControl={<MovPreviewHelp mode="image" />}
         />
       </div>
 
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
+        ref={scrollContainerRef}
         className="flex-1 relative overflow-auto flex items-center justify-center"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -269,7 +345,16 @@ export default function ImageAnnotator({
             {imageLoaded &&
               annotations.map((ann) => (
                 <React.Fragment key={ann.id}>
-                  {renderRect(ann.rect, "#fbbf24", 0.2, ann.comment)}
+                  {renderRect(
+                    ann.rect,
+                    ann.id === focusAnnotationId || ann.id === pulseAnnotationId
+                      ? "#f59e0b"
+                      : "#fbbf24",
+                    ann.id === focusAnnotationId || ann.id === pulseAnnotationId ? 0.38 : 0.2,
+                    ann.comment,
+                    ann.id === focusAnnotationId || ann.id === pulseAnnotationId,
+                    ann.id
+                  )}
                 </React.Fragment>
               ))}
             {imageLoaded && currentRect && renderRect(currentRect, "#3b82f6", 0.3)}

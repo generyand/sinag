@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PdfAnnotator from "../PdfAnnotator";
@@ -43,7 +43,35 @@ vi.mock("@react-pdf-viewer/core", () => ({
   SpecialZoomLevel: { PageWidth: "PageWidth" },
   Viewer: (props: Record<string, unknown>) => {
     mockViewer(props);
-    return <div data-testid="pdf-viewer" />;
+    const highlightOptions = mockHighlightPlugin.mock.calls.at(-1)?.[0] as
+      | {
+          renderHighlights?: (props: {
+            pageIndex: number;
+            getCssProperties: (rect: {
+              left: number;
+              top: number;
+              width: number;
+              height: number;
+            }) => Record<string, string>;
+          }) => ReactNode;
+        }
+      | undefined;
+    return (
+      <div data-testid="pdf-viewer">
+        <div data-page-number="1" className="rpv-core__inner-page">
+          <div className="rpv-core__page-layer" />
+          {highlightOptions?.renderHighlights?.({
+            pageIndex: 0,
+            getCssProperties: ({ left, top, width, height }) => ({
+              left: `${left}%`,
+              top: `${top}%`,
+              width: `${width}%`,
+              height: `${height}%`,
+            }),
+          })}
+        </div>
+      </div>
+    );
   },
   Worker: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
@@ -167,5 +195,163 @@ describe("PdfAnnotator", () => {
     expect(screen.getByRole("button", { name: /rotate left/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /rotate right/i })).toBeInTheDocument();
     expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("uses the branded comment dialog when adding a highlight annotation", async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn();
+
+    render(<PdfAnnotator url="/test.pdf" annotateEnabled={true} annotations={[]} onAdd={onAdd} />);
+
+    const highlightOptions = mockHighlightPlugin.mock.calls[0]?.[0] as {
+      renderHighlightTarget: (props: Record<string, unknown>) => ReactNode;
+    };
+
+    render(
+      <>
+        {highlightOptions.renderHighlightTarget({
+          selectionRegion: { left: 10, top: 20, width: 30, height: 5 },
+          selectedText: { position: { pageIndex: 2 } },
+        })}
+      </>
+    );
+
+    await user.click(screen.getByRole("button", { name: /add comment/i }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Add highlight comment")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Highlight comment"), "Needs clearer label");
+    await user.click(screen.getByRole("button", { name: /save comment/i }));
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "pdfRect",
+        page: 2,
+        comment: "Needs clearer label",
+      })
+    );
+  });
+
+  it("allows drawing a rectangle annotation on a PDF page", async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn();
+
+    render(<PdfAnnotator url="/test.pdf" annotateEnabled annotations={[]} onAdd={onAdd} />);
+
+    await user.click(screen.getByRole("button", { name: /draw box/i }));
+
+    const drawLayer = screen.getByTestId("pdf-draw-layer");
+    const page = document.querySelector('[data-page-number="1"]') as HTMLDivElement;
+
+    vi.spyOn(drawLayer, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      bottom: 600,
+      right: 400,
+      width: 400,
+      height: 600,
+      toJSON: () => ({}),
+    });
+
+    vi.spyOn(page, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      bottom: 600,
+      right: 400,
+      width: 400,
+      height: 600,
+      toJSON: () => ({}),
+    });
+
+    Object.defineProperty(document, "elementsFromPoint", {
+      configurable: true,
+      value: vi.fn(() => [page]),
+    });
+
+    fireEvent.mouseDown(drawLayer, { clientX: 40, clientY: 60 });
+    fireEvent.mouseMove(drawLayer, { clientX: 200, clientY: 240 });
+    fireEvent.mouseUp(drawLayer, { clientX: 200, clientY: 240 });
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Highlight comment"), "Box this section");
+    await user.click(screen.getByRole("button", { name: /save comment/i }));
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "pdfRect",
+        page: 0,
+        comment: "Box this section",
+        rect: expect.objectContaining({
+          x: 10,
+          y: 10,
+          w: 40,
+          h: 30,
+        }),
+      })
+    );
+  });
+
+  it("re-locates the same annotation when a new focus request is issued", async () => {
+    vi.useFakeTimers();
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    const annotations = [
+      {
+        id: "42",
+        type: "pdfRect" as const,
+        page: 0,
+        rect: { x: 10, y: 20, w: 30, h: 5 },
+        comment: "Repeated focus target",
+        createdAt: "2026-03-21T00:00:00.000Z",
+      },
+    ];
+
+    const { rerender } = render(
+      <PdfAnnotator
+        url="/test.pdf"
+        annotateEnabled={false}
+        annotations={annotations}
+        onAdd={vi.fn()}
+      />
+    );
+
+    rerender(
+      <PdfAnnotator
+        url="/test.pdf"
+        annotateEnabled={false}
+        annotations={annotations}
+        onAdd={vi.fn()}
+        focusAnnotationId="42"
+        focusRequestNonce={1}
+      />
+    );
+
+    await vi.runAllTimersAsync();
+    const firstCallCount = scrollIntoView.mock.calls.length;
+
+    rerender(
+      <PdfAnnotator
+        url="/test.pdf"
+        annotateEnabled={false}
+        annotations={annotations}
+        onAdd={vi.fn()}
+        focusAnnotationId="42"
+        focusRequestNonce={2}
+      />
+    );
+
+    await vi.runAllTimersAsync();
+
+    expect(scrollIntoView.mock.calls.length).toBeGreaterThan(firstCallCount);
+
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    vi.useRealTimers();
   });
 });
