@@ -420,6 +420,10 @@ export interface AssessmentDetailResponse {
   mlgoo_approved_at: AssessmentDetailResponseMlgooApprovedAt;
   grace_period_expires_at: AssessmentDetailResponseGracePeriodExpiresAt;
   is_locked_for_deadline: boolean;
+  lock_reason: AssessmentDetailResponseLockReason;
+  locked_at: AssessmentDetailResponseLockedAt;
+  unlocked_at: AssessmentDetailResponseUnlockedAt;
+  default_grace_period_days: number;
   rework_calibration_summary?: AssessmentDetailResponseReworkCalibrationSummary;
   assessment_progress?: AssessmentDetailResponseAssessmentProgress;
 }
@@ -483,6 +487,18 @@ export type AssessmentDetailResponseCycleYear = number | null;
  * AssessmentDetailResponseGracePeriodExpiresAt
  */
 export type AssessmentDetailResponseGracePeriodExpiresAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseLockReason
+ */
+export type AssessmentDetailResponseLockReason = string | null;
+
+
+/**
+ * AssessmentDetailResponseLockedAt
+ */
+export type AssessmentDetailResponseLockedAt = string | null;
 
 
 /**
@@ -555,6 +571,12 @@ export type AssessmentDetailResponseReworkSubmittedAt = string | null;
  * AssessmentDetailResponseSubmittedAt
  */
 export type AssessmentDetailResponseSubmittedAt = string | null;
+
+
+/**
+ * AssessmentDetailResponseUnlockedAt
+ */
+export type AssessmentDetailResponseUnlockedAt = string | null;
 
 
 /**
@@ -696,6 +718,31 @@ export type AssessmentIndicatorSnapshotResponseRemarkSchemaResolvedAnyOf = { [ke
  * AssessmentIndicatorSnapshotResponseTechnicalNotesResolved
  */
 export type AssessmentIndicatorSnapshotResponseTechnicalNotesResolved = string | null;
+
+
+/**
+ * AssessmentLockDetail
+ */
+export interface AssessmentLockDetail {
+  assessment_id: number;
+  barangay_name: string;
+  lock_reason: string;
+}
+
+
+/**
+ * AssessmentLockProcessingResponse
+ */
+export interface AssessmentLockProcessingResponse {
+  /** Total number of assessments whose lock state was updated */
+  processed_count: number;
+  /** Number of assessments locked because the due date expired */
+  deadline_locked_count: number;
+  /** Number of assessments re-locked because grace expired */
+  grace_relocked_count: number;
+  /** Details of each assessment whose BLGU lock state changed */
+  details?: AssessmentLockDetail[];
+}
 
 
 /**
@@ -1205,6 +1252,12 @@ export interface AssessmentYearCreate {
   rework_window_days?: AssessmentYearCreateReworkWindowDays;
   /** Days BLGU has to resubmit after Validator triggers calibration */
   calibration_window_days?: AssessmentYearCreateCalibrationWindowDays;
+  /**
+   * Default days MLGOO grants when temporarily reopening a locked assessment
+   * @minimum 1
+   * @maximum 30
+   */
+  default_unlock_grace_period_days?: number;
 }
 
 
@@ -1294,6 +1347,7 @@ export interface AssessmentYearResponse {
   submission_window_days?: AssessmentYearResponseSubmissionWindowDays;
   rework_window_days?: AssessmentYearResponseReworkWindowDays;
   calibration_window_days?: AssessmentYearResponseCalibrationWindowDays;
+  default_unlock_grace_period_days?: number;
   activated_by?: AssessmentYearResponseActivatedBy;
   deactivated_by?: AssessmentYearResponseDeactivatedBy;
 }
@@ -1411,6 +1465,8 @@ export interface AssessmentYearUpdate {
   rework_window_days?: AssessmentYearUpdateReworkWindowDays;
   /** Days BLGU has after Validator triggers calibration */
   calibration_window_days?: AssessmentYearUpdateCalibrationWindowDays;
+  /** Default days MLGOO grants when unlocking an assessment */
+  default_unlock_grace_period_days?: AssessmentYearUpdateDefaultUnlockGracePeriodDays;
 }
 
 
@@ -1436,6 +1492,12 @@ export type AssessmentYearUpdateCalibrationDeadline = string | null;
  * AssessmentYearUpdateCalibrationWindowDays
  */
 export type AssessmentYearUpdateCalibrationWindowDays = number | null;
+
+
+/**
+ * AssessmentYearUpdateDefaultUnlockGracePeriodDays
+ */
+export type AssessmentYearUpdateDefaultUnlockGracePeriodDays = number | null;
 
 
 /**
@@ -1963,6 +2025,36 @@ export interface GovernanceAreaAssessmentProgressItem {
 
 
 /**
+ * LockAssessmentRequest
+ */
+export interface LockAssessmentRequest {
+  /** Optional free-form reason for the manual lock */
+  reason?: LockAssessmentRequestReason;
+}
+
+
+/**
+ * LockAssessmentRequestReason
+ */
+export type LockAssessmentRequestReason = string | null;
+
+
+/**
+ * LockAssessmentResponse
+ */
+export interface LockAssessmentResponse {
+  success: boolean;
+  message: string;
+  assessment_id: number;
+  barangay_name: string;
+  status: string;
+  lock_reason: string;
+  locked_at: string;
+  locked_by: string;
+}
+
+
+/**
  * MunicipalOverviewDashboardAssessmentCycle
  */
 export type MunicipalOverviewDashboardAssessmentCycle = string | null;
@@ -2084,6 +2176,12 @@ export type PostMlgooAssessmentsAssessmentIdApproveBody = ApproveAssessmentReque
 
 
 /**
+ * PostMlgooAssessmentsAssessmentIdLockBody
+ */
+export type PostMlgooAssessmentsAssessmentIdLockBody = LockAssessmentRequest | null;
+
+
+/**
  * PostMlgooAssessmentsAssessmentIdUnlockBody
  */
 export type PostMlgooAssessmentsAssessmentIdUnlockBody = UnlockAssessmentRequest | null;
@@ -2140,13 +2238,23 @@ export type TourCompletedUpdateAssessments = boolean | null;
  * UnlockAssessmentRequest
  */
 export interface UnlockAssessmentRequest {
-  /**
-   * Number of days to extend the grace period
-   * @minimum 1
-   * @maximum 30
-   */
-  extend_grace_period_days?: number;
+  /** Optional number of days to extend from now when no custom expiry is provided */
+  extend_grace_period_days?: UnlockAssessmentRequestExtendGracePeriodDays;
+  /** Optional custom UTC expiry for the reopened grace period */
+  grace_period_expires_at?: UnlockAssessmentRequestGracePeriodExpiresAt;
 }
+
+
+/**
+ * UnlockAssessmentRequestExtendGracePeriodDays
+ */
+export type UnlockAssessmentRequestExtendGracePeriodDays = number | null;
+
+
+/**
+ * UnlockAssessmentRequestGracePeriodExpiresAt
+ */
+export type UnlockAssessmentRequestGracePeriodExpiresAt = string | null;
 
 
 /**
@@ -2158,6 +2266,7 @@ export interface UnlockAssessmentResponse {
   assessment_id: number;
   barangay_name: string;
   status: string;
+  default_grace_period_days: number;
   grace_period_expires_at: string;
   unlocked_by: string;
 }

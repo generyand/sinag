@@ -21,6 +21,7 @@ from app.db.models.assessment import (
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
 from app.services.assessment_activity_service import assessment_activity_service
+from app.services.assessment_lock_service import assessment_lock_service
 from app.services.bbi_service import bbi_service
 
 
@@ -1390,6 +1391,7 @@ class MLGOOService:
             if total_indicators > 0
             else None
         )
+        lock_state = assessment_lock_service.get_effective_lock_state(db, assessment)
 
         return {
             "id": assessment.id,
@@ -1434,9 +1436,15 @@ class MLGOOService:
             # MLGOO approval
             "mlgoo_approved_at": self._format_utc_datetime(assessment.mlgoo_approved_at),
             "grace_period_expires_at": self._format_utc_datetime(
-                assessment.grace_period_expires_at
+                lock_state["grace_period_expires_at"]
             ),
-            "is_locked_for_deadline": assessment.is_locked_for_deadline,
+            "is_locked_for_deadline": lock_state["is_locked"],
+            "lock_reason": lock_state["lock_reason"],
+            "locked_at": self._format_utc_datetime(lock_state["locked_at"]),
+            "unlocked_at": self._format_utc_datetime(assessment.unlocked_at),
+            "default_grace_period_days": assessment_lock_service.get_default_unlock_grace_period_days(
+                db, assessment
+            ),
             # Rework/Calibration summary (detailed info for display)
             "rework_calibration_summary": self._build_rework_calibration_summary(db, assessment),
             # Area-by-area assessor/validator progress (for MLGOO tracking tab)
@@ -1450,24 +1458,28 @@ class MLGOOService:
         db: Session,
         assessment_id: int,
         mlgoo_user: User,
-        extend_grace_period_days: int = 3,
+        extend_grace_period_days: int | None = None,
+        grace_period_expires_at: datetime | None = None,
     ) -> dict[str, Any]:
         """
-        Unlock an assessment that was locked due to deadline expiry.
+        Reopen BLGU editing on a locked assessment without changing workflow state.
 
-        MLGOO can unlock assessments and grant additional grace period.
+        MLGOO can unlock assessments and grant a new grace period. The default
+        grace period comes from the active assessment-year settings, but MLGOO
+        may override it per unlock action.
 
         Args:
             db: Database session
             assessment_id: ID of the assessment to unlock
             mlgoo_user: The MLGOO user unlocking the assessment
-            extend_grace_period_days: Number of days to extend grace period (default 3)
+            extend_grace_period_days: Optional custom grace-period length in days
+            grace_period_expires_at: Optional custom grace-period expiry timestamp
 
         Returns:
             dict: Result of the unlock operation
 
         Raises:
-            ValueError: If assessment not found or not locked
+            ValueError: If assessment not found or not effectively locked
         """
         assessment = (
             db.query(Assessment)
@@ -1481,17 +1493,67 @@ class MLGOOService:
         if not assessment:
             raise ValueError(f"Assessment {assessment_id} not found")
 
-        if not assessment.is_locked_for_deadline:
-            raise ValueError("Assessment is not locked")
+        lock_state = assessment_lock_service.sync_effective_lock_state(db, assessment)
+        if not lock_state["is_locked"]:
+            current_grace_period = assessment_lock_service._to_naive_utc(
+                assessment.grace_period_expires_at
+            )
+            barangay_name = "Unknown Barangay"
+            if assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
 
-        # Unlock the assessment
-        assessment.is_locked_for_deadline = False
-        assessment.locked_at = None
+            return {
+                "success": True,
+                "message": "Assessment is already open for BLGU editing",
+                "assessment_id": assessment_id,
+                "barangay_name": barangay_name,
+                "status": assessment.status.value,
+                "default_grace_period_days": assessment_lock_service.get_default_unlock_grace_period_days(
+                    db, assessment
+                ),
+                "grace_period_expires_at": (
+                    current_grace_period.isoformat() if current_grace_period else ""
+                ),
+                "unlocked_by": mlgoo_user.name,
+            }
 
-        # Extend grace period
-        assessment.grace_period_expires_at = datetime.utcnow() + timedelta(
-            days=extend_grace_period_days
+        default_grace_period_days = assessment_lock_service.get_default_unlock_grace_period_days(
+            db, assessment
         )
+        resolved_now = assessment_lock_service._resolve_now()
+
+        if grace_period_expires_at is not None:
+            resolved_expiry = assessment_lock_service._to_naive_utc(grace_period_expires_at)
+        else:
+            grace_period_days = extend_grace_period_days or default_grace_period_days
+            resolved_expiry = resolved_now + timedelta(days=grace_period_days)
+
+        if resolved_expiry is None:
+            raise ValueError("Grace period expiry could not be determined")
+
+        if resolved_expiry <= resolved_now:
+            raise ValueError("Grace period expiry must be in the future")
+
+        assessment_lock_service.unlock_for_blgu(
+            db=db,
+            assessment=assessment,
+            mlgoo_user=mlgoo_user,
+            grace_period_expires_at=resolved_expiry,
+            now=resolved_now,
+        )
+
+        try:
+            assessment_lock_service.notify_assessment_unlocked(
+                db=db,
+                assessment=assessment,
+                grace_period_expires_at=resolved_expiry,
+            )
+        except Exception as exc:
+            self.logger.error(
+                "Failed to create unlock notification for assessment %s: %s",
+                assessment_id,
+                exc,
+            )
 
         db.commit()
         db.refresh(assessment)
@@ -1501,18 +1563,113 @@ class MLGOOService:
             barangay_name = assessment.blgu_user.barangay.name
 
         self.logger.info(
-            f"MLGOO {mlgoo_user.name} unlocked assessment {assessment_id} for {barangay_name}. "
-            f"Grace period extended by {extend_grace_period_days} days."
+            "MLGOO %s reopened assessment %s for %s until %s.",
+            mlgoo_user.name,
+            assessment_id,
+            barangay_name,
+            resolved_expiry.isoformat(),
         )
 
         return {
             "success": True,
-            "message": f"Assessment unlocked and grace period extended by {extend_grace_period_days} days",
+            "message": "Assessment reopened for BLGU editing",
             "assessment_id": assessment_id,
             "barangay_name": barangay_name,
             "status": assessment.status.value,
+            "default_grace_period_days": default_grace_period_days,
             "grace_period_expires_at": assessment.grace_period_expires_at.isoformat(),
             "unlocked_by": mlgoo_user.name,
+        }
+
+    def lock_assessment_for_blgu(
+        self,
+        db: Session,
+        assessment_id: int,
+        mlgoo_user: User,
+    ) -> dict[str, Any]:
+        """
+        Manually lock a BLGU assessment without changing its workflow status.
+        """
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        existing_lock_state = assessment_lock_service.sync_effective_lock_state(db, assessment)
+        if existing_lock_state["is_locked"]:
+            barangay_name = "Unknown Barangay"
+            if assessment.blgu_user and assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+            current_locked_at = assessment_lock_service._to_naive_utc(assessment.locked_at) or (
+                assessment_lock_service._to_naive_utc(existing_lock_state["locked_at"])
+            )
+
+            return {
+                "success": True,
+                "message": "Assessment is already locked for BLGU editing",
+                "assessment_id": assessment_id,
+                "barangay_name": barangay_name,
+                "status": assessment.status.value,
+                "lock_reason": assessment.lock_reason or existing_lock_state["lock_reason"],
+                "locked_at": current_locked_at.isoformat() if current_locked_at else "",
+                "locked_by": mlgoo_user.name,
+            }
+
+        resolved_now = assessment_lock_service._resolve_now()
+        assessment_lock_service.lock_for_blgu(
+            db=db,
+            assessment=assessment,
+            reason=assessment_lock_service.LOCK_REASON_MLGOO_MANUAL_LOCK,
+            locked_at=resolved_now,
+            actor=mlgoo_user,
+            clear_grace_period=True,
+        )
+
+        try:
+            assessment_lock_service.notify_assessment_locked(
+                db=db,
+                assessment=assessment,
+                reason=assessment_lock_service.LOCK_REASON_MLGOO_MANUAL_LOCK,
+            )
+        except Exception as exc:
+            self.logger.error(
+                "Failed to create manual lock notification for assessment %s: %s",
+                assessment_id,
+                exc,
+            )
+
+        db.commit()
+        db.refresh(assessment)
+
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        self.logger.info(
+            "MLGOO %s manually locked assessment %s for %s.",
+            mlgoo_user.name,
+            assessment_id,
+            barangay_name,
+        )
+
+        return {
+            "success": True,
+            "message": "Assessment locked for BLGU editing",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "status": assessment.status.value,
+            "lock_reason": assessment.lock_reason
+            or assessment_lock_service.LOCK_REASON_MLGOO_MANUAL_LOCK,
+            "locked_at": assessment.locked_at.isoformat() if assessment.locked_at else "",
+            "locked_by": mlgoo_user.name,
         }
 
     def update_recalibration_validation(

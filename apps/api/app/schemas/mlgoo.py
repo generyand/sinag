@@ -1,6 +1,7 @@
 # 📋 MLGOO Schemas
 # Pydantic models for MLGOO (Municipal Local Government Operations Officer) endpoints
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -62,13 +63,27 @@ class RecalibrationByMovRequest(BaseModel):
 
 
 class UnlockAssessmentRequest(BaseModel):
-    """Request body for unlocking a deadline-locked assessment."""
+    """Request body for reopening a BLGU-locked assessment."""
 
-    extend_grace_period_days: int = Field(
-        default=3,
-        description="Number of days to extend the grace period",
+    extend_grace_period_days: int | None = Field(
+        default=None,
+        description="Optional number of days to extend from now when no custom expiry is provided",
         ge=1,
         le=30,
+    )
+    grace_period_expires_at: datetime | None = Field(
+        default=None,
+        description="Optional custom UTC expiry for the reopened grace period",
+    )
+
+
+class LockAssessmentRequest(BaseModel):
+    """Optional MLGOO request body for manually locking an assessment."""
+
+    reason: str | None = Field(
+        default=None,
+        description="Optional free-form reason for the manual lock",
+        max_length=500,
     )
 
 
@@ -347,6 +362,10 @@ class AssessmentDetailResponse(BaseModel):
     mlgoo_approved_at: str | None
     grace_period_expires_at: str | None
     is_locked_for_deadline: bool
+    lock_reason: str | None
+    locked_at: str | None
+    unlocked_at: str | None
+    default_grace_period_days: int
     # Rework/Calibration summary (detailed info for display)
     rework_calibration_summary: ReworkCalibrationSummary | None = None
     # Assessor/Validator progress (for MLGOO "Assessment Progress" tab)
@@ -432,8 +451,22 @@ class UnlockAssessmentResponse(BaseModel):
     assessment_id: int
     barangay_name: str
     status: str
+    default_grace_period_days: int
     grace_period_expires_at: str
     unlocked_by: str
+
+
+class LockAssessmentResponse(BaseModel):
+    """Response for manually locking an assessment."""
+
+    success: bool
+    message: str
+    assessment_id: int
+    barangay_name: str
+    status: str
+    lock_reason: str
+    locked_at: str
+    locked_by: str
 
 
 class UpdatedIndicatorItem(BaseModel):

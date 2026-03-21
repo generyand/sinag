@@ -105,6 +105,11 @@ export function useCurrentAssessment() {
       created_at: string;
       updated_at: string;
       submitted_at?: string;
+      is_locked_for_blgu?: boolean;
+      lock_reason?: string;
+      locked_at?: string;
+      grace_period_expires_at?: string;
+      unlocked_at?: string;
     };
     governance_areas: Array<{
       id: number;
@@ -323,6 +328,13 @@ export function useCurrentAssessment() {
         createdAt: (assessmentData as unknown as APIAssessment).assessment.created_at,
         updatedAt: (assessmentData as unknown as APIAssessment).assessment.updated_at,
         submittedAt: (assessmentData as unknown as APIAssessment).assessment.submitted_at,
+        isLockedForBlgu:
+          (assessmentData as unknown as APIAssessment).assessment.is_locked_for_blgu === true,
+        lockReason: (assessmentData as unknown as APIAssessment).assessment.lock_reason,
+        lockedAt: (assessmentData as unknown as APIAssessment).assessment.locked_at,
+        gracePeriodExpiresAt: (assessmentData as unknown as APIAssessment).assessment
+          .grace_period_expires_at,
+        unlockedAt: (assessmentData as unknown as APIAssessment).assessment.unlocked_at,
         governanceAreas: (assessmentData as unknown as APIAssessment).governance_areas.map(
           (area) => ({
             id: area.id.toString(),

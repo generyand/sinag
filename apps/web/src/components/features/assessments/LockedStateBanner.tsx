@@ -18,6 +18,12 @@
 "use client";
 
 import { Lock, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  getGracePeriodMessage,
+  getLockMessage,
+  getLockReasonLabel,
+  hasActiveGracePeriod,
+} from "@/lib/assessment-locks";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
@@ -33,12 +39,63 @@ type AssessmentStatus =
 interface LockedStateBannerProps {
   status: AssessmentStatus;
   reworkCount?: number;
+  isLockedForBlgu?: boolean | null;
+  lockReason?: string | null;
+  gracePeriodExpiresAt?: string | null;
 }
 
-export function LockedStateBanner({ status, reworkCount = 0 }: LockedStateBannerProps) {
-  // Don't show banner for DRAFT or REWORK statuses (assessment is editable)
-  if (status === "DRAFT" || status === "REWORK") {
+export function LockedStateBanner({
+  status,
+  reworkCount = 0,
+  isLockedForBlgu = false,
+  lockReason,
+  gracePeriodExpiresAt,
+}: LockedStateBannerProps) {
+  const isGracePeriodActive = hasActiveGracePeriod({
+    is_locked_for_blgu: isLockedForBlgu,
+    grace_period_expires_at: gracePeriodExpiresAt,
+  });
+
+  if (!isLockedForBlgu && !isGracePeriodActive && (status === "DRAFT" || status === "REWORK")) {
     return null;
+  }
+
+  if (isLockedForBlgu) {
+    return (
+      <Alert className="sticky top-0 z-10 border-red-600 bg-red-50 dark:bg-red-950/20 shadow-sm">
+        <Lock className="h-4 w-4 text-red-600" />
+        <AlertTitle className="text-red-700 dark:text-red-400">
+          <div className="flex items-center gap-2">
+            {getLockReasonLabel(lockReason)}
+            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+              READ ONLY
+            </Badge>
+          </div>
+        </AlertTitle>
+        <AlertDescription className="text-red-600 dark:text-red-300">
+          {getLockMessage(lockReason)}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isGracePeriodActive) {
+    return (
+      <Alert className="sticky top-0 z-10 border-sky-600 bg-sky-50 dark:bg-sky-950/20 shadow-sm">
+        <Eye className="h-4 w-4 text-sky-600" />
+        <AlertTitle className="text-sky-700 dark:text-sky-400">
+          <div className="flex items-center gap-2">
+            Editing Reopened
+            <Badge className="bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200">
+              TEMPORARY
+            </Badge>
+          </div>
+        </AlertTitle>
+        <AlertDescription className="text-sky-600 dark:text-sky-300">
+          {getGracePeriodMessage(gracePeriodExpiresAt)}
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   // Determine banner variant and content based on status

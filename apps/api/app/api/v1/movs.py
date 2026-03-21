@@ -9,10 +9,11 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
 from app.db.enums import UserRole
-from app.db.models.assessment import MOVFile
+from app.db.models.assessment import Assessment, MOVFile
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVFileListResponse, MOVFileResponse, SignedUrlResponse
+from app.services.assessment_lock_service import assessment_lock_service
 from app.services.file_validation_service import file_validation_service
 from app.services.storage_service import storage_service
 
@@ -83,6 +84,22 @@ def upload_mov_file(
         indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
         if indicator and indicator.indicator_code:
             indicator_code = indicator.indicator_code
+
+    if current_user.role == UserRole.BLGU_USER:
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        if not assessment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Assessment {assessment_id} not found",
+            )
+        if assessment.blgu_user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only upload files to your own assessment",
+            )
+        assessment_lock_service.ensure_blgu_write_allowed(
+            db, assessment, action="upload or replace MOV files"
+        )
 
     # Upload file to storage and create database record
     try:

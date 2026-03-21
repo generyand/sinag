@@ -13,8 +13,10 @@ from sqlalchemy.orm import Session
 from supabase import Client, create_client
 
 from app.core.config import settings
-from app.db.enums import AssessmentStatus
+from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment, AssessmentResponse, MOVFile
+from app.db.models.user import User
+from app.services.assessment_lock_service import assessment_lock_service
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -645,6 +647,15 @@ class StorageService:
                 f"Cannot delete files from {assessment.status} assessments. "
                 f"Deletion is only allowed for Draft or Rework assessments.",
             )
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if user and user.role == UserRole.BLGU_USER:
+            try:
+                assessment_lock_service.ensure_blgu_write_allowed(
+                    db, assessment, action="remove MOV files"
+                )
+            except HTTPException as exc:
+                return False, str(exc.detail)
 
         return True, None
 

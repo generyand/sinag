@@ -257,6 +257,10 @@ class AssessmentYearService:
             rework_deadline=data.rework_deadline,
             phase2_deadline=data.phase2_deadline,
             calibration_deadline=data.calibration_deadline,
+            submission_window_days=data.submission_window_days,
+            rework_window_days=data.rework_window_days,
+            calibration_window_days=data.calibration_window_days,
+            default_unlock_grace_period_days=data.default_unlock_grace_period_days,
             description=data.description,
             is_active=False,
             is_published=False,
@@ -312,6 +316,8 @@ class AssessmentYearService:
             year_record.rework_window_days = data.rework_window_days
         if data.calibration_window_days is not None:
             year_record.calibration_window_days = data.calibration_window_days
+        if data.default_unlock_grace_period_days is not None:
+            year_record.default_unlock_grace_period_days = data.default_unlock_grace_period_days
 
         db.commit()
         db.refresh(year_record)

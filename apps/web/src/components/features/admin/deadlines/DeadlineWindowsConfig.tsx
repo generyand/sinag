@@ -32,6 +32,7 @@ export function DeadlineWindowsConfig({ defaultYear }: DeadlineWindowsConfigProp
     submission_window_days: 60,
     rework_window_days: 5,
     calibration_window_days: 3,
+    default_unlock_grace_period_days: 3,
     phase1_deadline: "" as string,
   });
   const [isDirty, setIsDirty] = useState(false);
@@ -58,6 +59,7 @@ export function DeadlineWindowsConfig({ defaultYear }: DeadlineWindowsConfigProp
           submission_window_days: yearConfig.submission_window_days ?? 60,
           rework_window_days: yearConfig.rework_window_days ?? 5,
           calibration_window_days: yearConfig.calibration_window_days ?? 3,
+          default_unlock_grace_period_days: yearConfig.default_unlock_grace_period_days ?? 3,
           phase1_deadline: deadlineDate,
         });
         setIsDirty(false);
@@ -84,6 +86,7 @@ export function DeadlineWindowsConfig({ defaultYear }: DeadlineWindowsConfigProp
           submission_window_days: formData.submission_window_days,
           rework_window_days: formData.rework_window_days,
           calibration_window_days: formData.calibration_window_days,
+          default_unlock_grace_period_days: formData.default_unlock_grace_period_days,
           phase1_deadline: phase1DeadlineISO,
         },
       });
@@ -225,6 +228,31 @@ export function DeadlineWindowsConfig({ defaultYear }: DeadlineWindowsConfigProp
                   Days BLGU has to resubmit after Validator triggers calibration (default: 3 days)
                 </p>
               </div>
+
+              {/* MLGOO Unlock Grace Period */}
+              <div className="space-y-2 mt-6">
+                <Label htmlFor="unlock-grace-window" className="text-sm font-medium">
+                  MLGOO Unlock Grace Period (days)
+                </Label>
+                <Input
+                  id="unlock-grace-window"
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={formData.default_unlock_grace_period_days}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "default_unlock_grace_period_days",
+                      parseInt(e.target.value) || 3
+                    )
+                  }
+                  className="w-full md:w-[200px]"
+                />
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Prefilled default when MLGOO reopens a locked assessment for BLGU editing
+                  (default: 3 days)
+                </p>
+              </div>
             </div>
 
             {/* Info Box */}
@@ -247,7 +275,10 @@ export function DeadlineWindowsConfig({ defaultYear }: DeadlineWindowsConfigProp
                     <strong>Calibration Window:</strong> Days added when Validator requests
                     calibration (deadline = request time + days)
                   </li>
-                  <li>MLGOO can extend individual assessment deadlines as needed</li>
+                  <li>
+                    <strong>MLGOO Unlock Grace Period:</strong> Default grace period suggested when
+                    MLGOO reopens a locked assessment
+                  </li>
                 </ul>
               </AlertDescription>
             </Alert>

@@ -12,6 +12,7 @@ from app.db.enums import AssessmentStatus, NotificationType
 from app.db.models.assessment import Assessment
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
+from app.services.assessment_lock_service import assessment_lock_service
 from app.services.notification_service import notification_service
 
 logger = logging.getLogger(__name__)
@@ -70,6 +71,10 @@ class AreaSubmissionService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this assessment",
             )
+
+        assessment_lock_service.ensure_blgu_write_allowed(
+            db, assessment, action="submit governance areas for review"
+        )
 
         # Validate governance area exists
         governance_area = (
@@ -235,6 +240,10 @@ class AreaSubmissionService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this assessment",
             )
+
+        assessment_lock_service.ensure_blgu_write_allowed(
+            db, assessment, action="resubmit governance areas after rework"
+        )
 
         # Validate governance area exists
         governance_area = (

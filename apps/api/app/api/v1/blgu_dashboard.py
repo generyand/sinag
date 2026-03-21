@@ -29,6 +29,7 @@ from app.schemas.blgu_dashboard import (
     BLGUDashboardResponse,
     IndicatorNavigationItem,
 )
+from app.services.assessment_lock_service import assessment_lock_service
 
 router = APIRouter(tags=["blgu-dashboard"])
 
@@ -1138,6 +1139,8 @@ def get_blgu_dashboard(
             )
 
     # Epic 5.0: Return status and rework tracking fields
+    lock_state = assessment_lock_service.get_effective_lock_state(db, assessment)
+
     return {
         "assessment_id": assessment_id,
         # Phase 1 Deadline tracking fields
@@ -1146,6 +1149,11 @@ def get_blgu_dashboard(
         "deadline_urgency_level": deadline_urgency_level,
         "is_auto_submitted": assessment.auto_submitted_at is not None,
         "auto_submitted_at": assessment.auto_submitted_at,
+        "is_locked_for_blgu": lock_state["is_locked"],
+        "lock_reason": lock_state["lock_reason"],
+        "locked_at": lock_state["locked_at"],
+        "grace_period_expires_at": lock_state["grace_period_expires_at"],
+        "unlocked_at": assessment.unlocked_at,
         "status": assessment.status.value,  # Epic 5.0: Assessment workflow status
         "rework_count": assessment.rework_count,  # Epic 5.0: Rework cycle count (0 or 1)
         "rework_requested_at": assessment.rework_requested_at.isoformat() + "Z"

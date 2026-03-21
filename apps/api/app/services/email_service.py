@@ -209,6 +209,18 @@ class EmailService:
                 "message": "This is a friendly reminder from MLGOO-DILG to complete your SGLGB assessment submission. Click the button below to continue working on your assessment.",
                 "cta_text": "Continue Assessment",
             },
+            NotificationType.ASSESSMENT_UNLOCKED: {
+                "subject": "Your SGLGB Assessment Has Been Reopened",
+                "title": "Assessment Reopened",
+                "message": "MLGOO has reopened your assessment for editing. Please log in and complete any required updates before the grace period expires.",
+                "cta_text": "Continue Assessment",
+            },
+            NotificationType.ASSESSMENT_LOCKED: {
+                "subject": "Your SGLGB Assessment Is Locked",
+                "title": "Assessment Locked",
+                "message": "Your SGLGB assessment is currently locked for editing. You can still review your data, but only MLGOO can reopen editing access.",
+                "cta_text": "View Assessment",
+            },
             # Automated Phase 1 deadline reminders
             NotificationType.DEADLINE_REMINDER_7_DAYS: {
                 "subject": "7 Days Remaining: Complete Your SGLGB Assessment",

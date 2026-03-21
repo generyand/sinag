@@ -238,7 +238,9 @@ export default function BLGUAssessmentsPage() {
     normalizedStatus === "validated" ||
     normalizedStatus === "completed";
 
-  const isLocked = isFullySubmitted || isPastSubmission;
+  const isLockEnforced =
+    assessment.isLockedForBlgu === true || (dashboardData?.is_locked_for_blgu ?? false);
+  const isLocked = isLockEnforced || isFullySubmitted || isPastSubmission;
   const isCalibrationReworkActive =
     (dashboardData?.status === "REWORK" || dashboardData?.status === "NEEDS_REWORK") &&
     dashboardData?.is_calibration_rework === true &&
@@ -267,7 +269,16 @@ export default function BLGUAssessmentsPage() {
       aria-label="BLGU Assessment Form"
     >
       {/* Enhanced Locked Banner */}
-      {isLocked && <AssessmentLockedBanner status={assessment.status} />}
+      {isLocked && (
+        <AssessmentLockedBanner
+          status={assessment.status}
+          isLockedForBlgu={isLockEnforced}
+          lockReason={assessment.lockReason || dashboardData?.lock_reason || null}
+          gracePeriodExpiresAt={
+            assessment.gracePeriodExpiresAt || dashboardData?.grace_period_expires_at || null
+          }
+        />
+      )}
 
       {/* Header (Full Width) */}
       <header className="border-b border-[var(--border)] bg-[var(--card)]">
@@ -305,6 +316,7 @@ export default function BLGUAssessmentsPage() {
                     isComplete={(dashboardData?.completion_percentage || 0) === 100}
                     allowIncompleteSubmission={true}
                     isCalibrationRework={true}
+                    isLockedForBlgu={isLockEnforced}
                     onSuccess={refetchDashboard}
                   />
                 </div>
@@ -328,6 +340,7 @@ export default function BLGUAssessmentsPage() {
             areaStatusData={areaStatusData as any}
             onAreaSubmitSuccess={handleAreaSubmitSuccess}
             areaAssessorStatus={(dashboardData as any)?.area_assessor_status}
+            isAssessmentLockedForBlgu={isLockEnforced}
           />
         </nav>
 

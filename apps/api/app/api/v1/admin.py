@@ -14,10 +14,10 @@ from app.schemas.admin import (
     AssessmentCycleCreate,
     AssessmentCycleResponse,
     AssessmentCycleUpdate,
+    AssessmentLockDetail,
+    AssessmentLockProcessingResponse,
     AuditLogListResponse,
     AuditLogResponse,
-    AutoSubmitDetail,
-    AutoSubmitResponse,
     BarangayDeadlineStatusResponse,
     DeadlineOverrideCreate,
     DeadlineOverrideListResponse,
@@ -25,6 +25,7 @@ from app.schemas.admin import (
     DeadlineStatusListResponse,
     PhaseStatusResponse,
 )
+from app.services.assessment_lock_service import assessment_lock_service
 from app.services.audit_service import audit_service
 from app.services.deadline_service import deadline_service
 
@@ -701,96 +702,89 @@ async def export_deadline_overrides_csv(
 
 
 @router.post(
-    "/trigger-auto-submit",
-    response_model=AutoSubmitResponse,
+    "/trigger-assessment-locks",
+    response_model=AssessmentLockProcessingResponse,
     tags=["admin"],
-    summary="Trigger auto-submit for overdue DRAFT assessments",
-    description="Manually trigger auto-submit for all DRAFT assessments past the Phase 1 deadline. Useful when Celery is not running. Requires MLGOO_DILG role.",
+    summary="Trigger BLGU assessment lock processing",
+    description="Manually trigger BLGU lock processing for expired due dates and grace periods. Useful when Celery is not running. Requires MLGOO_DILG role.",
 )
-async def trigger_auto_submit(
+@router.post(
+    "/trigger-auto-submit",
+    response_model=AssessmentLockProcessingResponse,
+    tags=["admin"],
+    summary="Legacy alias for BLGU assessment lock processing",
+    description="Legacy alias for the old auto-submit trigger. It now processes BLGU locks instead of auto-submitting assessments.",
+    include_in_schema=False,
+)
+async def trigger_assessment_lock_processing(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_mlgoo_dilg),
-):
+) -> AssessmentLockProcessingResponse:
     """
-    Manually trigger auto-submit for overdue DRAFT assessments.
-
-    Finds all DRAFT assessments for the active year where the Phase 1 deadline
-    has passed and auto-submits them (same logic as the Celery worker).
+    Manually trigger BLGU lock processing for expired due dates and grace periods.
 
     **Authentication:** Requires MLGOO_DILG role.
 
     **Returns:**
-    - Count and details of auto-submitted assessments
+    - Counts and details of assessments whose BLGU lock state changed
     """
     from datetime import UTC
 
-    from fastapi import HTTPException, status
-    from sqlalchemy import and_
+    from sqlalchemy import or_
     from sqlalchemy.orm import joinedload
 
-    from app.db.enums import AssessmentStatus
     from app.db.models import Assessment
     from app.db.models.system import AssessmentYear
-    from app.workers.deadline_worker import _auto_submit_assessment
 
     now = datetime.now(UTC)
 
     # Get the active assessment year
     active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
-
-    if not active_year:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active assessment year found",
-        )
-
-    if not active_year.phase1_deadline:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"No phase1_deadline set for year {active_year.year}",
-        )
-
-    phase1_deadline = active_year.phase1_deadline
-    if phase1_deadline.tzinfo is None:
-        phase1_deadline = phase1_deadline.replace(tzinfo=UTC)
-
-    if now < phase1_deadline:
-        return AutoSubmitResponse(auto_submitted_count=0, details=[])
-
-    # Find all DRAFT assessments that haven't been auto-submitted
-    draft_assessments = (
-        db.query(Assessment)
-        .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
-        .filter(
-            and_(
-                Assessment.assessment_year == active_year.year,
-                Assessment.status == AssessmentStatus.DRAFT,
-                Assessment.auto_submitted_at.is_(None),
-            )
-        )
-        .all()
+    candidate_query = db.query(Assessment).options(
+        joinedload(Assessment.blgu_user).joinedload(User.barangay)
     )
 
-    details: list[AutoSubmitDetail] = []
+    candidates: dict[int, Assessment] = {}
+    if active_year:
+        for assessment in candidate_query.filter(
+            Assessment.assessment_year == active_year.year
+        ).all():
+            candidates[assessment.id] = assessment
 
-    for assessment in draft_assessments:
-        try:
-            barangay_name = "Unknown Barangay"
-            if assessment.blgu_user and assessment.blgu_user.barangay:
-                barangay_name = assessment.blgu_user.barangay.name
+    for assessment in candidate_query.filter(
+        or_(
+            Assessment.grace_period_expires_at.is_not(None),
+            Assessment.is_locked_for_deadline.is_(True),
+        )
+    ).all():
+        candidates[assessment.id] = assessment
 
-            _auto_submit_assessment(db, assessment, now)
-            db.flush()
-            details.append(
-                AutoSubmitDetail(assessment_id=assessment.id, barangay_name=barangay_name)
-            )
-        except Exception:
-            # Skip failed assessments, continue with the rest
+    details: list[AssessmentLockDetail] = []
+    for assessment in candidates.values():
+        state = assessment_lock_service.get_effective_lock_state(db, assessment, now=now)
+        if not state["is_locked"] or assessment.is_locked_for_deadline:
             continue
 
-    db.commit()
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
 
-    return AutoSubmitResponse(auto_submitted_count=len(details), details=details)
+        details.append(
+            AssessmentLockDetail(
+                assessment_id=assessment.id,
+                barangay_name=barangay_name,
+                lock_reason=state["lock_reason"] or "deadline_expired",
+            )
+        )
+
+    summary = assessment_lock_service.process_expired_assessment_locks(db, now=now)
+
+    return AssessmentLockProcessingResponse(
+        processed_count=summary["deadline_locked"] + summary["grace_relocked"],
+        deadline_locked_count=summary["deadline_locked"],
+        grace_relocked_count=summary["grace_relocked"],
+        details=details,
+    )
 
 
 # ============================================================================

@@ -2,12 +2,67 @@
 
 import { AssessmentStatus } from "@/types/assessment";
 import { Clock, Lock, Shield } from "lucide-react";
+import {
+  getGracePeriodMessage,
+  getLockMessage,
+  getLockReasonLabel,
+  hasActiveGracePeriod,
+} from "@/lib/assessment-locks";
 
 interface AssessmentLockedBannerProps {
   status: AssessmentStatus;
+  isLockedForBlgu?: boolean | null;
+  lockReason?: string | null;
+  gracePeriodExpiresAt?: string | null;
 }
 
-export function AssessmentLockedBanner({ status }: AssessmentLockedBannerProps) {
+export function AssessmentLockedBanner({
+  status,
+  isLockedForBlgu = false,
+  lockReason,
+  gracePeriodExpiresAt,
+}: AssessmentLockedBannerProps) {
+  const isGracePeriodActive = hasActiveGracePeriod({
+    is_locked_for_blgu: isLockedForBlgu,
+    grace_period_expires_at: gracePeriodExpiresAt,
+  });
+
+  if (isLockedForBlgu) {
+    return (
+      <div className="border-b border-red-200 bg-red-50">
+        <div className="mx-auto max-w-[1920px] px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <div className="rounded-full bg-red-100 p-1 text-red-600">
+              <Lock className="h-4 w-4" />
+            </div>
+            <span className="font-medium text-red-900">{getLockReasonLabel(lockReason)}</span>
+            <span className="hidden text-red-400 sm:inline">•</span>
+            <span className="hidden text-red-700 sm:inline">{getLockMessage(lockReason)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGracePeriodActive) {
+    return (
+      <div className="border-b border-sky-200 bg-sky-50">
+        <div className="mx-auto max-w-[1920px] px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <div className="rounded-full bg-sky-100 p-1 text-sky-600">
+              <Clock className="h-4 w-4" />
+            </div>
+            <span className="font-medium text-sky-900">Editing Reopened</span>
+            <span className="hidden text-sky-400 sm:inline">•</span>
+            <span className="hidden text-sky-700 sm:inline">
+              {getGracePeriodMessage(gracePeriodExpiresAt)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const getBannerContent = () => {
     // Normalize status to lowercase for comparison
     const normalizedStatus = (status || "").toLowerCase();

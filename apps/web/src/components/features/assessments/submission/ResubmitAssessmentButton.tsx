@@ -53,6 +53,7 @@ interface ResubmitAssessmentButtonProps {
   allowIncompleteSubmission?: boolean;
   isCalibrationRework?: boolean; // If true, submits to Validator instead of Assessor
   isMlgooRecalibration?: boolean; // If true, submits back to MLGOO (uses regular resubmit endpoint which auto-routes)
+  isLockedForBlgu?: boolean;
   onSuccess?: () => void;
 }
 
@@ -62,6 +63,7 @@ export function ResubmitAssessmentButton({
   allowIncompleteSubmission = false,
   isCalibrationRework = false,
   isMlgooRecalibration = false,
+  isLockedForBlgu = false,
   onSuccess,
 }: ResubmitAssessmentButtonProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -149,7 +151,7 @@ export function ResubmitAssessmentButton({
     }
   };
 
-  const isButtonDisabled = (!isComplete && !canSubmitIncomplete) || isPending;
+  const isButtonDisabled = (!isComplete && !canSubmitIncomplete) || isPending || isLockedForBlgu;
 
   // Different button text and styling based on mode (calibration vs MLGOO vs regular)
   const buttonText = isMlgooRecalibration

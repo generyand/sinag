@@ -61,6 +61,12 @@ class AssessmentYearBase(BaseModel):
         le=30,
         description="Days BLGU has to resubmit after Validator triggers calibration",
     )
+    default_unlock_grace_period_days: int = Field(
+        3,
+        ge=1,
+        le=30,
+        description="Default days MLGOO grants when temporarily reopening a locked assessment",
+    )
 
 
 class AssessmentYearCreate(AssessmentYearBase):
@@ -96,6 +102,9 @@ class AssessmentYearUpdate(BaseModel):
     calibration_window_days: int | None = Field(
         None, ge=1, le=30, description="Days BLGU has after Validator triggers calibration"
     )
+    default_unlock_grace_period_days: int | None = Field(
+        None, ge=1, le=30, description="Default days MLGOO grants when unlocking an assessment"
+    )
 
 
 class AssessmentYearResponse(BaseModel):
@@ -123,6 +132,7 @@ class AssessmentYearResponse(BaseModel):
     submission_window_days: int | None = None
     rework_window_days: int | None = None
     calibration_window_days: int | None = None
+    default_unlock_grace_period_days: int = 3
 
     # Nested user relationships
     activated_by: UserNested | None = None

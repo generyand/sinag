@@ -234,6 +234,7 @@ export function Phase2Section({
                     isComplete={dashboardData.completion_percentage === 100}
                     allowIncompleteSubmission={true}
                     isCalibrationRework={true}
+                    isLockedForBlgu={dashboardData.is_locked_for_blgu ?? false}
                     onSuccess={onRefetch}
                   />
                 </div>

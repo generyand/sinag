@@ -82,6 +82,11 @@ export interface Assessment {
   createdAt: string;
   updatedAt: string;
   submittedAt?: string;
+  isLockedForBlgu?: boolean;
+  lockReason?: string;
+  lockedAt?: string;
+  gracePeriodExpiresAt?: string;
+  unlockedAt?: string;
   governanceAreas: GovernanceArea[];
   totalIndicators: number;
   completedIndicators: number;

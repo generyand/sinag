@@ -132,11 +132,12 @@ export function Phase1Section({
 
   // Phase 1 is editable only during DRAFT or assessor rework (not calibration, not MLGOO recalibration)
   const isEditable =
-    dashboardData.status === "DRAFT" ||
-    ((dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
-      !dashboardData.is_calibration_rework &&
-      !isMlgooRecalibration) ||
-    (hasAreaLevelRework && !dashboardData.is_calibration_rework && !isMlgooRecalibration);
+    !dashboardData.is_locked_for_blgu &&
+    (dashboardData.status === "DRAFT" ||
+      ((dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
+        !dashboardData.is_calibration_rework &&
+        !isMlgooRecalibration) ||
+      (hasAreaLevelRework && !dashboardData.is_calibration_rework && !isMlgooRecalibration));
 
   // Show rework feedback only for assessor rework (not calibration, not MLGOO recalibration)
   const showReworkFeedback =
@@ -211,6 +212,9 @@ export function Phase1Section({
           urgencyLevel={dashboardData.deadline_urgency_level ?? null}
           assessmentStatus={dashboardData.status}
           isAutoSubmitted={dashboardData.is_auto_submitted ?? false}
+          isLockedForBlgu={dashboardData.is_locked_for_blgu ?? false}
+          lockReason={dashboardData.lock_reason ?? null}
+          gracePeriodExpiresAt={dashboardData.grace_period_expires_at ?? null}
         />
 
         {/* AI Summary Panel - Shows AI-generated guidance for rework */}
@@ -339,6 +343,8 @@ export function Phase1Section({
                 isComplete={dashboardData.completion_percentage === 100}
                 completedCount={dashboardData.completed_indicators}
                 totalCount={dashboardData.total_indicators}
+                assessmentStatus={dashboardData.status}
+                isLockedForBlgu={dashboardData.is_locked_for_blgu ?? false}
                 onSuccess={onRefetch}
               />
             )}
@@ -350,6 +356,7 @@ export function Phase1Section({
                   assessmentId={assessmentId}
                   isComplete={dashboardData.completion_percentage === 100}
                   isCalibrationRework={false}
+                  isLockedForBlgu={dashboardData.is_locked_for_blgu ?? false}
                   onSuccess={onRefetch}
                 />
               )}

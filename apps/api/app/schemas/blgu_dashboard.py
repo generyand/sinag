@@ -291,6 +291,24 @@ class BLGUDashboardResponse(BaseModel):
     auto_submitted_at: datetime | None = Field(
         None, description="Timestamp when assessment was auto-submitted (if applicable)"
     )
+    is_locked_for_blgu: bool = Field(
+        default=False,
+        description="True when BLGU editing is explicitly or effectively locked",
+    )
+    lock_reason: str | None = Field(
+        None,
+        description="Reason BLGU editing is locked: deadline_expired, grace_period_expired, or mlgoo_manual_lock",
+    )
+    locked_at: datetime | None = Field(
+        None, description="Timestamp when the current BLGU lock took effect"
+    )
+    grace_period_expires_at: datetime | None = Field(
+        None,
+        description="Grace period expiry while the assessment is temporarily reopened for BLGU editing",
+    )
+    unlocked_at: datetime | None = Field(
+        None, description="Timestamp when MLGOO last reopened BLGU editing"
+    )
 
     # Epic 5.0: Assessment status and rework tracking
     status: str = Field(

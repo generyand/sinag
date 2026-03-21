@@ -1,9 +1,9 @@
 # Deadline Worker
-# Background tasks for handling Phase 1 deadline reminders and auto-submit
+# Background tasks for handling Phase 1 deadline reminders and BLGU lock processing
 #
 # Tasks:
 # - process_deadline_reminders: Daily task to send 7d/3d/1d reminders
-# - process_auto_submit: Hourly task to auto-submit expired DRAFT assessments
+# - process_assessment_locks: Hourly task to lock expired assessments for BLGU editing
 #
 # All tasks include retry logic to handle transient failures:
 # - Max 3 retries with exponential backoff (60s, 120s, 240s)
@@ -17,13 +17,13 @@ from celery.exceptions import MaxRetriesExceededError
 from sqlalchemy import and_
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.celery_app import celery_app
 from app.db.base import SessionLocal
 from app.db.enums import AssessmentStatus, NotificationType
 from app.db.models import Assessment, User
 from app.db.models.system import AssessmentYear
+from app.services.assessment_lock_service import assessment_lock_service
 from app.services.notification_service import notification_service
 
 # Configure logging
@@ -264,7 +264,30 @@ def _send_deadline_reminder(
     )
 
 
-# ==================== PROCESS AUTO-SUBMIT ====================
+# ==================== PROCESS ASSESSMENT LOCKS ====================
+
+
+@celery_app.task(
+    bind=True,
+    name="deadline.process_assessment_locks",
+    autoretry_for=(OperationalError, SQLAlchemyError, ConnectionError, TimeoutError),
+    retry_backoff=RETRY_BACKOFF,
+    retry_backoff_max=RETRY_BACKOFF_MAX,
+    max_retries=MAX_RETRIES,
+    retry_jitter=True,
+)
+def process_assessment_locks(self: Any) -> dict[str, Any]:
+    """
+    Hourly task to sync BLGU lock state from due dates and grace periods.
+
+    Runs via Celery Beat (hourly). It never auto-submits or changes workflow
+    status. It only locks eligible assessments for BLGU editing when the due
+    date expires, or relocks them when an MLGOO-issued grace period expires.
+
+    Returns:
+        dict: Summary of deadline locks and grace-period relocks
+    """
+    return _process_assessment_locks(self)
 
 
 @celery_app.task(
@@ -278,107 +301,39 @@ def _send_deadline_reminder(
 )
 def process_auto_submit(self: Any) -> dict[str, Any]:
     """
-    Hourly task to auto-submit DRAFT assessments when deadline has passed.
+    Legacy task alias for backwards compatibility.
 
-    Runs via Celery Beat (hourly).
-    Finds all DRAFT assessments where phase1_deadline has passed
-    and automatically submits them.
-
-    Returns:
-        dict: Summary of auto-submitted assessments
+    The old auto-submit worker now performs BLGU lock processing instead.
     """
+    return _process_assessment_locks(self)
+
+
+def _process_assessment_locks(self: Any) -> dict[str, Any]:
+    """Shared implementation for the assessment lock worker tasks."""
     db: Session = SessionLocal()
 
     try:
         now = datetime.now(UTC)
-
-        # Get the active assessment year with phase1_deadline
-        active_year = db.query(AssessmentYear).filter(AssessmentYear.is_active == True).first()
-
-        if not active_year:
-            logger.info("No active assessment year found. Skipping auto-submit.")
-            return {"success": True, "message": "No active assessment year", "auto_submitted": 0}
-
-        if not active_year.phase1_deadline:
-            logger.info(
-                "No phase1_deadline set for year %s. Skipping auto-submit.",
-                active_year.year,
-            )
-            return {
-                "success": True,
-                "message": "No phase1_deadline configured",
-                "auto_submitted": 0,
-            }
-
-        phase1_deadline = active_year.phase1_deadline
-        if phase1_deadline.tzinfo is None:
-            phase1_deadline = phase1_deadline.replace(tzinfo=UTC)
-
-        # Only proceed if deadline has passed
-        if now < phase1_deadline:
-            logger.info("Phase 1 deadline has not passed yet. No auto-submit needed.")
-            return {
-                "success": True,
-                "message": "Deadline not reached",
-                "auto_submitted": 0,
-            }
+        summary = assessment_lock_service.process_expired_assessment_locks(db, now=now)
+        processed_count = summary["deadline_locked"] + summary["grace_relocked"]
 
         logger.info(
-            "Processing auto-submit for year %s. Deadline was: %s",
-            active_year.year,
-            phase1_deadline,
+            "Assessment lock sync complete. Deadline locks: %d, grace relocks: %d",
+            summary["deadline_locked"],
+            summary["grace_relocked"],
         )
-
-        # Query DRAFT assessments that haven't been auto-submitted
-        draft_assessments = (
-            db.query(Assessment)
-            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
-            .filter(
-                and_(
-                    Assessment.assessment_year == active_year.year,
-                    Assessment.status == AssessmentStatus.DRAFT,
-                    Assessment.auto_submitted_at.is_(None),
-                )
-            )
-            .all()
-        )
-
-        logger.info("Found %d DRAFT assessments to auto-submit", len(draft_assessments))
-
-        auto_submitted_count = 0
-
-        # Process assessments in batches
-        for i in range(0, len(draft_assessments), BATCH_SIZE):
-            batch = draft_assessments[i : i + BATCH_SIZE]
-
-            for assessment in batch:
-                try:
-                    _auto_submit_assessment(db, assessment, now)
-                    db.flush()  # Flush immediately to prevent duplicate on retry
-                    auto_submitted_count += 1
-                except Exception as e:
-                    logger.error(
-                        "Failed to auto-submit assessment %s: %s",
-                        assessment.id,
-                        str(e),
-                    )
-                    # Continue with next assessment, don't fail entire batch
-                    continue
-
-            # Commit per batch
-            db.commit()
-
-        logger.info("Auto-submitted %d assessments", auto_submitted_count)
 
         return {
             "success": True,
-            "message": f"Auto-submitted {auto_submitted_count} assessments for year {active_year.year}",
-            "auto_submitted": auto_submitted_count,
+            "message": "Processed BLGU assessment locks",
+            "deadline_locked": summary["deadline_locked"],
+            "grace_relocked": summary["grace_relocked"],
+            "processed": processed_count,
         }
 
     except (OperationalError, SQLAlchemyError, ConnectionError, TimeoutError) as e:
         logger.warning(
-            "Transient error processing auto-submit (attempt %d/%d): %s",
+            "Transient error processing assessment locks (attempt %d/%d): %s",
             self.request.retries + 1,
             MAX_RETRIES + 1,
             str(e),
@@ -387,12 +342,12 @@ def process_auto_submit(self: Any) -> dict[str, Any]:
         raise
 
     except MaxRetriesExceededError:
-        logger.error("Max retries exceeded for auto-submit processing")
+        logger.error("Max retries exceeded for assessment lock processing")
         return {"success": False, "error": "Max retries exceeded"}
 
     except Exception as e:
         logger.error(
-            "Unexpected error processing auto-submit: %s",
+            "Unexpected error processing assessment locks: %s",
             str(e),
             exc_info=True,
         )
@@ -401,57 +356,3 @@ def process_auto_submit(self: Any) -> dict[str, Any]:
 
     finally:
         db.close()
-
-
-def _auto_submit_assessment(db: Session, assessment: Assessment, now: datetime) -> None:
-    """
-    Helper function to auto-submit a single assessment.
-
-    Args:
-        db: Database session
-        assessment: Assessment to auto-submit
-        now: Current timestamp
-    """
-    barangay_name = "Unknown Barangay"
-    if assessment.blgu_user and assessment.blgu_user.barangay:
-        barangay_name = assessment.blgu_user.barangay.name
-
-    # Update assessment status
-    assessment.status = AssessmentStatus.SUBMITTED
-    assessment.submitted_at = now
-    assessment.auto_submitted_at = now
-
-    # Submit all 6 governance areas so assessors can see the submission
-    # Fix: also update areas that were initialized with "draft" status
-    now_iso = now.isoformat()
-    area_status = assessment.area_submission_status or {}
-    for area_id in range(1, 7):
-        area_key = str(area_id)
-        existing = area_status.get(area_key, {})
-        if existing.get("status") not in ("submitted", "in_review", "approved"):
-            area_status[area_key] = {"status": "submitted", "submitted_at": now_iso}
-    assessment.area_submission_status = area_status
-    flag_modified(assessment, "area_submission_status")
-
-    logger.info(
-        "Auto-submitted assessment %s (%s) - Status changed from DRAFT to SUBMITTED",
-        assessment.id,
-        barangay_name,
-    )
-
-    # Send notification to BLGU user
-    if assessment.blgu_user_id:
-        notification_service.notify_blgu_user(
-            db=db,
-            notification_type=NotificationType.AUTO_SUBMITTED,
-            title="Assessment Auto-Submitted",
-            message=f"The submission deadline has passed and your SGLGB assessment for {barangay_name} has been automatically submitted. You can no longer make changes to this assessment.",
-            blgu_user_id=assessment.blgu_user_id,
-            assessment_id=assessment.id,
-        )
-
-        logger.info(
-            "Sent AUTO_SUBMITTED notification for assessment %s (%s)",
-            assessment.id,
-            barangay_name,
-        )

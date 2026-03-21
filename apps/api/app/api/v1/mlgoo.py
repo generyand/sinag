@@ -14,6 +14,8 @@ from app.schemas.mlgoo import (
     ApproveAssessmentRequest,
     ApproveAssessmentResponse,
     AssessmentDetailResponse,
+    LockAssessmentRequest,
+    LockAssessmentResponse,
     OverrideValidationStatusRequest,
     OverrideValidationStatusResponse,
     RecalibrationByMovRequest,
@@ -316,14 +318,13 @@ async def request_recalibration_by_mov(
     response_model=UnlockAssessmentResponse,
     summary="Unlock Deadline-Locked Assessment",
     description=(
-        "Unlock an assessment that was locked due to deadline expiry.\n\n"
+        "Reopen BLGU editing on a locked assessment without changing workflow state.\n\n"
         "**Access:** Requires MLGOO_DILG role.\n\n"
-        "When a BLGU misses their grace period deadline, their assessment "
-        "is automatically locked. MLGOO can unlock it and grant additional "
-        "time for the BLGU to complete their corrections.\n\n"
+        "When a BLGU misses the due date or grace period, their assessment "
+        "becomes read-only. MLGOO can reopen editing and grant a new grace period.\n\n"
         "**Default behavior:**\n"
-        "- Unlocks the assessment\n"
-        "- Extends grace period by 3 days (configurable)"
+        "- Uses the active assessment-year default grace period\n"
+        "- Allows MLGOO to override the expiry per unlock action"
     ),
     tags=["mlgoo"],
     responses={
@@ -340,20 +341,67 @@ async def unlock_assessment(
     current_user: User = Depends(deps.get_current_admin_user),
 ):
     """
-    Unlock an assessment that was locked due to deadline expiry.
+    Reopen a locked assessment for BLGU editing.
 
-    This allows MLGOO to give BLGUs additional time when they miss
-    their deadlines.
+    This allows MLGOO to give BLGUs additional time when editing has
+    been disabled by deadline expiry, grace expiry, or a prior manual lock.
     """
     try:
-        extend_days = request.extend_grace_period_days if request else 3
+        extend_days = request.extend_grace_period_days if request else None
+        custom_expiry = request.grace_period_expires_at if request else None
         result = mlgoo_service.unlock_assessment(
             db=db,
             assessment_id=assessment_id,
             mlgoo_user=current_user,
             extend_grace_period_days=extend_days,
+            grace_period_expires_at=custom_expiry,
         )
         return UnlockAssessmentResponse(**result)
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_msg,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
+
+
+@router.post(
+    "/assessments/{assessment_id}/lock",
+    response_model=LockAssessmentResponse,
+    summary="Manually Lock Assessment For BLGU",
+    description=(
+        "Immediately make an assessment read-only for BLGU users without changing workflow state.\n\n"
+        "**Access:** Requires MLGOO_DILG role."
+    ),
+    tags=["mlgoo"],
+    responses={
+        200: {"description": "Assessment locked successfully"},
+        403: {"description": "Not enough permissions (MLGOO_DILG role required)"},
+        404: {"description": "Assessment not found"},
+    },
+)
+async def lock_assessment(
+    assessment_id: int,
+    request: LockAssessmentRequest | None = None,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+):
+    """
+    Manually lock an assessment for BLGU users.
+    """
+    _ = request
+    try:
+        result = mlgoo_service.lock_assessment_for_blgu(
+            db=db,
+            assessment_id=assessment_id,
+            mlgoo_user=current_user,
+        )
+        return LockAssessmentResponse(**result)
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():
