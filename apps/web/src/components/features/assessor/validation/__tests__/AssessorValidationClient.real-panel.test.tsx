@@ -122,6 +122,15 @@ function wrap(ui: React.ReactNode) {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
+function createClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+}
+
 function makeAssessment() {
   return {
     success: true,
@@ -277,7 +286,7 @@ describe("AssessorValidationClient real panel integration", () => {
     await user.type(feedback, "Updated assessor feedback");
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2200));
+      await new Promise((resolve) => setTimeout(resolve, 3700));
     });
 
     expect(validateMutateAsync).toHaveBeenCalledWith({
@@ -316,7 +325,7 @@ describe("AssessorValidationClient real panel integration", () => {
     await user.type(feedback, "New assessor feedback");
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2200));
+      await new Promise((resolve) => setTimeout(resolve, 3700));
     });
 
     expect(validateMutateAsync).toHaveBeenCalledWith({
@@ -345,9 +354,9 @@ describe("AssessorValidationClient real panel integration", () => {
     // Wait for RightAssessorPanel to load (dynamic import) and all effects to settle
     await screen.findByRole("checkbox");
 
-    // Wait longer than the autosave timer (1800ms) to catch any phantom saves
+    // Wait longer than the autosave timer to catch any phantom saves
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2200));
+      await new Promise((resolve) => setTimeout(resolve, 3700));
     });
 
     // No save should have been triggered — data is clean
@@ -370,7 +379,7 @@ describe("AssessorValidationClient real panel integration", () => {
 
     // Wait longer than the autosave timer
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2200));
+      await new Promise((resolve) => setTimeout(resolve, 3700));
     });
 
     // No save should have been triggered — loaded data matches server
@@ -407,7 +416,7 @@ describe("AssessorValidationClient real panel integration", () => {
 
     // Wait for autosave
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2200));
+      await new Promise((resolve) => setTimeout(resolve, 3700));
     });
 
     expect(validateMutateAsync).toHaveBeenCalledTimes(1);
@@ -446,7 +455,7 @@ describe("AssessorValidationClient real panel integration", () => {
 
     // Wait for all effects to settle + autosave timer
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2200));
+      await new Promise((resolve) => setTimeout(resolve, 3700));
     });
 
     // Verify values survived the "refresh"
@@ -455,5 +464,61 @@ describe("AssessorValidationClient real panel integration", () => {
 
     // No phantom save should have been triggered after refresh
     expect(validateMutateAsync).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("preserves an unsaved checked checkbox across a stale refetch", async () => {
+    const initialData = makeAssessment();
+    let currentDataUpdatedAt = Date.now();
+    const client = createClient();
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: initialData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: currentDataUpdatedAt,
+    });
+
+    const { rerender } = render(
+      <QueryClientProvider client={client}>
+        <AssessorValidationClient assessmentId={1} />
+      </QueryClientProvider>
+    );
+    const user = userEvent.setup();
+
+    const checkbox = await screen.findByRole("checkbox");
+    await user.click(checkbox);
+
+    expect(checkbox).toBeChecked();
+
+    const staleRefetchedData = makeAssessment();
+    staleRefetchedData.assessment.responses[0].feedback_comments = [
+      {
+        id: 77,
+        comment: "Server-side note changed",
+        comment_type: "validation",
+        is_internal_note: false,
+        created_at: new Date().toISOString(),
+        assessor: { role: "ASSESSOR" },
+      },
+    ];
+
+    currentDataUpdatedAt = Date.now();
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: staleRefetchedData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: currentDataUpdatedAt,
+    });
+
+    rerender(
+      <QueryClientProvider client={client}>
+        <AssessorValidationClient assessmentId={1} />
+      </QueryClientProvider>
+    );
+
+    const checkboxAfterRefetch = await screen.findByRole("checkbox");
+    expect(checkboxAfterRefetch).toBeChecked();
   });
 });

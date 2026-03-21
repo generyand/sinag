@@ -9,6 +9,7 @@
 //   (force-enabled when rework cycle is used up - assessor must approve)
 
 import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
+import { AutosaveStatusPill } from "@/components/features/shared/AutosaveStatusPill";
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
 import {
@@ -59,6 +60,7 @@ interface AssessorValidationClientProps {
 
 type AnyRecord = Record<string, any>;
 type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
+const AUTOSAVE_DEBOUNCE_MS = 3500;
 
 function upsertValidationFeedbackComment(
   feedbackComments: AnyRecord[],
@@ -135,6 +137,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
   const isSavingRef = useRef(false); // Prevent multiple concurrent saves
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
+  const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
   const [dirtyResponseIds, setDirtyResponseIds] = useState<number[]>([]);
   const hydratedRef = useRef(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -338,6 +341,29 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         });
       });
 
+      const pendingOrDirtyResponseIds = new Set<number>(dirtyResponseIdsRef.current);
+      if (activeSavePromiseRef.current !== null || autoSaveTimerRef.current !== null) {
+        responses.forEach((response) => {
+          if (response.id in formRef.current || response.id in reworkFlagsRef.current) {
+            pendingOrDirtyResponseIds.add(response.id);
+          }
+
+          const hasChecklistDraft = Object.keys(checklistDataRef.current).some((key) =>
+            key.startsWith(`checklist_${response.id}_`)
+          );
+          if (hasChecklistDraft) {
+            pendingOrDirtyResponseIds.add(response.id);
+          }
+        });
+      }
+
+      pendingOrDirtyResponseIds.forEach((responseId) => {
+        Object.keys(checklistDataRef.current).forEach((key) => {
+          if (!key.startsWith(`checklist_${responseId}_`)) return;
+          initialChecklistData[key] = checklistDataRef.current[key];
+        });
+      });
+
       // IMPORTANT: Replace the entire checklistData state (don't merge with old data)
       // This ensures old data for requires_rework indicators is completely cleared
       checklistDataRef.current = initialChecklistData;
@@ -385,9 +411,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     areaReworkMut.isPending ||
     finalizeMut.isPending ||
     reworkMut.isPending;
-
-  // Check if area has been successfully approved (to disable buttons after success)
-  const isAreaApproved: boolean = myAreaStatus === "approved";
 
   // Get timestamps for MOV file separation (new vs old files)
   // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
@@ -670,6 +693,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       isSavingRef.current = true;
       setIsSaving(true);
       setDraftSaveState("saving");
+      let savedPayloadCount = 0;
 
       try {
         for (const responseId of uniqueResponseIds) {
@@ -680,6 +704,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             responseId: payload.responseId,
             data: payload.data,
           });
+          savedPayloadCount += 1;
 
           patchCachedAssessmentResponse(responseId, payload.data);
           lastSavedSnapshotRef.current[responseId] = payload.snapshot;
@@ -705,6 +730,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           exact: true,
         });
 
+        if (savedPayloadCount > 0) {
+          setCompletedAutosaveCount((count) => count + 1);
+        }
         setDraftSaveState(dirtyResponseIdsRef.current.length > 0 ? "dirty" : "saved");
 
         if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
@@ -1095,7 +1123,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     setDraftSaveState("dirty");
     autoSaveTimerRef.current = setTimeout(() => {
       void saveResponses(dirtyResponseIds, { quiet: true });
-    }, 1800);
+    }, AUTOSAVE_DEBOUNCE_MS);
 
     return () => {
       if (autoSaveTimerRef.current) {
@@ -1403,17 +1431,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     }
   };
 
-  const saveStatusLabel =
-    draftSaveState === "saving"
-      ? "Saving..."
-      : draftSaveState === "error"
-        ? "Save failed"
-        : draftSaveState === "dirty"
-          ? "Unsaved changes"
-          : draftSaveState === "saved"
-            ? "Saved"
-            : "All changes saved";
-
   const handleFormFieldChange = (
     responseId: number,
     field: "status" | "publicComment",
@@ -1531,7 +1548,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <div className="hidden sm:block text-xs text-muted-foreground">{saveStatusLabel}</div>
             {/* Per-area progress badge for assessors */}
             {isAssessor && !isAssessorWithoutArea && (
               <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-muted rounded-md text-xs">
@@ -1552,24 +1568,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 <StatusBadge status={statusText} />
               </div>
             ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={onSaveDraft}
-              disabled={isSaving || isAssessorWithoutArea || (isAssessor && isAreaLocked)}
-              className="text-xs sm:text-sm px-2 sm:px-4"
-              title={
-                isAssessor && isAreaLocked
-                  ? myAreaStatus === "rework"
-                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
-                    : "Area is already reviewed and approved."
-                  : undefined
-              }
-            >
-              <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save as Draft"}</span>
-              <span className="sm:hidden">Save</span>
-            </Button>
           </div>
         </div>
       </div>
@@ -1821,6 +1819,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         </div>
       </div>
 
+      <AutosaveStatusPill
+        state={draftSaveState}
+        completedSaveCount={completedAutosaveCount}
+        onRetry={onSaveDraft}
+      />
+
       {/* Bottom Progress Bar */}
       <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-card/80 backdrop-blur">
         <div className="relative max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:justify-between">
@@ -1835,55 +1839,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             {missingRequiredComments > 0
               ? ` • Missing required comments: ${missingRequiredComments}`
               : ""}
-            <span className="ml-2 hidden sm:inline">• {saveStatusLabel}</span>
           </div>
           <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={onSaveDraft}
-              disabled={isAnyActionPending || isAreaApproved}
-              className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
-              title={
-                isAssessor && isAreaLocked
-                  ? myAreaStatus === "rework"
-                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
-                    : "Area is already reviewed and approved."
-                  : undefined
-              }
-            >
-              {isSaving ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <span className="hidden sm:inline">Saving Progress...</span>
-                  <span className="sm:hidden">Saving...</span>
-                </>
-              ) : draftSaveState === "error" ? (
-                "Retry Save"
-              ) : (
-                "Save Now"
-              )}
-            </Button>
             {/* Send for Rework - Assessors only, requires ALL reviewed AND at least one rework toggle ON */}
             {/* When auto-flagged empty indicators exist, bypass allReviewed requirement */}
             {isAssessor && (

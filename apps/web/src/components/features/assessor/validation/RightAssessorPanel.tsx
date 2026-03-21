@@ -68,7 +68,7 @@ interface AccomplishmentAutoCalculatorProps {
   indicatorCode: string;
   subIndicatorCode: string;
   type: "physical" | "financial";
-  setValue: (name: string, value: any) => void;
+  syncChecklistValue: (name: string, value: any) => void;
 }
 
 function AccomplishmentAutoCalculator({
@@ -77,7 +77,7 @@ function AccomplishmentAutoCalculator({
   indicatorCode,
   subIndicatorCode,
   type,
-  setValue,
+  syncChecklistValue,
 }: AccomplishmentAutoCalculatorProps) {
   // Build field keys based on the sub-indicator code pattern
   // e.g., for 2.1.4 physical: 2_1_4_physical_accomplished, 2_1_4_physical_reflected
@@ -146,13 +146,13 @@ function AccomplishmentAutoCalculator({
     if (!hasValues || !yesKey || !noKey) return;
 
     if (meetsThreshold) {
-      setValue(yesKey, true);
-      setValue(noKey, false);
+      syncChecklistValue(yesKey, true);
+      syncChecklistValue(noKey, false);
     } else {
-      setValue(yesKey, false);
-      setValue(noKey, true);
+      syncChecklistValue(yesKey, false);
+      syncChecklistValue(noKey, true);
     }
-  }, [numerator, denominator, meetsThreshold, hasValues, yesKey, noKey, setValue]);
+  }, [numerator, denominator, meetsThreshold, hasValues, yesKey, noKey, syncChecklistValue]);
 
   if (!hasValues) return null;
 
@@ -599,31 +599,28 @@ export function RightAssessorPanel({
       // For VALIDATORS: Always load comments - they're reviewing after BLGU rework
       // IMPORTANT: Only load comments made by users of the same role (validators see validator comments, assessors see assessor comments)
       let publicComment = "";
-      const shouldLoadComments = isValidator || !(r as AnyRecord).requires_rework;
-      if (shouldLoadComments) {
-        // Load public comment from feedback_comments array (get LATEST comment, not first)
-        const feedbackComments = (r as AnyRecord).feedback_comments || [];
-        // Filter by comment_type, not internal note, AND by role
-        // Validators should only see validator comments, assessors should only see assessor comments
-        const validationComments = feedbackComments.filter((fc: any) => {
-          if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
-          // Filter by role - validators see validator comments, assessors see assessor comments
-          const commenterRole = fc.assessor?.role?.toLowerCase() || "";
-          if (isValidator) {
-            return commenterRole === "validator";
-          } else {
-            return commenterRole === "assessor";
-          }
-        });
-        // Sort by created_at DESC to get the latest comment
-        validationComments.sort((a: any, b: any) => {
-          const dateA = new Date(a.created_at || 0).getTime();
-          const dateB = new Date(b.created_at || 0).getTime();
-          return dateB - dateA; // DESC order
-        });
-        const publicFeedback = validationComments[0];
-        publicComment = publicFeedback?.comment || form[r.id]?.publicComment || "";
-      }
+      // Load public comment from feedback_comments array (get LATEST comment, not first)
+      const feedbackComments = (r as AnyRecord).feedback_comments || [];
+      // Filter by comment_type, not internal note, AND by role
+      // Validators should only see validator comments, assessors should only see assessor comments
+      const validationComments = feedbackComments.filter((fc: any) => {
+        if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
+        // Filter by role - validators see validator comments, assessors see assessor comments
+        const commenterRole = fc.assessor?.role?.toLowerCase() || "";
+        if (isValidator) {
+          return commenterRole === "validator";
+        } else {
+          return commenterRole === "assessor";
+        }
+      });
+      // Sort by created_at DESC to get the latest comment
+      validationComments.sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA; // DESC order
+      });
+      const publicFeedback = validationComments[0];
+      publicComment = publicFeedback?.comment || form[r.id]?.publicComment || "";
 
       // Load validation status from database
       // For validators: ONLY load from validation_status (database), ignore form state
@@ -735,7 +732,7 @@ export function RightAssessorPanel({
     JSON.stringify(responses.map((r) => (r as AnyRecord).feedback_comments)),
   ]);
 
-  const { control, register, formState, setValue, reset } = useForm<ResponsesForm>({
+  const { control, formState, setValue, reset } = useForm<ResponsesForm>({
     resolver: zodResolver(ResponsesSchema),
     defaultValues,
     mode: "onChange",
@@ -744,7 +741,9 @@ export function RightAssessorPanel({
   // Reset form when defaultValues change (e.g., after save and refetch)
   // This ensures the form reflects the latest data from the API
   React.useEffect(() => {
-    reset(defaultValues);
+    reset(defaultValues, {
+      keepDirtyValues: true,
+    });
   }, [defaultValues, reset]);
 
   // Helper function to check if an item is filled/checked
@@ -912,11 +911,6 @@ export function RightAssessorPanel({
     Object.entries(watched || {}).forEach(([key, v]) => {
       const id = Number(key);
       if (!Number.isFinite(id)) {
-        // This is checklist data (not a response ID)
-        // Sync checklist changes to parent
-        if (onChecklistChange) {
-          onChecklistChange(key, v);
-        }
         return;
       }
       const val = v as { status?: LocalStatus; publicComment?: string };
@@ -934,6 +928,25 @@ export function RightAssessorPanel({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watched]);
+
+  const syncChecklistFieldChange = React.useCallback(
+    (key: string, value: any, applyChange: (value: any) => void) => {
+      applyChange(value);
+      onChecklistChange?.(key, value);
+    },
+    [onChecklistChange]
+  );
+
+  const syncChecklistValue = React.useCallback(
+    (key: string, value: any) => {
+      setValue(key as any, value, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+      onChecklistChange?.(key, value);
+    },
+    [onChecklistChange, setValue]
+  );
 
   // DISABLED: Auto-calculation for validators
   // Validators should manually decide Met/Unmet based on assessor's work, not auto-calculate from checklist
@@ -1139,7 +1152,13 @@ export function RightAssessorPanel({
                                             id={itemKey}
                                             type="date"
                                             value={field.value as any}
-                                            onChange={field.onChange}
+                                            onChange={(event) =>
+                                              syncChecklistFieldChange(
+                                                itemKey,
+                                                event.target.value,
+                                                field.onChange
+                                              )
+                                            }
                                             onBlur={field.onBlur}
                                             name={field.name}
                                             ref={field.ref}
@@ -1177,7 +1196,13 @@ export function RightAssessorPanel({
                                                 : "Enter count"
                                             }
                                             value={field.value as any}
-                                            onChange={field.onChange}
+                                            onChange={(event) =>
+                                              syncChecklistFieldChange(
+                                                itemKey,
+                                                event.target.value,
+                                                field.onChange
+                                              )
+                                            }
                                             onBlur={field.onBlur}
                                             name={field.name}
                                             ref={field.ref}
@@ -1263,13 +1288,14 @@ export function RightAssessorPanel({
                                                     disabled={isAutoCalculated}
                                                     onCheckedChange={(checked) => {
                                                       if (isAutoCalculated) return; // Prevent manual change
-                                                      field.onChange(checked);
+                                                      syncChecklistFieldChange(
+                                                        `${itemKey}_yes`,
+                                                        checked,
+                                                        field.onChange
+                                                      );
                                                       // If YES is checked, uncheck NO (mutually exclusive)
                                                       if (checked) {
-                                                        setValue(
-                                                          `${itemKey}_no` as any,
-                                                          false as any
-                                                        );
+                                                        syncChecklistValue(`${itemKey}_no`, false);
                                                       }
                                                     }}
                                                     className={isAutoCalculated ? "opacity-60" : ""}
@@ -1294,13 +1320,14 @@ export function RightAssessorPanel({
                                                     disabled={isAutoCalculated}
                                                     onCheckedChange={(checked) => {
                                                       if (isAutoCalculated) return; // Prevent manual change
-                                                      field.onChange(checked);
+                                                      syncChecklistFieldChange(
+                                                        `${itemKey}_no`,
+                                                        checked,
+                                                        field.onChange
+                                                      );
                                                       // If NO is checked, uncheck YES (mutually exclusive)
                                                       if (checked) {
-                                                        setValue(
-                                                          `${itemKey}_yes` as any,
-                                                          false as any
-                                                        );
+                                                        syncChecklistValue(`${itemKey}_yes`, false);
                                                       }
                                                     }}
                                                     className={isAutoCalculated ? "opacity-60" : ""}
@@ -1350,7 +1377,13 @@ export function RightAssessorPanel({
                                             type="text"
                                             placeholder="Enter value"
                                             value={field.value as any}
-                                            onChange={field.onChange}
+                                            onChange={(event) =>
+                                              syncChecklistFieldChange(
+                                                itemKey,
+                                                event.target.value,
+                                                field.onChange
+                                              )
+                                            }
                                             onBlur={field.onBlur}
                                             name={field.name}
                                             ref={field.ref}
@@ -1373,7 +1406,13 @@ export function RightAssessorPanel({
                                         <Checkbox
                                           id={itemKey}
                                           checked={field.value as any}
-                                          onCheckedChange={field.onChange}
+                                          onCheckedChange={(checked) =>
+                                            syncChecklistFieldChange(
+                                              itemKey,
+                                              checked,
+                                              field.onChange
+                                            )
+                                          }
                                           className="mt-0.5"
                                         />
                                       )}
@@ -1456,7 +1495,7 @@ export function RightAssessorPanel({
                                     indicatorCode={indicatorCode}
                                     subIndicatorCode={indicatorCode}
                                     type="physical"
-                                    setValue={setValue}
+                                    syncChecklistValue={syncChecklistValue}
                                   />
                                 )}
 
@@ -1477,7 +1516,7 @@ export function RightAssessorPanel({
                                     indicatorCode={indicatorCode}
                                     subIndicatorCode={indicatorCode}
                                     type="financial"
-                                    setValue={setValue}
+                                    syncChecklistValue={syncChecklistValue}
                                   />
                                 )}
                             </React.Fragment>
@@ -1672,10 +1711,24 @@ export function RightAssessorPanel({
                         <div className="text-xs uppercase tracking-wide text-muted-foreground">
                           General Feedback
                         </div>
-                        <Textarea
-                          {...register(`${key}.publicComment` as const)}
-                          placeholder="Provide an overall summary of the required changes or general instructions for this indicator..."
-                          className={errorsFor ? "border-red-500" : undefined}
+                        <Controller
+                          name={`${key}.publicComment` as const}
+                          control={control}
+                          render={({ field }) => (
+                            <Textarea
+                              placeholder="Provide an overall summary of the required changes or general instructions for this indicator..."
+                              className={errorsFor ? "border-red-500" : undefined}
+                              value={(field.value as string | undefined) ?? ""}
+                              onChange={(event) => {
+                                const nextValue = event.target.value;
+                                field.onChange(nextValue);
+                                setField(r.id, "publicComment", nextValue);
+                              }}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              ref={field.ref}
+                            />
+                          )}
                         />
                         {errorsFor ? (
                           <div className="text-xs text-red-600">

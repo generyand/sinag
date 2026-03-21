@@ -1,6 +1,7 @@
 "use client";
 
 import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
+import { AutosaveStatusPill } from "@/components/features/shared/AutosaveStatusPill";
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
 import { BBIPreviewPanel, BBIPreviewData } from "./BBIPreviewPanel";
@@ -15,7 +16,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/store/useAuthStore";
 import {
   getGetAssessorAssessmentsAssessmentIdQueryKey,
   useGetAssessorAssessmentsAssessmentId,
@@ -29,7 +29,7 @@ import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
 
@@ -50,6 +50,8 @@ interface ValidatorValidationClientProps {
 }
 
 type AnyRecord = Record<string, any>;
+type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
+const AUTOSAVE_DEBOUNCE_MS = 3500;
 
 /**
  * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
@@ -95,6 +97,19 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
   // Store calibration flag state (which indicators are flagged for calibration)
   const [calibrationFlags, setCalibrationFlags] = useState<Record<number, boolean>>({});
+  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
+  const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
+  const [dirtyResponseIds, setDirtyResponseIds] = useState<number[]>([]);
+  const hydratedRef = useRef(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedSnapshotRef = useRef<Record<number, string>>({});
+  const isSavingRef = useRef(false);
+  const activeSavePromiseRef = useRef<Promise<boolean> | null>(null);
+  const formRef = useRef(form);
+  const checklistStateRef = useRef(checklistState);
+  const calibrationFlagsRef = useRef(calibrationFlags);
+  const dirtyResponseIdsRef = useRef(dirtyResponseIds);
+  const responsesRef = useRef<AnyRecord[]>([]);
 
   // Confirmation dialog states
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
@@ -102,9 +117,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   // Mobile tab state: 'indicators' | 'files' | 'validation'
   const [mobileTab, setMobileTab] = useState<"indicators" | "files" | "validation">("indicators");
-
-  // Get current user for per-area calibration check (must be called before conditional returns)
-  const { user: currentUser } = useAuthStore();
 
   // Set initial expandedId when data loads
   useEffect(() => {
@@ -117,6 +129,22 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
     }
   }, [data, expandedId]);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(() => {
+    checklistStateRef.current = checklistState;
+  }, [checklistState]);
+
+  useEffect(() => {
+    calibrationFlagsRef.current = calibrationFlags;
+  }, [calibrationFlags]);
+
+  useEffect(() => {
+    dirtyResponseIdsRef.current = dirtyResponseIds;
+  }, [dirtyResponseIds]);
 
   // Initialize form state from database validation_status when data loads
   // This ensures the "Finalize Validation" button is enabled if all indicators are already validated
@@ -234,36 +262,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }
   }, [data, calibrationFlags]);
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
-        Loading assessment…
-      </div>
-    );
-  }
-
-  if (isError || !data) {
-    const errorInfo = classifyError(error);
-    const isNetworkError = errorInfo.type === "network";
-
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
-        <div
-          className={`rounded-md border p-4 ${isNetworkError ? "border-orange-200 bg-orange-50" : "border-red-200 bg-red-50"}`}
-        >
-          <div
-            className={`font-medium mb-1 ${isNetworkError ? "text-orange-700" : "text-red-700"}`}
-          >
-            {errorInfo.title}
-          </div>
-          <div className={`${isNetworkError ? "text-orange-600" : "text-red-600"}`}>
-            {errorInfo.message}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
   const core = (assessment.assessment as AnyRecord) ?? assessment;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
@@ -296,6 +294,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
   // Default label (MiddleMovFilesPanel will override based on indicator context)
   const separationLabel = calibrationRequestedAt ? "After Calibration" : "After Rework";
+
+  useEffect(() => {
+    responsesRef.current = responses;
+  }, [responses]);
 
   // Helper: Check if a response has any checklist items checked by the validator
   const hasChecklistItemsChecked = (responseId: number): boolean => {
@@ -378,7 +380,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const total = responses.length;
   // For validators: "reviewed" means checklist items checked OR flagged for calibration
   const reviewed = responses.filter((r) => isIndicatorReviewed(r.id as number)).length;
-  const allReviewed = total > 0 && reviewed === total;
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
   // Check if ALL responses have validation_status confirmed (via Compliance Overview)
@@ -388,124 +389,256 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   ).length;
   const allConfirmed = total > 0 && confirmedCount === total;
 
-  const onSaveDraft = async () => {
-    // Build payloads that include validation status, checklist data, AND calibration flag
-    const payloads = responses
-      .map((r) => {
-        const responseId = r.id as number;
-        const formData = form[responseId];
-        const flaggedForCalibration = calibrationFlags[responseId] ?? false;
+  const getResponseSnapshot = (responseId: number): string => {
+    const formData = formRef.current[responseId];
+    const responseChecklistData: Record<string, any> = {};
 
-        // Extract checklist data for this response
-        const responseChecklistData: Record<string, any> = {};
-        Object.keys(checklistState).forEach((key) => {
-          if (key.startsWith(`checklist_${responseId}_`)) {
-            // Convert to validator_val_ prefix for storage
-            const fieldName = key.replace(`checklist_${responseId}_`, "");
-            const prefixedFieldName = `validator_val_${fieldName}`;
-            responseChecklistData[prefixedFieldName] = checklistState[key];
-          }
-        });
+    Object.keys(checklistStateRef.current).forEach((key) => {
+      if (!key.startsWith(`checklist_${responseId}_`)) return;
+      const fieldName = key.replace(`checklist_${responseId}_`, "");
+      responseChecklistData[`validator_val_${fieldName}`] = checklistStateRef.current[key];
+    });
 
-        const hasStatus = formData && formData.status;
-        const hasChecklistData = Object.keys(responseChecklistData).length > 0;
-        const hasComment =
-          formData && formData.publicComment && formData.publicComment.trim().length > 0;
-        const hasCalibrationFlag = flaggedForCalibration === true;
+    return JSON.stringify({
+      validation_status: formData?.status
+        ? (formData.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
+        : null,
+      public_comment: formData?.publicComment ?? null,
+      response_data: responseChecklistData,
+      flagged_for_calibration: calibrationFlagsRef.current[responseId] ?? false,
+    });
+  };
 
-        // Include in payload if has status OR has checklist data OR has comment OR has calibration flag
-        if (hasStatus || hasChecklistData || hasComment || hasCalibrationFlag) {
-          return {
-            id: responseId,
-            v: formData,
-            checklistData: responseChecklistData,
-            flaggedForCalibration,
-          };
-        }
-        return null;
+  const getServerSnapshot = (response: AnyRecord): string => {
+    const validationComments = ((response.feedback_comments as any[]) || [])
+      .filter((fc: any) => {
+        if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
+        const commenterRole = fc.assessor?.role?.toLowerCase() || "";
+        return commenterRole === "validator";
       })
-      .filter(
-        (
-          x
-        ): x is {
-          id: number;
-          v: { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string };
-          checklistData: Record<string, any>;
-          flaggedForCalibration: boolean;
-        } => x !== null && x.v !== undefined
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+
+    const responseData = (response.response_data as Record<string, any>) || {};
+    const snapshotData: Record<string, any> = {};
+    Object.keys(responseData).forEach((key) => {
+      if (!key.startsWith("validator_val_")) return;
+      snapshotData[key] = responseData[key];
+    });
+
+    return JSON.stringify({
+      validation_status: response.validation_status ?? null,
+      public_comment: validationComments[0]?.comment ?? null,
+      response_data: snapshotData,
+      flagged_for_calibration: response.flagged_for_calibration === true,
+    });
+  };
+
+  const buildSavePayload = (responseId: number) => {
+    const snapshot = getResponseSnapshot(responseId);
+    const parsed = JSON.parse(snapshot) as {
+      validation_status: "PASS" | "FAIL" | "CONDITIONAL" | null;
+      public_comment: string | null;
+      response_data?: Record<string, any>;
+      flagged_for_calibration: boolean;
+    };
+    const response = responsesRef.current.find((item) => item.id === responseId);
+    if (!response) return null;
+
+    return {
+      responseId,
+      snapshot,
+      data: {
+        validation_status: parsed.validation_status ?? undefined,
+        public_comment: parsed.public_comment,
+        response_data:
+          parsed.response_data && Object.keys(parsed.response_data).length > 0
+            ? parsed.response_data
+            : undefined,
+        flagged_for_calibration: parsed.flagged_for_calibration,
+      },
+    };
+  };
+
+  const syncDirtyStateForResponse = (responseId: number) => {
+    if (!hydratedRef.current) return;
+
+    const nextSnapshot = getResponseSnapshot(responseId);
+    const savedSnapshot = lastSavedSnapshotRef.current[responseId] ?? JSON.stringify({});
+
+    setDirtyResponseIds((prev) => {
+      const alreadyDirty = prev.includes(responseId);
+      let next = prev;
+      if (nextSnapshot === savedSnapshot) {
+        next = alreadyDirty ? prev.filter((id) => id !== responseId) : prev;
+      } else {
+        next = alreadyDirty ? prev : [...prev, responseId];
+      }
+      dirtyResponseIdsRef.current = next;
+      return next;
+    });
+    setDraftSaveState(nextSnapshot === savedSnapshot ? "saved" : "dirty");
+  };
+
+  const saveResponses = async (
+    responseIds: number[],
+    options: { quiet?: boolean } = {}
+  ): Promise<boolean> => {
+    const uniqueResponseIds = [...new Set(responseIds)];
+    if (uniqueResponseIds.length === 0) {
+      if (!options.quiet) {
+        setDraftSaveState("saved");
+      }
+      return true;
+    }
+
+    if (activeSavePromiseRef.current) {
+      const completed = await activeSavePromiseRef.current;
+      if (!completed) return false;
+
+      const remainingResponseIds = uniqueResponseIds.filter((responseId) =>
+        dirtyResponseIdsRef.current.includes(responseId)
       );
 
-    if (payloads.length === 0) {
-      console.warn("No validation decisions to save");
-      toast.info("No changes to save", { duration: 2000 });
+      if (remainingResponseIds.length === 0) {
+        if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
+          setDraftSaveState("saved");
+        }
+        return true;
+      }
+
+      return saveResponses(remainingResponseIds, options);
+    }
+
+    const savePromise = (async () => {
+      isSavingRef.current = true;
+      setDraftSaveState("saving");
+      let savedPayloadCount = 0;
+
+      try {
+        for (const responseId of uniqueResponseIds) {
+          const payload = buildSavePayload(responseId);
+          if (!payload) continue;
+
+          await validateMut.mutateAsync({
+            responseId: payload.responseId,
+            data: payload.data,
+          });
+          savedPayloadCount += 1;
+
+          lastSavedSnapshotRef.current[responseId] = payload.snapshot;
+          setDirtyResponseIds((prev) => {
+            const currentSnapshot = getResponseSnapshot(responseId);
+            const shouldKeepDirty = currentSnapshot !== payload.snapshot;
+            const hasDirtyEntry = prev.includes(responseId);
+            let next = prev;
+
+            if (shouldKeepDirty) {
+              next = hasDirtyEntry ? prev : [...prev, responseId];
+            } else if (hasDirtyEntry) {
+              next = prev.filter((id) => id !== responseId);
+            }
+
+            dirtyResponseIdsRef.current = next;
+            return next;
+          });
+        }
+
+        if (savedPayloadCount > 0) {
+          setCompletedAutosaveCount((count) => count + 1);
+        }
+        setDraftSaveState(dirtyResponseIdsRef.current.length > 0 ? "dirty" : "saved");
+
+        if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
+          toast.success("Assessment progress saved", { duration: 2500 });
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Error saving validation:", error);
+        setDraftSaveState("error");
+
+        const errorInfo = classifyError(error);
+        if (errorInfo.type === "network") {
+          toast.error("Unable to save draft", {
+            description: "Check your internet connection and try again.",
+            duration: 5000,
+          });
+        } else if (errorInfo.type === "auth") {
+          toast.error("Session expired", {
+            description: "Please log in again to save your work.",
+            duration: 5000,
+          });
+        } else {
+          toast.error("Failed to save draft", {
+            description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
+            duration: 5000,
+          });
+        }
+
+        return false;
+      } finally {
+        isSavingRef.current = false;
+        if (activeSavePromiseRef.current === savePromise) {
+          activeSavePromiseRef.current = null;
+        }
+      }
+    })();
+
+    activeSavePromiseRef.current = savePromise;
+    return savePromise;
+  };
+
+  const flushPendingChanges = async (options: { quiet?: boolean } = {}): Promise<boolean> => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (activeSavePromiseRef.current) {
+      const completed = await activeSavePromiseRef.current;
+      if (!completed) return false;
+    }
+
+    return saveResponses(dirtyResponseIdsRef.current, options);
+  };
+
+  const onSaveDraft = async () => {
+    await flushPendingChanges();
+  };
+
+  useEffect(() => {
+    const nextSnapshots: Record<number, string> = {};
+    responses.forEach((response) => {
+      nextSnapshots[response.id] = getServerSnapshot(response);
+    });
+    lastSavedSnapshotRef.current = nextSnapshots;
+    hydratedRef.current = true;
+    dirtyResponseIdsRef.current = [];
+    setDirtyResponseIds([]);
+    setDraftSaveState("idle");
+  }, [responses]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || dirtyResponseIds.length === 0) {
       return;
     }
 
-    try {
-      // Serialize requests to prevent overwhelming the backend
-      // Previously used Promise.all() which caused 503 errors due to connection pool exhaustion
-      for (let i = 0; i < payloads.length; i++) {
-        const p = payloads[i];
+    setDraftSaveState("dirty");
+    autoSaveTimerRef.current = setTimeout(() => {
+      void saveResponses(dirtyResponseIds, { quiet: true });
+    }, AUTOSAVE_DEBOUNCE_MS);
 
-        // Show progress toast
-        toast.loading(
-          `Saving ${i + 1}/${payloads.length} validation decision${payloads.length > 1 ? "s" : ""}...`,
-          { id: "save-draft-toast" }
-        );
-
-        console.log(
-          `[SaveDraft] Response ${p.id}: flagged_for_calibration = ${p.flaggedForCalibration}`
-        );
-
-        await validateMut.mutateAsync({
-          responseId: p.id,
-          data: {
-            // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
-            validation_status: p.v.status
-              ? (p.v.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
-              : undefined,
-            public_comment: p.v.publicComment ?? null,
-            // Include checklist data in response_data
-            response_data: Object.keys(p.checklistData).length > 0 ? p.checklistData : undefined,
-            // Include calibration flag
-            flagged_for_calibration: p.flaggedForCalibration,
-          },
-        });
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
       }
-
-      // Invalidate all queries to force refetch with updated response_data
-      await qc.invalidateQueries();
-
-      // Dismiss loading and show success
-      toast.dismiss("save-draft-toast");
-      toast.success(
-        `Saved ${payloads.length} validation decision${payloads.length > 1 ? "s" : ""} as draft`,
-        { duration: 3000 }
-      );
-    } catch (error) {
-      console.error("Error saving validation:", error);
-      toast.dismiss("save-draft-toast");
-
-      const errorInfo = classifyError(error);
-      if (errorInfo.type === "network") {
-        toast.error("Unable to save draft", {
-          description: "Check your internet connection and try again.",
-          duration: 5000,
-        });
-      } else if (errorInfo.type === "auth") {
-        toast.error("Session expired", {
-          description: "Please log in again to save your work.",
-          duration: 5000,
-        });
-      } else {
-        toast.error("Failed to save draft", {
-          description: "Please try again. If the problem persists, contact your MLGOO-DILG.",
-          duration: 5000,
-        });
-      }
-      throw error;
-    }
-  };
+    };
+  }, [dirtyResponseIds, form, checklistState, calibrationFlags]);
 
   const onFinalize = async () => {
     // Prevent double-clicking by checking if already in progress
@@ -520,7 +653,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     try {
       // Save any pending changes first
       console.log("Saving draft before finalize...");
-      await onSaveDraft();
+      const saved = await flushPendingChanges({ quiet: true });
+      if (!saved) return;
 
       // Then finalize
       console.log("Finalizing assessment...");
@@ -635,7 +769,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
     try {
       // Save any pending changes first
-      await onSaveDraft();
+      const saved = await flushPendingChanges({ quiet: true });
+      if (!saved) return;
 
       // Then submit for calibration
       const result = (await calibrateMut.mutateAsync({ assessmentId })) as {
@@ -702,6 +837,79 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }
   };
 
+  const handleFormFieldChange = (
+    responseId: number,
+    field: "status" | "publicComment",
+    value: string
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      [responseId]: {
+        ...prev[responseId],
+        [field]: value,
+      },
+    }));
+
+    window.setTimeout(() => {
+      syncDirtyStateForResponse(responseId);
+    }, 0);
+  };
+
+  const handleChecklistChange = (key: string, value: any) => {
+    setChecklistState((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+
+    const match = key.match(/^checklist_(\d+)_/);
+    if (!match) return;
+
+    window.setTimeout(() => {
+      syncDirtyStateForResponse(Number(match[1]));
+    }, 0);
+  };
+
+  const handleCalibrationFlagChange = (responseId: number, flagged: boolean) => {
+    setCalibrationFlags((prev) => ({
+      ...prev,
+      [responseId]: flagged,
+    }));
+
+    window.setTimeout(() => {
+      syncDirtyStateForResponse(responseId);
+    }, 0);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
+        Loading assessment…
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    const errorInfo = classifyError(error);
+    const isNetworkError = errorInfo.type === "network";
+
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
+        <div
+          className={`rounded-md border p-4 ${isNetworkError ? "border-orange-200 bg-orange-50" : "border-red-200 bg-red-50"}`}
+        >
+          <div
+            className={`font-medium mb-1 ${isNetworkError ? "text-orange-700" : "text-red-700"}`}
+          >
+            {errorInfo.title}
+          </div>
+          <div className={`${isNetworkError ? "text-orange-600" : "text-red-600"}`}>
+            {errorInfo.message}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
@@ -741,29 +949,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               variant="default"
               size="sm"
               className="gap-1 sm:gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-4"
-              disabled={validateMut.isPending}
+              disabled={draftSaveState === "saving"}
               onClick={async () => {
                 // Save draft first, then navigate to compliance overview
-                await onSaveDraft();
+                const saved = await flushPendingChanges({ quiet: true });
+                if (!saved) return;
                 router.push(`/validator/submissions/${assessmentId}/compliance`);
               }}
             >
               <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Compliance Overview</span>
               <span className="sm:hidden">Compliance</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={onSaveDraft}
-              disabled={validateMut.isPending}
-              className="text-xs sm:text-sm px-2 sm:px-4"
-            >
-              <span className="hidden sm:inline">
-                {validateMut.isPending ? "Saving..." : "Save as Draft"}
-              </span>
-              <span className="sm:hidden">Save</span>
             </Button>
           </div>
         </div>
@@ -831,25 +1027,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   reworkRequestedAt={reworkRequestedAt}
                   separationLabel={separationLabel}
                   onReworkFlagSaved={(responseId, _movFileId, flagged) => {
-                    setCalibrationFlags((prev) => ({
-                      ...prev,
-                      [responseId]: flagged,
-                    }));
+                    handleCalibrationFlagChange(responseId, flagged);
                   }}
                   onAnnotationCreated={(responseId) => {
                     // Auto-enable calibration flag when annotation is added
-                    setCalibrationFlags((prev) => ({
-                      ...prev,
-                      [responseId]: true,
-                    }));
+                    handleCalibrationFlagChange(responseId, true);
                   }}
                   onAnnotationDeleted={(responseId, _movFileId, remainingCount) => {
                     // Auto-disable calibration flag when ALL annotations are removed
                     if (remainingCount === 0) {
-                      setCalibrationFlags((prev) => ({
-                        ...prev,
-                        [responseId]: false,
-                      }));
+                      handleCalibrationFlagChange(responseId, false);
                     }
                   }}
                 />
@@ -862,26 +1049,13 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   form={form}
                   expandedId={expandedId ?? undefined}
                   onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
-                  setField={(id, field, value) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      [id]: {
-                        ...prev[id],
-                        [field]: value,
-                      },
-                    }));
-                  }}
+                  setField={handleFormFieldChange}
                   onIndicatorSelect={(indicatorId) => {
                     // Sync the tree navigator selection when navigating via Previous/Next buttons
                     setSelectedIndicatorId(indicatorId);
                   }}
                   checklistState={checklistState}
-                  onChecklistChange={(key, value) => {
-                    setChecklistState((prev) => ({
-                      ...prev,
-                      [key]: value,
-                    }));
-                  }}
+                  onChecklistChange={handleChecklistChange}
                 />
               </div>
             )}
@@ -943,25 +1117,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       reworkRequestedAt={reworkRequestedAt}
                       separationLabel={separationLabel}
                       onReworkFlagSaved={(responseId, _movFileId, flagged) => {
-                        setCalibrationFlags((prev) => ({
-                          ...prev,
-                          [responseId]: flagged,
-                        }));
+                        handleCalibrationFlagChange(responseId, flagged);
                       }}
                       onAnnotationCreated={(responseId) => {
                         // Auto-enable calibration flag when annotation is added
-                        setCalibrationFlags((prev) => ({
-                          ...prev,
-                          [responseId]: true,
-                        }));
+                        handleCalibrationFlagChange(responseId, true);
                       }}
                       onAnnotationDeleted={(responseId, _movFileId, remainingCount) => {
                         // Auto-disable calibration flag when ALL annotations are removed
                         if (remainingCount === 0) {
-                          setCalibrationFlags((prev) => ({
-                            ...prev,
-                            [responseId]: false,
-                          }));
+                          handleCalibrationFlagChange(responseId, false);
                         }
                       }}
                     />
@@ -974,26 +1139,13 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       form={form}
                       expandedId={expandedId ?? undefined}
                       onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
-                      setField={(id, field, value) => {
-                        setForm((prev) => ({
-                          ...prev,
-                          [id]: {
-                            ...prev[id],
-                            [field]: value,
-                          },
-                        }));
-                      }}
+                      setField={handleFormFieldChange}
                       onIndicatorSelect={(indicatorId) => {
                         // Sync the tree navigator selection when navigating via Previous/Next buttons
                         setSelectedIndicatorId(indicatorId);
                       }}
                       checklistState={checklistState}
-                      onChecklistChange={(key, value) => {
-                        setChecklistState((prev) => ({
-                          ...prev,
-                          [key]: value,
-                        }));
-                      }}
+                      onChecklistChange={handleChecklistChange}
                     />
                   </div>
                 )}
@@ -1023,25 +1175,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 reworkRequestedAt={reworkRequestedAt}
                 separationLabel={separationLabel}
                 onReworkFlagSaved={(responseId, _movFileId, flagged) => {
-                  setCalibrationFlags((prev) => ({
-                    ...prev,
-                    [responseId]: flagged,
-                  }));
+                  handleCalibrationFlagChange(responseId, flagged);
                 }}
                 onAnnotationCreated={(responseId) => {
                   // Auto-enable calibration flag when annotation is added
-                  setCalibrationFlags((prev) => ({
-                    ...prev,
-                    [responseId]: true,
-                  }));
+                  handleCalibrationFlagChange(responseId, true);
                 }}
                 onAnnotationDeleted={(responseId, _movFileId, remainingCount) => {
                   // Auto-disable calibration flag when ALL annotations are removed
                   if (remainingCount === 0) {
-                    setCalibrationFlags((prev) => ({
-                      ...prev,
-                      [responseId]: false,
-                    }));
+                    handleCalibrationFlagChange(responseId, false);
                   }
                 }}
               />
@@ -1055,26 +1198,13 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   form={form}
                   expandedId={expandedId ?? undefined}
                   onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
-                  setField={(id, field, value) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      [id]: {
-                        ...prev[id],
-                        [field]: value,
-                      },
-                    }));
-                  }}
+                  setField={handleFormFieldChange}
                   onIndicatorSelect={(indicatorId) => {
                     // Sync the tree navigator selection when navigating via Previous/Next buttons
                     setSelectedIndicatorId(indicatorId);
                   }}
                   checklistState={checklistState}
-                  onChecklistChange={(key, value) => {
-                    setChecklistState((prev) => ({
-                      ...prev,
-                      [key]: value,
-                    }));
-                  }}
+                  onChecklistChange={handleChecklistChange}
                 />
               </div>
             </div>
@@ -1101,16 +1231,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             Indicators Reviewed: {reviewed}/{total}
           </div>
           <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={onSaveDraft}
-              disabled={validateMut.isPending}
-              className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
-            >
-              {validateMut.isPending ? "Saving..." : "Save as Draft"}
-            </Button>
             <Button
               size="sm"
               type="button"
@@ -1196,7 +1316,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     action: {
                       label: "Open",
                       onClick: async () => {
-                        await onSaveDraft();
+                        const saved = await flushPendingChanges({ quiet: true });
+                        if (!saved) return;
                         router.push(`/validator/submissions/${assessmentId}/compliance`);
                       },
                     },
@@ -1259,6 +1380,12 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           </div>
         </div>
       </div>
+
+      <AutosaveStatusPill
+        state={draftSaveState}
+        completedSaveCount={completedAutosaveCount}
+        onRetry={onSaveDraft}
+      />
 
       {/* Confirmation Dialog - Submit for Calibration */}
       <AlertDialog open={showCalibrationConfirm} onOpenChange={setShowCalibrationConfirm}>
