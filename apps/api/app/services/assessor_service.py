@@ -2658,6 +2658,8 @@ class AssessorService:
         Returns:
             dict: Analytics data structured for AssessorAnalyticsResponse
         """
+        active_year = assessment_year_service.get_active_year_number(db)
+
         # Get governance area name
         governance_area_name = "All Areas"  # Default for assessors without area assignment
         if assessor.assessor_area_id is not None:
@@ -2679,29 +2681,39 @@ class AssessorService:
                 joinedload(Assessment.blgu_user).joinedload(User.barangay),
                 joinedload(Assessment.responses).joinedload(AssessmentResponse.indicator),
             )
+            .filter(Assessment.assessment_year == active_year)
         )
 
         # Filter by governance area only if assessor has assessor_area_id
         if assessor.assessor_area_id is not None:
             query = query.filter(Indicator.governance_area_id == assessor.assessor_area_id)
 
-        # Filter assessments by the current assessor (those reviewed by them)
-        assessments = (
-            query.filter(
-                Assessment.status.in_(
-                    [
-                        AssessmentStatus.SUBMITTED_FOR_REVIEW,
-                        AssessmentStatus.NEEDS_REWORK,
-                        AssessmentStatus.VALIDATED,
-                        AssessmentStatus.AWAITING_FINAL_VALIDATION,  # Include assessor-completed assessments
-                    ]
-                ),
-                Assessment.reviewed_by
-                == assessor.id,  # Only count assessments reviewed by THIS assessor
-            )
-            .distinct(Assessment.id)
-            .all()
-        )
+        assessments = query.distinct().all()
+
+        if assessor.role == UserRole.VALIDATOR:
+            validator_statuses = {
+                AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                AssessmentStatus.REWORK,
+                AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+                AssessmentStatus.COMPLETED,
+                AssessmentStatus.VALIDATED,
+            }
+            assessments = [
+                assessment
+                for assessment in assessments
+                if assessment.status in validator_statuses
+                and (
+                    assessment.status != AssessmentStatus.REWORK or assessment.is_calibration_rework
+                )
+            ]
+        else:
+            assessor_area_statuses = {"submitted", "in_review", "rework", "approved"}
+            assessments = [
+                assessment
+                for assessment in assessments
+                if assessor.assessor_area_id is not None
+                and assessment.get_area_status(assessor.assessor_area_id) in assessor_area_statuses
+            ]
 
         # Calculate overview (performance metrics)
         total_assessed = len(assessments)
@@ -2873,7 +2885,7 @@ class AssessorService:
                 "rework_rate": round(rework_rate, 2),
                 "counts_by_status": counts_by_status,
             },
-            "assessment_period": "SGLGB 2024",  # Can be made dynamic
+            "assessment_period": f"SGLGB {active_year}",
             "governance_area_name": governance_area_name,
         }
 

@@ -1,12 +1,23 @@
 "use client";
 
+import { useAccessibleYears } from "@/hooks/useAssessmentYear";
 import { AssessorData } from "./AssessorAnalyticsTypes";
+import { getAssessmentPeriodOptions } from "@/lib/assessment-period";
 
 interface GlobalFilterProps {
   data: AssessorData;
 }
 
 export function GlobalFilter({ data }: GlobalFilterProps) {
+  const { years, selectedYear, activeYear, setSelectedYear } = useAccessibleYears();
+  const assessmentPeriodOptions = getAssessmentPeriodOptions(years);
+  const selectedAssessmentPeriod =
+    selectedYear !== null
+      ? `SGLGB ${selectedYear}`
+      : activeYear !== null
+        ? `SGLGB ${activeYear}`
+        : data.assessmentPeriod;
+
   return (
     <section
       className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-sm border border-purple-200 p-6 shadow-sm"
@@ -32,10 +43,22 @@ export function GlobalFilter({ data }: GlobalFilterProps) {
             id="assessment-period-select"
             className="appearance-none bg-[var(--card)] border border-purple-300 rounded-sm px-4 py-3 pr-10 text-[var(--foreground)] font-medium shadow-sm hover:border-purple-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
             aria-label="Select assessment period"
+            value={selectedAssessmentPeriod}
+            onChange={(event) => {
+              const year = Number.parseInt(event.target.value.replace("SGLGB ", ""), 10);
+              if (!Number.isNaN(year)) {
+                setSelectedYear(year);
+              }
+            }}
           >
-            <option>SGLGB 2024</option>
-            <option>SGLGB 2023</option>
-            <option>SGLGB 2022</option>
+            {!assessmentPeriodOptions.includes(data.assessmentPeriod) && (
+              <option value={data.assessmentPeriod}>{data.assessmentPeriod}</option>
+            )}
+            {assessmentPeriodOptions.map((assessmentPeriod) => (
+              <option key={assessmentPeriod} value={assessmentPeriod}>
+                {assessmentPeriod}
+              </option>
+            ))}
           </select>
           <div
             className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none"

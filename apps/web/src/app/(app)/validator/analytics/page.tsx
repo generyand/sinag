@@ -6,6 +6,7 @@ import {
   SystemicWeakness,
 } from "@/components/features/analytics/AssessorAnalyticsTypes";
 import { useAssessorAnalytics } from "@/hooks/useAssessor";
+import { useAccessibleYears } from "@/hooks/useAssessmentYear";
 import { useValidatorGovernanceArea } from "@/hooks/useValidatorGovernanceArea";
 import {
   GlobalFilter,
@@ -16,12 +17,14 @@ import {
   AnalyticsSkeleton,
 } from "@/components/features/analytics";
 import { BarChart3 } from "lucide-react";
+import { getAssessmentPeriodLabel } from "@/lib/assessment-period";
 
 export default function ValidatorAnalyticsPage() {
   const [selectedWeakness, setSelectedWeakness] = useState<SystemicWeakness | null>(null);
   const [showWeaknessModal, setShowWeaknessModal] = useState(false);
 
   const { governanceAreaName, isLoading: governanceAreaLoading } = useValidatorGovernanceArea();
+  const { activeYear, isLoading: yearsLoading } = useAccessibleYears();
   const {
     data: analyticsData,
     isLoading: analyticsLoading,
@@ -35,7 +38,7 @@ export default function ValidatorAnalyticsPage() {
     return {
       name: governanceArea,
       assignedBarangays: analyticsData.overview.total_assessed,
-      assessmentPeriod: analyticsData.assessment_period || "SGLGB 2024",
+      assessmentPeriod: getAssessmentPeriodLabel(analyticsData.assessment_period, activeYear),
       performance: {
         totalAssessed: analyticsData.overview.total_assessed,
         passed: analyticsData.overview.passed,
@@ -54,7 +57,7 @@ export default function ValidatorAnalyticsPage() {
         reworkRate: analyticsData.workflow.rework_rate,
       },
     };
-  }, [analyticsData, governanceAreaName]);
+  }, [activeYear, analyticsData, governanceAreaName]);
 
   const handleWeaknessClick = (weakness: SystemicWeakness) => {
     setSelectedWeakness(weakness);
@@ -67,7 +70,7 @@ export default function ValidatorAnalyticsPage() {
   };
 
   // Show loading if either the page is loading or analytics is loading
-  if (analyticsLoading || governanceAreaLoading) {
+  if (analyticsLoading || governanceAreaLoading || yearsLoading) {
     return <AnalyticsSkeleton />;
   }
 

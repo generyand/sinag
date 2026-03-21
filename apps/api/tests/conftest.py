@@ -180,7 +180,10 @@ def db_engine():
     # Ensure all tables are created once for the test session
     Base.metadata.create_all(bind=engine)
     yield engine
-    Base.metadata.drop_all(bind=engine)
+    with engine.connect() as connection:
+        connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+        Base.metadata.drop_all(bind=connection)
+        connection.exec_driver_sql("PRAGMA foreign_keys=ON")
 
 
 @pytest.fixture(scope="session")
