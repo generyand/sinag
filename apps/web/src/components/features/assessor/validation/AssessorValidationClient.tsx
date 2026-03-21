@@ -9,6 +9,7 @@
 //   (force-enabled when rework cycle is used up - assessor must approve)
 
 import { TreeNavigator } from "@/components/features/assessments/tree-navigation";
+import { AutosaveStatusPill } from "@/components/features/shared/AutosaveStatusPill";
 import { StatusBadge } from "@/components/shared";
 import { ValidationPanelSkeleton } from "@/components/shared/skeletons";
 import {
@@ -41,7 +42,7 @@ import { AlertCircle, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { MiddleMovFilesPanel } from "./MiddleMovFilesPanel";
 
 // Lazy load heavy RightAssessorPanel component (1400+ LOC)
@@ -58,6 +59,39 @@ interface AssessorValidationClientProps {
 }
 
 type AnyRecord = Record<string, any>;
+type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
+const AUTOSAVE_DEBOUNCE_MS = 3500;
+
+function upsertValidationFeedbackComment(
+  feedbackComments: AnyRecord[],
+  comment: string | null
+): AnyRecord[] {
+  const withoutAssessorValidationComments = feedbackComments.filter((existingComment) => {
+    if (existingComment.comment_type !== "validation" || existingComment.is_internal_note) {
+      return true;
+    }
+    const commenterRole = existingComment.assessor?.role?.toLowerCase() || "";
+    return commenterRole !== "assessor";
+  });
+
+  if (!comment || comment.trim().length === 0) {
+    return withoutAssessorValidationComments;
+  }
+
+  return [
+    {
+      id: `local-assessor-validation-${Date.now()}`,
+      comment,
+      comment_type: "validation",
+      is_internal_note: false,
+      created_at: new Date().toISOString(),
+      assessor: {
+        role: "ASSESSOR",
+      },
+    },
+    ...withoutAssessorValidationComments,
+  ];
+}
 
 export function AssessorValidationClient({ assessmentId }: AssessorValidationClientProps) {
   const { data, isLoading, isError, error, dataUpdatedAt } = useGetAssessorAssessmentsAssessmentId(
@@ -102,6 +136,19 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
   const isSavingRef = useRef(false); // Prevent multiple concurrent saves
+  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
+  const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
+  const [dirtyResponseIds, setDirtyResponseIds] = useState<number[]>([]);
+  const hydratedRef = useRef(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedSnapshotRef = useRef<Record<number, string>>({});
+  const activeSavePromiseRef = useRef<Promise<boolean> | null>(null);
+  const isInterceptingNavigationRef = useRef(false);
+  const formRef = useRef(form);
+  const checklistDataRef = useRef(checklistData);
+  const reworkFlagsRef = useRef<Record<number, Set<number>>>({});
+  const dirtyResponseIdsRef = useRef(dirtyResponseIds);
+  const responsesRef = useRef<AnyRecord[]>([]);
 
   // Confirmation dialog states
   const [showReworkConfirm, setShowReworkConfirm] = useState(false);
@@ -171,14 +218,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           return updated;
         });
       }
-
-      console.log(
-        "[AssessorValidationClient] Initialized reworkFlags from API (file-level + manual):",
-        initial
-      );
-      if (emptyIds.size > 0) {
-        console.log("[AssessorValidationClient] Auto-flagged empty indicators:", [...emptyIds]);
-      }
     }
   }, [data, dataUpdatedAt]);
 
@@ -186,16 +225,17 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // When toggled ON via UI without specific file context, we mark the indicator as flagged with an empty set
   // (the UI will check if set exists OR has items to show as flagged)
   const handleReworkFlagChange = (responseId: number, flagged: boolean) => {
-    console.log("[AssessorValidationClient] handleReworkFlagChange (manual):", responseId, flagged);
-    setReworkFlags((prev) => {
-      if (flagged) {
-        // Keep existing set if any, or create empty set to mark as "manually flagged"
-        return { ...prev, [responseId]: prev[responseId] || new Set() };
-      } else {
-        // Remove the entry entirely when toggled off
-        const { [responseId]: _, ...rest } = prev;
-        return rest;
-      }
+    const nextReworkFlags = { ...reworkFlagsRef.current };
+    if (flagged) {
+      nextReworkFlags[responseId] = nextReworkFlags[responseId] || new Set();
+    } else {
+      delete nextReworkFlags[responseId];
+    }
+
+    reworkFlagsRef.current = nextReworkFlags;
+    syncDirtyStateForResponse(responseId);
+    startTransition(() => {
+      setReworkFlags(nextReworkFlags);
     });
   };
 
@@ -215,36 +255,28 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   // Callback when assessor saves MOV feedback with rework flag - update state for progress indicator
   const handleReworkFlagSaved = (responseId: number, movFileId: number, flagged: boolean) => {
-    console.log(
-      "[AssessorValidationClient] handleReworkFlagSaved:",
-      responseId,
-      "movFileId:",
-      movFileId,
-      "flagged:",
-      flagged
-    );
-    setReworkFlags((prev) => {
-      if (flagged) {
-        // Add file to the set for this response
-        const existingSet = prev[responseId] || new Set();
-        const newSet = new Set(existingSet);
-        newSet.add(movFileId);
-        return { ...prev, [responseId]: newSet };
-      } else {
-        // Remove file from the set
-        const existingSet = prev[responseId];
-        if (!existingSet) return prev;
-
+    const nextReworkFlags = { ...reworkFlagsRef.current };
+    if (flagged) {
+      const newSet = new Set(nextReworkFlags[responseId] || []);
+      newSet.add(movFileId);
+      nextReworkFlags[responseId] = newSet;
+    } else {
+      const existingSet = nextReworkFlags[responseId];
+      if (existingSet) {
         const newSet = new Set(existingSet);
         newSet.delete(movFileId);
-
-        // If set is now empty, remove the entry entirely
         if (newSet.size === 0) {
-          const { [responseId]: _, ...rest } = prev;
-          return rest;
+          delete nextReworkFlags[responseId];
+        } else {
+          nextReworkFlags[responseId] = newSet;
         }
-        return { ...prev, [responseId]: newSet };
       }
+    }
+
+    reworkFlagsRef.current = nextReworkFlags;
+    syncDirtyStateForResponse(responseId);
+    startTransition(() => {
+      setReworkFlags(nextReworkFlags);
     });
   };
 
@@ -274,30 +306,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       responses.forEach((resp: AnyRecord) => {
         const responseId = resp.id;
 
-        console.log(`[useEffect] Processing response ${responseId}:`, {
-          requires_rework: resp.requires_rework,
-          validation_status: resp.validation_status,
-          has_response_data: !!resp.response_data,
-          user_role: userRole,
-        });
-
-        // CRITICAL: Skip loading checklist data for indicators requiring rework (ASSESSOR only)
-        // - ASSESSOR: These indicators need fresh/clean checklists for assessor to review
-        // - VALIDATOR: Validators need to see the assessor's checklist work (don't skip)
-        if (resp.requires_rework && !isValidator) {
-          console.log(
-            `[useEffect] ⚠️  Skipping checklist data load for response ${responseId} (requires_rework=true, user is ASSESSOR)`
-          );
-          return; // Don't load any checklist data for this indicator
-        }
-
-        if (resp.requires_rework && isValidator) {
-          console.log(
-            `[useEffect] ✓ Loading checklist data for response ${responseId} (requires_rework=true, user is VALIDATOR)`
-          );
-        }
-
-        // For indicators that passed (requires_rework=false), load their old checklist data
+        // Load saved checklist data for both first-review and rework responses.
+        // For rework responses this preserves the assessor's latest persisted review state
+        // after a refetch, matching RightAssessorPanel's hydration behavior.
         const responseData = resp.response_data || {};
 
         // Find all assessor_val_ and validator_val_ prefixed fields and convert them to checklist format
@@ -325,22 +336,37 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               // Skip assessor value if validator value exists
               return;
             }
-
             initialChecklistData[checklistKey] = responseData[key];
-            console.log(
-              `[useEffect] ✓ Loading data for response ${responseId}: ${checklistKey} = ${responseData[key]} (from ${prefix})`
-            );
           }
         });
       });
 
-      console.log(
-        "[useEffect] Final checklist data to load (dataUpdatedAt=" + dataUpdatedAt + "):",
-        initialChecklistData
-      );
+      const pendingOrDirtyResponseIds = new Set<number>(dirtyResponseIdsRef.current);
+      if (activeSavePromiseRef.current !== null || autoSaveTimerRef.current !== null) {
+        responses.forEach((response) => {
+          if (response.id in formRef.current || response.id in reworkFlagsRef.current) {
+            pendingOrDirtyResponseIds.add(response.id);
+          }
+
+          const hasChecklistDraft = Object.keys(checklistDataRef.current).some((key) =>
+            key.startsWith(`checklist_${response.id}_`)
+          );
+          if (hasChecklistDraft) {
+            pendingOrDirtyResponseIds.add(response.id);
+          }
+        });
+      }
+
+      pendingOrDirtyResponseIds.forEach((responseId) => {
+        Object.keys(checklistDataRef.current).forEach((key) => {
+          if (!key.startsWith(`checklist_${responseId}_`)) return;
+          initialChecklistData[key] = checklistDataRef.current[key];
+        });
+      });
 
       // IMPORTANT: Replace the entire checklistData state (don't merge with old data)
       // This ensures old data for requires_rework indicators is completely cleared
+      checklistDataRef.current = initialChecklistData;
       setChecklistData(initialChecklistData);
     }
   }, [data, dataUpdatedAt]);
@@ -386,9 +412,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     finalizeMut.isPending ||
     reworkMut.isPending;
 
-  // Check if area has been successfully approved (to disable buttons after success)
-  const isAreaApproved: boolean = myAreaStatus === "approved";
-
   // Get timestamps for MOV file separation (new vs old files)
   // For assessors: rework_requested_at shows files uploaded after assessor's previous rework request
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
@@ -421,6 +444,368 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     );
     return areaResponse?.indicator?.governance_area?.name ?? `Area ${assessorAreaId}`;
   }, [isAssessor, assessorAreaId, responses]);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  // NOTE: checklistDataRef is kept in sync manually:
+  // - hydration effect (line ~344) sets it when server data arrives
+  // - handleChecklistChange sets it on user edits
+  // A useEffect sync here would race with the hydration effect and overwrite
+  // the ref with stale state before the snapshot hydration sets hydratedRef=true.
+
+  useEffect(() => {
+    reworkFlagsRef.current = reworkFlags;
+  }, [reworkFlags]);
+
+  useEffect(() => {
+    dirtyResponseIdsRef.current = dirtyResponseIds;
+  }, [dirtyResponseIds]);
+
+  useEffect(() => {
+    responsesRef.current = responses;
+  }, [responses]);
+
+  const isMeaningfulChecklistValue = (value: unknown): boolean => {
+    if (value === true) return true;
+    if (typeof value === "string") return value.trim().length > 0;
+    return false;
+  };
+
+  const buildAssessorResponseDataSnapshot = (responseId: number): Record<string, any> => {
+    const response = responsesRef.current.find((item) => item.id === responseId);
+    if (!response) return {};
+
+    const snapshotData: Record<string, any> = {};
+    const previousResponseData = (response as AnyRecord).response_data || {};
+
+    Object.keys(checklistDataRef.current).forEach((key) => {
+      if (!key.startsWith(`checklist_${responseId}_`)) return;
+
+      const fieldName = key.replace(`checklist_${responseId}_`, "");
+      const snapshotKey = `assessor_val_${fieldName}`;
+      const currentValue = checklistDataRef.current[key];
+      const previousValue = previousResponseData[snapshotKey];
+
+      if (isMeaningfulChecklistValue(currentValue)) {
+        snapshotData[snapshotKey] = currentValue;
+        return;
+      }
+
+      // Preserve explicit clears when a meaningful server value already exists.
+      if (previousValue !== undefined && previousValue !== currentValue) {
+        snapshotData[snapshotKey] = currentValue;
+      }
+    });
+
+    const hasManualFlag = responseId in reworkFlagsRef.current;
+    if (hasManualFlag) {
+      snapshotData.assessor_manual_rework_flag = true;
+    } else if (previousResponseData.assessor_manual_rework_flag === true) {
+      snapshotData.assessor_manual_rework_flag = false;
+    }
+
+    return snapshotData;
+  };
+
+  const getResponseSnapshot = (responseId: number): string => {
+    const currentForm = formRef.current[responseId];
+    const rawComment = currentForm?.publicComment ?? null;
+    // Normalize empty/whitespace-only comments to null so they match the server
+    // snapshot (the server never stores empty comments in feedback_comments).
+    const normalizedComment = rawComment && rawComment.trim().length > 0 ? rawComment : null;
+
+    return JSON.stringify({
+      public_comment: normalizedComment,
+      response_data: buildAssessorResponseDataSnapshot(responseId),
+    });
+  };
+
+  const getServerSnapshot = (response: AnyRecord): string => {
+    const responseData = (response.response_data as Record<string, any>) || {};
+    const snapshotData: Record<string, any> = {};
+
+    Object.keys(responseData).forEach((key) => {
+      if (!key.startsWith("assessor_val_")) return;
+      if (isMeaningfulChecklistValue(responseData[key])) {
+        snapshotData[key] = responseData[key];
+      }
+    });
+
+    if (responseData.assessor_manual_rework_flag === true) {
+      snapshotData.assessor_manual_rework_flag = true;
+    }
+
+    const validationComments = ((response.feedback_comments as any[]) || [])
+      .filter((fc: any) => {
+        if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
+        const commenterRole = fc.assessor?.role?.toLowerCase() || "";
+        return commenterRole === "assessor";
+      })
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+
+    return JSON.stringify({
+      public_comment: validationComments[0]?.comment ?? null,
+      response_data: snapshotData,
+    });
+  };
+
+  const buildSavePayload = (responseId: number) => {
+    const snapshot = getResponseSnapshot(responseId);
+    const parsed = JSON.parse(snapshot) as {
+      public_comment: string | null;
+      response_data?: Record<string, any>;
+    };
+    const response = responsesRef.current.find((item) => item.id === responseId);
+    if (!response) return null;
+
+    return {
+      responseId,
+      snapshot,
+      data: {
+        public_comment: parsed.public_comment,
+        response_data:
+          parsed.response_data && Object.keys(parsed.response_data).length > 0
+            ? parsed.response_data
+            : undefined,
+      },
+    };
+  };
+
+  const patchCachedAssessmentResponse = (
+    responseId: number,
+    payload: { public_comment: string | null; response_data?: Record<string, any> }
+  ) => {
+    qc.setQueryData(
+      getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+      (current: AnyRecord | undefined) => {
+        if (!current) return current;
+
+        const assessmentData = (current.assessment as AnyRecord) ?? current;
+        const currentResponses = (assessmentData.responses as AnyRecord[]) ?? [];
+
+        const nextResponses = currentResponses.map((response) => {
+          if (response.id !== responseId) return response;
+
+          const nextResponseData = {
+            ...((response.response_data as Record<string, any>) || {}),
+            ...(payload.response_data || {}),
+          };
+
+          if (payload.response_data) {
+            Object.entries(payload.response_data).forEach(([key, value]) => {
+              if (value === null || value === undefined || value === "" || value === false) {
+                delete nextResponseData[key];
+              }
+            });
+          }
+
+          return {
+            ...response,
+            response_data: nextResponseData,
+            feedback_comments: upsertValidationFeedbackComment(
+              ((response.feedback_comments as AnyRecord[]) || []).map((comment) => ({
+                ...comment,
+              })),
+              payload.public_comment
+            ),
+          };
+        });
+
+        if ("assessment" in current) {
+          return {
+            ...current,
+            assessment: {
+              ...assessmentData,
+              responses: nextResponses,
+            },
+          };
+        }
+
+        return {
+          ...assessmentData,
+          responses: nextResponses,
+        };
+      }
+    );
+  };
+
+  const syncDirtyStateForResponse = (responseId: number) => {
+    if (!hydratedRef.current) return;
+
+    const nextSnapshot = getResponseSnapshot(responseId);
+    const savedSnapshot = lastSavedSnapshotRef.current[responseId] ?? JSON.stringify({});
+    const currentDirtyIds = dirtyResponseIdsRef.current;
+    const alreadyDirty = currentDirtyIds.includes(responseId);
+    let nextDirtyIds = currentDirtyIds;
+
+    if (nextSnapshot === savedSnapshot) {
+      nextDirtyIds = alreadyDirty
+        ? currentDirtyIds.filter((id) => id !== responseId)
+        : currentDirtyIds;
+    } else if (!alreadyDirty) {
+      nextDirtyIds = [...currentDirtyIds, responseId];
+    }
+
+    dirtyResponseIdsRef.current = nextDirtyIds;
+    setDirtyResponseIds(nextDirtyIds);
+    setDraftSaveState(nextSnapshot === savedSnapshot ? "saved" : "dirty");
+  };
+
+  const saveResponses = async (
+    responseIds: number[],
+    options: { quiet?: boolean } = {}
+  ): Promise<boolean> => {
+    const uniqueResponseIds = [...new Set(responseIds)];
+    if (uniqueResponseIds.length === 0) {
+      if (!options.quiet) {
+        setDraftSaveState("saved");
+      }
+      return true;
+    }
+
+    if (activeSavePromiseRef.current) {
+      const completed = await activeSavePromiseRef.current;
+      if (!completed) {
+        return false;
+      }
+
+      const remainingResponseIds = uniqueResponseIds.filter((responseId) =>
+        dirtyResponseIdsRef.current.includes(responseId)
+      );
+
+      if (remainingResponseIds.length === 0) {
+        if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
+          setDraftSaveState("saved");
+        }
+        return true;
+      }
+
+      return saveResponses(remainingResponseIds, options);
+    }
+
+    const savePromise = (async () => {
+      isSavingRef.current = true;
+      setIsSaving(true);
+      setDraftSaveState("saving");
+      let savedPayloadCount = 0;
+
+      try {
+        for (const responseId of uniqueResponseIds) {
+          const payload = buildSavePayload(responseId);
+          if (!payload) continue;
+
+          await validateMut.mutateAsync({
+            responseId: payload.responseId,
+            data: payload.data,
+          });
+          savedPayloadCount += 1;
+
+          patchCachedAssessmentResponse(responseId, payload.data);
+          lastSavedSnapshotRef.current[responseId] = payload.snapshot;
+          setDirtyResponseIds((prev) => {
+            const currentSnapshot = getResponseSnapshot(responseId);
+            const shouldKeepDirty = currentSnapshot !== payload.snapshot;
+            const hasDirtyEntry = prev.includes(responseId);
+            let next = prev;
+
+            if (shouldKeepDirty) {
+              next = hasDirtyEntry ? prev : [...prev, responseId];
+            } else if (hasDirtyEntry) {
+              next = prev.filter((id) => id !== responseId);
+            }
+
+            dirtyResponseIdsRef.current = next;
+            return next;
+          });
+        }
+
+        await qc.invalidateQueries({
+          queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+          exact: true,
+        });
+
+        if (savedPayloadCount > 0) {
+          setCompletedAutosaveCount((count) => count + 1);
+        }
+        setDraftSaveState(dirtyResponseIdsRef.current.length > 0 ? "dirty" : "saved");
+
+        if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
+          toast({
+            title: "Saved",
+            description: "Assessment progress saved",
+            duration: 2000,
+            className: "bg-green-600 text-white border-none",
+          });
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Error saving validation data:", error);
+        validateMut.reset();
+        setDraftSaveState("error");
+
+        const errorInfo = classifyError(error);
+        if (errorInfo.type === "network") {
+          toast({
+            title: "Unable to save draft",
+            description: "Check your internet connection and try again.",
+            variant: "destructive",
+          });
+        } else if (errorInfo.type === "auth") {
+          toast({
+            title: "Session expired",
+            description: "Please log in again to save your work.",
+            variant: "destructive",
+          });
+        } else if (errorInfo.type === "permission") {
+          toast({
+            title: "Access denied",
+            description: "You do not have permission to validate this assessment.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: errorInfo.title,
+            description: errorInfo.message,
+            variant: "destructive",
+          });
+        }
+
+        return false;
+      } finally {
+        isSavingRef.current = false;
+        setIsSaving(false);
+        if (activeSavePromiseRef.current === savePromise) {
+          activeSavePromiseRef.current = null;
+        }
+      }
+    })();
+
+    activeSavePromiseRef.current = savePromise;
+    return savePromise;
+  };
+
+  const flushPendingChanges = async (options: { quiet?: boolean } = {}): Promise<boolean> => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (activeSavePromiseRef.current) {
+      const completed = await activeSavePromiseRef.current;
+      if (!completed) {
+        return false;
+      }
+    }
+
+    return saveResponses(dirtyResponseIdsRef.current, options);
+  };
 
   // Transform to match BLGU assessment structure for TreeNavigator
   // Memoize this so it recalculates when checklistData or form changes
@@ -572,18 +957,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
             const isWaitingForBlgu = resp.requires_rework === true;
             const needsReReview = isWaitingForBlgu || hasNewMovsAfterRework;
 
-            console.log(`[Status Calc] Response ${resp.id}:`, {
-              requires_rework: resp.requires_rework,
-              isWaitingForBlgu,
-              hasNewMovsAfterRework,
-              needsReReview,
-              hasChecklistData,
-              hasLocalComments,
-              hasPersistedComments,
-              hasPersistedChecklistData,
-              hasReworkFlag,
-            });
-
             // If indicator needs re-review (requires_rework=true OR has new MOVs after rework),
             // show as needs_rework unless assessor has done NEW work in this session
             if (needsReReview) {
@@ -592,20 +965,11 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 // Check if any MOV is flagged for rework - show different status
                 if (hasReworkFlag) {
                   status = "flagged_for_rework";
-                  console.log(
-                    `[Status Calc] Response ${resp.id} → 'flagged_for_rework' (has rework flag)`
-                  );
                 } else {
                   status = "completed";
-                  console.log(
-                    `[Status Calc] Response ${resp.id} → 'completed' (new work on rework indicator)`
-                  );
                 }
               } else {
                 status = "needs_rework";
-                console.log(
-                  `[Status Calc] Response ${resp.id} → 'needs_rework' (needs assessor re-review)`
-                );
               }
             }
             // If NOT waiting for BLGU, check all sources of "completed" work
@@ -619,12 +983,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               // Differentiate between flagged for rework vs completed (BLGU complied)
               if (hasReworkFlag) {
                 status = "flagged_for_rework";
-                console.log(
-                  `[Status Calc] Response ${resp.id} → 'flagged_for_rework' (has MOV flagged for rework)`
-                );
               } else {
                 status = "completed";
-                console.log(`[Status Calc] Response ${resp.id} → 'completed' (green checkmark)`);
               }
             }
           }
@@ -653,28 +1013,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         }),
     };
   }, [responses, checklistData, form, dataUpdatedAt, reworkFlags, reworkRequestedAt]); // Add dataUpdatedAt to force recalc when data refetches, reworkRequestedAt for new MOV detection
-
-  // Conditional returns AFTER all hooks to maintain hook order
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
-        Loading assessment…
-      </div>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
-        <div className="rounded-md border p-4">
-          <div className="font-medium mb-1">Unable to load assessment</div>
-          <div className="text-muted-foreground break-words">
-            {String((error as any)?.message || "Please verify access and try again.")}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const total = responses.length;
 
@@ -762,209 +1100,97 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     : 0;
 
   const onSaveDraft = async () => {
-    console.log("========================================");
-    console.log("[onSaveDraft] SAVE DRAFT CLICKED");
-    console.log("[onSaveDraft] Current checklistData state:", checklistData);
-    console.log("[onSaveDraft] Current form state:", form);
-    console.log("[onSaveDraft] Total responses:", responses.length);
-    console.log("========================================");
-
-    // Prevent concurrent saves
-    if (isSavingRef.current) {
-      console.log("[onSaveDraft] Save already in progress, ignoring duplicate call");
-      return;
-    }
-
-    // Get all responses that have ANY data to save (status for validators, checklist/comments for all)
-    const responsesToSave = responses.filter((r) => {
-      const formData = form[r.id];
-
-      // Has validation status (Pass/Fail/Conditional) - ONLY for validators
-      const hasStatus = isValidator && !!formData?.status;
-
-      // Has checklist data
-      const hasChecklistData = Object.keys(checklistData).some((key) => {
-        if (!key.startsWith(`checklist_${r.id}_`)) return false;
-        const value = checklistData[key];
-        return value === true || (typeof value === "string" && value.trim().length > 0);
-      });
-
-      // Has comments
-      const hasComments = formData?.publicComment && formData.publicComment.trim().length > 0;
-
-      // Check if comment was previously saved but now cleared (needs to be deleted on backend)
-      const feedbackComments = (r as AnyRecord).feedback_comments || [];
-      const hadPreviousComment = feedbackComments.some((fc: any) => {
-        if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
-        const commenterRole = (fc.assessor?.role || "").toUpperCase();
-        return isAssessor
-          ? commenterRole === "ASSESSOR"
-          : isValidator
-            ? commenterRole === "VALIDATOR"
-            : false;
-      });
-      const commentWasCleared =
-        hadPreviousComment && formData?.publicComment !== undefined && !hasComments;
-
-      // Has manual rework flag (assessor only) - current local state
-      const hasReworkFlag = isAssessor && r.id in reworkFlags;
-
-      // Check if indicator HAD a manual rework flag before (needs to be cleared if toggled off)
-      const responseData = (r as AnyRecord).response_data || {};
-      const hadManualReworkFlag = isAssessor && responseData.assessor_manual_rework_flag === true;
-      const needsToClearReworkFlag = hadManualReworkFlag && !hasReworkFlag;
-
-      console.log(
-        `[onSaveDraft] Response ${r.id}: hasStatus=${hasStatus}, hasChecklistData=${hasChecklistData}, hasComments=${hasComments}, commentWasCleared=${commentWasCleared}, hasReworkFlag=${hasReworkFlag}, needsToClearReworkFlag=${needsToClearReworkFlag}`
-      );
-
-      return (
-        hasStatus ||
-        hasChecklistData ||
-        hasComments ||
-        commentWasCleared ||
-        hasReworkFlag ||
-        needsToClearReworkFlag
-      );
-    });
-
-    const allResponseIds = new Set(responsesToSave.map((r) => r.id));
-
-    console.log("[onSaveDraft] Responses to save:", allResponseIds.size);
-    console.log("[onSaveDraft] Response IDs:", Array.from(allResponseIds));
-
-    if (allResponseIds.size === 0) {
-      console.log("[onSaveDraft] No data to save, exiting");
-      return;
-    }
-
-    // Set both state and ref to prevent race conditions
-    isSavingRef.current = true;
-    setIsSaving(true);
-
-    try {
-      // Serialize requests to prevent overwhelming the backend
-      // Previously used Promise.all() which caused 503 errors due to connection pool exhaustion
-      const responseIdsArray = Array.from(allResponseIds);
-
-      for (let i = 0; i < responseIdsArray.length; i++) {
-        const responseId = responseIdsArray[i];
-        const formData = form[responseId];
-
-        console.log(
-          `[onSaveDraft] Processing response ${responseId} (${i + 1}/${responseIdsArray.length})`
-        );
-        console.log(`[onSaveDraft] Form data for ${responseId}:`, formData);
-
-        // Extract checklist data for this response
-        const responseChecklistData: Record<string, any> = {};
-        Object.keys(checklistData).forEach((key) => {
-          if (key.startsWith(`checklist_${responseId}_`)) {
-            // Remove the checklist_${responseId}_ prefix to get the field name
-            // For assessment_field items, keep the _yes/_no suffix
-            const fieldName = key.replace(`checklist_${responseId}_`, "");
-
-            // PREFIX based on user role:
-            // - Validators use "validator_val_" prefix (compliance service checks this)
-            // - Assessors use "assessor_val_" prefix
-            const prefix = isValidator ? "validator_val_" : "assessor_val_";
-            const prefixedFieldName = `${prefix}${fieldName}`;
-            responseChecklistData[prefixedFieldName] = checklistData[key];
-            console.log(
-              `[onSaveDraft] Extracted checklist: ${key} -> ${prefixedFieldName} = ${checklistData[key]}`
-            );
-          }
-        });
-
-        // Add or clear manual rework flag in response_data (assessor only)
-        if (isAssessor) {
-          const currentResponse = responses.find((r) => r.id === responseId);
-          const prevResponseData = (currentResponse as AnyRecord)?.response_data || {};
-          const hadManualFlag = prevResponseData.assessor_manual_rework_flag === true;
-          const hasManualFlag = responseId in reworkFlags;
-
-          if (hasManualFlag) {
-            responseChecklistData["assessor_manual_rework_flag"] = true;
-            console.log(`[onSaveDraft] Setting manual rework flag TRUE for response ${responseId}`);
-          } else if (hadManualFlag) {
-            // Explicitly clear the flag
-            responseChecklistData["assessor_manual_rework_flag"] = false;
-            console.log(`[onSaveDraft] Clearing manual rework flag for response ${responseId}`);
-          }
-        }
-
-        const payloadData = {
-          // Convert to uppercase to match backend ValidationStatus enum (PASS, FAIL, CONDITIONAL)
-          validation_status:
-            isValidator && formData?.status
-              ? (formData.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
-              : undefined,
-          public_comment: formData?.publicComment ?? null,
-          response_data:
-            Object.keys(responseChecklistData).length > 0 ? responseChecklistData : undefined,
-        };
-
-        console.log(`[onSaveDraft] Payload for response ${responseId}:`, payloadData);
-
-        await validateMut.mutateAsync({
-          responseId: responseId,
-          data: payloadData,
-        });
-      }
-
-      console.log("[onSaveDraft] All saves completed successfully");
-
-      // Invalidate queries to refresh UI
-      console.log("[onSaveDraft] Invalidating queries to refresh UI...");
-      await qc.invalidateQueries({ queryKey: ["assessor", "assessments", assessmentId] });
-
-      // Show success toast
-      toast({
-        title: "Saved",
-        description: "Validation progress saved successfully",
-        duration: 2000,
-        className: "bg-green-600 text-white border-none",
-      });
-    } catch (error) {
-      console.error("Error saving validation data:", error);
-      // Reset mutation state to allow retry
-      validateMut.reset();
-
-      // Classify error for better user feedback
-      const errorInfo = classifyError(error);
-
-      // Show error toast with specific error type and message
-      if (errorInfo.type === "network") {
-        toast({
-          title: "Unable to save draft",
-          description: "Check your internet connection and try again.",
-          variant: "destructive",
-        });
-      } else if (errorInfo.type === "auth") {
-        toast({
-          title: "Session expired",
-          description: "Please log in again to save your work.",
-          variant: "destructive",
-        });
-      } else if (errorInfo.type === "permission") {
-        toast({
-          title: "Access denied",
-          description: "You do not have permission to validate this assessment.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: errorInfo.title,
-          description: errorInfo.message,
-          variant: "destructive",
-        });
-      }
-    } finally {
-      // CRITICAL: Always reset loading state, whether success or error
-      isSavingRef.current = false;
-      setIsSaving(false);
-    }
+    await flushPendingChanges();
   };
+
+  useEffect(() => {
+    const nextSnapshots: Record<number, string> = {};
+    responses.forEach((response) => {
+      nextSnapshots[response.id] = getServerSnapshot(response);
+    });
+    lastSavedSnapshotRef.current = nextSnapshots;
+    hydratedRef.current = true;
+    dirtyResponseIdsRef.current = [];
+    setDirtyResponseIds([]);
+    setDraftSaveState("idle");
+  }, [responses, dataUpdatedAt]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || dirtyResponseIds.length === 0 || isAreaLocked) {
+      return;
+    }
+
+    setDraftSaveState("dirty");
+    autoSaveTimerRef.current = setTimeout(() => {
+      void saveResponses(dirtyResponseIds, { quiet: true });
+    }, AUTOSAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [dirtyResponseIds, form, checklistData, reworkFlags, isAreaLocked]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || autoFlaggedEmptyIds.size === 0) return;
+    autoFlaggedEmptyIds.forEach((responseId) => {
+      syncDirtyStateForResponse(responseId);
+    });
+  }, [autoFlaggedEmptyIds]);
+
+  useEffect(() => {
+    const handleDocumentNavigation = (event: MouseEvent) => {
+      if (isInterceptingNavigationRef.current) return;
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.hasAttribute("download")) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.href === window.location.href) return;
+
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      isInterceptingNavigationRef.current = true;
+
+      void (async () => {
+        const saved = await flushPendingChanges({ quiet: true });
+        if (saved) {
+          router.push(`${url.pathname}${url.search}${url.hash}`);
+        } else {
+          isInterceptingNavigationRef.current = false;
+        }
+      })();
+    };
+
+    document.addEventListener("click", handleDocumentNavigation, true);
+    return () => {
+      document.removeEventListener("click", handleDocumentNavigation, true);
+    };
+  }, [router]);
 
   const onSendRework = async () => {
     // For ASSESSORS: Validate that flagged indicators have comments
@@ -1027,7 +1253,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     });
 
     try {
-      await onSaveDraft();
+      const saved = await flushPendingChanges({ quiet: true });
+      if (!saved) return;
 
       // For ASSESSORS (area-specific): Use per-area rework endpoint
       // For VALIDATORS (system-wide): Use full rework endpoint
@@ -1120,7 +1347,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   const onFinalize = async () => {
     try {
       // Save draft first (serialized requests to prevent 503 errors)
-      await onSaveDraft();
+      const saved = await flushPendingChanges({ quiet: true });
+      if (!saved) return;
 
       // For ASSESSORS (area-specific): Use per-area approve endpoint
       // For VALIDATORS (system-wide): Use full finalize endpoint
@@ -1203,6 +1431,69 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     }
   };
 
+  const handleFormFieldChange = (
+    responseId: number,
+    field: "status" | "publicComment",
+    value: string
+  ) => {
+    const currentEntry = formRef.current[responseId] ?? {};
+    if (currentEntry[field] === value) return;
+
+    const nextForm = {
+      ...formRef.current,
+      [responseId]: {
+        ...currentEntry,
+        [field]: value,
+      },
+    };
+
+    formRef.current = nextForm;
+    syncDirtyStateForResponse(responseId);
+    startTransition(() => {
+      setForm(nextForm);
+    });
+  };
+
+  const handleChecklistChange = (key: string, value: any) => {
+    if (checklistDataRef.current[key] === value) return;
+
+    const nextChecklistData = {
+      ...checklistDataRef.current,
+      [key]: value,
+    };
+
+    checklistDataRef.current = nextChecklistData;
+
+    const match = key.match(/^checklist_(\d+)_/);
+    if (!match) return;
+
+    syncDirtyStateForResponse(Number(match[1]));
+    startTransition(() => {
+      setChecklistData(nextChecklistData);
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
+        Loading assessment…
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-10 text-sm">
+        <div className="rounded-md border p-4">
+          <div className="font-medium mb-1">Unable to load assessment</div>
+          <div className="text-muted-foreground break-words">
+            {String((error as any)?.message || "Please verify access and try again.")}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       {/* Header */}
@@ -1277,24 +1568,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                 <StatusBadge status={statusText} />
               </div>
             ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={onSaveDraft}
-              disabled={isSaving || isAssessorWithoutArea || (isAssessor && isAreaLocked)}
-              className="text-xs sm:text-sm px-2 sm:px-4"
-              title={
-                isAssessor && isAreaLocked
-                  ? myAreaStatus === "rework"
-                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
-                    : "Area is already reviewed and approved."
-                  : undefined
-              }
-            >
-              <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save as Draft"}</span>
-              <span className="sm:hidden">Save</span>
-            </Button>
           </div>
         </div>
       </div>
@@ -1412,26 +1685,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                   expandedId={expandedId ?? undefined}
                   onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
                   onIndicatorSelect={handleIndicatorSelect}
-                  setField={(id, field, value) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      [id]: {
-                        ...prev[id],
-                        [field]: value,
-                      },
-                    }));
-                  }}
-                  onChecklistChange={(key, value) => {
-                    console.log("[onChecklistChange] Checkbox changed:", { key, value });
-                    setChecklistData((prev) => {
-                      const newData = {
-                        ...prev,
-                        [key]: value,
-                      };
-                      console.log("[onChecklistChange] Updated checklistData:", newData);
-                      return newData;
-                    });
-                  }}
+                  setField={handleFormFieldChange}
+                  onChecklistChange={handleChecklistChange}
                   reworkFlags={reworkFlags}
                   onReworkFlagChange={handleReworkFlagChange}
                 />
@@ -1507,26 +1762,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                       expandedId={expandedId ?? undefined}
                       onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
                       onIndicatorSelect={handleIndicatorSelect}
-                      setField={(id, field, value) => {
-                        setForm((prev) => ({
-                          ...prev,
-                          [id]: {
-                            ...prev[id],
-                            [field]: value,
-                          },
-                        }));
-                      }}
-                      onChecklistChange={(key, value) => {
-                        console.log("[onChecklistChange] Checkbox changed:", { key, value });
-                        setChecklistData((prev) => {
-                          const newData = {
-                            ...prev,
-                            [key]: value,
-                          };
-                          console.log("[onChecklistChange] Updated checklistData:", newData);
-                          return newData;
-                        });
-                      }}
+                      setField={handleFormFieldChange}
+                      onChecklistChange={handleChecklistChange}
                       reworkFlags={reworkFlags}
                       onReworkFlagChange={handleReworkFlagChange}
                     />
@@ -1571,26 +1808,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
                   expandedId={expandedId ?? undefined}
                   onToggle={(id) => setExpandedId((curr) => (curr === id ? null : id))}
                   onIndicatorSelect={handleIndicatorSelect}
-                  setField={(id, field, value) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      [id]: {
-                        ...prev[id],
-                        [field]: value,
-                      },
-                    }));
-                  }}
-                  onChecklistChange={(key, value) => {
-                    console.log("[onChecklistChange] Checkbox changed:", { key, value });
-                    setChecklistData((prev) => {
-                      const newData = {
-                        ...prev,
-                        [key]: value,
-                      };
-                      console.log("[onChecklistChange] Updated checklistData:", newData);
-                      return newData;
-                    });
-                  }}
+                  setField={handleFormFieldChange}
+                  onChecklistChange={handleChecklistChange}
                   reworkFlags={reworkFlags}
                   onReworkFlagChange={handleReworkFlagChange}
                 />
@@ -1599,6 +1818,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
           </div>
         </div>
       </div>
+
+      <AutosaveStatusPill
+        state={draftSaveState}
+        completedSaveCount={completedAutosaveCount}
+        onRetry={onSaveDraft}
+      />
 
       {/* Bottom Progress Bar */}
       <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-card/80 backdrop-blur">
@@ -1616,50 +1841,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
               : ""}
           </div>
           <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={onSaveDraft}
-              disabled={isAnyActionPending || isAreaApproved}
-              className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
-              title={
-                isAssessor && isAreaLocked
-                  ? myAreaStatus === "rework"
-                    ? "Area is sent for rework. Waiting for BLGU to resubmit."
-                    : "Area is already reviewed and approved."
-                  : undefined
-              }
-            >
-              {isSaving ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <span className="hidden sm:inline">Saving Progress...</span>
-                  <span className="sm:hidden">Saving...</span>
-                </>
-              ) : (
-                "Save as Draft"
-              )}
-            </Button>
             {/* Send for Rework - Assessors only, requires ALL reviewed AND at least one rework toggle ON */}
             {/* When auto-flagged empty indicators exist, bypass allReviewed requirement */}
             {isAssessor && (
