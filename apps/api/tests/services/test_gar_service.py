@@ -86,7 +86,7 @@ def test_get_gar_data_resolves_year_placeholders(db_session):
     db_session.commit()
 
     gar_data = gar_service.get_gar_data(db_session, assessment.id)
-    assert gar_data.cycle_year == "CY 2026 SGLGB (PY 2025)"
+    assert gar_data.cycle_year == "CY 2027 SGLGB (PY 2026)"
 
     indicator_row = next(
         i for i in gar_data.governance_areas[0].indicators if i.indicator_id == indicator.id
@@ -98,6 +98,148 @@ def test_get_gar_data_resolves_year_placeholders(db_session):
     checklist_label = indicator_row.checklist_items[0].label
     assert "{CY_CURRENT_YEAR}" not in checklist_label
     assert "CY 2026" in checklist_label
+
+
+def test_get_gar_data_uses_assessment_year_for_cycle_header(db_session):
+    """BGAR header should derive CY/PY from the assessment's stored year."""
+    prior_year = AssessmentYear(
+        year=2025,
+        assessment_period_start=datetime(2025, 1, 1),
+        assessment_period_end=datetime(2025, 10, 31),
+        is_active=False,
+        is_published=True,
+    )
+    active_year = AssessmentYear(
+        year=2026,
+        assessment_period_start=datetime(2026, 1, 1),
+        assessment_period_end=datetime(2026, 10, 31),
+        is_active=True,
+        is_published=True,
+    )
+    db_session.add_all([prior_year, active_year])
+
+    barangay = Barangay(name="BGAR Active Year Barangay")
+    db_session.add(barangay)
+    db_session.flush()
+
+    blgu_user = User(
+        email="bgar.active.year@example.com",
+        name="BGAR Active Year BLGU",
+        hashed_password=pwd_context.hash("password123"),
+        role=UserRole.BLGU_USER,
+        barangay_id=barangay.id,
+        is_active=True,
+    )
+    db_session.add(blgu_user)
+    db_session.flush()
+
+    governance_area = GovernanceArea(
+        name="BGAR Active Year Area",
+        code="FI",
+        area_type=AreaType.CORE,
+    )
+    db_session.add(governance_area)
+    db_session.flush()
+
+    indicator = Indicator(
+        name="Prior-year assessment indicator",
+        description="BGAR header precedence test",
+        indicator_code="1.1",
+        governance_area_id=governance_area.id,
+        sort_order=1,
+    )
+    db_session.add(indicator)
+    db_session.flush()
+
+    assessment = Assessment(
+        blgu_user_id=blgu_user.id,
+        assessment_year=2025,
+        status=AssessmentStatus.COMPLETED,
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    response = AssessmentResponse(
+        assessment_id=assessment.id,
+        indicator_id=indicator.id,
+        validation_status=ValidationStatus.PASS,
+        response_data={},
+        is_completed=True,
+    )
+    db_session.add(response)
+    db_session.commit()
+
+    gar_data = gar_service.get_gar_data(db_session, assessment.id)
+
+    assert gar_data.cycle_year == "CY 2026 SGLGB (PY 2025)"
+
+
+def test_get_gar_data_uses_assessment_year_without_active_year(db_session):
+    """BGAR header should not depend on an active year configuration."""
+    prior_year = AssessmentYear(
+        year=2025,
+        assessment_period_start=datetime(2025, 1, 1),
+        assessment_period_end=datetime(2025, 10, 31),
+        is_active=False,
+        is_published=True,
+    )
+    db_session.add(prior_year)
+    db_session.flush()
+
+    barangay = Barangay(name="BGAR Fallback Barangay")
+    db_session.add(barangay)
+    db_session.flush()
+
+    blgu_user = User(
+        email="bgar.fallback@example.com",
+        name="BGAR Fallback BLGU",
+        hashed_password=pwd_context.hash("password123"),
+        role=UserRole.BLGU_USER,
+        barangay_id=barangay.id,
+        is_active=True,
+    )
+    db_session.add(blgu_user)
+    db_session.flush()
+
+    governance_area = GovernanceArea(
+        name="BGAR Fallback Area",
+        code="FI",
+        area_type=AreaType.CORE,
+    )
+    db_session.add(governance_area)
+    db_session.flush()
+
+    indicator = Indicator(
+        name="Fallback assessment indicator",
+        description="BGAR fallback test",
+        indicator_code="1.1",
+        governance_area_id=governance_area.id,
+        sort_order=1,
+    )
+    db_session.add(indicator)
+    db_session.flush()
+
+    assessment = Assessment(
+        blgu_user_id=blgu_user.id,
+        assessment_year=2025,
+        status=AssessmentStatus.COMPLETED,
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    response = AssessmentResponse(
+        assessment_id=assessment.id,
+        indicator_id=indicator.id,
+        validation_status=ValidationStatus.PASS,
+        response_data={},
+        is_completed=True,
+    )
+    db_session.add(response)
+    db_session.commit()
+
+    gar_data = gar_service.get_gar_data(db_session, assessment.id)
+
+    assert gar_data.cycle_year == "CY 2026 SGLGB (PY 2025)"
 
 
 def test_get_gar_data_uses_stored_area_results_for_overall_result(db_session):
