@@ -71,6 +71,10 @@ class Assessment(BaseModel):
     mlgoo_recalibration_indicator_ids: list[int] | None = None
     mlgoo_recalibration_comments: str | None = None
     mlgoo_recalibration_count: int = 0
+    reopened_at: datetime | None = None
+    reopened_by: int | None = None
+    reopen_reason: str | None = None
+    reopen_from_status: AssessmentStatus | None = None
     is_locked_for_blgu: bool = False
     lock_reason: str | None = None
     locked_at: datetime | None = None

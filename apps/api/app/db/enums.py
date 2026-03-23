@@ -46,6 +46,7 @@ class AssessmentStatus(str, enum.Enum):
     - IN_REVIEW: Assessor is actively reviewing the submission
     - REWORK: Assessor has requested changes, assessment is unlocked for BLGU
     - AWAITING_FINAL_VALIDATION: Assessor completed review, awaiting validator final validation
+    - REOPENED_BY_MLGOO: MLGOO reopened the submission for BLGU editing
     - COMPLETED: Final validation complete, assessment is finalized
 
     Legacy states (preserved for backward compatibility):
@@ -63,6 +64,7 @@ class AssessmentStatus(str, enum.Enum):
     AWAITING_MLGOO_APPROVAL = (
         "AWAITING_MLGOO_APPROVAL"  # NEW: After validators finalize, awaits MLGOO final approval
     )
+    REOPENED_BY_MLGOO = "REOPENED_BY_MLGOO"
     COMPLETED = "COMPLETED"
 
     # Legacy states (backward compatibility)

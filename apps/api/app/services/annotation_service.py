@@ -7,7 +7,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.db.models.assessment import MOVAnnotation
+from app.db.models.assessment import AssessmentResponse, MOVAnnotation, MOVFile
 from app.schemas.assessor import AnnotationCreate, AnnotationUpdate
 
 
@@ -38,6 +38,19 @@ class AnnotationService:
             if annotation_data.rects
             else None,
             comment=annotation_data.comment,
+            review_cycle=(
+                db.query(AssessmentResponse.validator_review_cycle)
+                .join(
+                    MOVFile,
+                    AssessmentResponse.assessment_id == MOVFile.assessment_id,
+                )
+                .filter(
+                    MOVFile.id == annotation_data.mov_file_id,
+                    AssessmentResponse.indicator_id == MOVFile.indicator_id,
+                )
+                .scalar()
+                or 1
+            ),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )

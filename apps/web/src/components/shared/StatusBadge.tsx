@@ -17,6 +17,8 @@ const statusBadgeVariants = cva(
           "border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300",
         "Needs Rework":
           "border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-300",
+        "Reopened by MLGOO":
+          "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300",
         Validated:
           "border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300",
         Finalized:
@@ -63,6 +65,10 @@ function StatusBadge({ className, status, ...props }: StatusBadgeProps) {
       "In Progress": { display: "In Progress", variant: "In Progress" },
       "Submitted for Review": { display: "Submitted for Review", variant: "Submitted for Review" },
       "Needs Rework": { display: "Needs Rework", variant: "Needs Rework" },
+      "Reopened by MLGOO": {
+        display: "Reopened by MLGOO",
+        variant: "Reopened by MLGOO",
+      },
       Validated: { display: "Validated", variant: "Validated" },
       Finalized: { display: "Finalized", variant: "Finalized" },
       // New submission statuses

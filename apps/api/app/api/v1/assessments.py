@@ -44,6 +44,18 @@ from app.services.submission_validation_service import submission_validation_ser
 router = APIRouter()
 
 
+def _extract_validator_owned_data(response_data: dict | None) -> dict:
+    if not response_data:
+        return {}
+    return {k: v for k, v in response_data.items() if k.startswith("validator_val_")}
+
+
+def _clear_active_validator_fields(response_data: dict | None) -> dict:
+    if not response_data:
+        return {}
+    return {k: v for k, v in response_data.items() if not k.startswith("validator_val_")}
+
+
 async def get_current_blgu_user(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> User:
@@ -1560,14 +1572,21 @@ def resubmit_assessment(
 
     _ensure_blgu_write_allowed(db, assessment, action="resubmit this assessment")
 
-    # Check assessment status is REWORK or has pending area reworks (per-area workflow)
+    # Check assessment status is REWORK, REOPENED_BY_MLGOO, or has pending area reworks
     # In the per-area workflow, assessment may be in SUBMITTED status while individual areas are in "rework"
     has_pending_area_rework = assessment.has_pending_area_rework()
-    if assessment.status != AssessmentStatus.REWORK and not has_pending_area_rework:
+    is_mlgoo_reopen_resubmission = assessment.status == AssessmentStatus.REOPENED_BY_MLGOO
+    if (
+        assessment.status != AssessmentStatus.REWORK
+        and not has_pending_area_rework
+        and not is_mlgoo_reopen_resubmission
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Assessment must be in REWORK status or have pending area reworks to resubmit. "
-            f"Current status: {assessment.status.value}",
+            detail=(
+                "Assessment must be in REWORK or REOPENED_BY_MLGOO status, "
+                f"or have pending area reworks to resubmit. Current status: {assessment.status.value}"
+            ),
         )
 
     # Check if this is an MLGOO RE-calibration (distinct from assessor rework)
@@ -1589,8 +1608,11 @@ def resubmit_assessment(
             f"Missing MOVs: {validation_result.missing_movs}"
         )
 
-    # MLGOO RE-calibration routes back to MLGOO approval
-    # Regular assessor rework routes back to SUBMITTED (for assessor review)
+    # MLGOO reopen routes back to the source review stage.
+    if is_mlgoo_reopen_resubmission:
+        assessment.status = assessment_service.get_reopened_submission_target_status(assessment)
+        assessment.submitted_at = datetime.utcnow()
+        assessment.rework_submitted_at = datetime.utcnow()
     if is_mlgoo_recalibration:
         assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
         # Clear MLGOO recalibration active flag after resubmission
@@ -1607,7 +1629,7 @@ def resubmit_assessment(
             f"Flagged indicators: {assessment.mlgoo_recalibration_indicator_ids}, "
             f"Flagged MOV files: {assessment.mlgoo_recalibration_mov_file_ids}"
         )
-    else:
+    elif not is_mlgoo_reopen_resubmission:
         # Set to SUBMITTED_FOR_REVIEW for assessor re-review (consistent with submit_assessment)
         assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
         assessment.submitted_at = datetime.utcnow()
@@ -1926,23 +1948,28 @@ def submit_for_calibration_review(
     assessment.is_calibration_rework = False
     # Keep calibration_validator_id for backward compatibility
 
-    # Clear requires_rework AND validation_status on the indicators that were calibrated
-    # IMPORTANT: Clear validation_status so the Validator can re-review these indicators
-    # Without this, the queue logic will skip the assessment (thinking validator already completed)
-    # Also clear response_data (validator's checklist) so they can re-validate from scratch
+    # Preserve prior validator history for calibrated indicators, then clear only
+    # the active validator-owned state needed for the new review cycle.
     for response in rework_responses:
+        current_cycle = response.validator_review_cycle or 1
+        validator_history = list(response.validator_review_history or [])
+        validator_history.append(
+            {
+                "review_cycle": current_cycle,
+                "validation_status": response.validation_status.value
+                if response.validation_status
+                else None,
+                "validator_response_data": _extract_validator_owned_data(response.response_data),
+                "archived_at": datetime.utcnow().isoformat(),
+            }
+        )
+        response.validator_review_history = validator_history
+        response.validator_review_cycle = current_cycle + 1
         response.requires_rework = False
         response.validation_status = None  # Reset so Validator can re-validate
-        response.response_data = {}  # Reset validator's checklist so they can re-verify
-
-    # CRITICAL: Delete old feedback comments for calibrated responses
-    # When BLGU resubmits for calibration, validator's old comments should be cleared
-    # so they can provide fresh feedback on the new submission
-    rework_response_ids = [r.id for r in rework_responses]
-    if rework_response_ids:
-        db.query(FeedbackComment).filter(
-            FeedbackComment.response_id.in_(rework_response_ids)
-        ).delete(synchronize_session="fetch")
+        response.response_data = _clear_active_validator_fields(
+            response.response_data
+        )  # Keep BLGU answer data, clear only validator checklist state
 
     # Store legacy validator_id before clearing (we need it for notification)
     legacy_validator_id = assessment.calibration_validator_id

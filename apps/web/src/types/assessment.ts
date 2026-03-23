@@ -10,6 +10,7 @@ export type AssessmentStatus =
   | "submitted-for-review"
   | "in-review"
   | "rework"
+  | "reopened-by-mlgoo"
   | "needs-rework"
   | "awaiting-final-validation"
   | "completed"
@@ -18,7 +19,8 @@ export type AssessmentStatus =
   | "Draft"
   | "Submitted for Review"
   | "Validated"
-  | "Needs Rework";
+  | "Needs Rework"
+  | "Reopened by MLGOO";
 
 export type ComplianceAnswer = "yes" | "no" | "na";
 
