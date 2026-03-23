@@ -42,6 +42,7 @@ interface SubmitAssessmentButtonProps {
   completedCount?: number;
   totalCount?: number;
   assessmentStatus?: string;
+  isLockedForBlgu?: boolean;
   onSuccess?: () => void;
 }
 
@@ -51,6 +52,7 @@ export function SubmitAssessmentButton({
   completedCount,
   totalCount,
   assessmentStatus,
+  isLockedForBlgu = false,
   onSuccess,
 }: SubmitAssessmentButtonProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -112,7 +114,7 @@ export function SubmitAssessmentButton({
     assessmentStatus.toLowerCase() === "needs-rework";
 
   // Disable when pending OR when assessment is already submitted (not editable)
-  const isButtonDisabled = isPending || !isEditableStatus;
+  const isButtonDisabled = isPending || !isEditableStatus || isLockedForBlgu;
 
   return (
     <>

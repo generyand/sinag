@@ -78,6 +78,7 @@ export default function IndicatorFormPage() {
       "COMPLETED",
       "SUBMITTED_FOR_REVIEW",
     ].includes(dashboardData.status);
+  const isBlguLocked = dashboardData?.is_locked_for_blgu === true;
 
   // Calibration rework lock - only calibrated governance areas should be editable
   const isCalibrationRework = (dashboardData as any)?.is_calibration_rework === true;
@@ -93,7 +94,7 @@ export default function IndicatorFormPage() {
     indicatorGovernanceAreaId !== undefined &&
     !calibrationGovernanceAreaIds.includes(Number(indicatorGovernanceAreaId));
 
-  const isLocked = isStatusLocked || isLockedDueToCalibration;
+  const isLocked = isBlguLocked || isStatusLocked || isLockedDueToCalibration;
 
   // Epic 5.0: Rework workflow context
   const reworkContext = useReworkContext(dashboardData as any, indicatorId, assessmentId);
@@ -220,6 +221,9 @@ export default function IndicatorFormPage() {
           <LockedStateBanner
             status={dashboardData.status as any}
             reworkCount={dashboardData.rework_count}
+            isLockedForBlgu={dashboardData.is_locked_for_blgu ?? false}
+            lockReason={dashboardData.lock_reason ?? null}
+            gracePeriodExpiresAt={dashboardData.grace_period_expires_at ?? null}
           />
         </div>
       )}

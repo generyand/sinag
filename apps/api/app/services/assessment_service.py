@@ -34,6 +34,7 @@ from app.schemas.assessment import (
     ProgressSummary,
 )
 from app.services.assessment_activity_service import assessment_activity_service
+from app.services.assessment_lock_service import assessment_lock_service
 from app.services.completeness_validation_service import completeness_validation_service
 from app.services.year_config_service import indicator_snapshot_service
 
@@ -318,6 +319,25 @@ class AssessmentService:
                 return None
 
             assessment_id = assessment_info["id"]
+            assessment_model = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+            if assessment_model is not None:
+                lock_state = assessment_lock_service.get_effective_lock_state(db, assessment_model)
+                assessment_info.update(
+                    {
+                        "is_locked_for_blgu": lock_state["is_locked"],
+                        "lock_reason": lock_state["lock_reason"],
+                        "locked_at": lock_state["locked_at"].isoformat() + "Z"
+                        if lock_state["locked_at"]
+                        else None,
+                        "grace_period_expires_at": lock_state["grace_period_expires_at"].isoformat()
+                        + "Z"
+                        if lock_state["grace_period_expires_at"]
+                        else None,
+                        "unlocked_at": assessment_model.unlocked_at.isoformat() + "Z"
+                        if assessment_model.unlocked_at
+                        else None,
+                    }
+                )
 
             # QUERY 2: Get static data - governance areas and indicators
             step_start = time.time()

@@ -29,6 +29,7 @@ interface AreaSubmitButtonProps {
   areaStatus: AreaStatusType;
   isComplete: boolean;
   assessmentStatus: string;
+  isAssessmentLockedForBlgu?: boolean;
   onSubmitSuccess: () => void;
 }
 
@@ -39,6 +40,7 @@ export function AreaSubmitButton({
   areaStatus,
   isComplete,
   assessmentStatus,
+  isAssessmentLockedForBlgu = false,
   onSubmitSuccess,
 }: AreaSubmitButtonProps) {
   const { toast } = useToast();
@@ -120,11 +122,12 @@ export function AreaSubmitButton({
     "validated",
     "completed",
   ].includes(assessmentStatus.toLowerCase());
+  const isReadOnly = isAssessmentLocked || isAssessmentLockedForBlgu;
 
   // Determine what to show based on status
   const renderContent = () => {
     // Don't show anything if assessment is locked (submission happens at area level now)
-    if (isAssessmentLocked) {
+    if (isReadOnly) {
       return null;
     }
     // Show status badge for non-actionable states

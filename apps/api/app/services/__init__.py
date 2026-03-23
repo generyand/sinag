@@ -3,6 +3,7 @@
 
 from .analytics_service import AnalyticsService, analytics_service
 from .annotation_service import AnnotationService, annotation_service
+from .assessment_lock_service import AssessmentLockService, assessment_lock_service
 from .assessment_service import AssessmentService, assessment_service
 from .assessment_year_service import AssessmentYearService, assessment_year_service
 from .assessor_service import AssessorService, assessor_service
@@ -16,6 +17,8 @@ __all__ = [
     "AnnotationService",
     "assessment_service",
     "AssessmentService",
+    "assessment_lock_service",
+    "AssessmentLockService",
     "assessment_year_service",
     "AssessmentYearService",
     "assessor_service",

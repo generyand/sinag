@@ -437,6 +437,104 @@ class GARExportService:
         path = os.path.join(_LOGOS_DIR, name)
         return path if os.path.exists(path) else None
 
+    def _get_footer_logo_positions(
+        self,
+        page_width: float,
+        text_block_width: float,
+        mlgrc_logo_width: float,
+        iso_logo_width: float,
+        logo_gap: float = 12.0,
+    ) -> tuple[float, float]:
+        """Place footer logos beside the footer text block, not at the page edges."""
+        center_x = page_width / 2.0
+        text_left = center_x - (text_block_width / 2.0)
+        text_right = center_x + (text_block_width / 2.0)
+        return (
+            text_left - logo_gap - mlgrc_logo_width,
+            text_right + logo_gap,
+        )
+
+    def _draw_pdf_footer(
+        self,
+        canvas,
+        page_width: float,
+        footer_y: float,
+        mlgrc_logo: str | None,
+        iso_logo: str | None,
+        colors_module,
+    ) -> None:
+        """Draw the BGAR footer with centered text and logos aligned to its sides."""
+        canvas.saveState()
+        center_x = page_width / 2.0
+
+        footer_lines = (
+            ("“Matino, Mahusay at Maaasahan”", "Helvetica-Bold", 7.0, 42),
+            ("MLGRC, Liga Bldg., Municipal Hall Compound", "Helvetica", 6.5, 32),
+            ("Prk. 9 Brgy. Poblacion, Sulop, Davao del Sur", "Helvetica", 6.5, 23),
+            ("sulopdilg2021@gmail.com", "Helvetica", 6.5, 14),
+        )
+
+        text_block_width = max(
+            canvas.stringWidth(text, font_name, font_size)
+            for text, font_name, font_size, _y_offset in footer_lines
+        )
+
+        for text, font_name, font_size, y_offset in footer_lines[:3]:
+            canvas.setFont(font_name, font_size)
+            canvas.drawCentredString(center_x, footer_y + y_offset, text)
+
+        canvas.setFont("Helvetica", 6.5)
+        canvas.setFillColor(colors_module.blue)
+        canvas.drawCentredString(center_x, footer_y + 14, "sulopdilg2021@gmail.com")
+        canvas.setFillColor(colors_module.black)
+
+        canvas.setFont("Helvetica", 7)
+        canvas.drawCentredString(center_x, footer_y, f"Page {canvas.getPageNumber()}")
+
+        mlgrc_logo_width = 42.0
+        mlgrc_logo_height = 42.0
+        iso_logo_width = 42.0
+        iso_logo_height = 42.0
+        logo_gap = 12.0
+        logo_y = footer_y + 8.0
+        mlgrc_logo_x, iso_logo_x = self._get_footer_logo_positions(
+            page_width=page_width,
+            text_block_width=text_block_width,
+            mlgrc_logo_width=mlgrc_logo_width,
+            iso_logo_width=iso_logo_width,
+            logo_gap=logo_gap,
+        )
+
+        if mlgrc_logo:
+            try:
+                canvas.drawImage(
+                    mlgrc_logo,
+                    mlgrc_logo_x,
+                    logo_y,
+                    width=mlgrc_logo_width,
+                    height=mlgrc_logo_height,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
+            except Exception:
+                pass
+
+        if iso_logo:
+            try:
+                canvas.drawImage(
+                    iso_logo,
+                    iso_logo_x,
+                    logo_y,
+                    width=iso_logo_width,
+                    height=iso_logo_height,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
+            except Exception:
+                pass
+
+        canvas.restoreState()
+
     def generate_pdf(self, gar_data: GARResponse) -> io.BytesIO:
         """
         Generate PDF file for GAR report with official DILG letterhead.
@@ -475,62 +573,15 @@ class GARExportService:
 
             # Footer callback: MLGRC + ISO logos and address on every page
             def _draw_footer(canvas, doc):
-                canvas.saveState()
                 footer_y = 0.35 * inch
-                center_x = page_w / 2.0
-
-                # Footer text
-                canvas.setFont("Helvetica-Bold", 7)
-                canvas.drawCentredString(
-                    center_x, footer_y + 42, "\u201cMatino, Mahusay at Maaasahan\u201d"
+                self._draw_pdf_footer(
+                    canvas=canvas,
+                    page_width=page_w,
+                    footer_y=footer_y,
+                    mlgrc_logo=mlgrc_logo,
+                    iso_logo=iso_logo,
+                    colors_module=colors,
                 )
-                canvas.setFont("Helvetica", 6.5)
-                canvas.drawCentredString(
-                    center_x, footer_y + 32, "MLGRC, Liga Bldg., Municipal Hall Compound"
-                )
-                canvas.drawCentredString(
-                    center_x, footer_y + 23, "Prk. 9 Brgy. Poblacion, Sulop, Davao del Sur"
-                )
-                canvas.setFont("Helvetica", 6.5)
-                canvas.setFillColor(colors.blue)
-                canvas.drawCentredString(center_x, footer_y + 14, "sulopdilg2021@gmail.com")
-                canvas.setFillColor(colors.black)
-
-                # Page number
-                canvas.setFont("Helvetica", 7)
-                canvas.drawCentredString(center_x, footer_y, f"Page {canvas.getPageNumber()}")
-
-                # MLGRC logo (left of footer text)
-                if mlgrc_logo:
-                    try:
-                        canvas.drawImage(
-                            mlgrc_logo,
-                            0.6 * inch,
-                            footer_y + 12,
-                            width=40,
-                            height=40,
-                            preserveAspectRatio=True,
-                            mask="auto",
-                        )
-                    except Exception:
-                        pass
-
-                # ISO logo (right of footer text)
-                if iso_logo:
-                    try:
-                        canvas.drawImage(
-                            iso_logo,
-                            page_w - 0.6 * inch - 40,
-                            footer_y + 12,
-                            width=40,
-                            height=40,
-                            preserveAspectRatio=True,
-                            mask="auto",
-                        )
-                    except Exception:
-                        pass
-
-                canvas.restoreState()
 
             doc = SimpleDocTemplate(
                 buffer,

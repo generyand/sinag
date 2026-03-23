@@ -25,9 +25,11 @@ import type {
   AssessmentDetailResponse,
   GetMlgooApprovalQueueParams,
   HTTPValidationError,
+  LockAssessmentResponse,
   OverrideValidationStatusRequest,
   OverrideValidationStatusResponse,
   PostMlgooAssessmentsAssessmentIdApproveBody,
+  PostMlgooAssessmentsAssessmentIdLockBody,
   PostMlgooAssessmentsAssessmentIdUnlockBody,
   RecalibrationByMovRequest,
   RecalibrationByMovResponse,
@@ -425,15 +427,15 @@ export const usePostMlgooAssessmentsAssessmentIdRecalibrateByMov = <TError = voi
       return useMutation(mutationOptions);
     }
     /**
- * Unlock an assessment that was locked due to deadline expiry.
+ * Reopen BLGU editing on a locked assessment without changing workflow state.
 
 **Access:** Requires MLGOO_DILG role.
 
-When a BLGU misses their grace period deadline, their assessment is automatically locked. MLGOO can unlock it and grant additional time for the BLGU to complete their corrections.
+When a BLGU misses the due date or grace period, their assessment becomes read-only. MLGOO can reopen editing and grant a new grace period.
 
 **Default behavior:**
-- Unlocks the assessment
-- Extends grace period by 3 days (configurable)
+- Uses the active assessment-year default grace period
+- Allows MLGOO to override the expiry per unlock action
  * @summary Unlock Deadline-Locked Assessment
  */
 export const postMlgooAssessments$AssessmentIdUnlock = (
@@ -495,6 +497,74 @@ export const usePostMlgooAssessmentsAssessmentIdUnlock = <TError = void | HTTPVa
       > => {
 
       const mutationOptions = getPostMlgooAssessmentsAssessmentIdUnlockMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Immediately make an assessment read-only for BLGU users without changing workflow state.
+
+**Access:** Requires MLGOO_DILG role.
+ * @summary Manually Lock Assessment For BLGU
+ */
+export const postMlgooAssessments$AssessmentIdLock = (
+    assessmentId: number,
+    postMlgooAssessmentsAssessmentIdLockBody: PostMlgooAssessmentsAssessmentIdLockBody,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<LockAssessmentResponse>(
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/lock`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postMlgooAssessmentsAssessmentIdLockBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostMlgooAssessmentsAssessmentIdLockMutationOptions = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdLock>>, TError,{assessmentId: number;data: PostMlgooAssessmentsAssessmentIdLockBody}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdLock>>, TError,{assessmentId: number;data: PostMlgooAssessmentsAssessmentIdLockBody}, TContext> => {
+
+const mutationKey = ['postMlgooAssessmentsAssessmentIdLock'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdLock>>, {assessmentId: number;data: PostMlgooAssessmentsAssessmentIdLockBody}> = (props) => {
+          const {assessmentId,data} = props ?? {};
+
+          return  postMlgooAssessments$AssessmentIdLock(assessmentId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostMlgooAssessmentsAssessmentIdLockMutationResult = NonNullable<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdLock>>>
+    export type PostMlgooAssessmentsAssessmentIdLockMutationBody = PostMlgooAssessmentsAssessmentIdLockBody
+    export type PostMlgooAssessmentsAssessmentIdLockMutationError = void | HTTPValidationError
+
+    /**
+ * @summary Manually Lock Assessment For BLGU
+ */
+export const usePostMlgooAssessmentsAssessmentIdLock = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdLock>>, TError,{assessmentId: number;data: PostMlgooAssessmentsAssessmentIdLockBody}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdLock>>,
+        TError,
+        {assessmentId: number;data: PostMlgooAssessmentsAssessmentIdLockBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostMlgooAssessmentsAssessmentIdLockMutationOptions(options);
 
       return useMutation(mutationOptions);
     }

@@ -48,9 +48,9 @@ celery_app.conf.beat_schedule = {
         "task": "deadline.process_deadline_reminders",
         "schedule": crontab(hour=8, minute=0),
     },
-    # Hourly auto-submit check for expired deadlines
-    "check-auto-submit-hourly": {
-        "task": "deadline.process_auto_submit",
+    # Hourly BLGU lock sync for expired deadlines and grace periods
+    "check-assessment-locks-hourly": {
+        "task": "deadline.process_assessment_locks",
         "schedule": crontab(minute=0),  # Every hour at minute 0
     },
 }

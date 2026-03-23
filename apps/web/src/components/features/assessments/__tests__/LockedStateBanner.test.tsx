@@ -16,6 +16,36 @@ import { render, screen } from "@testing-library/react";
 import { LockedStateBanner } from "../LockedStateBanner";
 
 describe("LockedStateBanner", () => {
+  describe("BLGU Lock Overlay", () => {
+    it("renders the deadline lock banner even for editable workflow statuses", () => {
+      render(
+        <LockedStateBanner
+          status="DRAFT"
+          isLockedForBlgu
+          lockReason="deadline_expired"
+          reworkCount={0}
+        />
+      );
+
+      expect(screen.getByText("Deadline Expired")).toBeInTheDocument();
+      expect(screen.getByText("READ ONLY")).toBeInTheDocument();
+    });
+
+    it("renders the reopened grace-period banner while editing is temporarily allowed", () => {
+      render(
+        <LockedStateBanner
+          status="DRAFT"
+          isLockedForBlgu={false}
+          gracePeriodExpiresAt={new Date(Date.now() + 60 * 60 * 1000).toISOString()}
+          reworkCount={0}
+        />
+      );
+
+      expect(screen.getByText("Editing Reopened")).toBeInTheDocument();
+      expect(screen.getByText("TEMPORARY")).toBeInTheDocument();
+    });
+  });
+
   describe("Banner Visibility", () => {
     it("should not render for DRAFT status", () => {
       const { container } = render(<LockedStateBanner status="DRAFT" reworkCount={0} />);

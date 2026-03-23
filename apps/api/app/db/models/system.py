@@ -83,6 +83,9 @@ class AssessmentYear(Base):
     calibration_window_days: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=3
     )  # Days BLGU has after Validator triggers calibration
+    default_unlock_grace_period_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=3
+    )  # Default MLGOO unlock grace period
 
     # Status flags
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)

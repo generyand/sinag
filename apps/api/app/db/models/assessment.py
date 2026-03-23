@@ -126,6 +126,14 @@ class Assessment(Base):
     # When deadline expires, BLGU is locked from editing and MLGOO is notified
     is_locked_for_deadline: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     locked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    lock_reason: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    grace_period_set_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    unlocked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    unlocked_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Per-Assessment Calculated Deadlines
     # Calculated dynamically when rework/calibration is triggered based on year's window config
@@ -221,6 +229,8 @@ class Assessment(Base):
     mlgoo_recalibration_requester = relationship(
         "User", foreign_keys=[mlgoo_recalibration_requested_by], post_update=True
     )
+    grace_period_setter = relationship("User", foreign_keys=[grace_period_set_by], post_update=True)
+    unlocker = relationship("User", foreign_keys=[unlocked_by], post_update=True)
     responses = relationship(
         "AssessmentResponse", back_populates="assessment", cascade="all, delete-orphan"
     )
@@ -337,6 +347,11 @@ class Assessment(Base):
             AssessmentStatus.AWAITING_MLGOO_APPROVAL,
             AssessmentStatus.COMPLETED,
         ]
+
+    @property
+    def is_locked_for_blgu(self) -> bool:
+        """Compatibility alias for explicit BLGU lock metadata."""
+        return self.is_locked_for_deadline
 
     @property
     def can_request_mlgoo_recalibration(self) -> bool:

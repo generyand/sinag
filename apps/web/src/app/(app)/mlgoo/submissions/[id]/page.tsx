@@ -31,6 +31,8 @@ import { SecureFileViewer } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -40,8 +42,16 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getGracePeriodMessage,
+  getLockMessage,
+  getLockReasonLabel,
+  hasActiveGracePeriod,
+  isBlguLocked as isBlguAccessLocked,
+} from "@/lib/assessment-locks";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
+  getGetMlgooAssessmentsAssessmentIdQueryKey,
   getGetCapdevAssessmentsAssessmentIdQueryKey,
   useGetAssessmentsList,
   useGetCapdevAssessmentsAssessmentId,
@@ -50,7 +60,9 @@ import {
   usePatchMlgooAssessmentsAssessmentIdRecalibrationValidation,
   usePostCapdevAssessmentsAssessmentIdRegenerate,
   usePostMlgooAssessmentsAssessmentIdApprove,
+  usePostMlgooAssessmentsAssessmentIdLock,
   usePostMlgooAssessmentsAssessmentIdRecalibrateByMov,
+  usePostMlgooAssessmentsAssessmentIdUnlock,
   type IndicatorDetailItem,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
@@ -71,6 +83,8 @@ import {
   FileText,
   LayoutDashboard,
   ListChecks,
+  Lock,
+  LockOpen,
   Loader2,
   RotateCcw,
   TrendingUp,
@@ -353,6 +367,19 @@ function getValidationStatusLabel(status?: string | null): string {
   }
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) {
+    return "Not set";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleString();
+}
+
 function getAssessorIndicatorDetail(indicator: IndicatorDetailItem): {
   label: string;
   isPositive: boolean;
@@ -416,9 +443,16 @@ export default function SubmissionDetailsPage() {
   const [expandedProgressDetails, setExpandedProgressDetails] = React.useState<
     Record<string, boolean>
   >({});
+  const [isUnlockFormOpen, setIsUnlockFormOpen] = React.useState(false);
+  const [unlockDays, setUnlockDays] = React.useState("3");
+  const [customUnlockExpiry, setCustomUnlockExpiry] = React.useState("");
+  const [unlockPreviewBaseTime, setUnlockPreviewBaseTime] = React.useState(() =>
+    new Date().toISOString()
+  );
 
   // Fetch assessment details from API
   const { data, isLoading, isError, error } = useGetMlgooAssessmentsAssessmentId(assessmentId);
+  const defaultUnlockGraceDays = Number((data as any)?.default_grace_period_days ?? 3);
 
   // Fetch all submissions for prev/next navigation
   const { data: allSubmissions } = useGetAssessmentsList({});
@@ -458,6 +492,8 @@ export default function SubmissionDetailsPage() {
 
   // Approve mutation
   const approveMutation = usePostMlgooAssessmentsAssessmentIdApprove();
+  const unlockMutation = usePostMlgooAssessmentsAssessmentIdUnlock();
+  const lockMutation = usePostMlgooAssessmentsAssessmentIdLock();
 
   // Recalibration mutation (MOV file level)
   const recalibrateMutation = usePostMlgooAssessmentsAssessmentIdRecalibrateByMov();
@@ -502,6 +538,12 @@ export default function SubmissionDetailsPage() {
       prevCapDevStatusRef.current = currentStatus;
     }
   }, [capdevInsights]);
+
+  React.useEffect(() => {
+    if (Number.isFinite(defaultUnlockGraceDays) && defaultUnlockGraceDays > 0) {
+      setUnlockDays(String(defaultUnlockGraceDays));
+    }
+  }, [defaultUnlockGraceDays]);
 
   // CapDev regeneration mutation
   const regenerateCapdevMutation = usePostCapdevAssessmentsAssessmentIdRegenerate();
@@ -560,6 +602,94 @@ export default function SubmissionDetailsPage() {
       const errorMessage =
         err?.response?.data?.detail || err?.message || "Failed to approve assessment";
       toast.error(`Approval failed: ${errorMessage}`, { duration: 6000 });
+    }
+  };
+
+  const handleUnlockAssessment = async () => {
+    if (!assessmentId) return;
+
+    const trimmedCustomExpiry = customUnlockExpiry.trim();
+    const parsedDays = Number.parseInt(unlockDays, 10);
+    const payload: { extend_grace_period_days?: number; grace_period_expires_at?: string } = {};
+
+    if (trimmedCustomExpiry) {
+      const customExpiryDate = new Date(trimmedCustomExpiry);
+      if (Number.isNaN(customExpiryDate.getTime())) {
+        toast.error("Please provide a valid custom grace-period expiry.");
+        return;
+      }
+
+      if (customExpiryDate.getTime() <= Date.now()) {
+        toast.error("Custom grace-period expiry must be in the future.");
+        return;
+      }
+
+      payload.grace_period_expires_at = customExpiryDate.toISOString();
+    } else {
+      if (!Number.isFinite(parsedDays) || parsedDays < 1) {
+        toast.error("Grace period must be at least 1 day.");
+        return;
+      }
+
+      payload.extend_grace_period_days = parsedDays;
+    }
+
+    toast.loading("Reopening BLGU editing...", { id: "unlock-blgu-toast" });
+
+    try {
+      const result = await unlockMutation.mutateAsync({
+        assessmentId,
+        data: payload,
+      });
+
+      toast.dismiss("unlock-blgu-toast");
+      toast.success(
+        `BLGU editing reopened until ${formatDateTime(result.grace_period_expires_at)}.`,
+        {
+          duration: 5000,
+        }
+      );
+
+      setIsUnlockFormOpen(false);
+      setCustomUnlockExpiry("");
+      setUnlockDays(String(result.default_grace_period_days || defaultUnlockGraceDays || 3));
+
+      await queryClient.invalidateQueries({
+        queryKey: getGetMlgooAssessmentsAssessmentIdQueryKey(assessmentId),
+      });
+    } catch (err: any) {
+      toast.dismiss("unlock-blgu-toast");
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to reopen BLGU editing";
+      toast.error(`Unlock failed: ${errorMessage}`, { duration: 6000 });
+    }
+  };
+
+  const handleManualLockAssessment = async () => {
+    if (!assessmentId) return;
+
+    toast.loading("Locking BLGU editing...", { id: "lock-blgu-toast" });
+
+    try {
+      await lockMutation.mutateAsync({
+        assessmentId,
+        data: {},
+      });
+
+      toast.dismiss("lock-blgu-toast");
+      toast.success("BLGU editing locked again.", { duration: 5000 });
+
+      setIsUnlockFormOpen(false);
+      setCustomUnlockExpiry("");
+
+      await queryClient.invalidateQueries({
+        queryKey: getGetMlgooAssessmentsAssessmentIdQueryKey(assessmentId),
+      });
+    } catch (err: any) {
+      toast.dismiss("lock-blgu-toast");
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to lock BLGU editing";
+      toast.error(`Lock failed: ${errorMessage}`, { duration: 6000 });
     }
   };
 
@@ -807,12 +937,39 @@ export default function SubmissionDetailsPage() {
   }
 
   const assessment = data as any;
+  const blguAccessState = {
+    is_locked_for_blgu: assessment.is_locked_for_deadline === true,
+    lock_reason: assessment.lock_reason ?? null,
+    grace_period_expires_at: assessment.grace_period_expires_at ?? null,
+    unlocked_at: assessment.unlocked_at ?? null,
+  };
   const governanceAreas = assessment.governance_areas || [];
   const isAwaitingApproval = assessment.status === "AWAITING_MLGOO_APPROVAL";
   const canRecalibrate = assessment.can_recalibrate && isAwaitingApproval;
   const isCompleted = assessment.status === "COMPLETED";
   const complianceStatus = assessment.compliance_status; // "PASSED" or "FAILED"
   const isPassed = complianceStatus === "PASSED";
+  const isBlguLocked = isBlguAccessLocked(blguAccessState);
+  const hasTemporaryReopenAccess = hasActiveGracePeriod(blguAccessState);
+  const parsedUnlockDays = Number.parseInt(unlockDays, 10);
+  const unlockPreviewBaseDate = new Date(unlockPreviewBaseTime);
+  const unlockPreviewExpiry = customUnlockExpiry
+    ? formatDateTime(customUnlockExpiry)
+    : Number.isFinite(parsedUnlockDays) &&
+        parsedUnlockDays > 0 &&
+        !Number.isNaN(unlockPreviewBaseDate.getTime())
+      ? new Date(
+          unlockPreviewBaseDate.getTime() + parsedUnlockDays * 24 * 60 * 60 * 1000
+        ).toLocaleString()
+      : null;
+
+  const toggleUnlockForm = () => {
+    if (!isUnlockFormOpen) {
+      setUnlockPreviewBaseTime(new Date().toISOString());
+    }
+
+    setIsUnlockFormOpen((prev) => !prev);
+  };
 
   // Calculate totals
   const totalPass = governanceAreas.reduce((sum: number, ga: any) => sum + (ga.pass_count || 0), 0);
@@ -1172,6 +1329,198 @@ export default function SubmissionDetailsPage() {
               )}
             </div>
           </div>
+
+          <Card
+            className={`border ${
+              isBlguLocked
+                ? "border-red-200 bg-red-50/60"
+                : hasTemporaryReopenAccess
+                  ? "border-sky-200 bg-sky-50/60"
+                  : "border-slate-200 bg-white"
+            }`}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="flex flex-col gap-3 text-lg sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  {isBlguLocked ? (
+                    <Lock className="h-5 w-5 text-red-600" />
+                  ) : hasTemporaryReopenAccess ? (
+                    <LockOpen className="h-5 w-5 text-sky-600" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-slate-600" />
+                  )}
+                  <span>BLGU Editing Access</span>
+                </div>
+                <span
+                  className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                    isBlguLocked
+                      ? "bg-red-100 text-red-800"
+                      : hasTemporaryReopenAccess
+                        ? "bg-sky-100 text-sky-800"
+                        : "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {isBlguLocked
+                    ? "Locked"
+                    : hasTemporaryReopenAccess
+                      ? "Temporarily Reopened"
+                      : "Normal Deadline Access"}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Workflow Status
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-slate-900">
+                    {assessment.status?.replace(/_/g, " ") || "Unknown"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Locking never changes the workflow state.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Lock Reason
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-slate-900">
+                    {isBlguLocked ? getLockReasonLabel(assessment.lock_reason) : "Editing Open"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {isBlguLocked
+                      ? getLockMessage(assessment.lock_reason)
+                      : hasTemporaryReopenAccess
+                        ? getGracePeriodMessage(assessment.grace_period_expires_at)
+                        : "BLGU editing still follows the regular assessment deadline."}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Current Lock Time
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-slate-900">
+                    {formatDateTime(assessment.locked_at)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Last reopened: {formatDateTime(assessment.unlocked_at)}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Grace Period
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-slate-900">
+                    Default: {defaultUnlockGraceDays} day
+                    {defaultUnlockGraceDays === 1 ? "" : "s"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Expires: {formatDateTime(assessment.grace_period_expires_at)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 rounded-lg border border-dashed border-slate-300 bg-white/70 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">MLGOO controls</p>
+                    <p className="text-sm text-slate-600">
+                      {isBlguLocked
+                        ? "Unlock the whole assessment without consuming rework, calibration, or recalibration cycles."
+                        : hasTemporaryReopenAccess
+                          ? "Lock the assessment again before the grace period expires if editing should stop immediately."
+                          : "No override is active. BLGU editing remains under the configured deadline window."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {isBlguLocked && (
+                      <Button
+                        onClick={toggleUnlockForm}
+                        variant="outline"
+                        className="border-sky-300 text-sky-700 hover:bg-sky-50"
+                      >
+                        <LockOpen className="mr-2 h-4 w-4" />
+                        {isUnlockFormOpen ? "Cancel Unlock" : "Unlock for BLGU"}
+                      </Button>
+                    )}
+                    {hasTemporaryReopenAccess && (
+                      <Button
+                        onClick={handleManualLockAssessment}
+                        disabled={lockMutation.isPending}
+                        variant="outline"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        {lockMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Locking...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="mr-2 h-4 w-4" />
+                            Lock Again
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {isUnlockFormOpen && isBlguLocked && (
+                  <div className="grid gap-4 rounded-lg border border-sky-200 bg-sky-50/70 p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+                    <div className="space-y-2">
+                      <Label htmlFor="unlock-days">Grace Period in Days</Label>
+                      <Input
+                        id="unlock-days"
+                        type="number"
+                        min={1}
+                        value={unlockDays}
+                        onChange={(event) => setUnlockDays(event.target.value)}
+                      />
+                      <p className="text-xs text-slate-500">
+                        Prefilled from the active assessment-year settings.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="unlock-expiry">Custom Expiry Override</Label>
+                      <Input
+                        id="unlock-expiry"
+                        type="datetime-local"
+                        value={customUnlockExpiry}
+                        onChange={(event) => setCustomUnlockExpiry(event.target.value)}
+                      />
+                      <p className="text-xs text-slate-500">
+                        Optional. If set, this exact expiry overrides the day count.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleUnlockAssessment}
+                      disabled={unlockMutation.isPending}
+                      className="bg-sky-600 text-white hover:bg-sky-700"
+                    >
+                      {unlockMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Unlocking...
+                        </>
+                      ) : (
+                        <>
+                          <LockOpen className="mr-2 h-4 w-4" />
+                          Apply Unlock
+                        </>
+                      )}
+                    </Button>
+                    <div className="lg:col-span-3">
+                      <p className="text-xs font-medium text-slate-600">
+                        Preview expiry: {unlockPreviewExpiry || "Enter a valid grace period"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Completion Progress Card - Only for DRAFT assessments */}
           {isDraft && (

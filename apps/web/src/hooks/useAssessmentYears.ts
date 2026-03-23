@@ -42,6 +42,7 @@ export interface AssessmentYearFormData {
   rework_deadline: string | null;
   phase2_deadline: string | null;
   calibration_deadline: string | null;
+  default_unlock_grace_period_days: number;
   description?: string | null;
 }
 
@@ -234,6 +235,7 @@ export function transformFormToApiData(formData: AssessmentYearFormData): Assess
     rework_deadline: formData.rework_deadline || undefined,
     phase2_deadline: formData.phase2_deadline || undefined,
     calibration_deadline: formData.calibration_deadline || undefined,
+    default_unlock_grace_period_days: formData.default_unlock_grace_period_days,
     description: formData.description || undefined,
   };
 }
@@ -262,6 +264,7 @@ export function transformApiToFormData(apiData: AssessmentYearResponse): Assessm
     rework_deadline: toDatetimeLocal(apiData.rework_deadline) || null,
     phase2_deadline: toDatetimeLocal(apiData.phase2_deadline) || null,
     calibration_deadline: toDatetimeLocal(apiData.calibration_deadline) || null,
+    default_unlock_grace_period_days: apiData.default_unlock_grace_period_days ?? 3,
     description: apiData.description ?? null,
   };
 }

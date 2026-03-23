@@ -32,6 +32,7 @@ interface TreeNavigatorProps {
   areaStatusData?: AreaStatusResponse | null;
   onAreaSubmitSuccess?: () => void;
   areaAssessorStatus?: AreaAssessorStatusItem[];
+  isAssessmentLockedForBlgu?: boolean;
 }
 
 export function TreeNavigator({
@@ -41,6 +42,7 @@ export function TreeNavigator({
   areaStatusData,
   onAreaSubmitSuccess,
   areaAssessorStatus,
+  isAssessmentLockedForBlgu = false,
 }: TreeNavigatorProps) {
   // Load expanded state from sessionStorage or auto-expand first incomplete
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(() => {
@@ -189,6 +191,7 @@ export function TreeNavigator({
                   assessmentStatus={assessment.status}
                   onAreaSubmitSuccess={onAreaSubmitSuccess}
                   remainingAttempts={getRemainingAttempts(area.id)}
+                  isAssessmentLockedForBlgu={isAssessmentLockedForBlgu}
                 />
 
                 {/* Indicators (when expanded) - Render hierarchical tree */}

@@ -106,23 +106,33 @@ class AdminErrorResponse(BaseModel):
 
 
 # ============================================================================
-# Auto-Submit Schemas
+# Assessment Lock Processing Schemas
 # ============================================================================
 
 
-class AutoSubmitDetail(BaseModel):
-    """Detail for a single auto-submitted assessment."""
+class AssessmentLockDetail(BaseModel):
+    """Detail for a single assessment whose BLGU lock state was updated."""
 
     assessment_id: int
     barangay_name: str
+    lock_reason: str
 
 
-class AutoSubmitResponse(BaseModel):
-    """Response schema for the admin trigger-auto-submit endpoint."""
+class AssessmentLockProcessingResponse(BaseModel):
+    """Response schema for the admin assessment-lock processing endpoint."""
 
-    auto_submitted_count: int = Field(..., description="Number of assessments auto-submitted")
-    details: list[AutoSubmitDetail] = Field(
-        default_factory=list, description="Details of each auto-submitted assessment"
+    processed_count: int = Field(
+        ..., description="Total number of assessments whose lock state was updated"
+    )
+    deadline_locked_count: int = Field(
+        ..., description="Number of assessments locked because the due date expired"
+    )
+    grace_relocked_count: int = Field(
+        ..., description="Number of assessments re-locked because grace expired"
+    )
+    details: list[AssessmentLockDetail] = Field(
+        default_factory=list,
+        description="Details of each assessment whose BLGU lock state changed",
     )
 
 

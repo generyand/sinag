@@ -11,7 +11,6 @@ import type { AnonymizedInsight } from '../common';
 import type { ApprovalQueueItem } from '../common';
 import type { AuditLogResponseUserEmail } from '../users';
 import type { AuditLogResponseUserName } from '../users';
-import type { AutoSubmitDetail } from '../common';
 import type { GovernanceAreaGroup } from '../common';
 import type { BLGUDashboardResponseAreaAssessorStatus } from '../assessor';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
@@ -228,17 +227,6 @@ export type AuditLogResponseIpAddress = string | null;
 
 
 /**
- * AutoSubmitResponse
- */
-export interface AutoSubmitResponse {
-  /** Number of assessments auto-submitted */
-  auto_submitted_count: number;
-  /** Details of each auto-submitted assessment */
-  details?: AutoSubmitDetail[];
-}
-
-
-/**
  * BLGUDashboardResponse
  */
 export interface BLGUDashboardResponse {
@@ -254,6 +242,16 @@ export interface BLGUDashboardResponse {
   is_auto_submitted?: boolean;
   /** Timestamp when assessment was auto-submitted (if applicable) */
   auto_submitted_at?: BLGUDashboardResponseAutoSubmittedAt;
+  /** True when BLGU editing is explicitly or effectively locked */
+  is_locked_for_blgu?: boolean;
+  /** Reason BLGU editing is locked: deadline_expired, grace_period_expired, or mlgoo_manual_lock */
+  lock_reason?: BLGUDashboardResponseLockReason;
+  /** Timestamp when the current BLGU lock took effect */
+  locked_at?: BLGUDashboardResponseLockedAt;
+  /** Grace period expiry while the assessment is temporarily reopened for BLGU editing */
+  grace_period_expires_at?: BLGUDashboardResponseGracePeriodExpiresAt;
+  /** Timestamp when MLGOO last reopened BLGU editing */
+  unlocked_at?: BLGUDashboardResponseUnlockedAt;
   /** Assessment status (DRAFT, SUBMITTED, IN_REVIEW, REWORK, COMPLETED) */
   status: string;
   /** Number of times rework has been requested (0 or 1) */
@@ -432,6 +430,24 @@ export type BLGUDashboardResponseDeadlineUrgencyLevel = 'normal' | 'warning' | '
 
 
 /**
+ * BLGUDashboardResponseGracePeriodExpiresAt
+ */
+export type BLGUDashboardResponseGracePeriodExpiresAt = string | null;
+
+
+/**
+ * BLGUDashboardResponseLockReason
+ */
+export type BLGUDashboardResponseLockReason = string | null;
+
+
+/**
+ * BLGUDashboardResponseLockedAt
+ */
+export type BLGUDashboardResponseLockedAt = string | null;
+
+
+/**
  * BLGUDashboardResponsePhase1Deadline
  */
 export type BLGUDashboardResponsePhase1Deadline = string | null;
@@ -465,6 +481,12 @@ export type BLGUDashboardResponseReworkSubmittedAt = string | null;
  * BLGUDashboardResponseSubmittedAt
  */
 export type BLGUDashboardResponseSubmittedAt = string | null;
+
+
+/**
+ * BLGUDashboardResponseUnlockedAt
+ */
+export type BLGUDashboardResponseUnlockedAt = string | null;
 
 
 /**

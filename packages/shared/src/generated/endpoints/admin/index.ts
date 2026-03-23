@@ -24,9 +24,9 @@ import type {
   AssessmentCycleCreate,
   AssessmentCycleResponse,
   AssessmentCycleUpdate,
+  AssessmentLockProcessingResponse,
   AuditLogListResponse,
   AuditLogResponse,
-  AutoSubmitResponse,
   DeadlineOverrideCreate,
   DeadlineOverrideListResponse,
   DeadlineOverrideResponse,
@@ -878,28 +878,28 @@ export function useGetAdminDeadlinesOverridesExport<TData = Awaited<ReturnType<t
 
 
 /**
- * Manually trigger auto-submit for all DRAFT assessments past the Phase 1 deadline. Useful when Celery is not running. Requires MLGOO_DILG role.
- * @summary Trigger auto-submit for overdue DRAFT assessments
+ * Manually trigger BLGU lock processing for expired due dates and grace periods. Useful when Celery is not running. Requires MLGOO_DILG role.
+ * @summary Trigger BLGU assessment lock processing
  */
-export const postAdminTriggerAutoSubmit = (
+export const postAdminTriggerAssessmentLocks = (
     
  options?: SecondParameter<typeof mutator>,signal?: AbortSignal
 ) => {
       
       
-      return mutator<AutoSubmitResponse>(
-      {url: `/api/v1/admin/trigger-auto-submit`, method: 'POST', signal
+      return mutator<AssessmentLockProcessingResponse>(
+      {url: `/api/v1/admin/trigger-assessment-locks`, method: 'POST', signal
     },
       options);
     }
   
 
 
-export const getPostAdminTriggerAutoSubmitMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, TError,void, TContext> => {
+export const getPostAdminTriggerAssessmentLocksMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAssessmentLocks>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAssessmentLocks>>, TError,void, TContext> => {
 
-const mutationKey = ['postAdminTriggerAutoSubmit'];
+const mutationKey = ['postAdminTriggerAssessmentLocks'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -909,10 +909,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAdminTriggerAssessmentLocks>>, void> = () => {
           
 
-          return  postAdminTriggerAutoSubmit(requestOptions)
+          return  postAdminTriggerAssessmentLocks(requestOptions)
         }
 
         
@@ -920,23 +920,23 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostAdminTriggerAutoSubmitMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>>
+    export type PostAdminTriggerAssessmentLocksMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminTriggerAssessmentLocks>>>
     
-    export type PostAdminTriggerAutoSubmitMutationError = unknown
+    export type PostAdminTriggerAssessmentLocksMutationError = unknown
 
     /**
- * @summary Trigger auto-submit for overdue DRAFT assessments
+ * @summary Trigger BLGU assessment lock processing
  */
-export const usePostAdminTriggerAutoSubmit = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
+export const usePostAdminTriggerAssessmentLocks = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminTriggerAssessmentLocks>>, TError,void, TContext>, request?: SecondParameter<typeof mutator>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof postAdminTriggerAutoSubmit>>,
+        Awaited<ReturnType<typeof postAdminTriggerAssessmentLocks>>,
         TError,
         void,
         TContext
       > => {
 
-      const mutationOptions = getPostAdminTriggerAutoSubmitMutationOptions(options);
+      const mutationOptions = getPostAdminTriggerAssessmentLocksMutationOptions(options);
 
       return useMutation(mutationOptions);
     }

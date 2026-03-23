@@ -50,6 +50,7 @@ export function AssessmentContentPanel({
   );
 
   const resolvedAssessmentId = Number(assessment.id);
+  const isAssessmentLockedForBlgu = isLocked || dashboardData?.is_locked_for_blgu === true;
 
   // Rework context - for showing assessor feedback
   const reworkContext = useReworkContext(
@@ -84,6 +85,7 @@ export function AssessmentContentPanel({
             assessment={assessment}
             selectedIndicatorId={null}
             onIndicatorSelect={onIndicatorSelect || (() => {})}
+            isAssessmentLockedForBlgu={isAssessmentLockedForBlgu}
           />
         </div>
       </div>
@@ -148,7 +150,7 @@ export function AssessmentContentPanel({
   const shouldUnlockForFeedback = hasIndicatorFeedback;
 
   const indicatorLocked =
-    isLocked ||
+    isAssessmentLockedForBlgu ||
     isLockedDueToCalibration ||
     (isLockedDueToAreaSubmission && !shouldUnlockForFeedback) ||
     (assessment.status === "Needs Rework" && !selectedIndicator.requiresRework);

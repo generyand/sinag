@@ -39,6 +39,7 @@ interface AssessmentTreeNodeProps {
   onAreaSubmitSuccess?: () => void;
   // Per-area rework/calibration tracking
   remainingAttempts?: { reworkLeft: boolean; calibrationLeft: boolean };
+  isAssessmentLockedForBlgu?: boolean;
 }
 
 export function AssessmentTreeNode({
@@ -56,6 +57,7 @@ export function AssessmentTreeNode({
   assessmentStatus,
   onAreaSubmitSuccess,
   remainingAttempts,
+  isAssessmentLockedForBlgu = false,
 }: AssessmentTreeNodeProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -281,6 +283,7 @@ export function AssessmentTreeNode({
                   areaStatus={areaStatus}
                   isComplete={progress?.percentage === 100}
                   assessmentStatus={assessmentStatus || "draft"}
+                  isAssessmentLockedForBlgu={isAssessmentLockedForBlgu}
                   onSubmitSuccess={onAreaSubmitSuccess}
                 />
               </div>

@@ -37,6 +37,7 @@ from app.schemas.assessment import (
     SubmissionStatusResponse,
     SubmitAssessmentResponse,
 )
+from app.services.assessment_lock_service import assessment_lock_service
 from app.services.assessment_service import assessment_service
 from app.services.submission_validation_service import submission_validation_service
 
@@ -66,6 +67,14 @@ async def get_current_blgu_user(
             detail="Not enough permissions. BLGU user access required.",
         )
     return current_user
+
+
+def _ensure_blgu_write_allowed(
+    db: Session,
+    assessment: Assessment,
+    action: str,
+) -> None:
+    assessment_lock_service.ensure_blgu_write_allowed(db, assessment, action=action)
 
 
 @router.get("/dashboard", response_model=AssessmentDashboardResponse, tags=["assessments"])
@@ -233,6 +242,8 @@ async def update_assessment_response(
             detail="Access denied. Response does not belong to your assessment",
         )
 
+    _ensure_blgu_write_allowed(db, assessment, action="edit answers in this assessment")
+
     # Check if assessment is in a state that allows updates
     if assessment.status not in [
         assessment.status.DRAFT,
@@ -293,6 +304,8 @@ async def create_assessment_response(
             detail="Cannot create response for different assessment",
         )
 
+    _ensure_blgu_write_allowed(db, assessment, action="edit answers in this assessment")
+
     try:
         return assessment_service.create_assessment_response(db, response_create)
     except HTTPException:
@@ -325,6 +338,8 @@ async def submit_current_user_assessment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Assessment not found for current user",
         )
+
+    _ensure_blgu_write_allowed(db, assessment, action="submit this assessment")
 
     try:
         validation_result = assessment_service.submit_assessment(db, assessment.id)
@@ -379,6 +394,8 @@ async def upload_mov(
             detail="Access denied. Response does not belong to your assessment",
         )
 
+    _ensure_blgu_write_allowed(db, assessment, action="upload or replace MOV files")
+
     # Verify the MOV is for the correct response
     if mov_create.response_id != response_id:
         raise HTTPException(
@@ -426,6 +443,8 @@ async def delete_mov(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. MOV does not belong to your assessment",
         )
+
+    _ensure_blgu_write_allowed(db, assessment, action="remove MOV files")
 
     try:
         success = assessment_service.delete_mov(db, mov_id)
@@ -745,6 +764,7 @@ async def save_assessment_answers(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not authorized to modify this assessment",
             )
+        _ensure_blgu_write_allowed(db, assessment, action="save answers in this assessment")
     # Assessors and other roles are allowed
 
     # Status check: Only DRAFT or NEEDS_REWORK assessments can be edited
@@ -1226,6 +1246,8 @@ def submit_assessment(
             detail="You can only submit your own assessments",
         )
 
+    _ensure_blgu_write_allowed(db, assessment, action="submit this assessment")
+
     # Validate assessment completeness using SubmissionValidationService
     # NOTE: We now allow incomplete submissions (user confirmed via frontend warning dialog)
     # This supports BLGUs who genuinely don't have MOVs for certain indicators
@@ -1536,6 +1558,8 @@ def resubmit_assessment(
             detail="You can only resubmit your own assessments",
         )
 
+    _ensure_blgu_write_allowed(db, assessment, action="resubmit this assessment")
+
     # Check assessment status is REWORK or has pending area reworks (per-area workflow)
     # In the per-area workflow, assessment may be in SUBMITTED status while individual areas are in "rework"
     has_pending_area_rework = assessment.has_pending_area_rework()
@@ -1706,6 +1730,10 @@ def submit_for_calibration_review(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only submit your own assessments",
         )
+
+    _ensure_blgu_write_allowed(
+        db, assessment, action="submit this assessment for calibration review"
+    )
 
     # Check assessment status is REWORK
     if assessment.status != AssessmentStatus.REWORK:

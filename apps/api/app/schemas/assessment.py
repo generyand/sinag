@@ -71,6 +71,12 @@ class Assessment(BaseModel):
     mlgoo_recalibration_indicator_ids: list[int] | None = None
     mlgoo_recalibration_comments: str | None = None
     mlgoo_recalibration_count: int = 0
+    is_locked_for_blgu: bool = False
+    lock_reason: str | None = None
+    locked_at: datetime | None = None
+    grace_period_expires_at: datetime | None = None
+    unlocked_at: datetime | None = None
+    unlocked_by: int | None = None
 
 
 class AssessmentCreate(BaseModel):

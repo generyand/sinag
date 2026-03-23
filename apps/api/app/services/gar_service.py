@@ -186,9 +186,10 @@ class GARService:
                 )
             )
 
-        # Determine cycle year from the assessment year (used by BGAR tab + exported PDF header)
-        current_year = assessment.assessment_year
-        cycle_year = f"CY {current_year} SGLGB (PY {current_year - 1})"
+        # BGAR headers are displayed as the cycle year plus the underlying performance year.
+        # Example: an assessment stored under 2025 should render as CY 2026 (PY 2025).
+        performance_year = assessment.assessment_year
+        cycle_year = f"CY {performance_year + 1} SGLGB (PY {performance_year})"
 
         # Get BBI compliance data (DILG MC 2024-417)
         bbi_compliance = None
