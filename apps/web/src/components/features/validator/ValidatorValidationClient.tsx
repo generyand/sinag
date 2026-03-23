@@ -1235,17 +1235,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               size="sm"
               type="button"
               onClick={() => setShowCalibrationConfirm(true)}
-              disabled={
-                calibrateMut.isPending ||
-                allAreasCalibrated ||
-                !Object.values(calibrationFlags).some((v) => v === true)
-              }
+              disabled={calibrateMut.isPending}
               className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
               style={{
-                background:
-                  allAreasCalibrated || !Object.values(calibrationFlags).some((v) => v === true)
-                    ? "var(--muted)"
-                    : "var(--cityscape-yellow)",
+                background: "var(--cityscape-yellow)",
               }}
               title={
                 allAreasCalibrated
