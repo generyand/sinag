@@ -35,6 +35,10 @@ CANONICAL_DISPLAY_FILENAME_LABEL_TEMPLATES = {
         "city/municipal treasurer if the barangay opted that the corresponding SK "
         "fund be kept as trust fund in the custody of the C/M treasurer."
     ),
+    ("4.1.4", "upload_section_1"): (
+        "Accomplishment Report covering 1st to 3rd quarter of CY {CURRENT_YEAR} "
+        "with received stamp by the C/MSWDO and C/MLGOO"
+    ),
 }
 
 

@@ -409,6 +409,79 @@ class TestStorageServiceFileUpload:
 
         assert result.file_name == f"1.6.1 {expected_label} (1).pdf"
 
+    def test_upload_mov_file_normalizes_sng_16_4_1_4_label(
+        self,
+        service,
+        mock_supabase_client,
+        db_session,
+        mock_blgu_user,
+    ):
+        """SNG-16: 4.1.4 uploads should rename to the approved MOV name."""
+        assessment_year = AssessmentYear(
+            year=2025,
+            assessment_period_start=datetime(2025, 1, 1),
+            assessment_period_end=datetime(2025, 10, 31),
+            is_active=True,
+            is_published=True,
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        governance_area = GovernanceArea(name="SNG-16 Area", code="S1", area_type=AreaType.CORE)
+        db_session.add(governance_area)
+        db_session.flush()
+
+        indicator = Indicator(
+            name="SNG-16 Indicator 4.1.4",
+            indicator_code="4.1.4",
+            governance_area_id=governance_area.id,
+            sort_order=1,
+            form_schema={},
+        )
+        db_session.add(indicator)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=2025,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+
+        upload_file = UploadFile(
+            filename="test.pdf",
+            file=io.BytesIO(b"%PDF-1.4\n%"),
+            headers={"content-type": "application/pdf"},
+        )
+
+        with (
+            patch(
+                "app.services.storage_service._get_supabase_client",
+                return_value=mock_supabase_client,
+            ),
+            patch.object(service, "_update_response_completion_status", return_value=None),
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=indicator.id,
+                user_id=mock_blgu_user.id,
+                field_id="upload_section_1",
+                indicator_code="4.1.4",
+                field_label=(
+                    "Quarterly accomplishment reports based on the database/records of "
+                    "VAW cases reported in the barangay"
+                ),
+            )
+
+        assert (
+            result.file_name
+            == "4.1.4 Accomplishment Report covering 1st to 3rd quarter of CY 2025 "
+            "with received stamp by the C-MSWDO and C-MLGOO (1).pdf"
+        )
+
 
 class TestStorageServiceFileDeletion:
     """Test file deletion functionality (Story 4.6)."""

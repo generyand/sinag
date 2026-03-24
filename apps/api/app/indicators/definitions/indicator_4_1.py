@@ -139,7 +139,7 @@ INDICATOR_4_1 = Indicator(
         SubIndicator(
             code="4.1.4",
             name="Accomplishment Reports: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
-            upload_instructions="Upload: Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
+            upload_instructions="Upload: Accomplishment Report covering 1st to 3rd quarter of CY {CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO",
             validation_rule="ALL_ITEMS_REQUIRED",
             notes=FormNotes(
                 title="Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay containing relevant information such as:",
@@ -158,8 +158,8 @@ INDICATOR_4_1 = Indicator(
                 # Upload Verification
                 ChecklistItem(
                     id="4_1_4_upload_1",
-                    label="Quarterly accomplishment reports based on the database/records of VAW cases reported in the barangay",
-                    mov_description="Verification of uploaded quarterly accomplishment reports based on VAW cases database/records",
+                    label="Accomplishment Report covering 1st to 3rd quarter of CY {CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO",
+                    mov_description="Verification of uploaded Accomplishment Report covering 1st to 3rd quarter of CY {CURRENT_YEAR} with received stamp by the C/MSWDO and C/MLGOO",
                     required=True,
                     display_order=1,
                 ),
