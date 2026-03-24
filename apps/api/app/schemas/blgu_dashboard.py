@@ -399,6 +399,11 @@ class BLGUDashboardResponse(BaseModel):
         "An indicator is considered 'addressed' when BLGU uploads new MOV files after rework_requested_at. "
         "Use this (not is_complete) to determine if an indicator is 'Fixed' in the rework workflow.",
     )
+    flagged_indicator_ids: list[int] | None = Field(
+        None,
+        description="List of indicator IDs explicitly flagged for rework or calibration in the current workflow cycle. "
+        "Use this as the authoritative scope for rework/calibration progress instead of inferring from all incomplete indicators.",
+    )
 
     # AI-generated summary for rework/calibration guidance
     ai_summary: AISummary | None = Field(

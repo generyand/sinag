@@ -1,6 +1,7 @@
 "use client";
 
 import { AreaStatusType, Assessment, AssessmentValidation } from "@/types/assessment";
+import type { ReworkProgressSummary } from "@/lib/rework-progress";
 import { AlertCircle, CheckCircle, Clock, Info, Send } from "lucide-react";
 
 interface AreaSubmissionStatusData {
@@ -16,6 +17,7 @@ interface AssessmentHeaderProps {
   calibrationGovernanceAreaName?: string;
   calibrationGovernanceAreaNames?: string[];
   areaStatusData?: AreaSubmissionStatusData | null;
+  reworkProgressSummary?: ReworkProgressSummary;
 }
 
 export function AssessmentHeader({
@@ -25,6 +27,7 @@ export function AssessmentHeader({
   calibrationGovernanceAreaName,
   calibrationGovernanceAreaNames = [],
   areaStatusData,
+  reworkProgressSummary,
 }: AssessmentHeaderProps) {
   // Combine legacy single name with new multiple names array
   const allCalibrationAreaNames =
@@ -138,6 +141,10 @@ export function AssessmentHeader({
   };
 
   const statusConfig = getStatusConfig();
+
+  const hasReworkSummary = typeof reworkProgressSummary !== "undefined";
+  const hasFlaggedIndicators = (reworkProgressSummary?.flagged || 0) > 0;
+  const remainingReworkCount = reworkProgressSummary?.remaining || 0;
 
   return (
     <div className="relative overflow-hidden bg-[var(--card)] border-b border-[var(--border)]">
@@ -290,14 +297,35 @@ export function AssessmentHeader({
           </div>
 
           {/* Validation Info */}
-          {!validation.isComplete && validation.missingIndicators.length > 0 && (
+          {hasReworkSummary && hasFlaggedIndicators ? (
             <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
               <Info className="h-5 w-5 flex-shrink-0" />
               <span>
-                You have {validation.missingIndicators.length} incomplete indicators. Complete each
-                governance area to enable its submit button.
+                {remainingReworkCount > 0 ? (
+                  <>
+                    You have {remainingReworkCount} indicators requiring{" "}
+                    {isCalibrationRework ? "calibration" : "rework"}. Address all flagged indicators
+                    to enable resubmission.
+                  </>
+                ) : (
+                  <>
+                    All flagged indicators have been addressed. You can submit your{" "}
+                    {isCalibrationRework ? "calibration" : "rework"} updates for review.
+                  </>
+                )}
               </span>
             </div>
+          ) : (
+            !validation.isComplete &&
+            validation.missingIndicators.length > 0 && (
+              <div className="mt-4 flex items-start gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-100">
+                <Info className="h-5 w-5 flex-shrink-0" />
+                <span>
+                  You have {validation.missingIndicators.length} incomplete indicators. Complete
+                  each governance area to enable its submit button.
+                </span>
+              </div>
+            )
           )}
         </div>
       </div>

@@ -21,6 +21,7 @@ import {
 } from "@sinag/shared";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { getReworkProgressSummary } from "@/lib/rework-progress";
 
 export default function BLGUAssessmentsPage() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -261,6 +262,14 @@ export default function BLGUAssessmentsPage() {
           (displayAssessment.completedIndicators / displayAssessment.totalIndicators) * 100
         )
       : 0;
+  const reworkProgressSummary = getReworkProgressSummary(
+    assessment,
+    ((dashboardData as any)?.addressed_indicator_ids as number[] | undefined) || []
+  );
+  const headerReworkProgressSummary =
+    normalizedStatus === "rework" || normalizedStatus === "needs-rework"
+      ? reworkProgressSummary
+      : undefined;
 
   return (
     <div
@@ -292,6 +301,7 @@ export default function BLGUAssessmentsPage() {
               (dashboardData as any)?.calibration_governance_areas || []
             ).map((a: any) => a.governance_area_name)}
             areaStatusData={areaStatusData as any}
+            reworkProgressSummary={headerReworkProgressSummary}
           />
         </div>
       </header>

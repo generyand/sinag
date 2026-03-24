@@ -32,7 +32,6 @@ import {
   Clock,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { FailedIndicatorCard } from "./FailedIndicatorCard";
 import type { BLGUDashboardResponse } from "@sinag/shared";
@@ -43,7 +42,10 @@ interface ReworkIndicatorsPanelProps {
   assessmentId: number;
 }
 
-export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkIndicatorsPanelProps) {
+export function ReworkIndicatorsPanel({
+  dashboardData,
+  assessmentId: _assessmentId,
+}: ReworkIndicatorsPanelProps) {
   const router = useRouter();
   const [expandedAreas, setExpandedAreas] = useState<Set<number>>(new Set());
 
@@ -104,6 +106,9 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     // Get addressed indicator IDs from backend - these are indicators where
     // BLGU uploaded new files AFTER rework was requested
     const addressedIds = new Set<number>((dashboardData as any).addressed_indicator_ids || []);
+    const flaggedIndicatorIds = new Set<number>(
+      ((dashboardData as any).flagged_indicator_ids as number[] | undefined) || []
+    );
 
     // Helper function to find indicator in governance areas (including children)
     const findIndicator = (indicatorId: number) => {
@@ -174,8 +179,6 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
       // the flagged files belong to
       if (mlgooRecalibrationMovFileIds.length > 0) {
         // Search all governance areas to find indicators with the flagged files
-        const flaggedFileIds = new Set(mlgooRecalibrationMovFileIds.map((f) => f.mov_file_id));
-
         // Check mov_annotations_by_indicator for file-to-indicator mapping
         // Also iterate through all indicators to check if they have flagged files
         dashboardData.governance_areas.forEach((area) => {
@@ -238,6 +241,68 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
             if (failed) {
               failed.annotations.push(...annotations);
             }
+          }
+        }
+      );
+    }
+    // Prefer the explicitly flagged set from the dashboard payload.
+    // This keeps rework/calibration counts aligned with the workflow rule:
+    // start from flagged indicators, then reduce as they are addressed.
+    else if (flaggedIndicatorIds.size > 0) {
+      flaggedIndicatorIds.forEach((indicatorId) => {
+        const indicator = findIndicator(indicatorId);
+        if (!indicator) {
+          return;
+        }
+
+        indicatorMap.set(indicatorId, {
+          indicator_id: indicatorId,
+          indicator_name: indicator.indicator_name,
+          governance_area_id: indicator.governance_area_id,
+          governance_area_name: indicator.governance_area_name,
+          is_complete: indicator.is_complete,
+          is_addressed: addressedIds.has(indicatorId),
+          comments: [],
+          annotations: [],
+          total_feedback_items: 0,
+          has_mov_issues: false,
+          has_field_issues: false,
+          route_path: `/blgu/assessments?indicator=${indicatorId}`,
+        });
+      });
+
+      dashboardData.rework_comments?.forEach((comment: any) => {
+        const failed = indicatorMap.get(comment.indicator_id);
+        if (failed) {
+          failed.comments.push(comment);
+        }
+      });
+
+      Object.entries(movNotesByIndicator).forEach(([indicatorIdStr, notes]) => {
+        const indicatorId = Number(indicatorIdStr);
+        const failed = indicatorMap.get(indicatorId);
+        if (!failed) {
+          return;
+        }
+
+        const normalizedNotes = (notes || [])
+          .filter((n) => typeof n?.note === "string" && n.note.trim().length > 0)
+          .map((n) => ({
+            comment: n.note!,
+            comment_type: n.note_type || "mov_note",
+            indicator_id: indicatorId,
+            indicator_name: n.indicator_name || failed.indicator_name,
+            created_at: n.created_at || null,
+          }));
+        failed.comments.push(...(normalizedNotes as any));
+      });
+
+      Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
+        ([indicatorIdStr, annotations]: [string, any]) => {
+          const indicatorId = Number(indicatorIdStr);
+          const failed = indicatorMap.get(indicatorId);
+          if (failed) {
+            failed.annotations.push(...annotations);
           }
         }
       );
@@ -411,7 +476,6 @@ export function ReworkIndicatorsPanel({ dashboardData, assessmentId }: ReworkInd
     }));
   }, [
     dashboardData,
-    assessmentId,
     isCalibration,
     calibrationAreaIds,
     isMlgooRecalibration,

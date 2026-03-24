@@ -54,6 +54,7 @@ export interface Indicator {
   technicalNotes: string;
   governanceAreaId: string;
   status: IndicatorStatus;
+  isCompleted?: boolean;
   complianceAnswer?: ComplianceAnswer;
   movFiles: MOVFile[];
   assessorComment?: string; // Only present when status is 'needs_rework'

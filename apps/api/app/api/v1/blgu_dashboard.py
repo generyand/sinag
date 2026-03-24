@@ -437,6 +437,7 @@ def get_blgu_dashboard(
     # Rework/calibration-specific data: comments and addressed indicators
     rework_comments = None
     addressed_indicator_ids = None
+    flagged_indicator_ids = None
     area_submission_status_payload = assessment.area_submission_status or {}
     has_pending_area_rework = any(
         isinstance(v, dict) and str(v.get("status", "")).lower() == "rework"
@@ -487,16 +488,15 @@ def get_blgu_dashboard(
 
         rework_comments = comments_list if comments_list else None
 
-        # Calculate addressed_indicator_ids - indicators with new uploads after request timestamp
+        # Calculate addressed_indicator_ids for flagged indicators only.
+        # A flagged indicator is addressed only after a new upload in the current cycle
+        # and once the response is complete again.
         addressed_indicator_ids = []
-        feedback_indicator_ids = set()
-        for comment_data in comments_list:
-            if comment_data.get("indicator_id"):
-                feedback_indicator_ids.add(comment_data["indicator_id"])
-        for indicator_id in annotations_by_indicator_dict.keys():
-            feedback_indicator_ids.add(indicator_id)
-        for indicator_id in mov_notes_by_indicator_dict.keys():
-            feedback_indicator_ids.add(indicator_id)
+        flagged_indicator_ids = {
+            response.indicator_id
+            for response in assessment.responses
+            if response.requires_rework and response.indicator_id is not None
+        }
 
         # Build per-governance-area rework timestamps for per-area assessor workflow.
         area_rework_requested_at: dict[int, datetime] = {}
@@ -512,7 +512,7 @@ def get_blgu_dashboard(
             except (ValueError, TypeError):
                 continue
 
-        for indicator_id in feedback_indicator_ids:
+        for indicator_id in flagged_indicator_ids:
             response = response_lookup.get(indicator_id)
             area_id = (
                 response.indicator.governance_area_id if response and response.indicator else None
@@ -532,7 +532,7 @@ def get_blgu_dashboard(
                 and mf.deleted_at is None
                 for mf in assessment.mov_files
             )
-            if has_new_files:
+            if has_new_files and response and response.is_completed:
                 addressed_indicator_ids.append(indicator_id)
 
     # PARALLEL CALIBRATION: Get all pending calibration info
@@ -1199,6 +1199,7 @@ def get_blgu_dashboard(
         "mov_annotations_by_indicator": mov_annotations_by_indicator,  # MOV annotations grouped by indicator
         "mov_notes_by_indicator": mov_notes_by_indicator,  # MOV notes grouped by indicator
         "addressed_indicator_ids": addressed_indicator_ids,  # Indicators with feedback that have new uploads after rework
+        "flagged_indicator_ids": sorted(flagged_indicator_ids) if flagged_indicator_ids else None,
         # AI Summary for rework/calibration guidance
         "ai_summary": ai_summary,
         "ai_summary_available_languages": ai_summary_available_languages,

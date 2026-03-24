@@ -16,6 +16,7 @@ import type { BLGUDashboardResponseAreaAssessorStatus } from '../assessor';
 import type { BLGUDashboardResponseMovAnnotationsByIndicator } from '../indicators';
 import type { BLGUDashboardResponseMovNotesByIndicator } from '../indicators';
 import type { BLGUDashboardResponseAddressedIndicatorIds } from '../indicators';
+import type { BLGUDashboardResponseFlaggedIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationIndicatorIds } from '../indicators';
 import type { BLGUDashboardResponseMlgooRecalibrationMovFileIds } from '../movs';
 import type { BLGUDashboardResponseMlgooRecalibrationComments } from '../mlgoo';
@@ -294,6 +295,8 @@ export interface BLGUDashboardResponse {
   mov_notes_by_indicator?: BLGUDashboardResponseMovNotesByIndicator;
   /** List of indicator IDs that have been addressed after rework was requested. An indicator is considered 'addressed' when BLGU uploads new MOV files after rework_requested_at. Use this (not is_complete) to determine if an indicator is 'Fixed' in the rework workflow. */
   addressed_indicator_ids?: BLGUDashboardResponseAddressedIndicatorIds;
+  /** List of indicator IDs explicitly flagged for rework or calibration in the current workflow cycle. Use this as the authoritative scope for rework/calibration progress instead of inferring from all incomplete indicators. */
+  flagged_indicator_ids?: BLGUDashboardResponseFlaggedIndicatorIds;
   /** AI-generated summary with overall guidance, per-indicator breakdowns, and priority actions. Only populated when assessment is in REWORK status. Use the language query parameter to get summary in different languages. */
   ai_summary?: BLGUDashboardResponseAiSummary;
   /** List of language codes for which AI summaries are available (e.g., ['ceb', 'en']). Tagalog ('fil') is generated on-demand if requested. */
