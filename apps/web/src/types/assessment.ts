@@ -80,6 +80,7 @@ export interface Assessment {
   barangayId: string;
   barangayName: string;
   status: AssessmentStatus;
+  assessmentYear?: number;
   createdAt: string;
   updatedAt: string;
   submittedAt?: string;

@@ -84,6 +84,8 @@ export function AssessmentHeader({
   const progressPercentage = Math.round(
     (assessment.completedIndicators / assessment.totalIndicators) * 100
   );
+  const displayAssessmentYear =
+    assessment.assessmentYear ?? new Date(assessment.createdAt).getFullYear();
 
   // Count submitted/approved areas from area status data
   const getAreasSubmittedCount = () => {
@@ -194,7 +196,7 @@ export function AssessmentHeader({
                   {getStatusText()}
                 </div>
                 <span className="text-sm text-[var(--text-secondary)]">
-                  * {new Date(assessment.createdAt).getFullYear()} Assessment
+                  * {displayAssessmentYear} Assessment
                 </span>
               </div>
 

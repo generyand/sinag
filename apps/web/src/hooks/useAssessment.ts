@@ -100,6 +100,7 @@ export function useCurrentAssessment() {
     assessment: {
       id: number;
       status: string;
+      assessment_year?: number;
       barangay_id?: number;
       barangay_name?: string;
       created_at: string;
@@ -326,6 +327,7 @@ export function useCurrentAssessment() {
         status: (assessmentData as unknown as APIAssessment).assessment.status
           .toLowerCase()
           .replaceAll("_", "-") as AssessmentStatus,
+        assessmentYear: (assessmentData as unknown as APIAssessment).assessment.assessment_year,
         createdAt: (assessmentData as unknown as APIAssessment).assessment.created_at,
         updatedAt: (assessmentData as unknown as APIAssessment).assessment.updated_at,
         submittedAt: (assessmentData as unknown as APIAssessment).assessment.submitted_at,

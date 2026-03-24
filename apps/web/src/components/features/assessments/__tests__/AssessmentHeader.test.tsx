@@ -7,7 +7,8 @@ const assessment = {
   id: "31",
   barangayName: "Lapla",
   status: "rework",
-  createdAt: "2025-01-10T00:00:00.000Z",
+  assessmentYear: 2025,
+  createdAt: "2026-01-10T00:00:00.000Z",
   completedIndicators: 37,
   totalIndicators: 84,
 } as any;
@@ -20,6 +21,12 @@ const validation = {
 };
 
 describe("AssessmentHeader", () => {
+  it("shows the active assessment year instead of deriving it from createdAt", () => {
+    render(<AssessmentHeader assessment={assessment} validation={validation} />);
+
+    expect(screen.getByText(/\* 2025 Assessment/i)).toBeInTheDocument();
+  });
+
   it("keeps the rework banner semantics when the remaining count reaches zero", () => {
     render(
       <AssessmentHeader

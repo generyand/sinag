@@ -57,12 +57,14 @@ class TestCompleteAssessmentSubmissionFlow:
         assert "governance_areas" in data
         assert data["assessment"]["status"] == AssessmentStatus.DRAFT.value
         assert data["assessment"]["blgu_user_id"] == test_blgu_user.id
+        assert "assessment_year" in data["assessment"]
 
         # Verify assessment exists in database
         assessment = db_session.query(Assessment).filter_by(blgu_user_id=test_blgu_user.id).first()
         assert assessment is not None
         assert assessment.status == AssessmentStatus.DRAFT
         assert assessment.rework_count == 0
+        assert data["assessment"]["assessment_year"] == assessment.assessment_year
 
     def test_create_response_for_indicator(
         self,
