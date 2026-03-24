@@ -20,6 +20,7 @@ from app.db.models.assessment import (
 )
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.user import User
+from app.schemas.assessment_activity import ActivityAction
 from app.services.assessment_activity_service import assessment_activity_service
 from app.services.assessment_lock_service import assessment_lock_service
 from app.services.bbi_service import bbi_service
@@ -776,6 +777,101 @@ class MLGOOService:
             "approved_at": assessment.mlgoo_approved_at.isoformat(),
             "notification_result": notification_result,
             "capdev_insights_result": capdev_result,
+        }
+
+    def reopen_submission(
+        self,
+        db: Session,
+        assessment_id: int,
+        mlgoo_user: User,
+        reason: str,
+    ) -> dict[str, Any]:
+        """
+        Reopen an assessment for BLGU editing without changing deadline lock metadata.
+
+        Only assessments in the MLGOO reopenable workflow states can be reopened.
+        """
+        assessment = (
+            db.query(Assessment)
+            .options(
+                joinedload(Assessment.blgu_user).joinedload(User.barangay),
+            )
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+
+        if not assessment:
+            raise ValueError(f"Assessment {assessment_id} not found")
+
+        original_status = assessment.status
+        lock_state = assessment_lock_service.get_effective_lock_state(db, assessment)
+        if lock_state["is_locked"]:
+            raise ValueError(
+                "Assessment is locked for BLGU editing. Unlock it first before reopening."
+            )
+
+        allowed_statuses = {
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.SUBMITTED_FOR_REVIEW,
+            AssessmentStatus.IN_REVIEW,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+        }
+        if original_status not in allowed_statuses:
+            raise ValueError(
+                f"Assessment cannot be reopened from current status: {original_status.value}"
+            )
+
+        reopen_reason = reason.strip() if reason else ""
+        if not reopen_reason:
+            raise ValueError("Reason is required to reopen an assessment")
+
+        barangay_name = "Unknown Barangay"
+        if assessment.blgu_user and assessment.blgu_user.barangay:
+            barangay_name = assessment.blgu_user.barangay.name
+
+        assessment.status = AssessmentStatus.REOPENED_BY_MLGOO
+        assessment.reopened_by = mlgoo_user.id
+        assessment.reopened_at = datetime.utcnow()
+        assessment.reopen_reason = reopen_reason
+        assessment.reopen_from_status = original_status
+
+        # Persist the workflow change and activity in the same transaction.
+        assessment_activity_service.log_activity(
+            db=db,
+            assessment_id=assessment_id,
+            action=ActivityAction.REOPENED_BY_MLGOO.value,
+            user_id=mlgoo_user.id,
+            from_status=original_status.value,
+            to_status=AssessmentStatus.REOPENED_BY_MLGOO.value,
+            extra_data={
+                "barangay_name": barangay_name,
+                "reason": reopen_reason,
+            },
+            description=f"Assessment reopened by {mlgoo_user.name}",
+        )
+        db.refresh(assessment)
+
+        self.logger.info(
+            "MLGOO %s reopened assessment %s for %s from %s.",
+            mlgoo_user.name,
+            assessment_id,
+            barangay_name,
+            original_status.value,
+        )
+
+        return {
+            "success": True,
+            "message": "Assessment reopened for BLGU editing",
+            "assessment_id": assessment_id,
+            "barangay_name": barangay_name,
+            "status": assessment.status.value,
+            "reopened_by": mlgoo_user.name,
+            "reopened_at": assessment.reopened_at.isoformat(),
+            "reopen_reason": assessment.reopen_reason,
+            "reopen_from_status": assessment.reopen_from_status.value
+            if assessment.reopen_from_status
+            else original_status.value,
         }
 
     def request_recalibration(

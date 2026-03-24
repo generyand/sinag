@@ -23,6 +23,7 @@ class ActivityAction(str, Enum):
     CALIBRATION_SUBMITTED = "calibration_submitted"
     VALIDATION_COMPLETED = "validation_completed"
     APPROVED = "approved"
+    REOPENED_BY_MLGOO = "reopened_by_mlgoo"
     RECALIBRATION_REQUESTED = "recalibration_requested"
     RECALIBRATION_SUBMITTED = "recalibration_submitted"
     COMPLETED = "completed"

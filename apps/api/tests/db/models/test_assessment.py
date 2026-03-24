@@ -17,11 +17,26 @@ from sqlalchemy.orm import Session
 
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
+from app.schemas.assessment import Assessment as AssessmentSchema
 
 
 class TestAssessmentModelReworkFields:
     """Test suite for Assessment model rework tracking fields."""
+
+    def _create_assessment_year(self, db_session: Session, year: int = 2026) -> AssessmentYear:
+        assessment_year = AssessmentYear(
+            year=year,
+            assessment_period_start=datetime(year, 1, 1),
+            assessment_period_end=datetime(year, 10, 31),
+            default_unlock_grace_period_days=3,
+            is_active=True,
+            is_published=True,
+        )
+        db_session.add(assessment_year)
+        db_session.commit()
+        return assessment_year
 
     def test_assessment_has_rework_columns(self, db_session: Session):
         """Test that Assessment model has all rework tracking columns."""
@@ -34,10 +49,12 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Create assessment with rework fields
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2026,
             status=AssessmentStatus.DRAFT,
             rework_count=0,
             rework_requested_at=None,
@@ -58,6 +75,61 @@ class TestAssessmentModelReworkFields:
         db_session.delete(user)
         db_session.commit()
 
+    def test_assessment_can_store_mlgoo_reopen_metadata_round_trip(self, db_session: Session):
+        """Test MLGOO reopen fields round-trip through ORM and schema serialization."""
+        blgu_user = User(
+            email="test_blgu_reopen@example.com",
+            hashed_password="hashed",
+            name="Test BLGU Reopen",
+            role=UserRole.BLGU_USER,
+        )
+        mlgoo_user = User(
+            email="test_mlgoo_reopen@example.com",
+            hashed_password="hashed",
+            name="Test MLGOO Reopen",
+            role=UserRole.MLGOO_DILG,
+        )
+        db_session.add_all([blgu_user, mlgoo_user])
+        db_session.commit()
+        self._create_assessment_year(db_session)
+
+        reopened_at = datetime.utcnow()
+        assessment = Assessment(
+            blgu_user_id=blgu_user.id,
+            assessment_year=2026,
+            status=AssessmentStatus.REOPENED_BY_MLGOO,
+            reopened_at=reopened_at,
+            reopened_by=mlgoo_user.id,
+            reopen_reason="Accidental submission before completion",
+            reopen_from_status=AssessmentStatus.AWAITING_FINAL_VALIDATION,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+        db_session.refresh(assessment)
+
+        assert assessment.status == AssessmentStatus.REOPENED_BY_MLGOO
+        assert assessment.reopened_at == reopened_at
+        assert assessment.reopened_by == mlgoo_user.id
+        assert assessment.reopen_reason == "Accidental submission before completion"
+        assert assessment.reopen_from_status == AssessmentStatus.AWAITING_FINAL_VALIDATION
+
+        # Shared generated types are still regenerated outside this sandbox because
+        # packages/shared/src/generated is not writable here.
+        schema = AssessmentSchema.model_validate(assessment)
+        payload = schema.model_dump(mode="json")
+
+        assert schema.status == AssessmentStatus.REOPENED_BY_MLGOO
+        assert schema.reopen_from_status == AssessmentStatus.AWAITING_FINAL_VALIDATION
+        assert payload["status"] == AssessmentStatus.REOPENED_BY_MLGOO.value
+        assert payload["reopened_by"] == mlgoo_user.id
+        assert payload["reopen_reason"] == "Accidental submission before completion"
+        assert payload["reopen_from_status"] == AssessmentStatus.AWAITING_FINAL_VALIDATION.value
+
+        db_session.delete(assessment)
+        db_session.delete(mlgoo_user)
+        db_session.delete(blgu_user)
+        db_session.commit()
+
     def test_assessment_status_uses_new_enum(self, db_session: Session):
         """Test that Assessment.status accepts new AssessmentStatus enum values."""
         # Create a test user
@@ -69,6 +141,7 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Test all new Epic 5.0 status values
         new_statuses = [
@@ -76,26 +149,29 @@ class TestAssessmentModelReworkFields:
             AssessmentStatus.SUBMITTED,
             AssessmentStatus.IN_REVIEW,
             AssessmentStatus.REWORK,
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+            AssessmentStatus.REOPENED_BY_MLGOO,
             AssessmentStatus.COMPLETED,
         ]
 
-        created_assessments = []
+        assessment = Assessment(
+            blgu_user_id=user.id,
+            assessment_year=2026,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.commit()
 
         for status in new_statuses:
-            assessment = Assessment(
-                blgu_user_id=user.id,
-                status=status,
-            )
-            db_session.add(assessment)
+            assessment.status = status
             db_session.commit()
-            created_assessments.append(assessment)
 
             # Verify status was set correctly
             assert assessment.status == status, f"Status should be {status}"
 
         # Cleanup
-        for assessment in created_assessments:
-            db_session.delete(assessment)
+        db_session.delete(assessment)
         db_session.delete(user)
         db_session.commit()
 
@@ -109,11 +185,13 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Try to create assessment with rework_count = 2 (should fail)
         with pytest.raises(ValueError) as exc_info:
             assessment = Assessment(
                 blgu_user_id=user.id,
+                assessment_year=2026,
                 status=AssessmentStatus.DRAFT,
                 rework_count=2,
             )
@@ -137,11 +215,13 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Try to create assessment with negative rework_count (should fail)
         with pytest.raises(ValueError) as exc_info:
             assessment = Assessment(
                 blgu_user_id=user.id,
+                assessment_year=2026,
                 status=AssessmentStatus.DRAFT,
                 rework_count=-1,
             )
@@ -165,10 +245,12 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Create assessment with rework_count = 0 (should work)
         assessment_0 = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2026,
             status=AssessmentStatus.DRAFT,
             rework_count=0,
         )
@@ -176,19 +258,14 @@ class TestAssessmentModelReworkFields:
         db_session.commit()
         assert assessment_0.rework_count == 0
 
-        # Create assessment with rework_count = 1 (should work)
-        assessment_1 = Assessment(
-            blgu_user_id=user.id,
-            status=AssessmentStatus.REWORK,
-            rework_count=1,
-        )
-        db_session.add(assessment_1)
+        # Update the same assessment to rework_count = 1 (should work)
+        assessment_0.status = AssessmentStatus.REWORK
+        assessment_0.rework_count = 1
         db_session.commit()
-        assert assessment_1.rework_count == 1
+        assert assessment_0.rework_count == 1
 
         # Cleanup
         db_session.delete(assessment_0)
-        db_session.delete(assessment_1)
         db_session.delete(user)
         db_session.commit()
 
@@ -203,6 +280,7 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(blgu_user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Create assessor user
         assessor = User(
@@ -217,6 +295,7 @@ class TestAssessmentModelReworkFields:
         # Create assessment with rework requested by assessor
         assessment = Assessment(
             blgu_user_id=blgu_user.id,
+            assessment_year=2026,
             status=AssessmentStatus.REWORK,
             rework_count=1,
             rework_requested_by=assessor.id,
@@ -251,9 +330,11 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2026,
             status=AssessmentStatus.SUBMITTED,
             rework_count=0,
         )
@@ -279,9 +360,11 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=2026,
             status=AssessmentStatus.SUBMITTED,
             rework_count=1,  # Rework already used
         )
@@ -307,6 +390,7 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Test various non-SUBMITTED statuses
         non_submitted_statuses = [
@@ -319,6 +403,7 @@ class TestAssessmentModelReworkFields:
         for status in non_submitted_statuses:
             assessment = Assessment(
                 blgu_user_id=user.id,
+                assessment_year=2026,
                 status=status,
                 rework_count=0,
             )
@@ -346,6 +431,7 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         locked_statuses = [
             AssessmentStatus.SUBMITTED,
@@ -356,6 +442,7 @@ class TestAssessmentModelReworkFields:
         for status in locked_statuses:
             assessment = Assessment(
                 blgu_user_id=user.id,
+                assessment_year=2026,
                 status=status,
             )
             db_session.add(assessment)
@@ -380,15 +467,18 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add(user)
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         unlocked_statuses = [
             AssessmentStatus.DRAFT,
             AssessmentStatus.REWORK,
+            AssessmentStatus.REOPENED_BY_MLGOO,
         ]
 
         for status in unlocked_statuses:
             assessment = Assessment(
                 blgu_user_id=user.id,
+                assessment_year=2026,
                 status=status,
             )
             db_session.add(assessment)
@@ -422,10 +512,12 @@ class TestAssessmentModelReworkFields:
         )
         db_session.add_all([blgu_user, assessor])
         db_session.commit()
+        self._create_assessment_year(db_session)
 
         # Step 1: Create assessment in DRAFT (unlocked)
         assessment = Assessment(
             blgu_user_id=blgu_user.id,
+            assessment_year=2026,
             status=AssessmentStatus.DRAFT,
             rework_count=0,
         )

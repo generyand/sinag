@@ -210,6 +210,59 @@ def test_validate_assessment_response_comment_clear_is_not_treated_as_noop(
     assert comments == []
 
 
+def test_validate_assessment_response_preserves_prior_cycle_comments(
+    db_session, mock_governance_area, validator_user
+):
+    response = create_validation_context(db_session, mock_governance_area)
+
+    response.validator_review_cycle = 2
+    db_session.add(response)
+    db_session.commit()
+    db_session.refresh(response)
+
+    db_session.add_all(
+        [
+            FeedbackComment(
+                comment="Cycle 1 archived comment",
+                comment_type="validation",
+                response_id=response.id,
+                assessor_id=validator_user.id,
+                is_internal_note=False,
+                review_cycle=1,
+            ),
+            FeedbackComment(
+                comment="Cycle 2 current comment",
+                comment_type="validation",
+                response_id=response.id,
+                assessor_id=validator_user.id,
+                is_internal_note=False,
+                review_cycle=2,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    assessor_service.validate_assessment_response(
+        db=db_session,
+        response_id=response.id,
+        assessor=validator_user,
+        public_comment="Cycle 2 updated comment",
+    )
+
+    comments = (
+        db_session.query(FeedbackComment)
+        .filter(FeedbackComment.response_id == response.id)
+        .order_by(FeedbackComment.review_cycle.asc(), FeedbackComment.id.asc())
+        .all()
+    )
+
+    assert len(comments) == 2
+    assert comments[0].review_cycle == 1
+    assert comments[0].comment == "Cycle 1 archived comment"
+    assert comments[1].review_cycle == 2
+    assert comments[1].comment == "Cycle 2 updated comment"
+
+
 def test_get_assessor_queue_does_not_count_false_only_checklist_data_as_reviewed(
     db_session, mock_governance_area
 ):
@@ -249,6 +302,34 @@ def test_get_assessor_queue_does_not_count_false_only_checklist_data_as_reviewed
     assert queue[0]["reviewed_count"] == 0
     assert queue[0]["total_count"] == 1
     assert queue[0]["area_progress"] == 0
+
+
+def test_get_validator_queue_does_not_count_false_only_checklist_data_as_reviewed(
+    db_session, mock_governance_area, validator_user
+):
+    response = create_validation_context(db_session, mock_governance_area)
+
+    assessment = response.assessment
+    assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+    assessment.submitted_at = datetime(2025, 2, 1)
+    assessment.calibration_submitted_at = datetime(2025, 2, 2)
+    response.response_data = {
+        "blgu_answer": "kept",
+        "validator_val_item_1": False,
+        "validator_val_item_2": "",
+    }
+    response.validation_status = None
+    response.flagged_for_calibration = False
+    db_session.add_all([assessment, response])
+    db_session.commit()
+
+    queue = assessor_service.get_assessor_queue(db_session, validator_user, assessment_year=2025)
+
+    assert len(queue) == 1
+    assert queue[0]["reviewed_count"] == 0
+    assert queue[0]["total_count"] == 1
+    assert queue[0]["area_progress"] == 0
+    assert queue[0]["re_review_progress"] == 0
 
 
 def test_assessor_validation_round_trip_persists_and_returns_latest_values(

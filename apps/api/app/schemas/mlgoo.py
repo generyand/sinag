@@ -4,7 +4,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ==================== Request Schemas ====================
 
@@ -75,6 +75,25 @@ class UnlockAssessmentRequest(BaseModel):
         default=None,
         description="Optional custom UTC expiry for the reopened grace period",
     )
+
+
+class ReopenSubmissionRequest(BaseModel):
+    """Request body for reopening an assessment by MLGOO."""
+
+    reason: str = Field(
+        ...,
+        description="Reason for reopening the assessment",
+        min_length=1,
+        max_length=2000,
+    )
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, value: str) -> str:
+        reason = value.strip()
+        if not reason:
+            raise ValueError("Reason is required to reopen an assessment")
+        return reason
 
 
 class LockAssessmentRequest(BaseModel):
@@ -454,6 +473,20 @@ class UnlockAssessmentResponse(BaseModel):
     default_grace_period_days: int
     grace_period_expires_at: str
     unlocked_by: str
+
+
+class ReopenSubmissionResponse(BaseModel):
+    """Response for reopening an assessment by MLGOO."""
+
+    success: bool
+    message: str
+    assessment_id: int
+    barangay_name: str
+    status: str
+    reopened_by: str
+    reopened_at: str
+    reopen_reason: str
+    reopen_from_status: str
 
 
 class LockAssessmentResponse(BaseModel):

@@ -331,9 +331,9 @@ class AssessorService:
                 total_count = len(area_responses)
             else:
                 # Validator: progress based on all indicators (system-wide)
-                # Match frontend isIndicatorReviewed logic: an indicator counts as
-                # reviewed if it has validation_status, validator checklist data,
-                # or is flagged for calibration
+                # Validator: count only meaningful active-cycle review work.
+                # False-only checklist leftovers should not make an indicator
+                # appear reviewed or resumable in the queue.
                 area_responses = a.responses
                 reviewed_count = sum(
                     1
@@ -342,10 +342,7 @@ class AssessorService:
                     and (
                         r.validation_status is not None
                         or r.flagged_for_calibration
-                        or (
-                            r.response_data
-                            and any(k.startswith("validator_val_") for k in r.response_data.keys())
-                        )
+                        or self._has_meaningful_owned_validation_data(assessor, r.response_data)
                     )
                 )
                 total_count = len(area_responses)
@@ -410,12 +407,7 @@ class AssessorService:
                         and (
                             r.validation_status is not None
                             or r.flagged_for_calibration
-                            or (
-                                r.response_data
-                                and any(
-                                    k.startswith("validator_val_") for k in r.response_data.keys()
-                                )
-                            )
+                            or self._has_meaningful_owned_validation_data(assessor, r.response_data)
                         )
                     )
                     re_review_progress = round(
@@ -701,13 +693,16 @@ class AssessorService:
 
         # Save or clear public comment
         if public_comment is not None:
+            current_review_cycle = response.validator_review_cycle or 1
             # Always delete existing validation comments from this assessor first
-            # to prevent row accumulation (each save used to append a new row)
+            # to prevent row accumulation within the active review cycle while
+            # preserving archived prior-cycle history.
             db.query(FeedbackComment).filter(
                 FeedbackComment.response_id == response_id,
                 FeedbackComment.assessor_id == assessor.id,
                 FeedbackComment.comment_type == "validation",
                 FeedbackComment.is_internal_note == False,  # noqa: E712
+                FeedbackComment.review_cycle == current_review_cycle,
             ).delete()
 
             if public_comment.strip():
@@ -718,6 +713,7 @@ class AssessorService:
                     response_id=response_id,
                     assessor_id=assessor.id,
                     is_internal_note=False,
+                    review_cycle=current_review_cycle,
                 )
                 db.add(public_feedback)
 

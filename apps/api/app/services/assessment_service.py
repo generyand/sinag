@@ -1940,6 +1940,21 @@ class AssessmentService:
         # Example: Check if "YES" answers have corresponding MOVs
         # This would be implemented based on specific business requirements
 
+    def get_reopened_submission_target_status(self, assessment: Assessment) -> AssessmentStatus:
+        """Route an MLGOO-reopened assessment back to its prior review stage."""
+        source_status = assessment.reopen_from_status
+        if source_status in (
+            AssessmentStatus.SUBMITTED,
+            AssessmentStatus.SUBMITTED_FOR_REVIEW,
+            AssessmentStatus.IN_REVIEW,
+        ):
+            return AssessmentStatus.SUBMITTED_FOR_REVIEW
+        if source_status == AssessmentStatus.AWAITING_FINAL_VALIDATION:
+            return AssessmentStatus.AWAITING_FINAL_VALIDATION
+        if source_status == AssessmentStatus.AWAITING_MLGOO_APPROVAL:
+            return AssessmentStatus.AWAITING_MLGOO_APPROVAL
+        return AssessmentStatus.SUBMITTED_FOR_REVIEW
+
     def submit_assessment(self, db: Session, assessment_id: int) -> AssessmentSubmissionValidation:
         """
         Submit an assessment for review with preliminary compliance check.
@@ -1962,6 +1977,7 @@ class AssessmentService:
             AssessmentStatus.DRAFT,
             AssessmentStatus.NEEDS_REWORK,
             AssessmentStatus.REWORK,
+            AssessmentStatus.REOPENED_BY_MLGOO,
         ):
             return AssessmentSubmissionValidation(
                 is_valid=False,
@@ -2047,23 +2063,39 @@ class AssessmentService:
             is_calibration_resubmission = (
                 assessment.is_calibration_rework and assessment.calibration_requested_at is not None
             )
+            is_mlgoo_reopen_resubmission = assessment.status == AssessmentStatus.REOPENED_BY_MLGOO
             is_mlgoo_recalibration_resubmission = (
                 assessment.is_mlgoo_recalibration
                 and assessment.mlgoo_recalibration_requested_at is not None
             )
             is_resubmission = (
-                is_rework_resubmission
+                is_mlgoo_reopen_resubmission
+                or is_rework_resubmission
                 or is_calibration_resubmission
                 or is_mlgoo_recalibration_resubmission
             )
 
             # Update assessment status
+            # MLGOO reopen routes back to the source review stage.
+            if is_mlgoo_reopen_resubmission:
+                assessment.status = self.get_reopened_submission_target_status(assessment)
             # MLGOO recalibration resubmission goes to Validator for re-review
-            if is_mlgoo_recalibration_resubmission:
+            elif is_mlgoo_recalibration_resubmission:
                 assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
             else:
                 assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
             assessment.submitted_at = datetime.utcnow()
+
+            # Re-opened submissions are workflow recovery, not rework/calibration cycles.
+            if is_mlgoo_reopen_resubmission:
+                assessment.rework_submitted_at = datetime.utcnow()
+
+            is_resubmission = (
+                is_rework_resubmission
+                or is_calibration_resubmission
+                or is_mlgoo_recalibration_resubmission
+                or is_mlgoo_reopen_resubmission
+            )
 
             # Set specific resubmission timestamps for timeline tracking
             if is_rework_resubmission:
@@ -2193,6 +2225,11 @@ class AssessmentService:
                     from_status = AssessmentStatus.REWORK.value
                     to_status = AssessmentStatus.AWAITING_FINAL_VALIDATION.value
                     description = "RE-calibration resubmission - awaiting Validator review"
+                elif is_mlgoo_reopen_resubmission:
+                    action = "submitted"
+                    from_status = AssessmentStatus.REOPENED_BY_MLGOO.value
+                    to_status = assessment.status.value
+                    description = "Assessment resubmitted after MLGOO reopen"
                 elif is_calibration_resubmission:
                     action = "calibration_submitted"
                     from_status = AssessmentStatus.REWORK.value
@@ -2585,6 +2622,12 @@ class AssessmentService:
             comment_type=comment_create.comment_type,
             response_id=comment_create.response_id,
             assessor_id=comment_create.assessor_id,
+            review_cycle=(
+                db.query(AssessmentResponse.validator_review_cycle)
+                .filter(AssessmentResponse.id == comment_create.response_id)
+                .scalar()
+                or 1
+            ),
         )
 
         db.add(db_comment)

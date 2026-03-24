@@ -66,6 +66,12 @@ export const STATUS_DISPLAY_MAP: Record<string, StatusConfig> = {
     textColor: "var(--analytics-warning-text)",
     icon: AlertTriangle,
   },
+  "Reopened by MLGOO": {
+    label: "Reopened by MLGOO",
+    bgColor: "var(--analytics-warning-bg)",
+    textColor: "var(--analytics-warning-text)",
+    icon: AlertTriangle,
+  },
   // Inactive (Gray)
   Draft: {
     label: "Draft",
@@ -89,6 +95,7 @@ export const API_STATUS_TO_LABEL: Record<string, string> = {
   [AssessmentStatus.DRAFT]: "Draft",
   [AssessmentStatus.SUBMITTED_FOR_REVIEW]: "Submitted for Review",
   [AssessmentStatus.NEEDS_REWORK]: "Needs Rework",
+  REOPENED_BY_MLGOO: "Reopened by MLGOO",
 };
 
 /**
@@ -102,6 +109,7 @@ export const FILTER_TO_API_STATUS: Record<string, AssessmentStatus> = {
   in_review: AssessmentStatus.IN_REVIEW,
   rework: AssessmentStatus.REWORK,
   submitted: AssessmentStatus.SUBMITTED,
+  reopened_by_mlgoo: "REOPENED_BY_MLGOO" as AssessmentStatus,
   draft: AssessmentStatus.DRAFT,
 };
 
@@ -134,6 +142,7 @@ export const STATUS_FILTER_OPTIONS = [
   { value: "in_review", label: "In Review" },
   { value: "submitted", label: "Submitted" },
   { value: "rework", label: "Needs Rework" },
+  { value: "reopened_by_mlgoo", label: "Reopened by MLGOO" },
   { value: "draft", label: "Draft" },
 ] as const;
 
@@ -143,6 +152,7 @@ export const STATUS_FILTER_OPTIONS = [
  */
 export const CLICKABLE_STATUSES = [
   "Needs Rework",
+  "Reopened by MLGOO",
   "MLGOO RE-Calibration",
   "Awaiting Final Validation",
 ] as const;
@@ -162,6 +172,8 @@ export function getStatusClickTooltip(status: string): string | null {
   switch (status) {
     case "Needs Rework":
       return "Click to view indicators marked for rework";
+    case "Reopened by MLGOO":
+      return "Click to view the MLGOO reopen reason";
     case "MLGOO RE-Calibration":
       return "Click to view calibration details";
     case "Awaiting Final Validation":
