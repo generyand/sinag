@@ -18,7 +18,10 @@ import pytest
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
-from app.db.models.assessment import MOVFile
+from app.db.enums import AreaType, AssessmentStatus
+from app.db.models.assessment import Assessment, MOVFile
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.services.storage_service import StorageService
 
 
@@ -317,6 +320,94 @@ class TestStorageServiceFileUpload:
 
             # Should use default content type
             assert result.file_type == "application/octet-stream"
+
+    @pytest.mark.parametrize(
+        ("field_id", "stale_label", "expected_label"),
+        [
+            (
+                "1_6_1_opt3_a",
+                "Proof of transfer to trust fund, OR",
+                "Proof of transfer of the 10% 2023 SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt;",
+            ),
+            (
+                "1_6_1_opt3_b",
+                "Legal forms from C/M treasurer if SK fund kept in C/M custody",
+                (
+                    "Proof of transfer or corresponding legal forms-documents issued by the "
+                    "city-municipal treasurer if the barangay opted that the corresponding SK "
+                    "fund be kept as trust fund in the custody of the C-M treasurer."
+                ),
+            ),
+        ],
+    )
+    def test_upload_mov_file_normalizes_sng_14_option3_labels(
+        self,
+        service,
+        mock_supabase_client,
+        db_session,
+        mock_blgu_user,
+        field_id,
+        stale_label,
+        expected_label,
+    ):
+        """SNG-14: backend should persist the approved MOV names even from stale clients."""
+        assessment_year = AssessmentYear(
+            year=2023,
+            assessment_period_start=datetime(2023, 1, 1),
+            assessment_period_end=datetime(2023, 10, 31),
+            is_active=True,
+            is_published=True,
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        governance_area = GovernanceArea(name="SNG-14 Area", code="F1", area_type=AreaType.CORE)
+        db_session.add(governance_area)
+        db_session.flush()
+
+        indicator = Indicator(
+            name="SNG-14 Indicator 1.6.1",
+            indicator_code="1.6.1",
+            governance_area_id=governance_area.id,
+            sort_order=1,
+            form_schema={},
+        )
+        db_session.add(indicator)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=2023,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+
+        upload_file = UploadFile(
+            filename="test.pdf",
+            file=io.BytesIO(b"%PDF-1.4\n%"),
+            headers={"content-type": "application/pdf"},
+        )
+
+        with (
+            patch(
+                "app.services.storage_service._get_supabase_client",
+                return_value=mock_supabase_client,
+            ),
+            patch.object(service, "_update_response_completion_status", return_value=None),
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=indicator.id,
+                user_id=mock_blgu_user.id,
+                field_id=field_id,
+                indicator_code="1.6.1",
+                field_label=stale_label,
+            )
+
+        assert result.file_name == f"1.6.1 {expected_label} (1).pdf"
 
 
 class TestStorageServiceFileDeletion:
