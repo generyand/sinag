@@ -105,6 +105,30 @@ class AssessorService:
         owned_data = self._get_owned_validation_response_data(assessor, response_data)
         return any(self._has_meaningful_validation_value(value) for value in owned_data.values())
 
+    @staticmethod
+    def _serialize_mov_file(mov_file: MOVFile, *, is_rejected: bool) -> dict[str, Any]:
+        """Serialize a modern MOVFile ORM model for assessor-facing responses."""
+        return {
+            "id": mov_file.id,
+            "filename": mov_file.file_name,
+            "original_filename": mov_file.file_name,
+            "file_size": mov_file.file_size,
+            "content_type": mov_file.file_type,
+            "storage_path": mov_file.file_url,
+            "status": "uploaded",  # MOVFile doesn't have status field
+            "uploaded_at": (
+                mov_file.uploaded_at.isoformat() + "Z" if mov_file.uploaded_at else None
+            ),
+            "field_id": mov_file.field_id,
+            "has_annotations": len(mov_file.annotations) > 0,
+            "is_rejected": is_rejected,
+            "assessor_notes": mov_file.assessor_notes,
+            "flagged_for_rework": mov_file.flagged_for_rework,
+            "validator_notes": mov_file.validator_notes,
+            "flagged_for_calibration": mov_file.flagged_for_calibration,
+            "upload_origin": mov_file.upload_origin,
+        }
+
     def _is_validation_noop(
         self,
         db: Session,
@@ -1446,29 +1470,7 @@ class AssessorService:
                     ],
                 },
                 "movs": [
-                    {
-                        "id": mov_file.id,
-                        "filename": mov_file.file_name,
-                        "original_filename": mov_file.file_name,
-                        "file_size": mov_file.file_size,
-                        "content_type": mov_file.file_type,
-                        "storage_path": mov_file.file_url,
-                        "status": "uploaded",  # MOVFile doesn't have status field
-                        "uploaded_at": mov_file.uploaded_at.isoformat() + "Z"
-                        if mov_file.uploaded_at
-                        else None,
-                        "field_id": mov_file.field_id,
-                        # File-level annotation flag for granular rework tracking
-                        "has_annotations": len(mov_file.annotations) > 0,
-                        # Validator view: Mark rejected files (files with annotations that were replaced)
-                        "is_rejected": mov_file.id in rejected_file_ids,
-                        # Assessor notes and rework flag for frontend validation
-                        "assessor_notes": mov_file.assessor_notes,
-                        "flagged_for_rework": mov_file.flagged_for_rework,
-                        # Validator notes and calibration flag for frontend validation
-                        "validator_notes": mov_file.validator_notes,
-                        "flagged_for_calibration": mov_file.flagged_for_calibration,
-                    }
+                    self._serialize_mov_file(mov_file, is_rejected=mov_file.id in rejected_file_ids)
                     # Use the filtered_movs list created above (already filtered by rework timestamp)
                     for mov_file in filtered_movs
                 ],

@@ -583,6 +583,7 @@ class MOVFileResponse(BaseModel):
     file_type: str
     file_size: int
     uploaded_by: int
+    upload_origin: str
     uploaded_at: datetime
     deleted_at: datetime | None = None
     field_id: str | None = None

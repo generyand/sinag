@@ -586,11 +586,25 @@ class TestListMOVFiles:
         return indicator
 
     @pytest.fixture
-    def assessment(self, db_session, blgu_user):
+    def assessment_year(self, db_session):
+        """Fixture providing a valid assessment year."""
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.commit()
+        db_session.refresh(assessment_year)
+        return assessment_year
+
+    @pytest.fixture
+    def assessment(self, db_session, blgu_user, assessment_year):
         """Fixture providing a draft assessment."""
         assessment = Assessment(
             blgu_user_id=blgu_user.id,
             status=AssessmentStatus.DRAFT,
+            assessment_year=assessment_year.year,
         )
         db_session.add(assessment)
         db_session.commit()
@@ -654,6 +668,7 @@ class TestListMOVFiles:
         assert "blgu_file1.pdf" in file_names
         assert "blgu_file2.pdf" in file_names
         assert "other_file.pdf" not in file_names  # Other user's file not visible
+        assert data["files"][0]["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
 
     def test_list_files_assessor_sees_all_files(
         self, client, db_session, assessment, blgu_user, other_blgu_user, assessor_user, indicator

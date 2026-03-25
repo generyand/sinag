@@ -122,6 +122,26 @@ class AssessmentService:
             for mov in movs
         ]
 
+    @staticmethod
+    def _serialize_mov_file(mov_file: MOVFile) -> dict[str, Any]:
+        """Serialize a modern MOVFile ORM model to a JSON-ready dictionary."""
+        return {
+            "id": mov_file.id,
+            "file_name": mov_file.file_name,
+            "file_size": mov_file.file_size,
+            "file_type": mov_file.file_type,
+            "file_url": mov_file.file_url,
+            "field_id": mov_file.field_id,
+            "uploaded_at": (
+                mov_file.uploaded_at.isoformat() + "Z" if mov_file.uploaded_at else None
+            ),
+            "assessor_notes": mov_file.assessor_notes,
+            "flagged_for_rework": mov_file.flagged_for_rework,
+            "validator_notes": mov_file.validator_notes,
+            "flagged_for_calibration": mov_file.flagged_for_calibration,
+            "upload_origin": mov_file.upload_origin,
+        }
+
     def get_assessment_for_blgu(
         self, db: Session, blgu_user_id: int, assessment_year: int | None = None
     ) -> Assessment | None:
@@ -424,7 +444,8 @@ class AssessmentService:
             step_start = time.time()
             q3b = text("""
                 SELECT id, indicator_id, file_name, file_size, file_type, file_url, field_id, uploaded_at,
-                       assessor_notes, flagged_for_rework, validator_notes, flagged_for_calibration
+                       assessor_notes, flagged_for_rework, validator_notes, flagged_for_calibration,
+                       upload_origin
                 FROM mov_files
                 WHERE assessment_id = :assessment_id
                   AND deleted_at IS NULL
@@ -465,6 +486,7 @@ class AssessmentService:
                         "flagged_for_rework": flagged_for_rework,
                         "validator_notes": validator_notes,
                         "flagged_for_calibration": flagged_for_calibration,
+                        "upload_origin": row[12] if len(row) > 12 else None,
                     }
                 )
 
