@@ -185,6 +185,7 @@ function determineDisplayStatus(assessment: ApiAssessment): string {
  * Progress represents how far an assessment has progressed through the workflow:
  * - DRAFT: 0% (not started)
  * - SUBMITTED: 25% (submitted, awaiting review)
+ * - REOPENED_BY_MLGOO: 25% (workflow reopened to BLGU from a submitted/review stage)
  * - IN_REVIEW: 50% (being reviewed by assessor)
  * - REWORK: 50% (sent back for corrections, still in review phase)
  * - AWAITING_FINAL_VALIDATION: 75% (assessor done, awaiting validators)
@@ -226,6 +227,7 @@ function getProgressFallbackByStatus(status: string): number {
     [AssessmentStatus.DRAFT]: 0,
     [AssessmentStatus.SUBMITTED]: 25,
     [AssessmentStatus.SUBMITTED_FOR_REVIEW]: 25,
+    [AssessmentStatus.REOPENED_BY_MLGOO]: 25,
     [AssessmentStatus.IN_REVIEW]: 50,
     [AssessmentStatus.REWORK]: 50,
     [AssessmentStatus.NEEDS_REWORK]: 50,
