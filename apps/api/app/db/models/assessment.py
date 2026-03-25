@@ -654,6 +654,13 @@ class MOVFile(Base):
     uploaded_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    # Provenance grouping for uploads: BLGU default unless explicitly marked validator-origin.
+    upload_origin: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="blgu",
+        server_default="blgu",
+    )
 
     # File metadata
     file_name: Mapped[str] = mapped_column(String, nullable=False)

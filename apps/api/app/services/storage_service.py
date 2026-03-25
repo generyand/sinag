@@ -428,6 +428,8 @@ class StorageService:
         # Note: Multiple files are allowed per field. Users can manually delete files if needed.
         # Old files from before rework are kept for history and shown with annotations.
 
+        upload_origin = self._get_upload_origin(db, user_id)
+
         # Create database record
         try:
             mov_file = self._save_mov_file_record(
@@ -440,6 +442,7 @@ class StorageService:
                 indicator_id=indicator_id,
                 user_id=user_id,
                 field_id=field_id,
+                upload_origin=upload_origin,
             )
 
             logger.info(
@@ -474,6 +477,7 @@ class StorageService:
         indicator_id: int,
         user_id: int,
         field_id: str | None = None,
+        upload_origin: str = "blgu",
     ) -> MOVFile:
         """
         Create and save a MOVFile database record.
@@ -499,6 +503,7 @@ class StorageService:
             assessment_id=assessment_id,
             indicator_id=indicator_id,
             uploaded_by=user_id,
+            upload_origin=upload_origin,
             file_name=file_name,
             file_url=file_url,
             file_type=file_type,
@@ -516,6 +521,17 @@ class StorageService:
         self._update_response_completion_status(db, assessment_id, indicator_id)
 
         return mov_file
+
+    def _get_upload_origin(self, db: Session, user_id: int) -> str:
+        """
+        Resolve upload provenance for MOV files.
+
+        Validator uploads are grouped separately from the default BLGU-origin bucket.
+        """
+        user = db.query(User).filter(User.id == user_id).first()
+        if user and user.role == UserRole.VALIDATOR:
+            return "validator"
+        return "blgu"
 
     def _update_response_completion_status(
         self, db: Session, assessment_id: int, indicator_id: int

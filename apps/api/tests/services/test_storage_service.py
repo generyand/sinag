@@ -172,6 +172,64 @@ class TestStorageServiceFileUpload:
             mock_supabase_client.storage.from_.assert_called()
             mock_supabase_client.storage.from_().upload.assert_called_once()
 
+    def test_upload_mov_file_sets_validator_upload_origin(
+        self,
+        service,
+        mock_supabase_client,
+        db_session,
+        mock_blgu_user,
+        mock_indicator,
+        validator_user,
+    ):
+        """Test that validator uploads are persisted with validator provenance."""
+        from datetime import UTC, datetime
+
+        from app.db.enums import AssessmentStatus
+        from app.db.models.assessment import Assessment
+        from app.db.models.system import AssessmentYear
+
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=assessment_year.year,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.flush()
+
+        file_data = io.BytesIO(b"%PDF-1.4\n%")
+        upload_file = UploadFile(
+            filename="validator-proof.pdf",
+            file=file_data,
+            headers={"content-type": "application/pdf"},
+        )
+
+        with patch(
+            "app.services.storage_service._get_supabase_client",
+            return_value=mock_supabase_client,
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=mock_indicator.id,
+                user_id=validator_user.id,
+            )
+
+        assert isinstance(result, MOVFile)
+        assert result.uploaded_by == validator_user.id
+        assert result.upload_origin == "validator"
+        assert result.assessment_id == assessment.id
+        assert result.indicator_id == mock_indicator.id
+        assert result.file_name == "validator-proof.pdf"
+
     def test_upload_mov_file_handles_supabase_failure(
         self, service, mock_supabase_client, mock_db_session
     ):
