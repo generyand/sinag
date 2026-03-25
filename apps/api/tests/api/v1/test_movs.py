@@ -118,6 +118,20 @@ class TestUploadMOVFile:
         return assessment
 
     @pytest.fixture
+    def submitted_assessment(self, db_session, blgu_user, assessment_year):
+        """Fixture providing a submitted assessment."""
+        assessment = Assessment(
+            id=2,
+            blgu_user_id=blgu_user.id,
+            status=AssessmentStatus.SUBMITTED,
+            assessment_year=assessment_year.year,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+        db_session.refresh(assessment)
+        return assessment
+
+    @pytest.fixture
     def auth_headers(self, blgu_user):
         """Fixture providing authentication headers."""
         from app.core.security import create_access_token
@@ -168,7 +182,7 @@ class TestUploadMOVFile:
             assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
 
     def test_upload_valid_pdf_file_from_validator_uses_validator_origin(
-        self, client, db_session, assessment, validator_user
+        self, client, db_session, submitted_assessment, validator_user
     ):
         """Test successful upload by a validator uses validator provenance."""
         use_test_db_session(client, db_session)
@@ -177,7 +191,7 @@ class TestUploadMOVFile:
         with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
             mock_mov_file = MOVFile(
                 id=11,
-                assessment_id=assessment.id,
+                assessment_id=submitted_assessment.id,
                 indicator_id=1,
                 file_name="validator-file.pdf",
                 file_url="https://storage.example.com/validator-file.pdf",
@@ -192,12 +206,88 @@ class TestUploadMOVFile:
             file_data = io.BytesIO(file_content)
 
             response = client.post(
-                f"/api/v1/movs/assessments/{assessment.id}/indicators/1/upload",
+                f"/api/v1/movs/assessments/{submitted_assessment.id}/indicators/1/upload",
                 files={"file": ("validator-file.pdf", file_data, "application/pdf")},
             )
 
             assert response.status_code == status.HTTP_201_CREATED
             assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_VALIDATOR
+
+    def test_validator_uploads_mov_for_submitted_assessment(
+        self, client, db_session, submitted_assessment, validator_user
+    ):
+        """Test validators can upload MOV files for submitted assessments."""
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            mock_mov_file = MOVFile(
+                id=12,
+                assessment_id=submitted_assessment.id,
+                indicator_id=1,
+                file_name="validator-file.pdf",
+                file_url="https://storage.example.com/validator-file.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                uploaded_by=101,
+                uploaded_at=datetime.utcnow(),
+            )
+            mock_upload.return_value = mock_mov_file
+
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{submitted_assessment.id}/indicators/1/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_201_CREATED
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_VALIDATOR
+
+    def test_validator_cannot_upload_mov_for_draft_assessment(
+        self, client, db_session, assessment, validator_user
+    ):
+        """Test validators cannot upload MOV files for draft assessments."""
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{assessment.id}/indicators/1/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_403_FORBIDDEN
+            assert "submitted" in response.json()["detail"].lower()
+            mock_upload.assert_not_called()
+
+    def test_blgu_upload_rules_remain_unchanged_for_owned_assessment(
+        self, client, assessment, auth_headers
+    ):
+        """Test BLGU users can still upload to their own assessment."""
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            mock_mov_file = MOVFile(
+                id=13,
+                assessment_id=assessment.id,
+                indicator_id=1,
+                file_name="blgu-file.pdf",
+                file_url="https://storage.example.com/blgu-file.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                uploaded_by=100,
+                uploaded_at=datetime.utcnow(),
+            )
+            mock_upload.return_value = mock_mov_file
+
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{assessment.id}/indicators/1/upload",
+                headers=auth_headers,
+                files={"file": ("blgu-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_201_CREATED
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
 
     def test_upload_valid_docx_file(self, client, assessment, auth_headers):
         """Test successful upload of a valid DOCX file."""

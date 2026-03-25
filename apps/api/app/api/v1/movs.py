@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
-from app.db.enums import UserRole
+from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import (
     MOV_UPLOAD_ORIGIN_BLGU,
     MOV_UPLOAD_ORIGIN_VALIDATOR,
@@ -90,13 +90,17 @@ def upload_mov_file(
         if indicator and indicator.indicator_code:
             indicator_code = indicator.indicator_code
 
-    if current_user.role == UserRole.BLGU_USER:
+    assessment: Assessment | None = None
+    if current_user.role in (UserRole.BLGU_USER, UserRole.VALIDATOR):
         assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         if not assessment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Assessment {assessment_id} not found",
             )
+
+    if current_user.role == UserRole.BLGU_USER:
+        assert assessment is not None
         if assessment.blgu_user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -107,6 +111,12 @@ def upload_mov_file(
         )
         upload_origin = MOV_UPLOAD_ORIGIN_BLGU
     elif current_user.role == UserRole.VALIDATOR:
+        assert assessment is not None
+        if assessment.status != AssessmentStatus.SUBMITTED:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Validators can only upload MOV files for submitted assessments",
+            )
         upload_origin = MOV_UPLOAD_ORIGIN_VALIDATOR
     else:
         raise HTTPException(
