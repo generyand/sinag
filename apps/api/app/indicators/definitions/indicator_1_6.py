@@ -51,8 +51,9 @@ INDICATOR_1_6 = Indicator(
                 "OPTION 2: If barangay does NOT have Barangay-SK Agreement but has current account\n"
                 "  - Deposit slips reflecting Account No./Name and total SK funds\n\n"
                 "OPTION 3: If barangay does NOT have SK Officials, or has SK Officials but no quorum and/or no SK Bank Account\n"
-                "  - Proof of transfer to trust fund, OR\n"
-                "  - Legal forms from C/M treasurer if SK fund kept in C/M custody"
+                "  - Proof of transfer of the 10% {CURRENT_YEAR} SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt;\n"
+                "  OR\n"
+                "  - Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer."
             ),
             validation_rule="ANY_OPTION_GROUP_REQUIRED",  # Any one complete option group satisfies the requirement
             checklist_items=[
@@ -149,8 +150,8 @@ INDICATOR_1_6 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_6_1_opt3_a",
-                    label="a) Proof of transfer of the 10% {CURRENT_YEAR} SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt",
-                    mov_description="Proof of transfer of 10% SK funds to barangay trust fund (Deposit Slip or Official Receipt)",
+                    label="a) Proof of transfer of the 10% {CURRENT_YEAR} SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt;",
+                    mov_description="Proof of transfer of the 10% {CURRENT_YEAR} SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt;",
                     required=False,  # Part of Option 3 group (OR logic within)
                     display_order=9,
                     option_group="Option 3",
@@ -165,8 +166,8 @@ INDICATOR_1_6 = Indicator(
                 ),
                 ChecklistItem(
                     id="1_6_1_opt3_b",
-                    label="b) Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer",
-                    mov_description="Legal forms/documents from city/municipal treasurer if SK fund kept as trust fund in C/M custody",
+                    label="b) Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer.",
+                    mov_description="Proof of transfer or corresponding legal forms/documents issued by the city/municipal treasurer if the barangay opted that the corresponding SK fund be kept as trust fund in the custody of the C/M treasurer.",
                     required=False,  # Part of Option 3 group (OR logic within)
                     display_order=11,
                     option_group="Option 3",

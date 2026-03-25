@@ -56,6 +56,7 @@ export interface Indicator {
   technicalNotes: string;
   governanceAreaId: string;
   status: IndicatorStatus;
+  isCompleted?: boolean;
   complianceAnswer?: ComplianceAnswer;
   movFiles: MOVFile[];
   assessorComment?: string; // Only present when status is 'needs_rework'
@@ -81,6 +82,7 @@ export interface Assessment {
   barangayId: string;
   barangayName: string;
   status: AssessmentStatus;
+  assessmentYear?: number;
   createdAt: string;
   updatedAt: string;
   submittedAt?: string;

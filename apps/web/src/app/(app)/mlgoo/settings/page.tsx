@@ -52,7 +52,7 @@ export default function AdminSettingsPage() {
       title: "User Management",
       description: "Manage system users, roles, and permissions",
       icon: Users,
-      href: "/mlgoo/users",
+      href: "/user-management",
       color: "#3B82F6",
       isLink: true,
     },

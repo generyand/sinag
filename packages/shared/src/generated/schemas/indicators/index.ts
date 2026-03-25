@@ -143,6 +143,12 @@ export type BLGUDashboardResponseAddressedIndicatorIds = number[] | null;
 
 
 /**
+ * BLGUDashboardResponseFlaggedIndicatorIds
+ */
+export type BLGUDashboardResponseFlaggedIndicatorIds = number[] | null;
+
+
+/**
  * BLGUDashboardResponseMlgooRecalibrationIndicatorIds
  */
 export type BLGUDashboardResponseMlgooRecalibrationIndicatorIds = number[] | null;

@@ -636,6 +636,7 @@ class AssessmentService:
             "id": assessment_info.get("id"),
             "status": assessment_info.get("status"),
             "blgu_user_id": blgu_user_id,
+            "assessment_year": assessment_info.get("assessment_year"),
             "barangay_id": user_info.get("barangay_id"),
             "barangay_name": user_info.get("barangay_name"),
             "created_at": assessment_info.get("created_at"),

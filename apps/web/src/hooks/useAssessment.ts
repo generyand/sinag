@@ -100,6 +100,7 @@ export function useCurrentAssessment() {
     assessment: {
       id: number;
       status: string;
+      assessment_year?: number;
       barangay_id?: number;
       barangay_name?: string;
       created_at: string;
@@ -192,6 +193,7 @@ export function useCurrentAssessment() {
             : ("in_progress" as const)
           : ("not_started" as const);
       })(),
+      isCompleted: indicator.response?.is_completed === true,
       // Try to infer a generalized compliance answer from various backend field names
       // For areas 1-6, check for fields ending in _compliance (like bpoc_documents_compliance)
       // For Area 1 with multiple fields, use "yes" if any field is "yes", otherwise check all are answered
@@ -325,6 +327,7 @@ export function useCurrentAssessment() {
         status: (assessmentData as unknown as APIAssessment).assessment.status
           .toLowerCase()
           .replaceAll("_", "-") as AssessmentStatus,
+        assessmentYear: (assessmentData as unknown as APIAssessment).assessment.assessment_year,
         createdAt: (assessmentData as unknown as APIAssessment).assessment.created_at,
         updatedAt: (assessmentData as unknown as APIAssessment).assessment.updated_at,
         submittedAt: (assessmentData as unknown as APIAssessment).assessment.submitted_at,
@@ -342,9 +345,7 @@ export function useCurrentAssessment() {
             code: area.name.substring(0, 2).toUpperCase(),
             description: `${area.name} governance area`,
             isCore: area.area_type === "Core",
-            indicators: area.indicators
-              .filter((i) => true) // top-level already from API
-              .map((indicator) => mapIndicatorTree(area.id, indicator)),
+            indicators: area.indicators.map((indicator) => mapIndicatorTree(area.id, indicator)),
           })
         ),
         totalIndicators: (() => {
@@ -466,7 +467,6 @@ export function useCurrentAssessment() {
             const indId = String(serverInd.id);
             const localData = localDataMap.get(indId);
             const localStatus = localData?.status;
-            const localRequiresRework = localData?.requiresRework;
             const localMovFiles = localData?.movFiles;
 
             // Determine which status to use:
@@ -527,7 +527,7 @@ export function useCurrentAssessment() {
             if (ind.children && ind.children.length > 0) {
               return acc + countCompleted(ind.children);
             }
-            return acc + (ind.status === "completed" ? 1 : 0);
+            return acc + (ind.isCompleted === true || ind.status === "completed" ? 1 : 0);
           }, 0);
 
         mergedData.completedIndicators = (mergedData.governanceAreas || []).reduce(
@@ -572,7 +572,7 @@ export function useCurrentAssessment() {
             // TRUST BACKEND'S STATUS
             // Check the indicator's status field which is derived from backend's is_completed
             // status is set to "completed" only when backend validates it as complete
-            const isCompleted = n.status === "completed";
+            const isCompleted = n.isCompleted === true || n.status === "completed";
             return acc + (isCompleted ? 1 : 0);
           }, 0);
         const total = (next.governanceAreas || []).reduce(
@@ -620,7 +620,7 @@ export function useAssessmentValidation(assessment: Assessment | null) {
 
       // Check the indicator's status field (derived from backend is_completed)
       // "completed" means it passed all validations (structure, data, movs)
-      if (indicator.status !== "completed") {
+      if (!(indicator.isCompleted === true || indicator.status === "completed")) {
         missingIndicators.push(`${indicator.code} - ${indicator.name}`);
       }
     };
