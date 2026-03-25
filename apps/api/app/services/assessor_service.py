@@ -189,7 +189,7 @@ class AssessorService:
         - These are assessments ready for area-specific review
 
         **Validators** (users without assessor_area_id - system-wide, 3 users):
-        - See assessments in AWAITING_FINAL_VALIDATION status (all 6 areas approved)
+        - See assessments in SUBMITTED or AWAITING_FINAL_VALIDATION status
         - System-wide access (all governance areas)
         - Can request CALIBRATION
         - ALSO see assessments in REWORK status if they haven't calibrated yet
@@ -257,11 +257,12 @@ class AssessorService:
             )
         elif is_validator:
             # Validators: System-wide access
-            # Show assessments in AWAITING_FINAL_VALIDATION (all 6 areas approved)
+            # Show assessments in SUBMITTED or AWAITING_FINAL_VALIDATION
             # ALSO show REWORK ONLY if it's a calibration rework (validator-initiated)
             # Do NOT show assessor-initiated rework (is_calibration_rework = False)
             query = query.filter(
                 or_(
+                    Assessment.status == AssessmentStatus.SUBMITTED,
                     Assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION,
                     and_(
                         Assessment.status == AssessmentStatus.REWORK,

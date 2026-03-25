@@ -551,66 +551,6 @@ export function MiddleMovFilesPanel({
     [isValidator]
   );
 
-  // Separate files into:
-  // - newFiles: Files uploaded AFTER rework/calibration (replacement files)
-  // - acceptedOldFiles: Files uploaded BEFORE but were accepted (no annotations, didn't need re-upload)
-  // - rejectedOldFiles: Files uploaded BEFORE and were rejected/replaced
-  const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo(() => {
-    if (!effectiveTimestamp) {
-      // No separation timestamp - all files are treated as accepted (normal view)
-      return { newFiles: [], acceptedOldFiles: movFiles, rejectedOldFiles: [] };
-    }
-
-    if (isValidator) {
-      return groupValidatorFilesForDisplay(movFiles);
-    }
-
-    const newUploads = movFiles.filter((f: any) => f.isNew);
-    const oldUploads = movFiles.filter((f: any) => !f.isNew);
-
-    // Check if any old files have explicit rejection/note flags
-    const hasExplicitRejection = oldUploads.some(
-      (f: any) =>
-        f.is_rejected === true ||
-        f.has_annotations === true ||
-        hasReviewerFlag(f) ||
-        hasReviewerNotes(f)
-    );
-
-    let rejected: any[] = [];
-    let accepted: any[] = [];
-
-    if (hasExplicitRejection) {
-      // Use is_rejected, has_annotations, or flagged_for_rework flag to determine rejection
-      rejected = oldUploads.filter(
-        (f: any) =>
-          f.is_rejected === true ||
-          f.has_annotations === true ||
-          hasReviewerFlag(f) ||
-          hasReviewerNotes(f)
-      );
-      accepted = oldUploads.filter(
-        (f: any) =>
-          f.is_rejected !== true &&
-          f.has_annotations !== true &&
-          !hasReviewerFlag(f) &&
-          !hasReviewerNotes(f)
-      );
-    } else {
-      // No explicit rejection flags on any old files
-      // Even if there are new uploads, old files without annotations should remain as accepted
-      // Only files with explicit rejection/annotation flags should go to PREVIOUS FILES
-      rejected = [];
-      accepted = oldUploads;
-    }
-
-    return {
-      newFiles: newUploads,
-      acceptedOldFiles: accepted,
-      rejectedOldFiles: rejected,
-    };
-  }, [movFiles, effectiveTimestamp, hasReviewerFlag, hasReviewerNotes, isValidator]);
-
   // State for PDF annotation modal
   const [selectedFile, setSelectedFile] = React.useState<any | null>(null);
   const [isAnnotating, setIsAnnotating] = React.useState(false);
@@ -918,6 +858,65 @@ export function MiddleMovFilesPanel({
       ),
     [movFiles]
   );
+  // Separate files into:
+  // - newFiles: Files uploaded AFTER rework/calibration (replacement files)
+  // - acceptedOldFiles: Files uploaded BEFORE but were accepted (no annotations, didn't need re-upload)
+  // - rejectedOldFiles: Files uploaded BEFORE and were rejected/replaced
+  const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo(() => {
+    if (!effectiveTimestamp) {
+      // No separation timestamp - all files are treated as accepted (normal view)
+      return { newFiles: [], acceptedOldFiles: movFiles, rejectedOldFiles: [] };
+    }
+
+    if (isValidator) {
+      return groupValidatorFilesForDisplay(barangayFiles);
+    }
+
+    const newUploads = movFiles.filter((f: any) => f.isNew);
+    const oldUploads = movFiles.filter((f: any) => !f.isNew);
+
+    // Check if any old files have explicit rejection/note flags
+    const hasExplicitRejection = oldUploads.some(
+      (f: any) =>
+        f.is_rejected === true ||
+        f.has_annotations === true ||
+        hasReviewerFlag(f) ||
+        hasReviewerNotes(f)
+    );
+
+    let rejected: any[] = [];
+    let accepted: any[] = [];
+
+    if (hasExplicitRejection) {
+      // Use is_rejected, has_annotations, or flagged_for_rework flag to determine rejection
+      rejected = oldUploads.filter(
+        (f: any) =>
+          f.is_rejected === true ||
+          f.has_annotations === true ||
+          hasReviewerFlag(f) ||
+          hasReviewerNotes(f)
+      );
+      accepted = oldUploads.filter(
+        (f: any) =>
+          f.is_rejected !== true &&
+          f.has_annotations !== true &&
+          !hasReviewerFlag(f) &&
+          !hasReviewerNotes(f)
+      );
+    } else {
+      // No explicit rejection flags on any old files
+      // Even if there are new uploads, old files without annotations should remain as accepted
+      // Only files with explicit rejection/annotation flags should go to PREVIOUS FILES
+      rejected = [];
+      accepted = oldUploads;
+    }
+
+    return {
+      newFiles: newUploads,
+      acceptedOldFiles: accepted,
+      rejectedOldFiles: rejected,
+    };
+  }, [barangayFiles, movFiles, effectiveTimestamp, hasReviewerFlag, hasReviewerNotes, isValidator]);
   const canValidatorUpload =
     isValidator &&
     assessmentStatus === "SUBMITTED" &&
@@ -1084,10 +1083,26 @@ export function MiddleMovFilesPanel({
               />
             )}
 
+            {validatorFiles.length > 0 && (
+              <ReviewFileSection
+                title="Validator Uploads"
+                files={validatorFiles}
+                historyLabel="View validator upload history"
+                titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
+                badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border border-blue-200 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/20 p-3"
+                description="Files uploaded by validators are kept separate from barangay evidence."
+                movAnnotations={safeAnnotations}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+              />
+            )}
+
             {/* No files at all */}
             {newFiles.length === 0 &&
               acceptedOldFiles.length === 0 &&
-              rejectedOldFiles.length === 0 && (
+              rejectedOldFiles.length === 0 &&
+              validatorFiles.length === 0 && (
                 <div className="flex flex-col items-center justify-center text-center p-6">
                   <FileIcon className="h-12 w-12 text-slate-400 dark:text-slate-500 mb-3" />
                   <p className="text-sm text-slate-500 dark:text-slate-400">

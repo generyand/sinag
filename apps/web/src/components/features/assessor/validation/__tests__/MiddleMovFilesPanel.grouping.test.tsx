@@ -121,7 +121,7 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps the validator-reviewed file in Existing Files until a newer upload replaces it", () => {
+  it("keeps validator uploads in a separate section during calibration review", () => {
     const assessment = buildAssessment([
       {
         id: 1,
@@ -142,6 +142,7 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
         content_type: "application/pdf",
         storage_path: "/current",
         uploaded_at: "2026-03-12T10:00:00Z",
+        upload_origin: "validator",
         validator_notes: "Check this revision",
         flagged_for_calibration: true,
       },
@@ -157,14 +158,14 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
       )
     );
 
-    const existingSection = getSectionContainer("Existing File");
     const previousSection = getSectionContainer("Previous File");
+    const validatorSection = getSectionContainer("Validator Uploads");
 
-    expect(within(existingSection).getByText("validator-current.pdf")).toBeInTheDocument();
     expect(within(previousSection).getByText("assessor-old.pdf")).toBeInTheDocument();
+    expect(within(validatorSection).getByText("validator-current.pdf")).toBeInTheDocument();
   });
 
-  it("moves the validator-reviewed file to Previous Files once a newer upload exists", () => {
+  it("does not mix validator uploads into previous-file history during calibration review", () => {
     const assessment = buildAssessment([
       {
         id: 1,
@@ -185,6 +186,7 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
         content_type: "application/pdf",
         storage_path: "/current",
         uploaded_at: "2026-03-12T10:00:00Z",
+        upload_origin: "validator",
         validator_notes: "Check this revision",
         flagged_for_calibration: true,
       },
@@ -210,11 +212,11 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
     );
 
     const previousSection = getSectionContainer("Previous File");
-
-    fireEvent.click(screen.getByRole("button", { name: /view previous file history/i }));
+    const validatorSection = getSectionContainer("Validator Uploads");
 
     expect(within(previousSection).getByText("assessor-old.pdf")).toBeInTheDocument();
-    expect(within(previousSection).getByText("validator-current.pdf")).toBeInTheDocument();
+    expect(within(previousSection).queryByText("validator-current.pdf")).not.toBeInTheDocument();
+    expect(within(validatorSection).getByText("validator-current.pdf")).toBeInTheDocument();
   });
 
   it("shows validator uploads in a separate provenance section", () => {

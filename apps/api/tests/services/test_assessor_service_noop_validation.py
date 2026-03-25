@@ -332,6 +332,24 @@ def test_get_validator_queue_does_not_count_false_only_checklist_data_as_reviewe
     assert queue[0]["re_review_progress"] == 0
 
 
+def test_get_validator_queue_includes_submitted_assessments_for_validator_uploads(
+    db_session, mock_governance_area, validator_user
+):
+    response = create_validation_context(db_session, mock_governance_area)
+
+    assessment = response.assessment
+    assessment.status = AssessmentStatus.SUBMITTED
+    assessment.submitted_at = datetime(2025, 2, 1)
+    db_session.add(assessment)
+    db_session.commit()
+
+    queue = assessor_service.get_assessor_queue(db_session, validator_user, assessment_year=2025)
+
+    assert len(queue) == 1
+    assert queue[0]["assessment_id"] == assessment.id
+    assert queue[0]["status"] == AssessmentStatus.SUBMITTED.value
+
+
 def test_assessor_validation_round_trip_persists_and_returns_latest_values(
     db_session, mock_governance_area
 ):

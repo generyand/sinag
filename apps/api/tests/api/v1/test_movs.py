@@ -18,8 +18,10 @@ from app.db.models.assessment import (
     MOV_UPLOAD_ORIGIN_BLGU,
     MOV_UPLOAD_ORIGIN_VALIDATOR,
     Assessment,
+    AssessmentResponse,
     MOVFile,
 )
+from app.db.models.governance_area import Indicator
 from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 
@@ -259,6 +261,35 @@ class TestUploadMOVFile:
 
             assert response.status_code == status.HTTP_403_FORBIDDEN
             assert "submitted" in response.json()["detail"].lower()
+            mock_upload.assert_not_called()
+
+    def test_validator_upload_rejects_indicator_not_in_assessment(
+        self, client, db_session, submitted_assessment, validator_user, mock_governance_area
+    ):
+        """Validators cannot upload against indicators outside the assessment surface."""
+        unlinked_indicator = Indicator(
+            name="Unlinked Indicator",
+            indicator_code="9.9.9",
+            governance_area_id=mock_governance_area.id,
+            sort_order=1,
+            description="Not linked to this assessment",
+        )
+        db_session.add(unlinked_indicator)
+        db_session.commit()
+        db_session.refresh(unlinked_indicator)
+
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{submitted_assessment.id}/indicators/{unlinked_indicator.id}/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            assert "not part of this assessment" in str(response.json()).lower()
             mock_upload.assert_not_called()
 
     def test_blgu_upload_rules_remain_unchanged_for_owned_assessment(
@@ -669,6 +700,69 @@ class TestListMOVFiles:
         assert "blgu_file2.pdf" in file_names
         assert "other_file.pdf" not in file_names  # Other user's file not visible
         assert data["files"][0]["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
+
+    def test_list_files_blgu_user_also_sees_validator_files(
+        self, client, db_session, assessment, blgu_user, other_blgu_user, validator_user, indicator
+    ):
+        """BLGU users should see validator-added evidence on their own assessment."""
+        db_session.add(
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=indicator.id,
+                response_data={},
+                is_completed=False,
+            )
+        )
+        db_session.flush()
+
+        own_file = MOVFile(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=blgu_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            file_name="blgu_file.pdf",
+            file_url="https://storage.example.com/blgu.pdf",
+            file_type="application/pdf",
+            file_size=1024,
+            uploaded_at=datetime.utcnow(),
+        )
+        validator_file = MOVFile(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=validator_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_VALIDATOR,
+            file_name="validator_file.pdf",
+            file_url="https://storage.example.com/validator.pdf",
+            file_type="application/pdf",
+            file_size=2048,
+            uploaded_at=datetime.utcnow(),
+        )
+        other_blgu_file = MOVFile(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=other_blgu_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            file_name="other_blgu_file.pdf",
+            file_url="https://storage.example.com/other.pdf",
+            file_type="application/pdf",
+            file_size=3072,
+            uploaded_at=datetime.utcnow(),
+        )
+        db_session.add_all([own_file, validator_file, other_blgu_file])
+        db_session.commit()
+
+        use_test_db_session(client, db_session)
+        authenticate_user(client, blgu_user)
+
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        file_names = [f["file_name"] for f in response.json()["files"]]
+        assert "blgu_file.pdf" in file_names
+        assert "validator_file.pdf" in file_names
+        assert "other_blgu_file.pdf" not in file_names
 
     def test_list_files_assessor_sees_all_files(
         self, client, db_session, assessment, blgu_user, other_blgu_user, assessor_user, indicator

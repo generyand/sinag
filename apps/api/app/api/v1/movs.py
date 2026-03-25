@@ -13,6 +13,7 @@ from app.db.models.assessment import (
     MOV_UPLOAD_ORIGIN_BLGU,
     MOV_UPLOAD_ORIGIN_VALIDATOR,
     Assessment,
+    AssessmentResponse,
     MOVFile,
 )
 from app.db.models.governance_area import Indicator
@@ -83,12 +84,17 @@ def upload_mov_file(
             },
         )
 
+    indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
+    if not indicator:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Indicator {indicator_id} not found",
+        )
+
     # Look up indicator code for display filename generation
     indicator_code: str | None = None
-    if field_label:
-        indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
-        if indicator and indicator.indicator_code:
-            indicator_code = indicator.indicator_code
+    if field_label and indicator.indicator_code:
+        indicator_code = indicator.indicator_code
 
     assessment: Assessment | None = None
     if current_user.role in (UserRole.BLGU_USER, UserRole.VALIDATOR):
@@ -116,6 +122,19 @@ def upload_mov_file(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Validators can only upload MOV files for submitted assessments",
+            )
+        response = (
+            db.query(AssessmentResponse)
+            .filter(
+                AssessmentResponse.assessment_id == assessment_id,
+                AssessmentResponse.indicator_id == indicator_id,
+            )
+            .first()
+        )
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Indicator is not part of this assessment",
             )
         upload_origin = MOV_UPLOAD_ORIGIN_VALIDATOR
     else:
@@ -182,7 +201,7 @@ def list_mov_files(
         MOVFileListResponse with list of files
 
     Permission Rules:
-        - BLGU_USER: Can only see files they uploaded
+        - BLGU_USER: Can see their own files plus validator-uploaded files on their assessment
         - ASSESSOR, VALIDATOR, MLGOO_DILG: Can see all files for the indicator
     """
     # Build base query
@@ -198,8 +217,11 @@ def list_mov_files(
 
     # Apply permission-based filtering
     if current_user.role == UserRole.BLGU_USER:
-        # BLGU users can only see their own files
-        query = query.filter(MOVFile.uploaded_by == current_user.id)
+        # BLGU users can see their own files plus validator-added evidence on their assessment.
+        query = query.filter(
+            (MOVFile.uploaded_by == current_user.id)
+            | (MOVFile.upload_origin == MOV_UPLOAD_ORIGIN_VALIDATOR)
+        )
 
     # Order by most recent first
     query = query.order_by(MOVFile.uploaded_at.desc())
