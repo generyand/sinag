@@ -15,7 +15,12 @@ from supabase import Client, create_client
 from app.core.config import settings
 from app.core.year_resolver import YearPlaceholderResolver
 from app.db.enums import AssessmentStatus, UserRole
-from app.db.models.assessment import Assessment, AssessmentResponse, MOVFile
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_VALUES,
+    Assessment,
+    AssessmentResponse,
+    MOVFile,
+)
 from app.db.models.user import User
 from app.services.assessment_lock_service import assessment_lock_service
 
@@ -153,9 +158,7 @@ class StorageService:
             return field_label
 
         assessment_year = (
-            db.query(Assessment.assessment_year)
-            .filter(Assessment.id == assessment_id)
-            .scalar()
+            db.query(Assessment.assessment_year).filter(Assessment.id == assessment_id).scalar()
         )
         if assessment_year is None:
             return field_label
@@ -307,6 +310,7 @@ class StorageService:
         assessment_id: int,
         indicator_id: int,
         user_id: int,
+        upload_origin: str,
         field_id: str | None = None,
         indicator_code: str | None = None,
         field_label: str | None = None,
@@ -327,6 +331,7 @@ class StorageService:
             assessment_id: ID of the assessment
             indicator_id: ID of the indicator
             user_id: ID of the user uploading the file
+            upload_origin: Provenance grouping for the uploaded file
             field_id: Optional field identifier for multi-field uploads
             indicator_code: Optional indicator code (e.g., "6.1.3") for display filename
             field_label: Optional field label for display filename
@@ -428,8 +433,6 @@ class StorageService:
         # Note: Multiple files are allowed per field. Users can manually delete files if needed.
         # Old files from before rework are kept for history and shown with annotations.
 
-        upload_origin = self._get_upload_origin(db, user_id)
-
         # Create database record
         try:
             mov_file = self._save_mov_file_record(
@@ -441,8 +444,8 @@ class StorageService:
                 assessment_id=assessment_id,
                 indicator_id=indicator_id,
                 user_id=user_id,
-                field_id=field_id,
                 upload_origin=upload_origin,
+                field_id=field_id,
             )
 
             logger.info(
@@ -476,8 +479,8 @@ class StorageService:
         assessment_id: int,
         indicator_id: int,
         user_id: int,
+        upload_origin: str,
         field_id: str | None = None,
-        upload_origin: str = "blgu",
     ) -> MOVFile:
         """
         Create and save a MOVFile database record.
@@ -499,6 +502,9 @@ class StorageService:
         Raises:
             Exception: If database operation fails
         """
+        if upload_origin not in MOV_UPLOAD_ORIGIN_VALUES:
+            raise ValueError(f"Invalid upload_origin: {upload_origin}")
+
         mov_file = MOVFile(
             assessment_id=assessment_id,
             indicator_id=indicator_id,
@@ -521,17 +527,6 @@ class StorageService:
         self._update_response_completion_status(db, assessment_id, indicator_id)
 
         return mov_file
-
-    def _get_upload_origin(self, db: Session, user_id: int) -> str:
-        """
-        Resolve upload provenance for MOV files.
-
-        Validator uploads are grouped separately from the default BLGU-origin bucket.
-        """
-        user = db.query(User).filter(User.id == user_id).first()
-        if user and user.role == UserRole.VALIDATOR:
-            return "validator"
-        return "blgu"
 
     def _update_response_completion_status(
         self, db: Session, assessment_id: int, indicator_id: int

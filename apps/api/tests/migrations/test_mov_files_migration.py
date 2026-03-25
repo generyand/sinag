@@ -37,6 +37,7 @@ class TestMOVFilesMigration:
             "assessment_id",
             "indicator_id",
             "uploaded_by",
+            "upload_origin",
             "file_name",
             "file_url",
             "file_type",
@@ -57,6 +58,7 @@ class TestMOVFilesMigration:
         assert columns["uploaded_by"]["nullable"], (
             "uploaded_by should be nullable (for SET NULL on delete)"
         )
+        assert not columns["upload_origin"]["nullable"], "upload_origin should be NOT NULL"
 
         # Check file metadata columns
         assert not columns["file_name"]["nullable"], "file_name should be NOT NULL"
@@ -163,6 +165,39 @@ class TestMOVFilesMigration:
         assert row[1] == 1024, "File size should match"
 
         # Cleanup
+        db_session.execute(text("DELETE FROM mov_files WHERE id = :id"), {"id": file_id})
+        db_session.commit()
+
+    def test_mov_files_upload_origin_defaults_to_blgu(self, db_session: Session):
+        """Test that new mov_files rows default upload_origin to BLGU."""
+        result = db_session.execute(
+            text("""
+                INSERT INTO mov_files (
+                    assessment_id, indicator_id, uploaded_by,
+                    file_name, file_url, file_type, file_size, uploaded_at,
+                    flagged_for_rework, flagged_for_calibration
+                )
+                VALUES (
+                    1,
+                    1,
+                    1,
+                    'origin_file.pdf',
+                    'https://example.com/origin.pdf',
+                    'application/pdf',
+                    512,
+                    CURRENT_TIMESTAMP,
+                    0,
+                    0
+                )
+                RETURNING id, upload_origin
+            """)
+        )
+
+        file_id, upload_origin = result.fetchone()
+        db_session.commit()
+
+        assert upload_origin == "blgu"
+
         db_session.execute(text("DELETE FROM mov_files WHERE id = :id"), {"id": file_id})
         db_session.commit()
 

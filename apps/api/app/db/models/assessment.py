@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
@@ -26,6 +27,16 @@ from app.db.enums import AssessmentStatus, ComplianceStatus, MOVStatus, Validati
 
 if TYPE_CHECKING:
     from app.db.models.system import AssessmentYear
+
+# Shared MOV upload provenance values.
+MOV_UPLOAD_ORIGIN_BLGU = "blgu"
+MOV_UPLOAD_ORIGIN_VALIDATOR = "validator"
+MOV_UPLOAD_ORIGIN_UNKNOWN = "unknown"
+MOV_UPLOAD_ORIGIN_VALUES = (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    MOV_UPLOAD_ORIGIN_UNKNOWN,
+)
 
 
 class Assessment(Base):
@@ -640,6 +651,12 @@ class MOVFile(Base):
     """
 
     __tablename__ = "mov_files"
+    __table_args__ = (
+        CheckConstraint(
+            "upload_origin IN ('blgu', 'validator', 'unknown')",
+            name="ck_mov_files_upload_origin_valid",
+        ),
+    )
 
     # Primary key
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -658,8 +675,8 @@ class MOVFile(Base):
     upload_origin: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
-        default="blgu",
-        server_default="blgu",
+        default=MOV_UPLOAD_ORIGIN_BLGU,
+        server_default=MOV_UPLOAD_ORIGIN_BLGU,
     )
 
     # File metadata

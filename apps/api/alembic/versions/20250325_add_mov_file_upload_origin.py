@@ -29,6 +29,11 @@ def upgrade() -> None:
             server_default="blgu",
         ),
     )
+    op.create_check_constraint(
+        "ck_mov_files_upload_origin_valid",
+        "mov_files",
+        "upload_origin IN ('blgu', 'validator', 'unknown')",
+    )
 
     connection = op.get_bind()
 
@@ -51,4 +56,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Remove upload provenance from MOV files."""
+    op.drop_constraint("ck_mov_files_upload_origin_valid", "mov_files", type_="check")
     op.drop_column("mov_files", "upload_origin")

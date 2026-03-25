@@ -19,7 +19,12 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from app.db.enums import AreaType, AssessmentStatus
-from app.db.models.assessment import Assessment, MOVFile
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    Assessment,
+    MOVFile,
+)
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.system import AssessmentYear
 from app.services.storage_service import StorageService
@@ -156,6 +161,7 @@ class TestStorageServiceFileUpload:
                 assessment_id=1,
                 indicator_id=10,
                 user_id=1,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
             )
 
             # Verify result is a MOVFile instance
@@ -171,6 +177,56 @@ class TestStorageServiceFileUpload:
             # Verify file was uploaded to Supabase
             mock_supabase_client.storage.from_.assert_called()
             mock_supabase_client.storage.from_().upload.assert_called_once()
+
+    def test_upload_mov_file_sets_blgu_upload_origin(
+        self, service, mock_supabase_client, db_session, mock_blgu_user, mock_indicator
+    ):
+        """Test that BLGU uploads default to BLGU provenance."""
+        from datetime import UTC, datetime
+
+        from app.db.enums import AssessmentStatus
+        from app.db.models.assessment import Assessment
+        from app.db.models.system import AssessmentYear
+
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=assessment_year.year,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.flush()
+
+        file_data = io.BytesIO(b"%PDF-1.4\n%")
+        upload_file = UploadFile(
+            filename="blgu-proof.pdf",
+            file=file_data,
+            headers={"content-type": "application/pdf"},
+        )
+
+        with patch(
+            "app.services.storage_service._get_supabase_client",
+            return_value=mock_supabase_client,
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=mock_indicator.id,
+                user_id=mock_blgu_user.id,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            )
+
+        assert isinstance(result, MOVFile)
+        assert result.uploaded_by == mock_blgu_user.id
+        assert result.upload_origin == MOV_UPLOAD_ORIGIN_BLGU
 
     def test_upload_mov_file_sets_validator_upload_origin(
         self,
@@ -221,11 +277,12 @@ class TestStorageServiceFileUpload:
                 assessment_id=assessment.id,
                 indicator_id=mock_indicator.id,
                 user_id=validator_user.id,
+                upload_origin=MOV_UPLOAD_ORIGIN_VALIDATOR,
             )
 
         assert isinstance(result, MOVFile)
         assert result.uploaded_by == validator_user.id
-        assert result.upload_origin == "validator"
+        assert result.upload_origin == MOV_UPLOAD_ORIGIN_VALIDATOR
         assert result.assessment_id == assessment.id
         assert result.indicator_id == mock_indicator.id
         assert result.file_name == "validator-proof.pdf"
@@ -259,6 +316,7 @@ class TestStorageServiceFileUpload:
                     assessment_id=1,
                     indicator_id=10,
                     user_id=1,
+                    upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
                 )
 
             assert "File upload to storage failed" in str(exc_info.value)
@@ -266,6 +324,21 @@ class TestStorageServiceFileUpload:
             # Verify no database record was created (mock not called)
             mock_db_session.add.assert_not_called()
             mock_db_session.commit.assert_not_called()
+
+    def test_save_mov_file_record_rejects_invalid_upload_origin(self, service, db_session):
+        """Test that invalid upload_origin values are rejected before persistence."""
+        with pytest.raises(ValueError, match="Invalid upload_origin"):
+            service._save_mov_file_record(
+                db=db_session,
+                file_url="https://storage.supabase.co/mov-files/1/10/test.pdf",
+                file_name="uuid_test.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                assessment_id=1,
+                indicator_id=10,
+                user_id=1,
+                upload_origin="not-valid",
+            )
 
     def test_upload_mov_file_handles_database_failure_with_rollback(
         self, service, mock_supabase_client, mock_db_session
@@ -294,6 +367,7 @@ class TestStorageServiceFileUpload:
                     assessment_id=1,
                     indicator_id=10,
                     user_id=1,
+                    upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
                 )
 
             assert "Database operation failed" in str(exc_info.value)
@@ -313,6 +387,7 @@ class TestStorageServiceFileUpload:
             assessment_id=1,
             indicator_id=10,
             user_id=1,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
         )
 
         # Verify result
@@ -352,6 +427,7 @@ class TestStorageServiceFileUpload:
                 assessment_id=1,
                 indicator_id=10,
                 user_id=1,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
             )
 
             # Should use default filename "file"
@@ -374,6 +450,7 @@ class TestStorageServiceFileUpload:
                 assessment_id=1,
                 indicator_id=10,
                 user_id=1,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
             )
 
             # Should use default content type

@@ -5,7 +5,7 @@ Tests the file upload, list, and deletion endpoints.
 """
 
 import io
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -13,8 +13,14 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.api import deps
-from app.db.enums import AssessmentStatus
-from app.db.models.assessment import Assessment, MOVFile
+from app.db.enums import AssessmentStatus, UserRole
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    Assessment,
+    MOVFile,
+)
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 
 
@@ -70,12 +76,41 @@ class TestUploadMOVFile:
         return user
 
     @pytest.fixture
-    def assessment(self, db_session, blgu_user):
+    def validator_user(self, db_session):
+        """Fixture providing a validator user."""
+        user = User(
+            id=101,
+            email="validator@test.com",
+            name="Test Validator User",
+            hashed_password="hashed",
+            role=UserRole.VALIDATOR,
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
+
+    @pytest.fixture
+    def assessment_year(self, db_session):
+        """Fixture providing a valid assessment year."""
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.commit()
+        db_session.refresh(assessment_year)
+        return assessment_year
+
+    @pytest.fixture
+    def assessment(self, db_session, blgu_user, assessment_year):
         """Fixture providing a draft assessment."""
         assessment = Assessment(
             id=1,
             blgu_user_id=blgu_user.id,
             status=AssessmentStatus.DRAFT,
+            assessment_year=assessment_year.year,
         )
         db_session.add(assessment)
         db_session.commit()
@@ -130,6 +165,39 @@ class TestUploadMOVFile:
             assert data["file_type"] == "application/pdf"
             assert data["file_size"] == 1024
             assert data["uploaded_by"] == 100
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
+
+    def test_upload_valid_pdf_file_from_validator_uses_validator_origin(
+        self, client, db_session, assessment, validator_user
+    ):
+        """Test successful upload by a validator uses validator provenance."""
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            mock_mov_file = MOVFile(
+                id=11,
+                assessment_id=assessment.id,
+                indicator_id=1,
+                file_name="validator-file.pdf",
+                file_url="https://storage.example.com/validator-file.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                uploaded_by=101,
+                uploaded_at=datetime.utcnow(),
+            )
+            mock_upload.return_value = mock_mov_file
+
+            file_content = b"%PDF-1.4\n%"
+            file_data = io.BytesIO(file_content)
+
+            response = client.post(
+                f"/api/v1/movs/assessments/{assessment.id}/indicators/1/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_201_CREATED
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_VALIDATOR
 
     def test_upload_valid_docx_file(self, client, assessment, auth_headers):
         """Test successful upload of a valid DOCX file."""
@@ -168,6 +236,7 @@ class TestUploadMOVFile:
                 data["file_type"]
                 == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
 
     def test_upload_valid_jpg_file(self, client, assessment, auth_headers):
         """Test successful upload of a valid JPG file."""

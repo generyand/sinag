@@ -9,7 +9,12 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
 from app.db.enums import UserRole
-from app.db.models.assessment import Assessment, MOVFile
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    Assessment,
+    MOVFile,
+)
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVFileListResponse, MOVFileResponse, SignedUrlResponse
@@ -100,6 +105,14 @@ def upload_mov_file(
         assessment_lock_service.ensure_blgu_write_allowed(
             db, assessment, action="upload or replace MOV files"
         )
+        upload_origin = MOV_UPLOAD_ORIGIN_BLGU
+    elif current_user.role == UserRole.VALIDATOR:
+        upload_origin = MOV_UPLOAD_ORIGIN_VALIDATOR
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to upload MOV files through this endpoint",
+        )
 
     # Upload file to storage and create database record
     try:
@@ -109,6 +122,7 @@ def upload_mov_file(
             assessment_id=assessment_id,
             indicator_id=indicator_id,
             user_id=current_user.id,
+            upload_origin=upload_origin,
             field_id=field_id,
             indicator_code=indicator_code,
             field_label=field_label,
