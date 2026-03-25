@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { MlgooReopenSubmissionButton } from "@/components/features/mlgoo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check, Eye, Info, Loader2, Send } from "lucide-react";
 import { NeedsReworkPopover } from "./NeedsReworkPopover";
@@ -20,6 +21,7 @@ interface SubmissionsMobileCardProps {
   submission: SubmissionUIModel;
   onView: (submission: SubmissionUIModel) => void;
   onRemind: (submission: SubmissionUIModel) => void;
+  onReopenSuccess?: () => void | Promise<void>;
   remindingId?: number | null;
 }
 
@@ -141,6 +143,7 @@ export function SubmissionsMobileCard({
   submission,
   onView,
   onRemind,
+  onReopenSuccess,
   remindingId,
 }: SubmissionsMobileCardProps) {
   const statusConfig = getStatusConfig(submission.currentStatus);
@@ -222,32 +225,43 @@ export function SubmissionsMobileCard({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          onClick={() => onView(submission)}
-          aria-label={`View details for ${submission.barangayName}`}
-          className="flex-1 bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-white rounded-sm font-medium"
-        >
-          <Eye className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          View
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onRemind(submission)}
-          disabled={remindingId === submission.id}
-          aria-label={`Send reminder to ${submission.barangayName}`}
-          title="Send a reminder email to the barangay to complete their submission"
-          className="flex-1 bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium disabled:opacity-50"
-        >
-          {remindingId === submission.id ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
-          ) : (
-            <Send className="h-4 w-4 mr-1.5" aria-hidden="true" />
-          )}
-          {remindingId === submission.id ? "Sending..." : "Remind"}
-        </Button>
+      <div className="flex flex-col gap-2">
+        <MlgooReopenSubmissionButton
+          assessmentId={submission.id}
+          assessmentStatus={submission.rawStatus}
+          isLockedForBlgu={submission.isLockedForBlgu}
+          barangayName={submission.barangayName}
+          onSuccess={onReopenSuccess}
+          className="w-full border-sky-300 text-sky-700 hover:bg-sky-50"
+        />
+
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => onView(submission)}
+            aria-label={`View details for ${submission.barangayName}`}
+            className="flex-1 bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow-dark)] text-white rounded-sm font-medium"
+          >
+            <Eye className="h-4 w-4 mr-1.5" aria-hidden="true" />
+            View
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onRemind(submission)}
+            disabled={remindingId === submission.id}
+            aria-label={`Send reminder to ${submission.barangayName}`}
+            title="Send a reminder email to the barangay to complete their submission"
+            className="flex-1 bg-[var(--background)] hover:bg-[var(--cityscape-yellow)]/10 hover:border-[var(--cityscape-yellow)] border-[var(--border)] text-[var(--foreground)] rounded-sm font-medium disabled:opacity-50"
+          >
+            {remindingId === submission.id ? (
+              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Send className="h-4 w-4 mr-1.5" aria-hidden="true" />
+            )}
+            {remindingId === submission.id ? "Sending..." : "Remind"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -257,6 +271,7 @@ interface SubmissionsMobileListProps {
   submissions: SubmissionUIModel[];
   onView: (submission: SubmissionUIModel) => void;
   onRemind: (submission: SubmissionUIModel) => void;
+  onReopenSuccess?: () => void | Promise<void>;
   remindingId?: number | null;
 }
 
@@ -267,6 +282,7 @@ export function SubmissionsMobileList({
   submissions,
   onView,
   onRemind,
+  onReopenSuccess,
   remindingId,
 }: SubmissionsMobileListProps) {
   return (
@@ -277,6 +293,7 @@ export function SubmissionsMobileList({
           submission={submission}
           onView={onView}
           onRemind={onRemind}
+          onReopenSuccess={onReopenSuccess}
           remindingId={remindingId}
         />
       ))}

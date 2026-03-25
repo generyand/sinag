@@ -36,6 +36,8 @@ export interface AreaReworkInfo {
 export interface SubmissionUIModel {
   id: number;
   barangayName: string;
+  rawStatus: string;
+  isLockedForBlgu: boolean;
   overallProgress: number;
   currentStatus: string;
   /** Reviewers who have reviewed this assessment (assessors and validators) */
@@ -89,6 +91,7 @@ interface ApiAssessment {
     rework_requested_at?: string;
     rework_comments?: string;
   }>;
+  is_locked_for_blgu?: boolean;
 }
 
 /**
@@ -103,6 +106,8 @@ export function transformAssessmentToUI(assessment: ApiAssessment): SubmissionUI
   return {
     id: assessment.id,
     barangayName: assessment.barangay_name ?? "Unknown",
+    rawStatus: assessment.status,
+    isLockedForBlgu: assessment.is_locked_for_blgu === true,
     overallProgress: calculateProgress(assessment),
     currentStatus: determineDisplayStatus(assessment),
     reviewers,

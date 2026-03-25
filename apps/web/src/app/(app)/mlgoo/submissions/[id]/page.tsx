@@ -26,7 +26,10 @@ type MovFile = {
 };
 
 import { CapDevInsightsCard } from "@/components/features/capdev";
-import { ReworkCalibrationSummarySection } from "@/components/features/mlgoo";
+import {
+  MlgooReopenSubmissionButton,
+  ReworkCalibrationSummarySection,
+} from "@/components/features/mlgoo";
 import { SecureFileViewer } from "@/components/features/movs/FileList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -971,6 +974,15 @@ export default function SubmissionDetailsPage() {
     setIsUnlockFormOpen((prev) => !prev);
   };
 
+  const handleReopenSuccess = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: getGetMlgooAssessmentsAssessmentIdQueryKey(assessmentId),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["/api/v1/assessments/list"],
+    });
+  };
+
   // Calculate totals
   const totalPass = governanceAreas.reduce((sum: number, ga: any) => sum + (ga.pass_count || 0), 0);
   const totalFail = governanceAreas.reduce((sum: number, ga: any) => sum + (ga.fail_count || 0), 0);
@@ -1434,6 +1446,14 @@ export default function SubmissionDetailsPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <MlgooReopenSubmissionButton
+                      assessmentId={assessmentId}
+                      assessmentStatus={assessment.status}
+                      isLockedForBlgu={isBlguLocked}
+                      barangayName={assessment.barangay_name || "Unknown Barangay"}
+                      onSuccess={handleReopenSuccess}
+                      className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                    />
                     {isBlguLocked && (
                       <Button
                         onClick={toggleUnlockForm}
