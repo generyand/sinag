@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MiddleMovFilesPanel } from "../MiddleMovFilesPanel";
@@ -40,10 +41,18 @@ vi.mock("@sinag/shared", async () => {
 
   return {
     ...actual,
+    getGetAssessorAssessmentsAssessmentIdQueryKey: vi.fn((assessmentId: number) => [
+      "assessor-assessment",
+      assessmentId,
+    ]),
     getGetAssessorMovsMovFileIdFeedbackQueryKey: vi.fn(() => ["mov-feedback"]),
     useGetAssessorMovsMovFileIdFeedback: vi.fn(() => ({
       data: null,
       isLoading: false,
+    })),
+    usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload: vi.fn(() => ({
+      mutate: vi.fn(),
+      isPending: false,
     })),
     usePatchAssessorMovsMovFileIdFeedback: vi.fn(() => ({
       mutate: vi.fn(),
@@ -58,17 +67,42 @@ vi.mock("next/dynamic", () => ({
 function buildAssessment(movs: Array<Record<string, unknown>>) {
   return {
     assessment: {
+      id: 1,
+      status: "SUBMITTED",
       responses: [
         {
           id: 101,
           assessment_id: 1,
           indicator_id: 77,
           validation_status: null,
+          indicator: {
+            name: "Indicator A",
+            form_schema: {
+              fields: [
+                {
+                  field_id: "validator_upload",
+                  field_type: "file_upload",
+                  label: "Validator Upload",
+                },
+              ],
+            },
+          },
           movs,
         },
       ],
     },
   } as any;
+}
+
+function wrap(ui: React.ReactNode) {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
 function getSectionContainer(title: RegExp | string): HTMLElement {
@@ -114,11 +148,13 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
     ]);
 
     render(
-      <MiddleMovFilesPanel
-        assessment={assessment}
-        expandedId={101}
-        calibrationRequestedAt="2026-03-10T10:00:00Z"
-      />
+      wrap(
+        <MiddleMovFilesPanel
+          assessment={assessment}
+          expandedId={101}
+          calibrationRequestedAt="2026-03-10T10:00:00Z"
+        />
+      )
     );
 
     const existingSection = getSectionContainer("Existing File");
@@ -164,11 +200,13 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
     ]);
 
     render(
-      <MiddleMovFilesPanel
-        assessment={assessment}
-        expandedId={101}
-        calibrationRequestedAt="2026-03-10T10:00:00Z"
-      />
+      wrap(
+        <MiddleMovFilesPanel
+          assessment={assessment}
+          expandedId={101}
+          calibrationRequestedAt="2026-03-10T10:00:00Z"
+        />
+      )
     );
 
     const previousSection = getSectionContainer("Previous File");
@@ -177,5 +215,38 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
 
     expect(within(previousSection).getByText("assessor-old.pdf")).toBeInTheDocument();
     expect(within(previousSection).getByText("validator-current.pdf")).toBeInTheDocument();
+  });
+
+  it("shows validator uploads in a separate provenance section", () => {
+    const assessment = buildAssessment([
+      {
+        id: 1,
+        filename: "barangay-file.pdf",
+        original_filename: "barangay-file.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/barangay",
+        uploaded_at: "2026-03-10T10:00:00Z",
+        upload_origin: "blgu",
+      },
+      {
+        id: 2,
+        filename: "validator-file.pdf",
+        original_filename: "validator-file.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/validator",
+        uploaded_at: "2026-03-11T10:00:00Z",
+        upload_origin: "validator",
+      },
+    ]);
+
+    render(wrap(<MiddleMovFilesPanel assessment={assessment} expandedId={101} />));
+
+    const barangaySection = getSectionContainer("Barangay Uploads");
+    const validatorSection = getSectionContainer("Validator Uploads");
+
+    expect(within(barangaySection).getByText("barangay-file.pdf")).toBeInTheDocument();
+    expect(within(validatorSection).getByText("validator-file.pdf")).toBeInTheDocument();
   });
 });

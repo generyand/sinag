@@ -8,10 +8,18 @@ import { useMovAnnotations } from "@/hooks/useMovAnnotations";
 import { MiddleMovFilesPanel } from "../MiddleMovFilesPanel";
 
 vi.mock("@sinag/shared", () => ({
+  getGetAssessorAssessmentsAssessmentIdQueryKey: vi.fn((assessmentId: number) => [
+    "assessor-assessment",
+    assessmentId,
+  ]),
   getGetAssessorMovsMovFileIdFeedbackQueryKey: vi.fn(() => ["mov-feedback"]),
   useGetAssessorMovsMovFileIdFeedback: vi.fn(() => ({
     data: null,
     isLoading: false,
+  })),
+  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
   })),
   usePatchAssessorMovsMovFileIdFeedback: vi.fn(() => ({
     mutate: vi.fn(),
@@ -75,12 +83,25 @@ const wrap = (ui: React.ReactNode) => {
 
 const assessment = {
   assessment: {
+    id: 1,
+    status: "SUBMITTED",
     responses: [
       {
         id: 101,
         assessment_id: 1,
         indicator_id: 1,
-        indicator: { name: "Indicator A" },
+        indicator: {
+          name: "Indicator A",
+          form_schema: {
+            fields: [
+              {
+                field_id: "supporting_file",
+                field_type: "file_upload",
+                label: "Supporting File",
+              },
+            ],
+          },
+        },
         movs: [
           {
             id: 9,

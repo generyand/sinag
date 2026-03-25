@@ -235,6 +235,44 @@ describe("FileFieldComponent", () => {
     });
   });
 
+  it("should render validator uploads in a separate section", async () => {
+    const { useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles } =
+      await import("@sinag/shared");
+
+    vi.mocked(useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
+      data: {
+        files: [
+          {
+            id: 1,
+            file_name: "barangay-document.pdf",
+            field_id: "test_mov_upload",
+            file_size: 1024000,
+            uploaded_at: "2026-03-20T00:00:00.000Z",
+            file_url: "https://example.com/barangay.pdf",
+            upload_origin: "blgu",
+          },
+          {
+            id: 2,
+            file_name: "validator-document.pdf",
+            field_id: "test_mov_upload",
+            file_size: 1024000,
+            uploaded_at: "2026-03-21T00:00:00.000Z",
+            file_url: "https://example.com/validator.pdf",
+            upload_origin: "validator",
+          },
+        ],
+      },
+      isLoading: false,
+      refetch: vi.fn(),
+    } as any);
+
+    renderComponent();
+
+    expect(await screen.findByText("Validator Uploads")).toBeInTheDocument();
+    expect(screen.getByText("validator-document.pdf")).toBeInTheDocument();
+    expect(screen.getByText("barangay-document.pdf")).toBeInTheDocument();
+  });
+
   it("should show loading state while fetching files", async () => {
     const sinag = await import("@sinag/shared");
 

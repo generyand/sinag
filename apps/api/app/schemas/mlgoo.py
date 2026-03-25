@@ -196,6 +196,7 @@ class MOVFileItem(BaseModel):
     file_url: str
     file_type: str
     file_size: int
+    upload_origin: str
     field_id: str | None = None
     uploaded_at: str | None = None
 

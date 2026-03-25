@@ -1312,25 +1312,26 @@ class MLGOOService:
 
             if mov_file.indicator_id not in mov_files_by_indicator:
                 mov_files_by_indicator[mov_file.indicator_id] = []
-                mov_files_by_indicator[mov_file.indicator_id].append(
-                    {
-                        "id": mov_file.id,
-                        "file_name": mov_file.file_name,
-                        "file_url": mov_file.file_url,
-                        "file_type": mov_file.file_type,
-                        "file_size": mov_file.file_size,
-                        "field_id": mov_file.field_id,
-                        "uploaded_at": mov_file.uploaded_at.isoformat()
-                        if mov_file.uploaded_at
-                        else None,
-                        "is_new": is_new,
-                        "is_rejected": is_rejected,
-                        "has_annotations": len(mov_file.annotations) > 0
-                        if mov_file.annotations
-                        else False,
-                        "upload_origin": mov_file.upload_origin,
-                    }
-                )
+
+            mov_files_by_indicator[mov_file.indicator_id].append(
+                {
+                    "id": mov_file.id,
+                    "file_name": mov_file.file_name,
+                    "file_url": mov_file.file_url,
+                    "file_type": mov_file.file_type,
+                    "file_size": mov_file.file_size,
+                    "field_id": mov_file.field_id,
+                    "uploaded_at": mov_file.uploaded_at.isoformat()
+                    if mov_file.uploaded_at
+                    else None,
+                    "is_new": is_new,
+                    "is_rejected": is_rejected,
+                    "has_annotations": len(mov_file.annotations) > 0
+                    if mov_file.annotations
+                    else False,
+                    "upload_origin": mov_file.upload_origin,
+                }
+            )
 
         # Build a mapping of indicator_id -> response for existing responses
         response_by_indicator: dict[int, AssessmentResponse] = {}

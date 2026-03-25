@@ -70,6 +70,17 @@ async function fetchOpenAPISpec() {
   console.log("📡 Fetching OpenAPI spec to extract tags...");
 
   try {
+    if (API_URL.startsWith("file://")) {
+      const filePath = new URL(API_URL);
+      const specContent = fs.readFileSync(filePath, "utf-8");
+      return JSON.parse(specContent);
+    }
+
+    if (!/^https?:\/\//.test(API_URL) && fs.existsSync(API_URL)) {
+      const specContent = fs.readFileSync(API_URL, "utf-8");
+      return JSON.parse(specContent);
+    }
+
     const response = await fetch(API_URL);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

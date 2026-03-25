@@ -2,8 +2,16 @@
 "use no memo";
 
 import { FileList } from "@/components/features/movs/FileList";
+import { FileUpload } from "@/components/features/movs/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -13,10 +21,13 @@ import { fetchSignedUrl, useSignedUrl } from "@/hooks/useSignedUrl";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { AssessmentDetailsResponse, MOVFileResponse } from "@sinag/shared";
 import {
+  getGetAssessorAssessmentsAssessmentIdQueryKey,
   getGetAssessorMovsMovFileIdFeedbackQueryKey,
+  usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
   useGetAssessorMovsMovFileIdFeedback,
   usePatchAssessorMovsMovFileIdFeedback,
 } from "@sinag/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ChevronDown,
@@ -26,6 +37,7 @@ import {
   Loader2,
   LocateFixed,
   Save,
+  Upload,
   X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -250,6 +262,37 @@ interface MiddleMovFilesPanelProps {
 
 type AnyRecord = Record<string, any>;
 
+type UploadFieldOption = {
+  fieldId: string;
+  label: string;
+};
+
+function extractFileUploadFields(formSchema: AnyRecord): UploadFieldOption[] {
+  const fields: AnyRecord[] = [];
+
+  if (Array.isArray(formSchema?.fields)) {
+    fields.push(...formSchema.fields);
+  }
+
+  if (Array.isArray(formSchema?.sections)) {
+    for (const section of formSchema.sections) {
+      if (Array.isArray(section?.fields)) {
+        fields.push(...section.fields);
+      }
+    }
+  }
+
+  return fields
+    .filter((field) => field?.field_type === "file_upload" && typeof field?.field_id === "string")
+    .map((field) => ({
+      fieldId: field.field_id,
+      label:
+        typeof field?.label === "string" && field.label.trim().length > 0
+          ? field.label
+          : field.field_id,
+    }));
+}
+
 function sortFilesByUploadedAtDesc<T extends { uploaded_at?: string | null }>(files: T[]): T[] {
   return [...files].sort((a, b) => {
     const aTime = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
@@ -373,15 +416,62 @@ export function MiddleMovFilesPanel({
 }: MiddleMovFilesPanelProps) {
   const { user } = useAuthStore();
   const isValidator = user?.role === "VALIDATOR";
+  const queryClient = useQueryClient();
 
   const data: AnyRecord = (assessment as unknown as AnyRecord) ?? {};
   const core = (data.assessment as AnyRecord) ?? data;
   const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+  const assessmentId = Number(core?.id ?? 0);
+  const assessmentStatus = String(core?.status ?? "").toUpperCase();
 
   // Find the currently selected response
   const selectedResponse = responses.find((r) => r.id === expandedId);
   const indicator = (selectedResponse?.indicator as AnyRecord) ?? {};
   const indicatorName = indicator?.name || "Select an indicator";
+  const uploadFieldOptions = React.useMemo(
+    () => extractFileUploadFields((indicator?.form_schema as AnyRecord) ?? {}),
+    [indicator?.form_schema]
+  );
+  const [selectedUploadFieldId, setSelectedUploadFieldId] = React.useState<string | null>(null);
+  const [selectedUploadFile, setSelectedUploadFile] = React.useState<File | null>(null);
+
+  React.useEffect(() => {
+    if (uploadFieldOptions.length === 1) {
+      setSelectedUploadFieldId(uploadFieldOptions[0]?.fieldId ?? null);
+      return;
+    }
+
+    if (
+      selectedUploadFieldId &&
+      uploadFieldOptions.some((option) => option.fieldId === selectedUploadFieldId)
+    ) {
+      return;
+    }
+
+    setSelectedUploadFieldId(uploadFieldOptions[0]?.fieldId ?? null);
+  }, [selectedUploadFieldId, uploadFieldOptions]);
+
+  React.useEffect(() => {
+    setSelectedUploadFile(null);
+  }, [expandedId]);
+
+  const validatorUploadMutation = usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload({
+    mutation: {
+      onSuccess: () => {
+        setSelectedUploadFile(null);
+        toast.success("Validator file uploaded");
+        if (assessmentId > 0) {
+          queryClient.invalidateQueries({
+            queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+            refetchType: "active",
+          });
+        }
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to upload validator file");
+      },
+    },
+  });
 
   // Determine the appropriate timestamp for file separation based on indicator context
   // - If indicator was calibrated (validation_status is null AND calibration happened), use calibrationRequestedAt
@@ -442,6 +532,7 @@ export function MiddleMovFilesPanel({
         flagged_for_rework: mov.flagged_for_rework === true,
         validator_notes: mov.validator_notes || null,
         flagged_for_calibration: mov.flagged_for_calibration === true,
+        upload_origin: mov.upload_origin || "unknown",
       };
     });
   }, [selectedResponse, effectiveTimestamp]);
@@ -805,16 +896,56 @@ export function MiddleMovFilesPanel({
     [handleDeleteAnnotation]
   );
 
-  const normalActiveFiles = React.useMemo(
-    () => sortFilesByUploadedAtDesc(movFiles.filter((file) => !hasReviewerNotes(file))),
-    [movFiles, hasReviewerNotes]
-  );
   const normalPreviousFiles = React.useMemo(
     () =>
       sortFilesByUploadedAtDesc(
         movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file))
       ),
     [movFiles, hasReviewerNotes, hasReviewerFlag]
+  );
+
+  const barangayFiles = React.useMemo(
+    () =>
+      sortFilesByUploadedAtDesc(
+        movFiles.filter((file) => (file as AnyRecord).upload_origin !== "validator")
+      ),
+    [movFiles]
+  );
+  const validatorFiles = React.useMemo(
+    () =>
+      sortFilesByUploadedAtDesc(
+        movFiles.filter((file) => (file as AnyRecord).upload_origin === "validator")
+      ),
+    [movFiles]
+  );
+  const canValidatorUpload =
+    isValidator &&
+    assessmentStatus === "SUBMITTED" &&
+    Boolean(selectedResponse?.indicator_id) &&
+    uploadFieldOptions.length > 0;
+  const selectedUploadField = uploadFieldOptions.find(
+    (option) => option.fieldId === selectedUploadFieldId
+  );
+
+  const handleValidatorFileSelect = React.useCallback(
+    (file: File) => {
+      if (!selectedResponse?.indicator_id || !selectedUploadFieldId) {
+        toast.error("Select a target upload field first");
+        return;
+      }
+
+      setSelectedUploadFile(file);
+      validatorUploadMutation.mutate({
+        assessmentId: Number(selectedResponse.assessment_id),
+        indicatorId: Number(selectedResponse.indicator_id),
+        data: {
+          file,
+          field_id: selectedUploadFieldId,
+          field_label: selectedUploadField?.label ?? selectedUploadFieldId,
+        },
+      });
+    },
+    [selectedResponse, selectedUploadFieldId, selectedUploadField, validatorUploadMutation]
   );
 
   return (
@@ -825,7 +956,7 @@ export function MiddleMovFilesPanel({
           <FileIcon className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
           <div className="min-w-0">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100 truncate">
-              BLGU Uploaded Files
+              Indicator Files
             </h3>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
               {indicatorName}
@@ -836,6 +967,52 @@ export function MiddleMovFilesPanel({
 
       {/* Files List */}
       <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950">
+        {selectedResponse && isValidator && (
+          <div className="mb-4 rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 p-3 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+              <Upload className="h-3.5 w-3.5" />
+              Upload on Behalf of Barangay
+            </div>
+
+            {uploadFieldOptions.length > 1 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-slate-600 dark:text-slate-400">Target field</Label>
+                <Select
+                  value={selectedUploadFieldId ?? undefined}
+                  onValueChange={setSelectedUploadFieldId}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select file field" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {uploadFieldOptions.map((option) => (
+                      <SelectItem key={option.fieldId} value={option.fieldId}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {canValidatorUpload ? (
+              <FileUpload
+                onFileSelect={handleValidatorFileSelect}
+                onFileRemove={() => setSelectedUploadFile(null)}
+                selectedFile={selectedUploadFile}
+                disabled={!selectedUploadFieldId || validatorUploadMutation.isPending}
+                className="space-y-2"
+              />
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {assessmentStatus !== "SUBMITTED"
+                  ? "Validator uploads are available only while the assessment is submitted and not active in the BLGU workspace."
+                  : "This indicator has no file upload field to attach validator evidence to."}
+              </p>
+            )}
+          </div>
+        )}
+
         {!selectedResponse ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400 dark:text-slate-500">
             <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-4">
@@ -922,17 +1099,31 @@ export function MiddleMovFilesPanel({
         ) : (
           <div className="space-y-4">
             <ReviewFileSection
-              title="Latest Upload"
-              files={normalActiveFiles}
-              historyLabel="View upload history"
+              title="Barangay Uploads"
+              files={barangayFiles}
+              historyLabel="View barangay upload history"
               titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
               badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
               containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
-              description="Older uploads remain available in history."
+              description="Barangay uploads remain available in history."
               movAnnotations={safeAnnotations}
               onPreview={handlePreview}
               onDownload={handleDownload}
             />
+            {validatorFiles.length > 0 && (
+              <ReviewFileSection
+                title="Validator Uploads"
+                files={validatorFiles}
+                historyLabel="View validator upload history"
+                titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
+                badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border border-blue-200 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/20 p-3"
+                description="Files uploaded by validators are kept separate from barangay evidence."
+                movAnnotations={safeAnnotations}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+              />
+            )}
             {normalPreviousFiles.length > 0 && (
               <ReviewFileSection
                 title="Previous File"
