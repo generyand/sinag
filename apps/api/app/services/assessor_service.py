@@ -105,6 +105,30 @@ class AssessorService:
         owned_data = self._get_owned_validation_response_data(assessor, response_data)
         return any(self._has_meaningful_validation_value(value) for value in owned_data.values())
 
+    @staticmethod
+    def _serialize_mov_file(mov_file: MOVFile, *, is_rejected: bool) -> dict[str, Any]:
+        """Serialize a modern MOVFile ORM model for assessor-facing responses."""
+        return {
+            "id": mov_file.id,
+            "filename": mov_file.file_name,
+            "original_filename": mov_file.file_name,
+            "file_size": mov_file.file_size,
+            "content_type": mov_file.file_type,
+            "storage_path": mov_file.file_url,
+            "status": "uploaded",  # MOVFile doesn't have status field
+            "uploaded_at": (
+                mov_file.uploaded_at.isoformat() + "Z" if mov_file.uploaded_at else None
+            ),
+            "field_id": mov_file.field_id,
+            "has_annotations": len(mov_file.annotations) > 0,
+            "is_rejected": is_rejected,
+            "assessor_notes": mov_file.assessor_notes,
+            "flagged_for_rework": mov_file.flagged_for_rework,
+            "validator_notes": mov_file.validator_notes,
+            "flagged_for_calibration": mov_file.flagged_for_calibration,
+            "upload_origin": mov_file.upload_origin,
+        }
+
     def _is_validation_noop(
         self,
         db: Session,
@@ -165,7 +189,7 @@ class AssessorService:
         - These are assessments ready for area-specific review
 
         **Validators** (users without assessor_area_id - system-wide, 3 users):
-        - See assessments in AWAITING_FINAL_VALIDATION status (all 6 areas approved)
+        - See assessments in SUBMITTED or AWAITING_FINAL_VALIDATION status
         - System-wide access (all governance areas)
         - Can request CALIBRATION
         - ALSO see assessments in REWORK status if they haven't calibrated yet
@@ -233,11 +257,12 @@ class AssessorService:
             )
         elif is_validator:
             # Validators: System-wide access
-            # Show assessments in AWAITING_FINAL_VALIDATION (all 6 areas approved)
+            # Show assessments in SUBMITTED or AWAITING_FINAL_VALIDATION
             # ALSO show REWORK ONLY if it's a calibration rework (validator-initiated)
             # Do NOT show assessor-initiated rework (is_calibration_rework = False)
             query = query.filter(
                 or_(
+                    Assessment.status == AssessmentStatus.SUBMITTED,
                     Assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION,
                     and_(
                         Assessment.status == AssessmentStatus.REWORK,
@@ -331,9 +356,9 @@ class AssessorService:
                 total_count = len(area_responses)
             else:
                 # Validator: progress based on all indicators (system-wide)
-                # Match frontend isIndicatorReviewed logic: an indicator counts as
-                # reviewed if it has validation_status, validator checklist data,
-                # or is flagged for calibration
+                # Validator: count only meaningful active-cycle review work.
+                # False-only checklist leftovers should not make an indicator
+                # appear reviewed or resumable in the queue.
                 area_responses = a.responses
                 reviewed_count = sum(
                     1
@@ -342,10 +367,7 @@ class AssessorService:
                     and (
                         r.validation_status is not None
                         or r.flagged_for_calibration
-                        or (
-                            r.response_data
-                            and any(k.startswith("validator_val_") for k in r.response_data.keys())
-                        )
+                        or self._has_meaningful_owned_validation_data(assessor, r.response_data)
                     )
                 )
                 total_count = len(area_responses)
@@ -410,12 +432,7 @@ class AssessorService:
                         and (
                             r.validation_status is not None
                             or r.flagged_for_calibration
-                            or (
-                                r.response_data
-                                and any(
-                                    k.startswith("validator_val_") for k in r.response_data.keys()
-                                )
-                            )
+                            or self._has_meaningful_owned_validation_data(assessor, r.response_data)
                         )
                     )
                     re_review_progress = round(
@@ -701,13 +718,16 @@ class AssessorService:
 
         # Save or clear public comment
         if public_comment is not None:
+            current_review_cycle = response.validator_review_cycle or 1
             # Always delete existing validation comments from this assessor first
-            # to prevent row accumulation (each save used to append a new row)
+            # to prevent row accumulation within the active review cycle while
+            # preserving archived prior-cycle history.
             db.query(FeedbackComment).filter(
                 FeedbackComment.response_id == response_id,
                 FeedbackComment.assessor_id == assessor.id,
                 FeedbackComment.comment_type == "validation",
                 FeedbackComment.is_internal_note == False,  # noqa: E712
+                FeedbackComment.review_cycle == current_review_cycle,
             ).delete()
 
             if public_comment.strip():
@@ -718,6 +738,7 @@ class AssessorService:
                     response_id=response_id,
                     assessor_id=assessor.id,
                     is_internal_note=False,
+                    review_cycle=current_review_cycle,
                 )
                 db.add(public_feedback)
 
@@ -1450,29 +1471,7 @@ class AssessorService:
                     ],
                 },
                 "movs": [
-                    {
-                        "id": mov_file.id,
-                        "filename": mov_file.file_name,
-                        "original_filename": mov_file.file_name,
-                        "file_size": mov_file.file_size,
-                        "content_type": mov_file.file_type,
-                        "storage_path": mov_file.file_url,
-                        "status": "uploaded",  # MOVFile doesn't have status field
-                        "uploaded_at": mov_file.uploaded_at.isoformat() + "Z"
-                        if mov_file.uploaded_at
-                        else None,
-                        "field_id": mov_file.field_id,
-                        # File-level annotation flag for granular rework tracking
-                        "has_annotations": len(mov_file.annotations) > 0,
-                        # Validator view: Mark rejected files (files with annotations that were replaced)
-                        "is_rejected": mov_file.id in rejected_file_ids,
-                        # Assessor notes and rework flag for frontend validation
-                        "assessor_notes": mov_file.assessor_notes,
-                        "flagged_for_rework": mov_file.flagged_for_rework,
-                        # Validator notes and calibration flag for frontend validation
-                        "validator_notes": mov_file.validator_notes,
-                        "flagged_for_calibration": mov_file.flagged_for_calibration,
-                    }
+                    self._serialize_mov_file(mov_file, is_rejected=mov_file.id in rejected_file_ids)
                     # Use the filtered_movs list created above (already filtered by rework timestamp)
                     for mov_file in filtered_movs
                 ],

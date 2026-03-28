@@ -212,6 +212,7 @@ export function FileFieldComponent({
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showUploadHistory, setShowUploadHistory] = useState(false);
+  const [showValidatorUploadHistory, setShowValidatorUploadHistory] = useState(false);
 
   // Ref to track progress interval for cleanup on unmount
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -320,6 +321,7 @@ export function FileFieldComponent({
           uploaded_at: new Date().toISOString(),
           file_url: "", // Will be set by server
           uploaded_by: user?.id ?? 0,
+          upload_origin: "blgu",
         };
 
         queryClient.setQueryData(
@@ -425,6 +427,7 @@ export function FileFieldComponent({
           uploaded_at: data?.uploaded_at || nowTimestamp,
           file_url: data?.file_url || "",
           uploaded_by: data?.uploaded_by || user?.id || 0,
+          upload_origin: data?.upload_origin || "blgu",
         };
 
         queryClient.setQueryData(
@@ -683,6 +686,8 @@ export function FileFieldComponent({
   // Separate files based on rework timestamp
   const activeFiles = allFiles.filter((f: any) => f.field_id === field.field_id && !f.deleted_at);
   const deletedFiles = allFiles.filter((f: any) => f.field_id === field.field_id && f.deleted_at);
+  const validatorActiveFiles = activeFiles.filter((f: any) => f.upload_origin === "validator");
+  const barangayActiveFiles = activeFiles.filter((f: any) => f.upload_origin !== "validator");
   const hasMovNotes = (file: any): boolean => {
     const assessorNotes = file?.assessor_notes;
     const validatorNotes = file?.validator_notes;
@@ -715,13 +720,13 @@ export function FileFieldComponent({
     const reworkDate = new Date(effectiveReworkTimestamp);
 
     // Files uploaded BEFORE rework was requested are "old" (from before rework)
-    const oldFiles = activeFiles.filter((f: any) => {
+    const oldFiles = barangayActiveFiles.filter((f: any) => {
       const uploadDate = new Date(f.uploaded_at);
       return uploadDate < reworkDate;
     });
 
     // Files uploaded AFTER rework was requested are "new" (during rework)
-    const recentFiles = activeFiles.filter((f: any) => {
+    const recentFiles = barangayActiveFiles.filter((f: any) => {
       const uploadDate = new Date(f.uploaded_at);
       return uploadDate >= reworkDate;
     });
@@ -879,7 +884,7 @@ export function FileFieldComponent({
     newFiles = recentFiles; // Only files uploaded during this rework cycle
   } else {
     // Not in rework status, show all active files as new
-    newFiles = activeFiles;
+    newFiles = barangayActiveFiles;
   }
 
   const showPreviousFilesAsReference = isReworkStatus && previousFiles.length > 0;
@@ -953,6 +958,10 @@ export function FileFieldComponent({
   const latestUploadedFiles = sortedFiles.slice(0, 1);
   const archivedUploadedFiles = sortedFiles.slice(1);
   const hasArchivedUploads = archivedUploadedFiles.length > 0;
+  const sortedValidatorFiles = sortFilesByUploadedAtDesc(validatorActiveFiles as MOVFileResponse[]);
+  const latestValidatorFiles = sortedValidatorFiles.slice(0, 1);
+  const archivedValidatorFiles = sortedValidatorFiles.slice(1);
+  const hasArchivedValidatorUploads = archivedValidatorFiles.length > 0;
 
   useEffect(() => {
     if (archivedUploadedFiles.length === 0 && showUploadHistory) {
@@ -1244,6 +1253,84 @@ export function FileFieldComponent({
               )}
             </div>
           )}
+        </section>
+      )}
+
+      {latestValidatorFiles.length > 0 && (
+        <section className="space-y-4 mt-6" aria-labelledby={`validator-files-${field.field_id}`}>
+          <h4
+            id={`validator-files-${field.field_id}`}
+            className="flex items-center gap-2 text-sm font-medium mb-3 text-blue-700 dark:text-blue-300"
+          >
+            <Info className="h-4 w-4" aria-hidden="true" />
+            <span>Validator Uploads</span>
+            <span className="text-muted-foreground font-normal">
+              ({sortedValidatorFiles.length} file{sortedValidatorFiles.length !== 1 ? "s" : ""})
+            </span>
+          </h4>
+          <div className="border border-blue-200 dark:border-blue-800 rounded-md bg-blue-50/30 dark:bg-blue-950/20 p-3">
+            <FileList
+              files={latestValidatorFiles}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              canDelete={false}
+              loading={isLoadingFiles}
+              emptyMessage=""
+              movAnnotations={movAnnotations}
+              hideHeader={true}
+              mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
+            />
+
+            {hasArchivedValidatorUploads && (
+              <div className="mt-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-between px-4 py-3 h-auto text-left"
+                  onClick={() => setShowValidatorUploadHistory((prev) => !prev)}
+                  aria-expanded={showValidatorUploadHistory}
+                  aria-controls={`validator-upload-history-${field.field_id}`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <History className="h-4 w-4" aria-hidden="true" />
+                    View validator upload history
+                    <span className="text-muted-foreground font-normal">
+                      ({archivedValidatorFiles.length} older upload
+                      {archivedValidatorFiles.length !== 1 ? "s" : ""})
+                    </span>
+                  </span>
+                  {showValidatorUploadHistory ? (
+                    <ChevronUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                  )}
+                </Button>
+
+                {showValidatorUploadHistory && (
+                  <div
+                    id={`validator-upload-history-${field.field_id}`}
+                    className="border-t border-slate-200 dark:border-slate-700 px-4 py-4"
+                  >
+                    <FileList
+                      files={archivedValidatorFiles}
+                      onPreview={handlePreview}
+                      onDownload={handleDownload}
+                      canDelete={false}
+                      loading={isLoadingFiles}
+                      emptyMessage=""
+                      movAnnotations={movAnnotations}
+                      hideHeader={true}
+                      mlgooFlaggedFileIds={effectiveMlgooFlaggedFileIds}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p className="mt-3 text-xs text-blue-700 dark:text-blue-300 italic">
+              Validator-uploaded files are shown separately from barangay uploads.
+            </p>
+          </div>
         </section>
       )}
 

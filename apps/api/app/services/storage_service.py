@@ -13,8 +13,14 @@ from sqlalchemy.orm import Session
 from supabase import Client, create_client
 
 from app.core.config import settings
+from app.core.year_resolver import YearPlaceholderResolver
 from app.db.enums import AssessmentStatus, UserRole
-from app.db.models.assessment import Assessment, AssessmentResponse, MOVFile
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_VALUES,
+    Assessment,
+    AssessmentResponse,
+    MOVFile,
+)
 from app.db.models.user import User
 from app.services.assessment_lock_service import assessment_lock_service
 
@@ -23,6 +29,22 @@ logger = logging.getLogger(__name__)
 
 # Initialize Supabase admin client with service-role key for server-side operations
 _supabase_client: Client | None = None
+
+CANONICAL_DISPLAY_FILENAME_LABEL_TEMPLATES = {
+    ("1.6.1", "1_6_1_opt3_a"): (
+        "Proof of transfer of the 10% {CURRENT_YEAR} SK funds to the trust fund of the Barangay "
+        "such as Deposit Slip or Official Receipt;"
+    ),
+    ("1.6.1", "1_6_1_opt3_b"): (
+        "Proof of transfer or corresponding legal forms/documents issued by the "
+        "city/municipal treasurer if the barangay opted that the corresponding SK "
+        "fund be kept as trust fund in the custody of the C/M treasurer."
+    ),
+    ("4.1.4", "upload_section_1"): (
+        "Accomplishment Report covering 1st to 3rd quarter of CY {CURRENT_YEAR} "
+        "with received stamp by the C/MSWDO and C/MLGOO"
+    ),
+}
 
 
 def _get_supabase_client() -> Client:
@@ -115,6 +137,33 @@ class StorageService:
         display_filename = f"{indicator_code} {sanitized_label} ({sequence_number}).{extension}"
 
         return display_filename
+
+    def _resolve_display_field_label(
+        self,
+        db: Session,
+        assessment_id: int,
+        indicator_code: str | None,
+        field_id: str | None,
+        field_label: str,
+    ) -> str:
+        """
+        Normalize display labels for known uploads where the backend must enforce
+        canonical MOV names regardless of stale client text.
+        """
+        if not indicator_code or not field_id:
+            return field_label
+
+        template = CANONICAL_DISPLAY_FILENAME_LABEL_TEMPLATES.get((indicator_code, field_id))
+        if not template:
+            return field_label
+
+        assessment_year = (
+            db.query(Assessment.assessment_year).filter(Assessment.id == assessment_id).scalar()
+        )
+        if assessment_year is None:
+            return field_label
+
+        return YearPlaceholderResolver(assessment_year).resolve_string(template) or field_label
 
     def upload_mov(
         self, file: UploadFile, *, response_id: int, db: Session
@@ -261,6 +310,7 @@ class StorageService:
         assessment_id: int,
         indicator_id: int,
         user_id: int,
+        upload_origin: str,
         field_id: str | None = None,
         indicator_code: str | None = None,
         field_label: str | None = None,
@@ -281,6 +331,7 @@ class StorageService:
             assessment_id: ID of the assessment
             indicator_id: ID of the indicator
             user_id: ID of the user uploading the file
+            upload_origin: Provenance grouping for the uploaded file
             field_id: Optional field identifier for multi-field uploads
             indicator_code: Optional indicator code (e.g., "6.1.3") for display filename
             field_label: Optional field label for display filename
@@ -300,6 +351,10 @@ class StorageService:
 
         # Generate display filename from indicator code + field label if provided
         if indicator_code and field_label:
+            display_field_label = self._resolve_display_field_label(
+                db, assessment_id, indicator_code, field_id, field_label
+            )
+
             # Extract file extension from original filename
             extension = original_filename.rsplit(".", 1)[-1] if "." in original_filename else "file"
 
@@ -319,7 +374,7 @@ class StorageService:
             sequence_number = existing_count + 1
 
             display_filename = self._sanitize_display_filename(
-                indicator_code, field_label, extension, sequence_number
+                indicator_code, display_field_label, extension, sequence_number
             )
         else:
             display_filename = original_filename
@@ -389,6 +444,7 @@ class StorageService:
                 assessment_id=assessment_id,
                 indicator_id=indicator_id,
                 user_id=user_id,
+                upload_origin=upload_origin,
                 field_id=field_id,
             )
 
@@ -423,6 +479,7 @@ class StorageService:
         assessment_id: int,
         indicator_id: int,
         user_id: int,
+        upload_origin: str,
         field_id: str | None = None,
     ) -> MOVFile:
         """
@@ -445,10 +502,14 @@ class StorageService:
         Raises:
             Exception: If database operation fails
         """
+        if upload_origin not in MOV_UPLOAD_ORIGIN_VALUES:
+            raise ValueError(f"Invalid upload_origin: {upload_origin}")
+
         mov_file = MOVFile(
             assessment_id=assessment_id,
             indicator_id=indicator_id,
             uploaded_by=user_id,
+            upload_origin=upload_origin,
             file_name=file_name,
             file_url=file_url,
             file_type=file_type,

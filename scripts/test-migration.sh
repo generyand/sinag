@@ -33,6 +33,21 @@ POSTGRES_DB="sinag_migration_test"
 POSTGRES_PORT="5433"  # Use different port to avoid conflicts
 MIGRATION_REVISION="${1:-head}"
 
+get_previous_revision_from_show() {
+    local show_output="$1"
+    local previous_revision=""
+
+    # Regular revisions show a single Parent line.
+    previous_revision=$(echo "$show_output" | grep "^Parent:" | head -1 | awk -F': ' '{print $2}' | awk -F',' '{print $1}' | tr -d ' ')
+
+    # Merge revisions use Merges. Use the first parent for downgrade testing.
+    if [ -z "$previous_revision" ]; then
+        previous_revision=$(echo "$show_output" | grep "^Merges:" | head -1 | awk -F': ' '{print $2}' | awk -F',' '{print $1}' | tr -d ' ')
+    fi
+
+    echo "$previous_revision"
+}
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  SINAG Migration Health Check${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -95,23 +110,18 @@ else
 fi
 
 # Get current revision
-CURRENT_REVISION=$(uv run alembic current 2>/dev/null | head -1 | awk '{print $1}')
+CURRENT_REVISION=$(uv run alembic current 2>/dev/null | grep -v '^INFO' | head -1 | awk '{print $1}')
 echo -e "Current revision: ${YELLOW}${CURRENT_REVISION}${NC}"
 
 # Get previous revision for downgrade test
 if [ "$MIGRATION_REVISION" != "head" ]; then
-    # If specific revision provided, get its down_revision
-    PREVIOUS_REVISION=$(uv run alembic show "$MIGRATION_REVISION" 2>/dev/null | grep "Rev:" | head -1 | sed 's/.*-> \([^,]*\).*/\1/' | awk '{print $1}')
+    # If specific revision provided, get its parent revision from alembic show output.
+    SHOW_OUTPUT=$(uv run alembic show "$MIGRATION_REVISION" 2>/dev/null)
+    PREVIOUS_REVISION=$(get_previous_revision_from_show "$SHOW_OUTPUT")
 else
     # Get the down_revision from the current migration
-    # First try to get Parent (regular revision), then try Merges (merge point)
     SHOW_OUTPUT=$(uv run alembic show "$CURRENT_REVISION" 2>/dev/null)
-    PREVIOUS_REVISION=$(echo "$SHOW_OUTPUT" | grep "^Parent:" | head -1 | awk -F': ' '{print $2}' | awk -F',' '{print $1}' | tr -d ' ')
-
-    # If no Parent found, try Merges (for merge points - use first parent)
-    if [ -z "$PREVIOUS_REVISION" ]; then
-        PREVIOUS_REVISION=$(echo "$SHOW_OUTPUT" | grep "^Merges:" | head -1 | awk -F': ' '{print $2}' | awk -F',' '{print $1}' | tr -d ' ')
-    fi
+    PREVIOUS_REVISION=$(get_previous_revision_from_show "$SHOW_OUTPUT")
 fi
 
 if [ -n "$PREVIOUS_REVISION" ] && [ "$PREVIOUS_REVISION" != "None" ] && [ "$PREVIOUS_REVISION" != "(head)" ]; then
@@ -139,7 +149,7 @@ fi
 
 # Verify final state
 echo -e "${BLUE}[6/6] Verifying final state...${NC}"
-FINAL_REVISION=$(uv run alembic current 2>/dev/null | head -1 | awk '{print $1}')
+FINAL_REVISION=$(uv run alembic current 2>/dev/null | grep -v '^INFO' | head -1 | awk '{print $1}')
 echo -e "Final revision: ${YELLOW}${FINAL_REVISION}${NC}"
 
 echo ""

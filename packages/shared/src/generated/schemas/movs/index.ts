@@ -167,6 +167,7 @@ export interface MOVFileItem {
   file_url: string;
   file_type: string;
   file_size: number;
+  upload_origin: string;
   field_id?: MOVFileItemFieldId;
   uploaded_at?: MOVFileItemUploadedAt;
 }
@@ -221,6 +222,7 @@ export interface MOVFileResponse {
   file_type: string;
   file_size: number;
   uploaded_by: number;
+  upload_origin: string;
   uploaded_at: MOVFileResponseUploadedAt;
   deleted_at?: MOVFileResponseDeletedAt;
   field_id?: MOVFileResponseFieldId;

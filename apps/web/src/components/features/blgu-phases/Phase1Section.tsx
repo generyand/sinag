@@ -10,6 +10,7 @@
  * - DRAFT → "In Progress" (editable)
  * - SUBMITTED/IN_REVIEW → "Under Review" (locked)
  * - REWORK (not calibration) → "Needs Rework" (editable, shows feedback)
+ * - REOPENED_BY_MLGOO → "Reopened by MLGOO" (editable, shows MLGOO recovery state)
  * - AWAITING_FINAL_VALIDATION/COMPLETED → "Completed" (read-only)
  */
 
@@ -33,6 +34,7 @@ type AssessmentStatus =
   | "IN_REVIEW"
   | "REWORK"
   | "NEEDS_REWORK"
+  | "REOPENED_BY_MLGOO"
   | "AWAITING_FINAL_VALIDATION"
   | "AWAITING_MLGOO_APPROVAL"
   | "COMPLETED";
@@ -91,6 +93,12 @@ function getPhase1Status(
         statusLabel: "Needs Rework",
         isActive: true,
       };
+    case "REOPENED_BY_MLGOO":
+      return {
+        phaseStatus: "needs_rework",
+        statusLabel: "Reopened by MLGOO",
+        isActive: true,
+      };
     case "AWAITING_FINAL_VALIDATION":
     case "AWAITING_MLGOO_APPROVAL":
     case "COMPLETED":
@@ -134,6 +142,7 @@ export function Phase1Section({
   const isEditable =
     !dashboardData.is_locked_for_blgu &&
     (dashboardData.status === "DRAFT" ||
+      dashboardData.status === "REOPENED_BY_MLGOO" ||
       ((dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
         !dashboardData.is_calibration_rework &&
         !isMlgooRecalibration) ||
@@ -349,7 +358,9 @@ export function Phase1Section({
               />
             )}
 
-            {(dashboardData.status === "REWORK" || dashboardData.status === "NEEDS_REWORK") &&
+            {(dashboardData.status === "REWORK" ||
+              dashboardData.status === "NEEDS_REWORK" ||
+              dashboardData.status === "REOPENED_BY_MLGOO") &&
               !dashboardData.is_calibration_rework &&
               !isMlgooRecalibration && (
                 <ResubmitAssessmentButton

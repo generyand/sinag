@@ -8,8 +8,14 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy.orm import Session, joinedload
 
 from app.api import deps
-from app.db.enums import UserRole
-from app.db.models.assessment import Assessment, MOVFile
+from app.db.enums import AssessmentStatus, UserRole
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    Assessment,
+    AssessmentResponse,
+    MOVFile,
+)
 from app.db.models.governance_area import Indicator
 from app.db.models.user import User
 from app.schemas.assessment import MOVFileListResponse, MOVFileResponse, SignedUrlResponse
@@ -78,20 +84,29 @@ def upload_mov_file(
             },
         )
 
+    indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
+    if not indicator:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Indicator {indicator_id} not found",
+        )
+
     # Look up indicator code for display filename generation
     indicator_code: str | None = None
-    if field_label:
-        indicator = db.query(Indicator).filter(Indicator.id == indicator_id).first()
-        if indicator and indicator.indicator_code:
-            indicator_code = indicator.indicator_code
+    if field_label and indicator.indicator_code:
+        indicator_code = indicator.indicator_code
 
-    if current_user.role == UserRole.BLGU_USER:
+    assessment: Assessment | None = None
+    if current_user.role in (UserRole.BLGU_USER, UserRole.VALIDATOR):
         assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         if not assessment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Assessment {assessment_id} not found",
             )
+
+    if current_user.role == UserRole.BLGU_USER:
+        assert assessment is not None
         if assessment.blgu_user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -99,6 +114,33 @@ def upload_mov_file(
             )
         assessment_lock_service.ensure_blgu_write_allowed(
             db, assessment, action="upload or replace MOV files"
+        )
+        upload_origin = MOV_UPLOAD_ORIGIN_BLGU
+    elif current_user.role == UserRole.VALIDATOR:
+        assert assessment is not None
+        if assessment.status != AssessmentStatus.SUBMITTED:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Validators can only upload MOV files for submitted assessments",
+            )
+        response = (
+            db.query(AssessmentResponse)
+            .filter(
+                AssessmentResponse.assessment_id == assessment_id,
+                AssessmentResponse.indicator_id == indicator_id,
+            )
+            .first()
+        )
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Indicator is not part of this assessment",
+            )
+        upload_origin = MOV_UPLOAD_ORIGIN_VALIDATOR
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to upload MOV files through this endpoint",
         )
 
     # Upload file to storage and create database record
@@ -109,6 +151,7 @@ def upload_mov_file(
             assessment_id=assessment_id,
             indicator_id=indicator_id,
             user_id=current_user.id,
+            upload_origin=upload_origin,
             field_id=field_id,
             indicator_code=indicator_code,
             field_label=field_label,
@@ -158,7 +201,7 @@ def list_mov_files(
         MOVFileListResponse with list of files
 
     Permission Rules:
-        - BLGU_USER: Can only see files they uploaded
+        - BLGU_USER: Can see their own files plus validator-uploaded files on their assessment
         - ASSESSOR, VALIDATOR, MLGOO_DILG: Can see all files for the indicator
     """
     # Build base query
@@ -174,8 +217,11 @@ def list_mov_files(
 
     # Apply permission-based filtering
     if current_user.role == UserRole.BLGU_USER:
-        # BLGU users can only see their own files
-        query = query.filter(MOVFile.uploaded_by == current_user.id)
+        # BLGU users can see their own files plus validator-added evidence on their assessment.
+        query = query.filter(
+            (MOVFile.uploaded_by == current_user.id)
+            | (MOVFile.upload_origin == MOV_UPLOAD_ORIGIN_VALIDATOR)
+        )
 
     # Order by most recent first
     query = query.order_by(MOVFile.uploaded_at.desc())

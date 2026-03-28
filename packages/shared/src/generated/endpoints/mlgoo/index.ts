@@ -35,6 +35,8 @@ import type {
   RecalibrationByMovResponse,
   RecalibrationRequest,
   RecalibrationResponse,
+  ReopenSubmissionRequest,
+  ReopenSubmissionResponse,
   SendReminderResponse,
   UnlockAssessmentResponse,
   UpdateRecalibrationValidationRequest,
@@ -497,6 +499,76 @@ export const usePostMlgooAssessmentsAssessmentIdUnlock = <TError = void | HTTPVa
       > => {
 
       const mutationOptions = getPostMlgooAssessmentsAssessmentIdUnlockMutationOptions(options);
+
+      return useMutation(mutationOptions);
+    }
+    /**
+ * Reopen an assessment that was submitted too early or needs to return to BLGU editing.
+
+**Access:** Requires MLGOO_DILG role.
+
+This is a workflow recovery action and does not change deadline lock metadata.
+ * @summary Reopen Assessment For BLGU Editing
+ */
+export const postMlgooAssessments$AssessmentIdReopen = (
+    assessmentId: number,
+    reopenSubmissionRequest: ReopenSubmissionRequest,
+ options?: SecondParameter<typeof mutator>,signal?: AbortSignal
+) => {
+      
+      
+      return mutator<ReopenSubmissionResponse>(
+      {url: `/api/v1/mlgoo/assessments/${assessmentId}/reopen`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: reopenSubmissionRequest, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostMlgooAssessmentsAssessmentIdReopenMutationOptions = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdReopen>>, TError,{assessmentId: number;data: ReopenSubmissionRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdReopen>>, TError,{assessmentId: number;data: ReopenSubmissionRequest}, TContext> => {
+
+const mutationKey = ['postMlgooAssessmentsAssessmentIdReopen'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdReopen>>, {assessmentId: number;data: ReopenSubmissionRequest}> = (props) => {
+          const {assessmentId,data} = props ?? {};
+
+          return  postMlgooAssessments$AssessmentIdReopen(assessmentId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostMlgooAssessmentsAssessmentIdReopenMutationResult = NonNullable<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdReopen>>>
+    export type PostMlgooAssessmentsAssessmentIdReopenMutationBody = ReopenSubmissionRequest
+    export type PostMlgooAssessmentsAssessmentIdReopenMutationError = void | HTTPValidationError
+
+    /**
+ * @summary Reopen Assessment For BLGU Editing
+ */
+export const usePostMlgooAssessmentsAssessmentIdReopen = <TError = void | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdReopen>>, TError,{assessmentId: number;data: ReopenSubmissionRequest}, TContext>, request?: SecondParameter<typeof mutator>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postMlgooAssessments$AssessmentIdReopen>>,
+        TError,
+        {assessmentId: number;data: ReopenSubmissionRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPostMlgooAssessmentsAssessmentIdReopenMutationOptions(options);
 
       return useMutation(mutationOptions);
     }

@@ -5,7 +5,7 @@ Tests the file upload, list, and deletion endpoints.
 """
 
 import io
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -13,8 +13,16 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.api import deps
-from app.db.enums import AssessmentStatus
-from app.db.models.assessment import Assessment, MOVFile
+from app.db.enums import AssessmentStatus, UserRole
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    Assessment,
+    AssessmentResponse,
+    MOVFile,
+)
+from app.db.models.governance_area import Indicator
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 
 
@@ -70,12 +78,55 @@ class TestUploadMOVFile:
         return user
 
     @pytest.fixture
-    def assessment(self, db_session, blgu_user):
+    def validator_user(self, db_session):
+        """Fixture providing a validator user."""
+        user = User(
+            id=101,
+            email="validator@test.com",
+            name="Test Validator User",
+            hashed_password="hashed",
+            role=UserRole.VALIDATOR,
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
+
+    @pytest.fixture
+    def assessment_year(self, db_session):
+        """Fixture providing a valid assessment year."""
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.commit()
+        db_session.refresh(assessment_year)
+        return assessment_year
+
+    @pytest.fixture
+    def assessment(self, db_session, blgu_user, assessment_year):
         """Fixture providing a draft assessment."""
         assessment = Assessment(
             id=1,
             blgu_user_id=blgu_user.id,
             status=AssessmentStatus.DRAFT,
+            assessment_year=assessment_year.year,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+        db_session.refresh(assessment)
+        return assessment
+
+    @pytest.fixture
+    def submitted_assessment(self, db_session, blgu_user, assessment_year):
+        """Fixture providing a submitted assessment."""
+        assessment = Assessment(
+            id=2,
+            blgu_user_id=blgu_user.id,
+            status=AssessmentStatus.SUBMITTED,
+            assessment_year=assessment_year.year,
         )
         db_session.add(assessment)
         db_session.commit()
@@ -130,6 +181,144 @@ class TestUploadMOVFile:
             assert data["file_type"] == "application/pdf"
             assert data["file_size"] == 1024
             assert data["uploaded_by"] == 100
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
+
+    def test_upload_valid_pdf_file_from_validator_uses_validator_origin(
+        self, client, db_session, submitted_assessment, validator_user
+    ):
+        """Test successful upload by a validator uses validator provenance."""
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            mock_mov_file = MOVFile(
+                id=11,
+                assessment_id=submitted_assessment.id,
+                indicator_id=1,
+                file_name="validator-file.pdf",
+                file_url="https://storage.example.com/validator-file.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                uploaded_by=101,
+                uploaded_at=datetime.utcnow(),
+            )
+            mock_upload.return_value = mock_mov_file
+
+            file_content = b"%PDF-1.4\n%"
+            file_data = io.BytesIO(file_content)
+
+            response = client.post(
+                f"/api/v1/movs/assessments/{submitted_assessment.id}/indicators/1/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_201_CREATED
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_VALIDATOR
+
+    def test_validator_uploads_mov_for_submitted_assessment(
+        self, client, db_session, submitted_assessment, validator_user
+    ):
+        """Test validators can upload MOV files for submitted assessments."""
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            mock_mov_file = MOVFile(
+                id=12,
+                assessment_id=submitted_assessment.id,
+                indicator_id=1,
+                file_name="validator-file.pdf",
+                file_url="https://storage.example.com/validator-file.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                uploaded_by=101,
+                uploaded_at=datetime.utcnow(),
+            )
+            mock_upload.return_value = mock_mov_file
+
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{submitted_assessment.id}/indicators/1/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_201_CREATED
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_VALIDATOR
+
+    def test_validator_cannot_upload_mov_for_draft_assessment(
+        self, client, db_session, assessment, validator_user
+    ):
+        """Test validators cannot upload MOV files for draft assessments."""
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{assessment.id}/indicators/1/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_403_FORBIDDEN
+            assert "submitted" in response.json()["detail"].lower()
+            mock_upload.assert_not_called()
+
+    def test_validator_upload_rejects_indicator_not_in_assessment(
+        self, client, db_session, submitted_assessment, validator_user, mock_governance_area
+    ):
+        """Validators cannot upload against indicators outside the assessment surface."""
+        unlinked_indicator = Indicator(
+            name="Unlinked Indicator",
+            indicator_code="9.9.9",
+            governance_area_id=mock_governance_area.id,
+            sort_order=1,
+            description="Not linked to this assessment",
+        )
+        db_session.add(unlinked_indicator)
+        db_session.commit()
+        db_session.refresh(unlinked_indicator)
+
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{submitted_assessment.id}/indicators/{unlinked_indicator.id}/upload",
+                files={"file": ("validator-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            assert "not part of this assessment" in str(response.json()).lower()
+            mock_upload.assert_not_called()
+
+    def test_blgu_upload_rules_remain_unchanged_for_owned_assessment(
+        self, client, assessment, auth_headers
+    ):
+        """Test BLGU users can still upload to their own assessment."""
+        with patch("app.api.v1.movs.storage_service.upload_mov_file") as mock_upload:
+            mock_mov_file = MOVFile(
+                id=13,
+                assessment_id=assessment.id,
+                indicator_id=1,
+                file_name="blgu-file.pdf",
+                file_url="https://storage.example.com/blgu-file.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                uploaded_by=100,
+                uploaded_at=datetime.utcnow(),
+            )
+            mock_upload.return_value = mock_mov_file
+
+            file_data = io.BytesIO(b"%PDF-1.4\n%")
+            response = client.post(
+                f"/api/v1/movs/assessments/{assessment.id}/indicators/1/upload",
+                headers=auth_headers,
+                files={"file": ("blgu-file.pdf", file_data, "application/pdf")},
+            )
+
+            assert response.status_code == status.HTTP_201_CREATED
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
 
     def test_upload_valid_docx_file(self, client, assessment, auth_headers):
         """Test successful upload of a valid DOCX file."""
@@ -168,6 +357,7 @@ class TestUploadMOVFile:
                 data["file_type"]
                 == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
+            assert mock_upload.call_args.kwargs["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
 
     def test_upload_valid_jpg_file(self, client, assessment, auth_headers):
         """Test successful upload of a valid JPG file."""
@@ -427,11 +617,25 @@ class TestListMOVFiles:
         return indicator
 
     @pytest.fixture
-    def assessment(self, db_session, blgu_user):
+    def assessment_year(self, db_session):
+        """Fixture providing a valid assessment year."""
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.commit()
+        db_session.refresh(assessment_year)
+        return assessment_year
+
+    @pytest.fixture
+    def assessment(self, db_session, blgu_user, assessment_year):
         """Fixture providing a draft assessment."""
         assessment = Assessment(
             blgu_user_id=blgu_user.id,
             status=AssessmentStatus.DRAFT,
+            assessment_year=assessment_year.year,
         )
         db_session.add(assessment)
         db_session.commit()
@@ -495,6 +699,70 @@ class TestListMOVFiles:
         assert "blgu_file1.pdf" in file_names
         assert "blgu_file2.pdf" in file_names
         assert "other_file.pdf" not in file_names  # Other user's file not visible
+        assert data["files"][0]["upload_origin"] == MOV_UPLOAD_ORIGIN_BLGU
+
+    def test_list_files_blgu_user_also_sees_validator_files(
+        self, client, db_session, assessment, blgu_user, other_blgu_user, validator_user, indicator
+    ):
+        """BLGU users should see validator-added evidence on their own assessment."""
+        db_session.add(
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=indicator.id,
+                response_data={},
+                is_completed=False,
+            )
+        )
+        db_session.flush()
+
+        own_file = MOVFile(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=blgu_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            file_name="blgu_file.pdf",
+            file_url="https://storage.example.com/blgu.pdf",
+            file_type="application/pdf",
+            file_size=1024,
+            uploaded_at=datetime.utcnow(),
+        )
+        validator_file = MOVFile(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=validator_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_VALIDATOR,
+            file_name="validator_file.pdf",
+            file_url="https://storage.example.com/validator.pdf",
+            file_type="application/pdf",
+            file_size=2048,
+            uploaded_at=datetime.utcnow(),
+        )
+        other_blgu_file = MOVFile(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=other_blgu_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            file_name="other_blgu_file.pdf",
+            file_url="https://storage.example.com/other.pdf",
+            file_type="application/pdf",
+            file_size=3072,
+            uploaded_at=datetime.utcnow(),
+        )
+        db_session.add_all([own_file, validator_file, other_blgu_file])
+        db_session.commit()
+
+        use_test_db_session(client, db_session)
+        authenticate_user(client, blgu_user)
+
+        response = client.get(
+            f"/api/v1/movs/assessments/{assessment.id}/indicators/{indicator.id}/files"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        file_names = [f["file_name"] for f in response.json()["files"]]
+        assert "blgu_file.pdf" in file_names
+        assert "validator_file.pdf" in file_names
+        assert "other_blgu_file.pdf" not in file_names
 
     def test_list_files_assessor_sees_all_files(
         self, client, db_session, assessment, blgu_user, other_blgu_user, assessor_user, indicator

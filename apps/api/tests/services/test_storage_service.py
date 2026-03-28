@@ -18,7 +18,15 @@ import pytest
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
-from app.db.models.assessment import MOVFile
+from app.db.enums import AreaType, AssessmentStatus
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    Assessment,
+    MOVFile,
+)
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.services.storage_service import StorageService
 
 
@@ -153,6 +161,7 @@ class TestStorageServiceFileUpload:
                 assessment_id=1,
                 indicator_id=10,
                 user_id=1,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
             )
 
             # Verify result is a MOVFile instance
@@ -168,6 +177,115 @@ class TestStorageServiceFileUpload:
             # Verify file was uploaded to Supabase
             mock_supabase_client.storage.from_.assert_called()
             mock_supabase_client.storage.from_().upload.assert_called_once()
+
+    def test_upload_mov_file_sets_blgu_upload_origin(
+        self, service, mock_supabase_client, db_session, mock_blgu_user, mock_indicator
+    ):
+        """Test that BLGU uploads default to BLGU provenance."""
+        from datetime import UTC, datetime
+
+        from app.db.enums import AssessmentStatus
+        from app.db.models.assessment import Assessment
+        from app.db.models.system import AssessmentYear
+
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=assessment_year.year,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.flush()
+
+        file_data = io.BytesIO(b"%PDF-1.4\n%")
+        upload_file = UploadFile(
+            filename="blgu-proof.pdf",
+            file=file_data,
+            headers={"content-type": "application/pdf"},
+        )
+
+        with patch(
+            "app.services.storage_service._get_supabase_client",
+            return_value=mock_supabase_client,
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=mock_indicator.id,
+                user_id=mock_blgu_user.id,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            )
+
+        assert isinstance(result, MOVFile)
+        assert result.uploaded_by == mock_blgu_user.id
+        assert result.upload_origin == MOV_UPLOAD_ORIGIN_BLGU
+
+    def test_upload_mov_file_sets_validator_upload_origin(
+        self,
+        service,
+        mock_supabase_client,
+        db_session,
+        mock_blgu_user,
+        mock_indicator,
+        validator_user,
+    ):
+        """Test that validator uploads are persisted with validator provenance."""
+        from datetime import UTC, datetime
+
+        from app.db.enums import AssessmentStatus
+        from app.db.models.assessment import Assessment
+        from app.db.models.system import AssessmentYear
+
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=assessment_year.year,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.flush()
+
+        file_data = io.BytesIO(b"%PDF-1.4\n%")
+        upload_file = UploadFile(
+            filename="validator-proof.pdf",
+            file=file_data,
+            headers={"content-type": "application/pdf"},
+        )
+
+        with patch(
+            "app.services.storage_service._get_supabase_client",
+            return_value=mock_supabase_client,
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=mock_indicator.id,
+                user_id=validator_user.id,
+                upload_origin=MOV_UPLOAD_ORIGIN_VALIDATOR,
+            )
+
+        assert isinstance(result, MOVFile)
+        assert result.uploaded_by == validator_user.id
+        assert result.upload_origin == MOV_UPLOAD_ORIGIN_VALIDATOR
+        assert result.assessment_id == assessment.id
+        assert result.indicator_id == mock_indicator.id
+        assert result.file_name == "validator-proof.pdf"
 
     def test_upload_mov_file_handles_supabase_failure(
         self, service, mock_supabase_client, mock_db_session
@@ -198,6 +316,7 @@ class TestStorageServiceFileUpload:
                     assessment_id=1,
                     indicator_id=10,
                     user_id=1,
+                    upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
                 )
 
             assert "File upload to storage failed" in str(exc_info.value)
@@ -205,6 +324,21 @@ class TestStorageServiceFileUpload:
             # Verify no database record was created (mock not called)
             mock_db_session.add.assert_not_called()
             mock_db_session.commit.assert_not_called()
+
+    def test_save_mov_file_record_rejects_invalid_upload_origin(self, service, db_session):
+        """Test that invalid upload_origin values are rejected before persistence."""
+        with pytest.raises(ValueError, match="Invalid upload_origin"):
+            service._save_mov_file_record(
+                db=db_session,
+                file_url="https://storage.supabase.co/mov-files/1/10/test.pdf",
+                file_name="uuid_test.pdf",
+                file_type="application/pdf",
+                file_size=1024,
+                assessment_id=1,
+                indicator_id=10,
+                user_id=1,
+                upload_origin="not-valid",
+            )
 
     def test_upload_mov_file_handles_database_failure_with_rollback(
         self, service, mock_supabase_client, mock_db_session
@@ -233,6 +367,7 @@ class TestStorageServiceFileUpload:
                     assessment_id=1,
                     indicator_id=10,
                     user_id=1,
+                    upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
                 )
 
             assert "Database operation failed" in str(exc_info.value)
@@ -252,6 +387,7 @@ class TestStorageServiceFileUpload:
             assessment_id=1,
             indicator_id=10,
             user_id=1,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
         )
 
         # Verify result
@@ -291,6 +427,7 @@ class TestStorageServiceFileUpload:
                 assessment_id=1,
                 indicator_id=10,
                 user_id=1,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
             )
 
             # Should use default filename "file"
@@ -313,10 +450,172 @@ class TestStorageServiceFileUpload:
                 assessment_id=1,
                 indicator_id=10,
                 user_id=1,
+                upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
             )
 
             # Should use default content type
             assert result.file_type == "application/octet-stream"
+
+    @pytest.mark.parametrize(
+        ("field_id", "stale_label", "expected_label"),
+        [
+            (
+                "1_6_1_opt3_a",
+                "Proof of transfer to trust fund, OR",
+                "Proof of transfer of the 10% 2023 SK funds to the trust fund of the Barangay such as Deposit Slip or Official Receipt;",
+            ),
+            (
+                "1_6_1_opt3_b",
+                "Legal forms from C/M treasurer if SK fund kept in C/M custody",
+                (
+                    "Proof of transfer or corresponding legal forms-documents issued by the "
+                    "city-municipal treasurer if the barangay opted that the corresponding SK "
+                    "fund be kept as trust fund in the custody of the C-M treasurer."
+                ),
+            ),
+        ],
+    )
+    def test_upload_mov_file_normalizes_sng_14_option3_labels(
+        self,
+        service,
+        mock_supabase_client,
+        db_session,
+        mock_blgu_user,
+        field_id,
+        stale_label,
+        expected_label,
+    ):
+        """SNG-14: backend should persist the approved MOV names even from stale clients."""
+        assessment_year = AssessmentYear(
+            year=2023,
+            assessment_period_start=datetime(2023, 1, 1),
+            assessment_period_end=datetime(2023, 10, 31),
+            is_active=True,
+            is_published=True,
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        governance_area = GovernanceArea(name="SNG-14 Area", code="F1", area_type=AreaType.CORE)
+        db_session.add(governance_area)
+        db_session.flush()
+
+        indicator = Indicator(
+            name="SNG-14 Indicator 1.6.1",
+            indicator_code="1.6.1",
+            governance_area_id=governance_area.id,
+            sort_order=1,
+            form_schema={},
+        )
+        db_session.add(indicator)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=2023,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+
+        upload_file = UploadFile(
+            filename="test.pdf",
+            file=io.BytesIO(b"%PDF-1.4\n%"),
+            headers={"content-type": "application/pdf"},
+        )
+
+        with (
+            patch(
+                "app.services.storage_service._get_supabase_client",
+                return_value=mock_supabase_client,
+            ),
+            patch.object(service, "_update_response_completion_status", return_value=None),
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=indicator.id,
+                user_id=mock_blgu_user.id,
+                field_id=field_id,
+                indicator_code="1.6.1",
+                field_label=stale_label,
+            )
+
+        assert result.file_name == f"1.6.1 {expected_label} (1).pdf"
+
+    def test_upload_mov_file_normalizes_sng_16_4_1_4_label(
+        self,
+        service,
+        mock_supabase_client,
+        db_session,
+        mock_blgu_user,
+    ):
+        """SNG-16: 4.1.4 uploads should rename to the approved MOV name."""
+        assessment_year = AssessmentYear(
+            year=2025,
+            assessment_period_start=datetime(2025, 1, 1),
+            assessment_period_end=datetime(2025, 10, 31),
+            is_active=True,
+            is_published=True,
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        governance_area = GovernanceArea(name="SNG-16 Area", code="S1", area_type=AreaType.CORE)
+        db_session.add(governance_area)
+        db_session.flush()
+
+        indicator = Indicator(
+            name="SNG-16 Indicator 4.1.4",
+            indicator_code="4.1.4",
+            governance_area_id=governance_area.id,
+            sort_order=1,
+            form_schema={},
+        )
+        db_session.add(indicator)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=mock_blgu_user.id,
+            assessment_year=2025,
+            status=AssessmentStatus.DRAFT,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+
+        upload_file = UploadFile(
+            filename="test.pdf",
+            file=io.BytesIO(b"%PDF-1.4\n%"),
+            headers={"content-type": "application/pdf"},
+        )
+
+        with (
+            patch(
+                "app.services.storage_service._get_supabase_client",
+                return_value=mock_supabase_client,
+            ),
+            patch.object(service, "_update_response_completion_status", return_value=None),
+        ):
+            result = service.upload_mov_file(
+                db=db_session,
+                file=upload_file,
+                assessment_id=assessment.id,
+                indicator_id=indicator.id,
+                user_id=mock_blgu_user.id,
+                field_id="upload_section_1",
+                indicator_code="4.1.4",
+                field_label=(
+                    "Quarterly accomplishment reports based on the database/records of "
+                    "VAW cases reported in the barangay"
+                ),
+            )
+
+        assert (
+            result.file_name
+            == "4.1.4 Accomplishment Report covering 1st to 3rd quarter of CY 2025 "
+            "with received stamp by the C-MSWDO and C-MLGOO (1).pdf"
+        )
 
 
 class TestStorageServiceFileDeletion:

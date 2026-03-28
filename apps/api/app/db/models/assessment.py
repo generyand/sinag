@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
@@ -26,6 +27,16 @@ from app.db.enums import AssessmentStatus, ComplianceStatus, MOVStatus, Validati
 
 if TYPE_CHECKING:
     from app.db.models.system import AssessmentYear
+
+# Shared MOV upload provenance values.
+MOV_UPLOAD_ORIGIN_BLGU = "blgu"
+MOV_UPLOAD_ORIGIN_VALIDATOR = "validator"
+MOV_UPLOAD_ORIGIN_UNKNOWN = "unknown"
+MOV_UPLOAD_ORIGIN_VALUES = (
+    MOV_UPLOAD_ORIGIN_BLGU,
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    MOV_UPLOAD_ORIGIN_UNKNOWN,
+)
 
 
 class Assessment(Base):
@@ -96,6 +107,17 @@ class Assessment(Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     mlgoo_approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # MLGOO reopen tracking
+    reopened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reopened_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    reopen_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reopen_from_status: Mapped[AssessmentStatus | None] = mapped_column(
+        Enum(AssessmentStatus, name="assessment_status_enum", create_constraint=True),
+        nullable=True,
+    )
 
     # MLGOO RE-calibration tracking (distinct from Validator calibration)
     # Used when MLGOO determines validator was too strict and needs to unlock indicators
@@ -226,6 +248,7 @@ class Assessment(Base):
     )
     # MLGOO approval relationships
     mlgoo_approver = relationship("User", foreign_keys=[mlgoo_approved_by], post_update=True)
+    reopened_by_user = relationship("User", foreign_keys=[reopened_by], post_update=True)
     mlgoo_recalibration_requester = relationship(
         "User", foreign_keys=[mlgoo_recalibration_requested_by], post_update=True
     )
@@ -550,6 +573,8 @@ class AssessmentResponse(Base):
         Enum(ValidationStatus, name="validation_status_enum", create_constraint=True),
         nullable=True,
     )
+    validator_review_cycle: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    validator_review_history: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     # Generated remark (from remark_schema template)
     generated_remark: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -626,6 +651,12 @@ class MOVFile(Base):
     """
 
     __tablename__ = "mov_files"
+    __table_args__ = (
+        CheckConstraint(
+            "upload_origin IN ('blgu', 'validator', 'unknown')",
+            name="ck_mov_files_upload_origin_valid",
+        ),
+    )
 
     # Primary key
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -639,6 +670,13 @@ class MOVFile(Base):
     )
     uploaded_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # Provenance grouping for uploads: BLGU default unless explicitly marked validator-origin.
+    upload_origin: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=MOV_UPLOAD_ORIGIN_BLGU,
+        server_default=MOV_UPLOAD_ORIGIN_BLGU,
     )
 
     # File metadata
@@ -705,6 +743,7 @@ class FeedbackComment(Base):
     # Foreign keys
     response_id: Mapped[int] = mapped_column(ForeignKey("assessment_responses.id"), nullable=False)
     assessor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    review_cycle: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
@@ -752,6 +791,7 @@ class MOVAnnotation(Base):
 
     # Comment text associated with the annotation
     comment: Mapped[str] = mapped_column(Text, nullable=False)
+    review_cycle: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)

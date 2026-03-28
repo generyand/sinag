@@ -25,6 +25,7 @@ ACTION_LABELS = {
     ActivityAction.CALIBRATION_SUBMITTED.value: "Calibration Submitted",
     ActivityAction.VALIDATION_COMPLETED.value: "Validation Completed",
     ActivityAction.APPROVED.value: "Assessment Approved",
+    ActivityAction.REOPENED_BY_MLGOO.value: "Assessment Reopened by MLGOO",
     ActivityAction.RECALIBRATION_REQUESTED.value: "Recalibration Requested",
     ActivityAction.RECALIBRATION_SUBMITTED.value: "Recalibration Submitted",
     ActivityAction.COMPLETED.value: "Assessment Completed",

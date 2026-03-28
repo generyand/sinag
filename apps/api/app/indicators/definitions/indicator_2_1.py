@@ -140,7 +140,7 @@ INDICATOR_2_1 = Indicator(
                 "- Accomplishment Report\n"
                 "- Certification on the submission and correctness of Accomplishment Report signed by the C/MDRRMO\n\n"
                 "OR\n\n"
-                "OPTION B - FINANCIAL: At least 50% fund utilization of the 70% component of CY {PREVIOUS_YEAR} BDRRMF - Preparedness component as of December 31, {PREVIOUS_YEAR}\n"
+                "OPTION B - FINANCIAL: At least 50% fund utilization of the 70% component of CY {CURRENT_YEAR} BDRRMF - Preparedness component as of December 31, {CURRENT_YEAR}\n"
                 "- Annual LDRRMF Utilization Report\n"
                 "- Certification on the submission and correctness of fund utilization report signed by the C/MDRRMO\n\n"
                 "Note: Choose either Option A (Physical) OR Option B (Financial). Only ONE option is required."

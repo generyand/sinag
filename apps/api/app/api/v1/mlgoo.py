@@ -22,6 +22,8 @@ from app.schemas.mlgoo import (
     RecalibrationByMovResponse,
     RecalibrationRequest,
     RecalibrationResponse,
+    ReopenSubmissionRequest,
+    ReopenSubmissionResponse,
     SendReminderResponse,
     UnlockAssessmentRequest,
     UnlockAssessmentResponse,
@@ -357,6 +359,53 @@ async def unlock_assessment(
             grace_period_expires_at=custom_expiry,
         )
         return UnlockAssessmentResponse(**result)
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_msg,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg,
+        )
+
+
+@router.post(
+    "/assessments/{assessment_id}/reopen",
+    response_model=ReopenSubmissionResponse,
+    summary="Reopen Assessment For BLGU Editing",
+    description=(
+        "Reopen an assessment that was submitted too early or needs to return to BLGU editing.\n\n"
+        "**Access:** Requires MLGOO_DILG role.\n\n"
+        "This is a workflow recovery action and does not change deadline lock metadata."
+    ),
+    tags=["mlgoo"],
+    responses={
+        200: {"description": "Assessment reopened successfully"},
+        400: {"description": "Assessment cannot be reopened in its current state"},
+        403: {"description": "Not enough permissions (MLGOO_DILG role required)"},
+        404: {"description": "Assessment not found"},
+    },
+)
+async def reopen_submission(
+    assessment_id: int,
+    request: ReopenSubmissionRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_admin_user),
+):
+    """
+    Reopen an assessment so BLGU can continue editing it.
+    """
+    try:
+        result = mlgoo_service.reopen_submission(
+            db=db,
+            assessment_id=assessment_id,
+            mlgoo_user=current_user,
+            reason=request.reason,
+        )
+        return ReopenSubmissionResponse(**result)
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():

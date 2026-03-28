@@ -1,6 +1,7 @@
 "use client";
 
 import { YearSelector } from "@/components/features/assessment-year/YearSelector";
+import { MlgooReopenSubmissionButton } from "@/components/features/mlgoo";
 import {
   ActiveFilterPills,
   NeedsReworkPopover,
@@ -31,6 +32,7 @@ import {
 import { useEffectiveYear } from "@/store/useAssessmentYearStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { api } from "@/lib/api";
+import { getGetAssessmentsListQueryKey } from "@sinag/shared";
 import {
   AlertTriangle,
   Check,
@@ -43,6 +45,7 @@ import {
   Send,
   XCircle,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -169,6 +172,7 @@ function ReviewersProgressColumn({ submission }: { submission: SubmissionUIModel
 export default function AdminSubmissionsPage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const effectiveYear = useEffectiveYear();
 
   // Use custom hooks for filter and data management
@@ -273,6 +277,12 @@ export default function AdminSubmissionsPage() {
     } finally {
       setRemindingId(null);
     }
+  };
+
+  const handleReopenSuccess = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: getGetAssessmentsListQueryKey(),
+    });
   };
 
   // Get sort icon for a column
@@ -444,6 +454,7 @@ export default function AdminSubmissionsPage() {
                     submissions={filteredSubmissions}
                     onView={handleViewDetails}
                     onRemind={handleSendReminder}
+                    onReopenSuccess={handleReopenSuccess}
                     remindingId={remindingId}
                   />
                 </div>
@@ -609,6 +620,14 @@ export default function AdminSubmissionsPage() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
+                                <MlgooReopenSubmissionButton
+                                  assessmentId={submission.id}
+                                  assessmentStatus={submission.rawStatus}
+                                  isLockedForBlgu={submission.isLockedForBlgu}
+                                  barangayName={submission.barangayName}
+                                  onSuccess={handleReopenSuccess}
+                                  className="border-sky-300 text-sky-700 hover:bg-sky-50"
+                                />
                                 <Button
                                   size="sm"
                                   onClick={() => handleViewDetails(submission)}
