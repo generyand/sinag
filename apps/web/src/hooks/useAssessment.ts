@@ -85,13 +85,13 @@ export function useCurrentAssessment() {
     refetch,
   } = useGetAssessmentsMyAssessment({
     query: {
-      // Shorter staleTime for faster updates after file uploads
-      // Invalidations will trigger immediate refetch when data is stale
-      staleTime: 30 * 1000, // 30 seconds - faster updates for file uploads
+      // Always refetch on mount so workflow changes from other sessions
+      // (for example MLGOO reopening a submission) are visible immediately.
+      staleTime: 0,
       gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-      // Refetch on window focus to catch any missed updates
+      // Refetch on mount/focus to catch workflow changes made elsewhere.
       refetchOnWindowFocus: true,
-      refetchOnMount: true,
+      refetchOnMount: "always",
     },
   } as any);
 

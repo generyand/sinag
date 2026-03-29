@@ -19,15 +19,8 @@
 
 "use client";
 
-import { useState } from "react";
-import {
-  Loader2,
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle2,
-  RotateCcw,
-  RefreshCw,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, AlertTriangle, CheckCircle2, RotateCcw, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +50,45 @@ interface ResubmitAssessmentButtonProps {
   onSuccess?: () => void;
 }
 
+const LOADING_MESSAGE_INTERVAL_MS = 1500;
+const SUBMISSION_STEPS = ["Preparing", "Sending", "Finalizing"] as const;
+const DEFAULT_LOADING_MESSAGES = [
+  "Preparing your submission...",
+  "Sending your revisions...",
+  "Processing your submission...",
+  "Finalizing your submission...",
+] as const;
+const CALIBRATION_LOADING_MESSAGES = [
+  "Preparing your submission...",
+  "Sending to validator...",
+  "Processing your submission...",
+  "Finalizing your submission...",
+] as const;
+const MLGOO_LOADING_MESSAGES = [
+  "Preparing your submission...",
+  "Sending to MLGOO...",
+  "Processing your submission...",
+  "Finalizing your submission...",
+] as const;
+
+function getLoadingMessages({
+  isCalibrationRework,
+  isMlgooRecalibration,
+}: {
+  isCalibrationRework: boolean;
+  isMlgooRecalibration: boolean;
+}) {
+  if (isMlgooRecalibration) {
+    return MLGOO_LOADING_MESSAGES;
+  }
+
+  if (isCalibrationRework) {
+    return CALIBRATION_LOADING_MESSAGES;
+  }
+
+  return DEFAULT_LOADING_MESSAGES;
+}
+
 export function ResubmitAssessmentButton({
   assessmentId,
   isComplete,
@@ -67,6 +99,7 @@ export function ResubmitAssessmentButton({
   onSuccess,
 }: ResubmitAssessmentButtonProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const { toast } = useToast();
 
   // Epic 5.0 mutation hook for regular resubmit (to Assessor)
@@ -136,6 +169,22 @@ export function ResubmitAssessmentButton({
   const isPending = isCalibrationRework ? isCalibrationPending : isResubmitPending;
   const canSubmitIncomplete =
     allowIncompleteSubmission && (isCalibrationRework || isMlgooRecalibration);
+  const loadingMessages = getLoadingMessages({ isCalibrationRework, isMlgooRecalibration });
+
+  useEffect(() => {
+    if (!isPending) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setLoadingMessageIndex((currentIndex) =>
+        currentIndex < loadingMessages.length - 1 ? currentIndex + 1 : currentIndex
+      );
+    }, LOADING_MESSAGE_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [isPending, loadingMessages]);
 
   const handleResubmitClick = () => {
     if (isComplete || canSubmitIncomplete) {
@@ -159,11 +208,11 @@ export function ResubmitAssessmentButton({
     : isCalibrationRework
       ? "Submit for Calibration"
       : "Resubmit Assessment";
-  const loadingText = isMlgooRecalibration
-    ? "Submitting to MLGOO..."
-    : isCalibrationRework
-      ? "Submitting..."
-      : "Resubmitting...";
+  const loadingText = loadingMessages[loadingMessageIndex] ?? loadingMessages[0];
+  const activeStepIndex =
+    loadingMessageIndex === 0 ? 0 : loadingMessageIndex >= loadingMessages.length - 1 ? 2 : 1;
+  const progressWidthClass =
+    activeStepIndex === 0 ? "w-1/3" : activeStepIndex === 1 ? "w-2/3" : "w-full";
   const ButtonIcon = isCalibrationRework || isMlgooRecalibration ? RefreshCw : RotateCcw;
 
   const button = (
@@ -171,13 +220,57 @@ export function ResubmitAssessmentButton({
       onClick={handleResubmitClick}
       disabled={isButtonDisabled}
       size="lg"
-      className="w-full sm:w-auto bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/90 text-gray-900 font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      className={
+        "w-full bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/90 text-gray-900 font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto " +
+        (isPending ? "h-auto min-w-[280px] justify-start whitespace-normal px-4 py-3" : "")
+      }
     >
       {isPending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          {loadingText}
-        </>
+        <span className="flex w-full flex-col items-start gap-1.5 py-0.5">
+          <span className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.12em]">
+            {SUBMISSION_STEPS.map((step, index) => {
+              const isActive = index === activeStepIndex;
+              const isCompleted = index < activeStepIndex;
+
+              return (
+                <span key={step} className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className={
+                      "h-2 w-2 rounded-full transition-all duration-200 motion-reduce:transition-none " +
+                      (isActive
+                        ? "bg-gray-900 shadow-[0_0_0_4px_rgba(17,24,39,0.12)]"
+                        : isCompleted
+                          ? "bg-gray-700"
+                          : "bg-gray-400/70")
+                    }
+                  />
+                  <span
+                    className={
+                      isActive ? "text-gray-900" : isCompleted ? "text-gray-700" : "text-gray-500"
+                    }
+                  >
+                    {step}
+                  </span>
+                </span>
+              );
+            })}
+          </span>
+          <span className="text-left text-sm font-semibold leading-tight text-gray-900">
+            {loadingText}
+          </span>
+          <span
+            aria-hidden="true"
+            className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/45"
+          >
+            <span
+              className={
+                "absolute inset-y-0 left-0 rounded-full bg-gray-900 transition-[width] duration-300 motion-reduce:transition-none " +
+                progressWidthClass
+              }
+            />
+          </span>
+        </span>
       ) : (
         <>
           <ButtonIcon className="mr-2 h-4 w-4" />
@@ -345,10 +438,7 @@ export function ResubmitAssessmentButton({
               className="bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/90 text-gray-900 font-semibold shadow-md hover:shadow-lg"
             >
               {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {loadingText}
-                </>
+                loadingText
               ) : (
                 <>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
