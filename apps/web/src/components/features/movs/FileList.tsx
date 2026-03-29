@@ -52,6 +52,7 @@ interface FileListProps {
   onRotate?: (fileId: number) => void;
   canDelete?: boolean | ((file: MOVFileResponse) => boolean);
   deletingFileId?: number | null;
+  downloadingFileId?: number | null;
   canRotate?: boolean;
   loading?: boolean;
   emptyMessage?: string;
@@ -202,6 +203,7 @@ export function FileList({
   onRotate,
   canDelete = false,
   deletingFileId = null,
+  downloadingFileId = null,
   canRotate = false,
   loading = false,
   emptyMessage = "No files uploaded yet",
@@ -575,17 +577,22 @@ export function FileList({
                         type="button"
                         variant="ghost"
                         size="sm"
+                        disabled={downloadingFileId === file.id}
                         onClick={() => onDownload(file)}
-                        title="Download file"
+                        title={downloadingFileId === file.id ? "Downloading file" : "Download file"}
                         className={
                           mlgooFlagged.isFlagged
-                            ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
+                            ? "cursor-pointer text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100 disabled:cursor-wait disabled:text-red-300"
                             : hasAnnotations || isFlaggedForRework
-                              ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
-                              : ""
+                              ? "cursor-pointer text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100 disabled:cursor-wait disabled:text-orange-300"
+                              : "cursor-pointer disabled:cursor-wait"
                         }
                       >
-                        <Download className="h-4 w-4" />
+                        {downloadingFileId === file.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
                       </Button>
                     )}
                     {canDeleteFile(file) && onDelete && (

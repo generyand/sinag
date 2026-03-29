@@ -318,6 +318,7 @@ function ReviewFileSection({
   canDelete = false,
   onDelete,
   deletingFileId = null,
+  downloadingFileId = null,
 }: {
   title: string;
   files: MOVFileResponse[];
@@ -333,6 +334,7 @@ function ReviewFileSection({
   canDelete?: boolean | ((file: MOVFileResponse) => boolean);
   onDelete?: (fileId: number) => void;
   deletingFileId?: number | null;
+  downloadingFileId?: number | null;
 }) {
   const sortedFiles = React.useMemo(() => sortFilesByUploadedAtDesc(files), [files]);
   const visibleFiles = collapseHistory ? sortedFiles.slice(0, 1) : sortedFiles;
@@ -365,6 +367,7 @@ function ReviewFileSection({
         canDelete={canDelete}
         onDelete={onDelete}
         deletingFileId={deletingFileId}
+        downloadingFileId={downloadingFileId}
         loading={false}
         emptyMessage=""
         movAnnotations={movAnnotations}
@@ -402,6 +405,7 @@ function ReviewFileSection({
                 canDelete={canDelete}
                 onDelete={onDelete}
                 deletingFileId={deletingFileId}
+                downloadingFileId={downloadingFileId}
                 loading={false}
                 emptyMessage=""
                 movAnnotations={movAnnotations}
@@ -452,6 +456,7 @@ export function MiddleMovFilesPanel({
   const [isUploadPanelOpen, setIsUploadPanelOpen] = React.useState(false);
   const [pendingDeleteFileId, setPendingDeleteFileId] = React.useState<number | null>(null);
   const [deletingValidatorFileId, setDeletingValidatorFileId] = React.useState<number | null>(null);
+  const [downloadingFileId, setDownloadingFileId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     if (uploadFieldOptions.length === 1) {
@@ -474,6 +479,7 @@ export function MiddleMovFilesPanel({
     setIsUploadPanelOpen(false);
     setPendingDeleteFileId(null);
     setDeletingValidatorFileId(null);
+    setDownloadingFileId(null);
   }, [expandedId]);
 
   const validatorUploadMutation = usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload({
@@ -722,6 +728,7 @@ export function MiddleMovFilesPanel({
 
   const handleDownload = async (file: MOVFileResponse) => {
     try {
+      setDownloadingFileId(file.id);
       const signedUrl = await fetchSignedUrl(file.id);
 
       const response = await fetch(signedUrl);
@@ -734,9 +741,12 @@ export function MiddleMovFilesPanel({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
+      toast.success(`Downloaded ${file.file_name}`);
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Failed to download file");
+    } finally {
+      setDownloadingFileId(null);
     }
   };
 
@@ -1191,6 +1201,7 @@ export function MiddleMovFilesPanel({
                 movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
+                downloadingFileId={downloadingFileId}
               />
             )}
 
@@ -1240,6 +1251,7 @@ export function MiddleMovFilesPanel({
                 canDelete={canDeleteValidatorFile}
                 onDelete={handleDeleteValidatorFile}
                 deletingFileId={deletingValidatorFileId}
+                downloadingFileId={downloadingFileId}
               />
             )}
 
@@ -1270,6 +1282,7 @@ export function MiddleMovFilesPanel({
               movAnnotations={safeAnnotations}
               onPreview={handlePreview}
               onDownload={handleDownload}
+              downloadingFileId={downloadingFileId}
             />
             {validatorFiles.length > 0 && (
               <ReviewFileSection
@@ -1287,6 +1300,7 @@ export function MiddleMovFilesPanel({
                 canDelete={canDeleteValidatorFile}
                 onDelete={handleDeleteValidatorFile}
                 deletingFileId={deletingValidatorFileId}
+                downloadingFileId={downloadingFileId}
               />
             )}
             {normalPreviousFiles.length > 0 && (
@@ -1301,6 +1315,7 @@ export function MiddleMovFilesPanel({
                 movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
+                downloadingFileId={downloadingFileId}
               />
             )}
           </div>
