@@ -275,4 +275,19 @@ describe("ValidatorValidationClient autosave", () => {
 
     expect(finalizeMutateAsync).toHaveBeenCalledWith({ assessmentId: 1 });
   });
+
+  it("renders loading state without entering an update loop before assessment data arrives", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+    });
+
+    expect(() => {
+      render(wrap(<ValidatorValidationClient assessmentId={1} />));
+    }).not.toThrow();
+
+    expect(screen.getByText(/loading assessment/i)).toBeInTheDocument();
+  });
 });
