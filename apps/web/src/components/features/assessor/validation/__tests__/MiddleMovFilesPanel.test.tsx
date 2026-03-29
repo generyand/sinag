@@ -5,7 +5,10 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useMovAnnotations } from "@/hooks/useMovAnnotations";
+import { useAuthStore } from "@/store/useAuthStore";
 import { MiddleMovFilesPanel } from "../MiddleMovFilesPanel";
+
+const mockUploadMutate = vi.fn();
 
 vi.mock("@sinag/shared", () => ({
   getGetAssessorAssessmentsAssessmentIdQueryKey: vi.fn((assessmentId: number) => [
@@ -18,7 +21,7 @@ vi.mock("@sinag/shared", () => ({
     isLoading: false,
   })),
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload: vi.fn(() => ({
-    mutate: vi.fn(),
+    mutate: mockUploadMutate,
     isPending: false,
   })),
   usePatchAssessorMovsMovFileIdFeedback: vi.fn(() => ({
@@ -71,6 +74,24 @@ vi.mock("@/components/features/movs/FileList", () => ({
   ),
 }));
 
+vi.mock("@/components/features/movs/FileUpload", () => ({
+  FileUpload: ({
+    disabled,
+    onFileSelect,
+  }: {
+    disabled?: boolean;
+    onFileSelect: (file: File) => void;
+  }) => (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onFileSelect(new File(["test"], "validator.pdf", { type: "application/pdf" }))}
+    >
+      Mock File Upload
+    </button>
+  ),
+}));
+
 const wrap = (ui: React.ReactNode) => {
   const client = new QueryClient({
     defaultOptions: {
@@ -120,6 +141,7 @@ const assessment = {
 describe("MiddleMovFilesPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUploadMutate.mockReset();
   });
 
   it("opens the shared image preview controls from the review panel", async () => {
@@ -164,5 +186,56 @@ describe("MiddleMovFilesPanel", () => {
     await user.click(locateButton);
 
     expect(locateButton).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("uses nested indicator.id for validator uploads when indicator_id is absent", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { role: "VALIDATOR" },
+    });
+
+    const validatorAssessment = {
+      assessment: {
+        id: 2,
+        status: "SUBMITTED",
+        responses: [
+          {
+            id: 101,
+            assessment_id: 2,
+            indicator: {
+              id: 2,
+              name: "Indicator A",
+              form_schema: {
+                fields: [
+                  {
+                    field_id: "upload_section_1",
+                    field_type: "file_upload",
+                    label: "BFDP Monitoring Form A",
+                  },
+                ],
+              },
+            },
+            movs: [],
+          },
+        ],
+      },
+    };
+
+    render(wrap(<MiddleMovFilesPanel assessment={validatorAssessment as any} expandedId={101} />));
+
+    await user.click(screen.getByRole("button", { name: /mock file upload/i }));
+
+    expect(mockUploadMutate).toHaveBeenCalledWith({
+      assessmentId: 2,
+      indicatorId: 2,
+      data: expect.objectContaining({
+        field_id: "upload_section_1",
+        field_label: "BFDP Monitoring Form A",
+      }),
+    });
+    expect(
+      screen.queryByText(/this indicator has no file upload field to attach validator evidence to/i)
+    ).not.toBeInTheDocument();
   });
 });

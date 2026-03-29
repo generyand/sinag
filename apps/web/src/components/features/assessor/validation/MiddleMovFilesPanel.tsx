@@ -427,6 +427,7 @@ export function MiddleMovFilesPanel({
   // Find the currently selected response
   const selectedResponse = responses.find((r) => r.id === expandedId);
   const indicator = (selectedResponse?.indicator as AnyRecord) ?? {};
+  const selectedIndicatorId = Number(selectedResponse?.indicator_id ?? indicator?.id ?? 0);
   const indicatorName = indicator?.name || "Select an indicator";
   const uploadFieldOptions = React.useMemo(
     () => extractFileUploadFields((indicator?.form_schema as AnyRecord) ?? {}),
@@ -920,7 +921,7 @@ export function MiddleMovFilesPanel({
   const canValidatorUpload =
     isValidator &&
     assessmentStatus === "SUBMITTED" &&
-    Boolean(selectedResponse?.indicator_id) &&
+    selectedIndicatorId > 0 &&
     uploadFieldOptions.length > 0;
   const selectedUploadField = uploadFieldOptions.find(
     (option) => option.fieldId === selectedUploadFieldId
@@ -928,15 +929,15 @@ export function MiddleMovFilesPanel({
 
   const handleValidatorFileSelect = React.useCallback(
     (file: File) => {
-      if (!selectedResponse?.indicator_id || !selectedUploadFieldId) {
+      if (selectedIndicatorId <= 0 || !selectedUploadFieldId) {
         toast.error("Select a target upload field first");
         return;
       }
 
       setSelectedUploadFile(file);
       validatorUploadMutation.mutate({
-        assessmentId: Number(selectedResponse.assessment_id),
-        indicatorId: Number(selectedResponse.indicator_id),
+        assessmentId,
+        indicatorId: selectedIndicatorId,
         data: {
           file,
           field_id: selectedUploadFieldId,
@@ -944,7 +945,13 @@ export function MiddleMovFilesPanel({
         },
       });
     },
-    [selectedResponse, selectedUploadFieldId, selectedUploadField, validatorUploadMutation]
+    [
+      assessmentId,
+      selectedIndicatorId,
+      selectedUploadFieldId,
+      selectedUploadField,
+      validatorUploadMutation,
+    ]
   );
 
   return (
