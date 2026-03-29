@@ -1062,13 +1062,30 @@ class AssessorService:
                 "assessment_id": assessment_id,
             }
 
+        is_validator = assessor.role == UserRole.VALIDATOR
+
+        if is_validator:
+            validator_can_access = (
+                assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION
+                or (
+                    assessment.status == AssessmentStatus.REWORK
+                    and assessment.is_calibration_rework is True
+                )
+            )
+            if not validator_can_access:
+                return {
+                    "success": False,
+                    "message": "Validators can only access assessments in final validation or calibration re-review",
+                    "assessment_id": assessment_id,
+                }
+
         # Verify the user has permission to view this assessment
         # After workflow restructuring:
         # - VALIDATOR (system-wide): Has no assessor_area_id, can view all assessments
         # - ASSESSOR (area-specific): Has assessor_area_id, can only view assessments with indicators in their area
         has_permission = False
 
-        if assessor.assessor_area_id is None:
+        if is_validator:
             # VALIDATOR: No area assignment means system-wide access
             has_permission = True
         elif assessment.responses:

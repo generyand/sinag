@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import HTTPException, status  # type: ignore[reportMissingImports]
 from sqlalchemy import and_, func  # type: ignore[reportMissingImports]
 from sqlalchemy.orm import Session, joinedload, selectinload  # type: ignore[reportMissingImports]
+from sqlalchemy.orm.attributes import flag_modified  # type: ignore[reportMissingImports]
 
 from app.db.enums import AssessmentStatus, MOVStatus, UserRole
 from app.db.models import (
@@ -20,6 +21,7 @@ from app.db.models import (
     MOVFile,
     User,
 )
+from app.db.models.assessment import TOTAL_GOVERNANCE_AREAS
 from app.schemas.assessment import (
     AssessmentCreate,
     AssessmentDashboardResponse,
@@ -72,6 +74,34 @@ class AssessmentService:
     def __init__(self) -> None:
         """Initialize the AssessmentService with logging."""
         self.logger = logging.getLogger(__name__)
+
+    def _select_legacy_indicator_set(
+        self,
+        indicators_raw: list[dict[str, Any]],
+        response_indicator_ids: set[int],
+    ) -> list[dict[str, Any]]:
+        """Keep only response-backed legacy indicators and their ancestors.
+
+        Older submitted assessments may not have indicator snapshots. When newer
+        live indicators are introduced later, the BLGU should still see only the
+        indicator set that belongs to the submitted assessment record.
+        """
+        if not indicators_raw or not response_indicator_ids:
+            return indicators_raw
+
+        indicators_by_id = {indicator["id"]: indicator for indicator in indicators_raw}
+        allowed_ids = set(response_indicator_ids)
+
+        for indicator_id in list(response_indicator_ids):
+            current = indicators_by_id.get(indicator_id)
+            while current and current.get("parent_id") is not None:
+                parent_id = current["parent_id"]
+                if parent_id in allowed_ids:
+                    break
+                allowed_ids.add(parent_id)
+                current = indicators_by_id.get(parent_id)
+
+        return [indicator for indicator in indicators_raw if indicator["id"] in allowed_ids]
 
     # ----- Serialization helpers -----
     def _serialize_response_obj(self, response: AssessmentResponse | None) -> dict[str, Any] | None:
@@ -359,19 +389,40 @@ class AssessmentService:
                     }
                 )
 
+            has_indicator_snapshots = indicator_snapshot_service.has_snapshots(db, assessment_id)
+
             # QUERY 2: Get static data - governance areas and indicators
             step_start = time.time()
-            q2 = text("""
-                SELECT
-                    ga.id as ga_id, ga.name as ga_name, ga.area_type,
-                    i.id as ind_id, i.name as ind_name, i.description,
-                    i.indicator_code, i.form_schema, i.governance_area_id,
-                    i.parent_id, i.sort_order, i.is_profiling_only
-                FROM governance_areas ga
-                LEFT JOIN indicators i ON i.governance_area_id = ga.id
-                ORDER BY ga.id, i.sort_order, i.indicator_code
-            """)
-            result2 = db.execute(q2)
+            if has_indicator_snapshots:
+                q2 = text("""
+                    SELECT
+                        ga.id as ga_id, ga.name as ga_name, ga.area_type,
+                        ais.indicator_id as ind_id, ais.name as ind_name, ais.description,
+                        ais.indicator_code, ais.form_schema_resolved as form_schema,
+                        ais.governance_area_id, ais.parent_id, i.sort_order, ais.is_profiling_only
+                    FROM governance_areas ga
+                    LEFT JOIN assessment_indicator_snapshots ais
+                        ON ais.governance_area_id = ga.id
+                        AND ais.assessment_id = :assessment_id
+                    LEFT JOIN indicators i ON i.id = ais.indicator_id
+                    ORDER BY ga.id, i.sort_order, ais.indicator_code
+                """)
+                result2 = db.execute(q2, {"assessment_id": assessment_id})
+            else:
+                q2 = text("""
+                    SELECT
+                        ga.id as ga_id, ga.name as ga_name, ga.area_type,
+                        i.id as ind_id, i.name as ind_name, i.description,
+                        i.indicator_code, i.form_schema, i.governance_area_id,
+                        i.parent_id, i.sort_order, i.is_profiling_only
+                    FROM governance_areas ga
+                    LEFT JOIN indicators i ON i.governance_area_id = ga.id
+                        AND i.is_active = true
+                        AND (i.effective_from_year IS NULL OR i.effective_from_year <= :assessment_year)
+                        AND (i.effective_to_year IS NULL OR i.effective_to_year >= :assessment_year)
+                    ORDER BY ga.id, i.sort_order, i.indicator_code
+                """)
+                result2 = db.execute(q2, {"assessment_year": assessment_info["assessment_year"]})
             rows2 = result2.fetchall()
             logger.info(f"[PERF] Query 2 (static data): {time.time() - step_start:.2f}s")
 
@@ -610,6 +661,18 @@ class AssessmentService:
                 logger.info(
                     f"[AUTO-SYNC] Created {len(missing_response_indicator_ids)} responses in "
                     f"{time.time() - step_start:.2f}s"
+                )
+
+            # Legacy submitted assessments created before snapshot support should
+            # not start rendering newer live indicators that were added later.
+            if (
+                not has_indicator_snapshots
+                and assessment_info.get("submitted_at") is not None
+                and responses_by_indicator
+            ):
+                indicators_raw = self._select_legacy_indicator_set(
+                    indicators_raw=indicators_raw,
+                    response_indicator_ids=set(responses_by_indicator.keys()),
                 )
 
             # Merge response data into indicators
@@ -1977,6 +2040,56 @@ class AssessmentService:
             return AssessmentStatus.AWAITING_MLGOO_APPROVAL
         return AssessmentStatus.SUBMITTED_FOR_REVIEW
 
+    def _restore_area_statuses_after_mlgoo_reopen_resubmission(
+        self, assessment: Assessment, submitted_at: datetime
+    ) -> None:
+        """Restore per-area workflow state when a reopened assessment is resubmitted."""
+        area_submission_status = assessment.area_submission_status or {}
+        restored_status = self.get_reopened_submission_target_status(assessment)
+
+        if restored_status == AssessmentStatus.SUBMITTED_FOR_REVIEW:
+            target_area_status = "submitted"
+            approval_value = False
+        else:
+            target_area_status = "approved"
+            approval_value = True
+
+        restored_area_status: dict[str, dict[str, Any]] = {}
+        for area_id in range(1, TOTAL_GOVERNANCE_AREAS + 1):
+            area_key = str(area_id)
+            existing_area_data = area_submission_status.get(area_key, {})
+            preserved_area_data = (
+                {
+                    key: value
+                    for key, value in existing_area_data.items()
+                    if key in {"rework_used", "calibration_used"}
+                }
+                if isinstance(existing_area_data, dict)
+                else {}
+            )
+            restored_area_status[area_key] = {
+                "status": target_area_status,
+                "submitted_at": submitted_at.isoformat(),
+                **preserved_area_data,
+            }
+
+        assessment.area_submission_status = restored_area_status
+        assessment.area_assessor_approved = {
+            str(area_id): approval_value for area_id in range(1, TOTAL_GOVERNANCE_AREAS + 1)
+        }
+
+        flag_modified(assessment, "area_submission_status")
+        flag_modified(assessment, "area_assessor_approved")
+
+    def apply_mlgoo_reopen_resubmission_transition(
+        self, assessment: Assessment, submitted_at: datetime
+    ) -> None:
+        """Apply the shared workflow transition for MLGOO reopen resubmissions."""
+        assessment.status = self.get_reopened_submission_target_status(assessment)
+        assessment.submitted_at = submitted_at
+        assessment.rework_submitted_at = submitted_at
+        self._restore_area_statuses_after_mlgoo_reopen_resubmission(assessment, submitted_at)
+
     def submit_assessment(self, db: Session, assessment_id: int) -> AssessmentSubmissionValidation:
         """
         Submit an assessment for review with preliminary compliance check.
@@ -2099,19 +2212,18 @@ class AssessmentService:
 
             # Update assessment status
             # MLGOO reopen routes back to the source review stage.
+            submission_time = datetime.utcnow()
+
             if is_mlgoo_reopen_resubmission:
-                assessment.status = self.get_reopened_submission_target_status(assessment)
+                self.apply_mlgoo_reopen_resubmission_transition(assessment, submission_time)
             # MLGOO recalibration resubmission goes to Validator for re-review
             elif is_mlgoo_recalibration_resubmission:
                 assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
             else:
                 assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
-            assessment.submitted_at = datetime.utcnow()
+                assessment.submitted_at = submission_time
 
             # Re-opened submissions are workflow recovery, not rework/calibration cycles.
-            if is_mlgoo_reopen_resubmission:
-                assessment.rework_submitted_at = datetime.utcnow()
-
             is_resubmission = (
                 is_rework_resubmission
                 or is_calibration_resubmission

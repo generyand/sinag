@@ -1610,9 +1610,7 @@ def resubmit_assessment(
 
     # MLGOO reopen routes back to the source review stage.
     if is_mlgoo_reopen_resubmission:
-        assessment.status = assessment_service.get_reopened_submission_target_status(assessment)
-        assessment.submitted_at = datetime.utcnow()
-        assessment.rework_submitted_at = datetime.utcnow()
+        assessment_service.apply_mlgoo_reopen_resubmission_transition(assessment, datetime.utcnow())
     if is_mlgoo_recalibration:
         assessment.status = AssessmentStatus.AWAITING_MLGOO_APPROVAL
         # Clear MLGOO recalibration active flag after resubmission

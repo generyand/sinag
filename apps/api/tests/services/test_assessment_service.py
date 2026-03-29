@@ -297,6 +297,184 @@ def test_submit_assessment_routes_reopened_by_mlgoo_by_source_status(
     assert assessment.submitted_at is not None
 
 
+def test_submit_assessment_updates_area_statuses_after_mlgoo_reopen_resubmission(
+    db_session,
+    blgu_user,
+    active_assessment_year,
+    monkeypatch,
+):
+    assessment = Assessment(
+        blgu_user_id=blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.REOPENED_BY_MLGOO,
+        reopen_from_status=AssessmentStatus.SUBMITTED_FOR_REVIEW,
+        area_submission_status={str(area_id): {"status": "draft"} for area_id in range(1, 7)},
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    monkeypatch.setattr(
+        "app.services.submission_validation_service.submission_validation_service.validate_submission",
+        lambda *args, **kwargs: SimpleNamespace(
+            is_valid=True,
+            error_message=None,
+            incomplete_indicators=[],
+            missing_movs=[],
+        ),
+    )
+    monkeypatch.setattr(
+        "app.services.year_config_service.indicator_snapshot_service.create_snapshot_for_assessment",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_new_submission_notification.delay",
+        _noop,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_rework_resubmission_notification.delay",
+        _noop,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_calibration_resubmission_notification.delay",
+        _noop,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_mlgoo_recalibration_resubmission_notification.delay",
+        _noop,
+        raising=False,
+    )
+
+    result = assessment_service.submit_assessment(db_session, assessment.id)
+
+    db_session.refresh(assessment)
+
+    assert result.is_valid is True
+    assert assessment.status == AssessmentStatus.SUBMITTED_FOR_REVIEW
+    assert assessment.area_submission_status is not None
+    for area_id in range(1, 7):
+        area_payload = assessment.area_submission_status[str(area_id)]
+        assert area_payload["status"] == "submitted"
+        assert area_payload["submitted_at"] is not None
+    assert assessment.area_assessor_approved == {str(area_id): False for area_id in range(1, 7)}
+
+
+@pytest.mark.parametrize(
+    "reopen_from_status",
+    [
+        AssessmentStatus.AWAITING_FINAL_VALIDATION,
+        AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+    ],
+)
+def test_submit_assessment_restores_approved_area_state_for_later_stage_mlgoo_reopen(
+    db_session,
+    blgu_user,
+    active_assessment_year,
+    monkeypatch,
+    reopen_from_status,
+):
+    assessment = Assessment(
+        blgu_user_id=blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.REOPENED_BY_MLGOO,
+        reopen_from_status=reopen_from_status,
+        area_submission_status={
+            str(area_id): {
+                "status": "draft",
+                "rework_used": area_id in {2, 5},
+                "calibration_used": area_id in {3},
+            }
+            for area_id in range(1, 7)
+        },
+        area_assessor_approved={str(area_id): False for area_id in range(1, 7)},
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    monkeypatch.setattr(
+        "app.services.submission_validation_service.submission_validation_service.validate_submission",
+        lambda *args, **kwargs: SimpleNamespace(
+            is_valid=True,
+            error_message=None,
+            incomplete_indicators=[],
+            missing_movs=[],
+        ),
+    )
+    monkeypatch.setattr(
+        "app.services.year_config_service.indicator_snapshot_service.create_snapshot_for_assessment",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_new_submission_notification.delay",
+        _noop,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_rework_resubmission_notification.delay",
+        _noop,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_calibration_resubmission_notification.delay",
+        _noop,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "app.workers.notifications.send_mlgoo_recalibration_resubmission_notification.delay",
+        _noop,
+        raising=False,
+    )
+
+    result = assessment_service.submit_assessment(db_session, assessment.id)
+
+    db_session.refresh(assessment)
+
+    assert result.is_valid is True
+    assert assessment.status == reopen_from_status
+    assert assessment.area_submission_status is not None
+    for area_id in range(1, 7):
+        area_payload = assessment.area_submission_status[str(area_id)]
+        assert area_payload["status"] == "approved"
+        assert area_payload["submitted_at"] is not None
+        assert area_payload["rework_used"] is (area_id in {2, 5})
+        assert area_payload["calibration_used"] is (area_id in {3})
+    assert assessment.area_assessor_approved == {str(area_id): True for area_id in range(1, 7)}
+
+
+def test_select_legacy_indicator_set_keeps_response_backed_indicators_and_ancestors_only():
+    indicators_raw = [
+        {
+            "id": 10,
+            "indicator_code": "4.1",
+            "parent_id": None,
+            "governance_area_id": 4,
+        },
+        {
+            "id": 11,
+            "indicator_code": "4.1.2",
+            "parent_id": 10,
+            "governance_area_id": 4,
+        },
+        {
+            "id": 12,
+            "indicator_code": "4.1.1",
+            "parent_id": 10,
+            "governance_area_id": 4,
+        },
+    ]
+
+    filtered = assessment_service._select_legacy_indicator_set(
+        indicators_raw=indicators_raw,
+        response_indicator_ids={11},
+    )
+
+    assert [indicator["indicator_code"] for indicator in filtered] == ["4.1", "4.1.2"]
+
+
 def test_calibration_resubmission_preserves_non_calibrated_validator_state(
     db_session,
     blgu_user,
