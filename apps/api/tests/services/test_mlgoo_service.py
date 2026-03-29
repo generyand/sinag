@@ -139,6 +139,79 @@ def test_reopen_submission_rejects_forbidden_source_state(
         )
 
 
+def test_reopen_submission_resets_area_submission_state(
+    db_session,
+    mlgoo_user: User,
+    assessment: Assessment,
+):
+    assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
+    assessment.area_submission_status = {
+        "1": {
+            "status": "submitted",
+            "submitted_at": datetime.utcnow().isoformat(),
+            "assessor_id": 101,
+        },
+        "2": {
+            "status": "approved",
+            "submitted_at": datetime.utcnow().isoformat(),
+            "approved_at": datetime.utcnow().isoformat(),
+            "assessor_id": 102,
+        },
+        "3": {
+            "status": "in_review",
+            "submitted_at": datetime.utcnow().isoformat(),
+            "assessor_id": 103,
+        },
+        "4": {
+            "status": "submitted",
+            "submitted_at": datetime.utcnow().isoformat(),
+        },
+        "5": {
+            "status": "submitted",
+            "submitted_at": datetime.utcnow().isoformat(),
+        },
+        "6": {
+            "status": "submitted",
+            "submitted_at": datetime.utcnow().isoformat(),
+        },
+    }
+    assessment.area_assessor_approved = {
+        "1": False,
+        "2": True,
+        "3": False,
+        "4": False,
+        "5": False,
+        "6": False,
+    }
+    db_session.commit()
+
+    mlgoo_service.reopen_submission(
+        db_session,
+        assessment_id=assessment.id,
+        mlgoo_user=mlgoo_user,
+        reason="Needs barangay edits before review resumes",
+    )
+
+    db_session.refresh(assessment)
+
+    assert assessment.status == AssessmentStatus.REOPENED_BY_MLGOO
+    assert assessment.area_assessor_approved == {
+        "1": False,
+        "2": False,
+        "3": False,
+        "4": False,
+        "5": False,
+        "6": False,
+    }
+    assert assessment.area_submission_status is not None
+    assert set(assessment.area_submission_status.keys()) == {"1", "2", "3", "4", "5", "6"}
+    for area_payload in assessment.area_submission_status.values():
+        assert area_payload["status"] == "draft"
+        assert "submitted_at" not in area_payload
+        assert "approved_at" not in area_payload
+        assert "assessor_id" not in area_payload
+
+
 def test_reopen_submission_rejects_effective_deadline_lock(
     db_session,
     mlgoo_user: User,

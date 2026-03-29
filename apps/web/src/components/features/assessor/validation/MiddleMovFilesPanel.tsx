@@ -23,6 +23,7 @@ import type { AssessmentDetailsResponse, MOVFileResponse } from "@sinag/shared";
 import {
   getGetAssessorAssessmentsAssessmentIdQueryKey,
   getGetAssessorMovsMovFileIdFeedbackQueryKey,
+  useDeleteMovsFilesFileId,
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload,
   useGetAssessorMovsMovFileIdFeedback,
   usePatchAssessorMovsMovFileIdFeedback,
@@ -313,6 +314,8 @@ function ReviewFileSection({
   movAnnotations,
   onPreview,
   onDownload,
+  canDelete = false,
+  onDelete,
 }: {
   title: string;
   files: MOVFileResponse[];
@@ -325,6 +328,8 @@ function ReviewFileSection({
   movAnnotations: any[];
   onPreview: (file: MOVFileResponse) => void;
   onDownload: (file: MOVFileResponse) => void;
+  canDelete?: boolean | ((file: MOVFileResponse) => boolean);
+  onDelete?: (fileId: number) => void;
 }) {
   const sortedFiles = React.useMemo(() => sortFilesByUploadedAtDesc(files), [files]);
   const visibleFiles = collapseHistory ? sortedFiles.slice(0, 1) : sortedFiles;
@@ -354,7 +359,8 @@ function ReviewFileSection({
         files={visibleFiles}
         onPreview={onPreview}
         onDownload={onDownload}
-        canDelete={false}
+        canDelete={canDelete}
+        onDelete={onDelete}
         loading={false}
         emptyMessage=""
         movAnnotations={movAnnotations}
@@ -389,7 +395,8 @@ function ReviewFileSection({
                 files={archivedFiles}
                 onPreview={onPreview}
                 onDownload={onDownload}
-                canDelete={false}
+                canDelete={canDelete}
+                onDelete={onDelete}
                 loading={false}
                 emptyMessage=""
                 movAnnotations={movAnnotations}
@@ -478,6 +485,22 @@ export function MiddleMovFilesPanel({
       },
     },
   });
+  const deleteValidatorMovMutation = useDeleteMovsFilesFileId({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Validator file removed");
+        if (assessmentId > 0) {
+          queryClient.invalidateQueries({
+            queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+            refetchType: "active",
+          });
+        }
+      },
+      onError: (error: any) => {
+        toast.error(error?.message || "Failed to remove validator file");
+      },
+    },
+  });
 
   // Determine the appropriate timestamp for file separation based on indicator context
   // - If indicator was calibrated (validation_status is null AND calibration happened), use calibrationRequestedAt
@@ -521,13 +544,13 @@ export function MiddleMovFilesPanel({
 
       return {
         id: parseInt(String(mov.id), 10),
-        assessment_id: selectedResponse.assessment_id,
-        indicator_id: selectedResponse.indicator_id,
+        assessment_id: Number(selectedResponse.assessment_id ?? assessmentId),
+        indicator_id: Number(selectedResponse.indicator_id ?? indicator?.id ?? selectedIndicatorId),
         file_name: mov.original_filename || mov.filename || "Unknown file",
         file_url: mov.storage_path || "", // Storage path is the URL to the file
         file_type: mov.content_type || "application/octet-stream",
         file_size: mov.file_size || 0,
-        uploaded_by: 0, // Not provided by backend
+        uploaded_by: Number(mov.uploaded_by ?? 0),
         uploaded_at: uploadedAt,
         deleted_at: null,
         field_id: mov.field_id || null,
@@ -541,7 +564,7 @@ export function MiddleMovFilesPanel({
         upload_origin: mov.upload_origin || "unknown",
       };
     });
-  }, [selectedResponse, effectiveTimestamp]);
+  }, [assessmentId, effectiveTimestamp, indicator?.id, selectedIndicatorId, selectedResponse]);
 
   const hasReviewerNotes = React.useCallback(
     (file: AnyRecord) =>
@@ -928,6 +951,26 @@ export function MiddleMovFilesPanel({
     assessmentStatus === "SUBMITTED" &&
     selectedIndicatorId > 0 &&
     uploadFieldOptions.length > 0;
+
+  const canDeleteValidatorFile = React.useCallback(
+    (file: MOVFileResponse) =>
+      isValidator &&
+      assessmentStatus === "SUBMITTED" &&
+      file.upload_origin === "validator" &&
+      Number(file.uploaded_by ?? 0) === Number(user?.id ?? 0),
+    [assessmentStatus, isValidator, user?.id]
+  );
+
+  const handleDeleteValidatorFile = React.useCallback(
+    (fileId: number) => {
+      if (!window.confirm("Remove this validator-uploaded file?")) {
+        return;
+      }
+
+      deleteValidatorMovMutation.mutate({ fileId });
+    },
+    [deleteValidatorMovMutation]
+  );
   const selectedUploadField = uploadFieldOptions.find(
     (option) => option.fieldId === selectedUploadFieldId
   );
@@ -1138,6 +1181,7 @@ export function MiddleMovFilesPanel({
               <ReviewFileSection
                 title="Validator Uploads"
                 files={validatorFiles}
+                collapseHistory={false}
                 historyLabel="View validator upload history"
                 titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
                 badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
@@ -1146,6 +1190,8 @@ export function MiddleMovFilesPanel({
                 movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
+                canDelete={canDeleteValidatorFile}
+                onDelete={handleDeleteValidatorFile}
               />
             )}
 
@@ -1190,6 +1236,8 @@ export function MiddleMovFilesPanel({
                 movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
+                canDelete={canDeleteValidatorFile}
+                onDelete={handleDeleteValidatorFile}
               />
             )}
             {normalPreviousFiles.length > 0 && (

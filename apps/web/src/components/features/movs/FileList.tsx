@@ -50,7 +50,7 @@ interface FileListProps {
   onPreview?: (file: MOVFileResponse) => void;
   onDownload?: (file: MOVFileResponse) => void;
   onRotate?: (fileId: number) => void;
-  canDelete?: boolean;
+  canDelete?: boolean | ((file: MOVFileResponse) => boolean);
   canRotate?: boolean;
   loading?: boolean;
   emptyMessage?: string;
@@ -221,6 +221,9 @@ export function FileList({
   const getAnnotationsForFile = (fileId: number) => {
     return movAnnotations.filter((ann: any) => ann.mov_file_id === fileId);
   };
+
+  const canDeleteFile = (file: MOVFileResponse) =>
+    typeof canDelete === "function" ? canDelete(file) : canDelete;
 
   // Helper function to check if file is flagged by MLGOO and get comment
   const getMlgooFlaggedInfo = (fileId: number) => {
@@ -583,7 +586,7 @@ export function FileList({
                         <Download className="h-4 w-4" />
                       </Button>
                     )}
-                    {canDelete && onDelete && (
+                    {canDeleteFile(file) && onDelete && (
                       <Button
                         type="button"
                         variant="ghost"

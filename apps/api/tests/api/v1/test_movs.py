@@ -1049,11 +1049,37 @@ class TestDeleteMOVFile:
         return user
 
     @pytest.fixture
-    def draft_assessment(self, db_session, blgu_user):
+    def validator_user(self, db_session):
+        user = User(
+            email="validator-delete@test.com",
+            name="Validator Delete User",
+            hashed_password="hashed",
+            role=UserRole.VALIDATOR,
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
+
+    @pytest.fixture
+    def assessment_year(self, db_session):
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+        )
+        db_session.add(assessment_year)
+        db_session.commit()
+        db_session.refresh(assessment_year)
+        return assessment_year
+
+    @pytest.fixture
+    def draft_assessment(self, db_session, blgu_user, assessment_year):
         """Fixture providing a draft assessment."""
         assessment = Assessment(
             blgu_user_id=blgu_user.id,
             status=AssessmentStatus.DRAFT,
+            assessment_year=assessment_year.year,
         )
         db_session.add(assessment)
         db_session.commit()
@@ -1061,11 +1087,12 @@ class TestDeleteMOVFile:
         return assessment
 
     @pytest.fixture
-    def submitted_assessment(self, db_session, blgu_user):
+    def submitted_assessment(self, db_session, blgu_user, assessment_year):
         """Fixture providing a submitted assessment."""
         assessment = Assessment(
             blgu_user_id=blgu_user.id,
-            status=AssessmentStatus.SUBMITTED_FOR_REVIEW,
+            status=AssessmentStatus.SUBMITTED,
+            assessment_year=assessment_year.year,
         )
         db_session.add(assessment)
         db_session.commit()
@@ -1238,3 +1265,58 @@ class TestDeleteMOVFile:
         assert response.status_code == status.HTTP_403_FORBIDDEN
         data = response.json()
         assert "already been deleted" in data["error"]
+
+    def test_validator_can_delete_own_validator_uploaded_file_in_submitted_assessment(
+        self, client, db_session, submitted_assessment, validator_user, indicator
+    ):
+        mov_file = MOVFile(
+            assessment_id=submitted_assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=validator_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_VALIDATOR,
+            file_name="validator_file.pdf",
+            file_url="https://storage.example.com/validator_file.pdf",
+            file_type="application/pdf",
+            file_size=1024,
+            uploaded_at=datetime.utcnow(),
+        )
+        db_session.add(mov_file)
+        db_session.commit()
+        db_session.refresh(mov_file)
+
+        with patch("app.services.storage_service._get_supabase_client") as mock_supabase:
+            mock_supabase.return_value.storage.from_().remove.return_value = {}
+            use_test_db_session(client, db_session)
+            authenticate_user(client, validator_user)
+            response = client.delete(f"/api/v1/movs/files/{mov_file.id}")
+
+        assert response.status_code == status.HTTP_200_OK
+        db_session.refresh(mov_file)
+        assert mov_file.deleted_at is not None
+
+    def test_validator_cannot_delete_barangay_uploaded_file_in_submitted_assessment(
+        self, client, db_session, submitted_assessment, validator_user, blgu_user, indicator
+    ):
+        mov_file = MOVFile(
+            assessment_id=submitted_assessment.id,
+            indicator_id=indicator.id,
+            uploaded_by=blgu_user.id,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            file_name="barangay_file.pdf",
+            file_url="https://storage.example.com/barangay_file.pdf",
+            file_type="application/pdf",
+            file_size=1024,
+            uploaded_at=datetime.utcnow(),
+        )
+        db_session.add(mov_file)
+        db_session.commit()
+        db_session.refresh(mov_file)
+
+        use_test_db_session(client, db_session)
+        authenticate_user(client, validator_user)
+        response = client.delete(f"/api/v1/movs/files/{mov_file.id}")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert "You can only delete files you uploaded" in response.json()["error"]
+        db_session.refresh(mov_file)
+        assert mov_file.deleted_at is None

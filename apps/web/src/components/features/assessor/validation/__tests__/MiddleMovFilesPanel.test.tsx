@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { MiddleMovFilesPanel } from "../MiddleMovFilesPanel";
 
 const mockUploadMutate = vi.fn();
+const mockDeleteMutate = vi.fn();
 
 vi.mock("@sinag/shared", () => ({
   getGetAssessorAssessmentsAssessmentIdQueryKey: vi.fn((assessmentId: number) => [
@@ -22,6 +23,10 @@ vi.mock("@sinag/shared", () => ({
   })),
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload: vi.fn(() => ({
     mutate: mockUploadMutate,
+    isPending: false,
+  })),
+  useDeleteMovsFilesFileId: vi.fn(() => ({
+    mutate: mockDeleteMutate,
     isPending: false,
   })),
   usePatchAssessorMovsMovFileIdFeedback: vi.fn(() => ({
@@ -51,7 +56,7 @@ vi.mock("@/hooks/useMovAnnotations", () => ({
 
 vi.mock("@/store/useAuthStore", () => ({
   useAuthStore: vi.fn(() => ({
-    user: { role: "ASSESSOR" },
+    user: { id: 99, role: "ASSESSOR" },
   })),
 }));
 
@@ -63,12 +68,29 @@ vi.mock("react-hot-toast", () => ({
 }));
 
 vi.mock("@/components/features/movs/FileList", () => ({
-  FileList: ({ files, onPreview }: { files: Array<any>; onPreview: (file: any) => void }) => (
+  FileList: ({
+    files,
+    onPreview,
+    onDelete,
+    canDelete,
+  }: {
+    files: Array<any>;
+    onPreview: (file: any) => void;
+    onDelete?: (fileId: number) => void;
+    canDelete?: boolean | ((file: any) => boolean);
+  }) => (
     <div>
       {files.map((file) => (
-        <button key={file.id} type="button" onClick={() => onPreview(file)}>
-          Preview {file.file_name}
-        </button>
+        <div key={file.id}>
+          <button type="button" onClick={() => onPreview(file)}>
+            Preview {file.file_name}
+          </button>
+          {(typeof canDelete === "function" ? canDelete(file) : canDelete) ? (
+            <button type="button" onClick={() => onDelete?.(file.id)}>
+              Delete {file.file_name}
+            </button>
+          ) : null}
+        </div>
       ))}
     </div>
   ),
@@ -188,6 +210,8 @@ describe("MiddleMovFilesPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUploadMutate.mockReset();
+    mockDeleteMutate.mockReset();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("opens the shared image preview controls from the review panel", async () => {
@@ -238,7 +262,7 @@ describe("MiddleMovFilesPanel", () => {
     const user = userEvent.setup();
 
     vi.mocked(useAuthStore).mockReturnValue({
-      user: { role: "VALIDATOR" },
+      user: { id: 42, role: "VALIDATOR" },
     });
 
     const validatorAssessment = {
@@ -290,7 +314,7 @@ describe("MiddleMovFilesPanel", () => {
     const user = userEvent.setup();
 
     vi.mocked(useAuthStore).mockReturnValue({
-      user: { role: "VALIDATOR" },
+      user: { id: 42, role: "VALIDATOR" },
     });
 
     render(wrap(<MiddleMovFilesPanel assessment={assessment as any} expandedId={101} />));
@@ -312,5 +336,79 @@ describe("MiddleMovFilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /view barangay upload history/i })
     ).not.toBeInTheDocument();
+  });
+
+  it("lets validators remove only their own validator-uploaded files", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 42, role: "VALIDATOR" },
+    });
+
+    const validatorFilesAssessment = {
+      assessment: {
+        id: 2,
+        status: "SUBMITTED",
+        responses: [
+          {
+            id: 101,
+            assessment_id: 2,
+            indicator_id: 1,
+            indicator: {
+              id: 1,
+              name: "Indicator A",
+              form_schema: { fields: [] },
+            },
+            movs: [
+              {
+                id: 11,
+                original_filename: "validator-own.pdf",
+                filename: "validator-own.pdf",
+                content_type: "application/pdf",
+                file_size: 1024,
+                uploaded_at: "2026-03-20T00:00:00.000Z",
+                upload_origin: "validator",
+                uploaded_by: 42,
+              },
+              {
+                id: 12,
+                original_filename: "validator-other.pdf",
+                filename: "validator-other.pdf",
+                content_type: "application/pdf",
+                file_size: 1024,
+                uploaded_at: "2026-03-19T00:00:00.000Z",
+                upload_origin: "validator",
+                uploaded_by: 77,
+              },
+              {
+                id: 13,
+                original_filename: "barangay.pdf",
+                filename: "barangay.pdf",
+                content_type: "application/pdf",
+                file_size: 1024,
+                uploaded_at: "2026-03-18T00:00:00.000Z",
+                upload_origin: "blgu",
+                uploaded_by: 5,
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      wrap(<MiddleMovFilesPanel assessment={validatorFilesAssessment as any} expandedId={101} />)
+    );
+
+    expect(screen.getByRole("button", { name: /delete validator-own\.pdf/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /delete validator-other\.pdf/i })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /delete barangay\.pdf/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /delete validator-own\.pdf/i }));
+
+    expect(window.confirm).toHaveBeenCalledWith("Remove this validator-uploaded file?");
+    expect(mockDeleteMutate).toHaveBeenCalledWith({ fileId: 11 });
   });
 });
