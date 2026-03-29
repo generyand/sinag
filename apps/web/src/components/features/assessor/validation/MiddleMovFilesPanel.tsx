@@ -305,6 +305,7 @@ function ReviewFileSection({
   title,
   files,
   historyLabel = "View file history",
+  collapseHistory = true,
   badgeClassName,
   titleClassName,
   containerClassName,
@@ -316,6 +317,7 @@ function ReviewFileSection({
   title: string;
   files: MOVFileResponse[];
   historyLabel?: string;
+  collapseHistory?: boolean;
   badgeClassName?: string;
   titleClassName?: string;
   containerClassName: string;
@@ -325,8 +327,8 @@ function ReviewFileSection({
   onDownload: (file: MOVFileResponse) => void;
 }) {
   const sortedFiles = React.useMemo(() => sortFilesByUploadedAtDesc(files), [files]);
-  const latestFile = sortedFiles.slice(0, 1);
-  const archivedFiles = sortedFiles.slice(1);
+  const visibleFiles = collapseHistory ? sortedFiles.slice(0, 1) : sortedFiles;
+  const archivedFiles = collapseHistory ? sortedFiles.slice(1) : [];
   const [showHistory, setShowHistory] = React.useState(false);
 
   React.useEffect(() => {
@@ -349,7 +351,7 @@ function ReviewFileSection({
       </div>
 
       <FileList
-        files={latestFile}
+        files={visibleFiles}
         onPreview={onPreview}
         onDownload={onDownload}
         canDelete={false}
@@ -435,6 +437,7 @@ export function MiddleMovFilesPanel({
   );
   const [selectedUploadFieldId, setSelectedUploadFieldId] = React.useState<string | null>(null);
   const [selectedUploadFile, setSelectedUploadFile] = React.useState<File | null>(null);
+  const [isUploadPanelOpen, setIsUploadPanelOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (uploadFieldOptions.length === 1) {
@@ -454,12 +457,14 @@ export function MiddleMovFilesPanel({
 
   React.useEffect(() => {
     setSelectedUploadFile(null);
+    setIsUploadPanelOpen(false);
   }, [expandedId]);
 
   const validatorUploadMutation = usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload({
     mutation: {
       onSuccess: () => {
         setSelectedUploadFile(null);
+        setIsUploadPanelOpen(false);
         toast.success("Validator file uploaded");
         if (assessmentId > 0) {
           queryClient.invalidateQueries({
@@ -975,45 +980,84 @@ export function MiddleMovFilesPanel({
       <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950">
         {selectedResponse && isValidator && (
           <div className="mb-4 rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 p-3 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
-              <Upload className="h-3.5 w-3.5" />
-              Upload on Behalf of Barangay
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+                  <Upload className="h-3.5 w-3.5" />
+                  Upload on Behalf of Barangay
+                </div>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Optional. Add supporting evidence for this indicator only when needed.
+                </p>
+              </div>
+              {canValidatorUpload ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 text-xs"
+                  onClick={() => setIsUploadPanelOpen((current) => !current)}
+                >
+                  {isUploadPanelOpen ? "Hide" : "Add file"}
+                </Button>
+              ) : null}
             </div>
 
-            {uploadFieldOptions.length > 1 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs text-slate-600 dark:text-slate-400">Target field</Label>
-                <Select
-                  value={selectedUploadFieldId ?? undefined}
-                  onValueChange={setSelectedUploadFieldId}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Select file field" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {uploadFieldOptions.map((option) => (
-                      <SelectItem key={option.fieldId} value={option.fieldId}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {canValidatorUpload && isUploadPanelOpen ? (
+              <div className="space-y-3 rounded-sm border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/40 p-3">
+                {uploadFieldOptions.length > 1 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-slate-600 dark:text-slate-400">
+                      Target field
+                    </Label>
+                    <Select
+                      value={selectedUploadFieldId ?? undefined}
+                      onValueChange={setSelectedUploadFieldId}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select file field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {uploadFieldOptions.map((option) => (
+                          <SelectItem key={option.fieldId} value={option.fieldId}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-            {canValidatorUpload ? (
-              <FileUpload
-                onFileSelect={handleValidatorFileSelect}
-                onFileRemove={() => setSelectedUploadFile(null)}
-                selectedFile={selectedUploadFile}
-                disabled={!selectedUploadFieldId || validatorUploadMutation.isPending}
-                className="space-y-2"
-              />
+                <FileUpload
+                  onFileSelect={handleValidatorFileSelect}
+                  onFileRemove={() => setSelectedUploadFile(null)}
+                  selectedFile={selectedUploadFile}
+                  disabled={!selectedUploadFieldId || validatorUploadMutation.isPending}
+                  className="space-y-2"
+                />
+
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      setSelectedUploadFile(null);
+                      setIsUploadPanelOpen(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {assessmentStatus !== "SUBMITTED"
                   ? "Validator uploads are available only while the assessment is submitted and not active in the BLGU workspace."
-                  : "This indicator has no file upload field to attach validator evidence to."}
+                  : uploadFieldOptions.length === 0
+                    ? "This indicator has no file upload field to attach validator evidence to."
+                    : "Expand this action only when you need to add supporting evidence on behalf of the barangay."}
               </p>
             )}
           </div>
@@ -1123,6 +1167,7 @@ export function MiddleMovFilesPanel({
             <ReviewFileSection
               title="Barangay Uploads"
               files={barangayFiles}
+              collapseHistory={false}
               historyLabel="View barangay upload history"
               titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
               badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
@@ -1136,6 +1181,7 @@ export function MiddleMovFilesPanel({
               <ReviewFileSection
                 title="Validator Uploads"
                 files={validatorFiles}
+                collapseHistory={false}
                 historyLabel="View validator upload history"
                 titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
                 badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"

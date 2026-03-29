@@ -138,6 +138,52 @@ const assessment = {
   },
 };
 
+const multiFileAssessment = {
+  assessment: {
+    id: 1,
+    status: "SUBMITTED",
+    responses: [
+      {
+        id: 101,
+        assessment_id: 1,
+        indicator_id: 1,
+        indicator: {
+          name: "Indicator A",
+          form_schema: {
+            fields: [
+              {
+                field_id: "supporting_file",
+                field_type: "file_upload",
+                label: "Supporting File",
+              },
+            ],
+          },
+        },
+        movs: [
+          {
+            id: 9,
+            original_filename: "evidence-1.png",
+            filename: "evidence-1.png",
+            content_type: "image/png",
+            file_size: 1024,
+            uploaded_at: "2026-03-20T00:00:00.000Z",
+            upload_origin: "blgu",
+          },
+          {
+            id: 10,
+            original_filename: "evidence-2.png",
+            filename: "evidence-2.png",
+            content_type: "image/png",
+            file_size: 2048,
+            uploaded_at: "2026-03-19T00:00:00.000Z",
+            upload_origin: "blgu",
+          },
+        ],
+      },
+    ],
+  },
+};
+
 describe("MiddleMovFilesPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -224,6 +270,7 @@ describe("MiddleMovFilesPanel", () => {
 
     render(wrap(<MiddleMovFilesPanel assessment={validatorAssessment as any} expandedId={101} />));
 
+    await user.click(screen.getByRole("button", { name: /add file/i }));
     await user.click(screen.getByRole("button", { name: /mock file upload/i }));
 
     expect(mockUploadMutate).toHaveBeenCalledWith({
@@ -236,6 +283,34 @@ describe("MiddleMovFilesPanel", () => {
     });
     expect(
       screen.queryByText(/this indicator has no file upload field to attach validator evidence to/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps validator upload controls collapsed until explicitly expanded", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { role: "VALIDATOR" },
+    });
+
+    render(wrap(<MiddleMovFilesPanel assessment={assessment as any} expandedId={101} />));
+
+    expect(screen.getByRole("button", { name: /add file/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /mock file upload/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /add file/i }));
+
+    expect(screen.getByRole("button", { name: /mock file upload/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+  });
+
+  it("shows all current barangay uploads without hiding sibling MOVs in history", () => {
+    render(wrap(<MiddleMovFilesPanel assessment={multiFileAssessment as any} expandedId={101} />));
+
+    expect(screen.getByRole("button", { name: /preview evidence-1\.png/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /preview evidence-2\.png/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /view barangay upload history/i })
     ).not.toBeInTheDocument();
   });
 });
