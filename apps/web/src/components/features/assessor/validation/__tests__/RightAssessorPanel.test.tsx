@@ -213,4 +213,115 @@ describe("RightAssessorPanel", () => {
       "Rework assessor comment"
     );
   });
+
+  it("accepts numeric accomplishment inputs without crashing and auto-sets validator assessment", async () => {
+    mockUser = { role: "VALIDATOR", id: 1, username: "validator" };
+    const user = userEvent.setup();
+    const onChecklistChange = vi.fn();
+    const assessment = {
+      success: true,
+      assessment_id: 1,
+      assessment: {
+        id: 1,
+        rework_count: 0,
+        responses: [
+          {
+            id: 101,
+            indicator_id: 1,
+            indicator: {
+              name: "Indicator 2.1.4",
+              indicator_code: "2.1.4",
+              validation_rule: "ALL_ITEMS_REQUIRED",
+              checklist_items: [
+                {
+                  id: 1,
+                  item_id: "2_1_4_physical_accomplished",
+                  label: "Physical accomplished",
+                  item_type: "calculation_field",
+                },
+                {
+                  id: 2,
+                  item_id: "2_1_4_physical_reflected",
+                  label: "Physical reflected",
+                  item_type: "calculation_field",
+                },
+                {
+                  id: 3,
+                  item_id: "2_1_4_option_a",
+                  label: "Physical accomplishment is at least 50%",
+                  item_type: "assessment_field",
+                },
+              ],
+            },
+            response_data: {},
+            movs: [],
+            feedback_comments: [],
+          },
+        ],
+      },
+    } as any;
+
+    renderWithProviders(
+      <RightAssessorPanel
+        assessment={assessment}
+        form={{}}
+        setField={vi.fn()}
+        expandedId={101}
+        onChecklistChange={onChecklistChange}
+      />
+    );
+
+    const [accomplishedInput, reflectedInput] = screen.getAllByPlaceholderText("Enter value");
+
+    await user.type(accomplishedInput, "60");
+    await user.type(reflectedInput, "100");
+
+    expect(screen.getByText(/AUTO-YES/i)).toBeInTheDocument();
+    expect(onChecklistChange).toHaveBeenCalledWith("checklist_101_2_1_4_option_a_yes", true);
+    expect(onChecklistChange).toHaveBeenCalledWith("checklist_101_2_1_4_option_a_no", false);
+  });
+
+  it("filters non-numeric characters from validator calculation inputs", async () => {
+    mockUser = { role: "VALIDATOR", id: 1, username: "validator" };
+    const user = userEvent.setup();
+    const assessment = {
+      success: true,
+      assessment_id: 1,
+      assessment: {
+        id: 1,
+        rework_count: 0,
+        responses: [
+          {
+            id: 101,
+            indicator_id: 1,
+            indicator: {
+              name: "Indicator A",
+              indicator_code: "1.1.1",
+              validation_rule: "ALL_ITEMS_REQUIRED",
+              checklist_items: [
+                {
+                  id: 1,
+                  item_id: "financial_amount",
+                  label: "Amount utilized",
+                  item_type: "calculation_field",
+                },
+              ],
+            },
+            response_data: {},
+            movs: [],
+            feedback_comments: [],
+          },
+        ],
+      },
+    } as any;
+
+    renderWithProviders(
+      <RightAssessorPanel assessment={assessment} form={{}} setField={vi.fn()} expandedId={101} />
+    );
+
+    const input = screen.getByPlaceholderText("Enter value");
+    await user.type(input, "12ab3.4$5");
+
+    expect(input).toHaveValue("123.45");
+  });
 });
