@@ -490,15 +490,18 @@ describe("ResubmitAssessmentButton", () => {
       );
 
       expect(screen.getByRole("button", { name: /Preparing your submission/ })).toBeDisabled();
-      expect(screen.getByText("Preparing")).toHaveClass("text-gray-900");
-      expect(screen.getByText("Sending")).toHaveClass("text-gray-500");
-      expect(screen.getByText("Finalizing")).toHaveClass("text-gray-500");
+      expect(screen.getByText("Preparing")).toHaveClass("text-amber-900", "animate-pulse");
+      expect(screen.getByText("Sending")).toHaveClass("text-amber-500");
+      expect(screen.getByText("Finalizing")).toHaveClass("text-amber-500");
+      expect(screen.getByTestId("submission-progress-shine")).toHaveClass(
+        "animate-[shine_1.6s_linear_infinite]"
+      );
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1500);
       });
       expect(screen.getByRole("button", { name: /Sending your revisions/ })).toBeDisabled();
-      expect(screen.getByText("Sending")).toHaveClass("text-gray-900");
+      expect(screen.getByText("Sending")).toHaveClass("text-amber-900", "animate-pulse");
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1500);
@@ -509,7 +512,7 @@ describe("ResubmitAssessmentButton", () => {
         await vi.advanceTimersByTimeAsync(1500);
       });
       expect(screen.getByRole("button", { name: /Finalizing your submission/ })).toBeDisabled();
-      expect(screen.getByText("Finalizing")).toHaveClass("text-gray-900");
+      expect(screen.getByText("Finalizing")).toHaveClass("text-amber-900", "animate-pulse");
 
       vi.useRealTimers();
     });

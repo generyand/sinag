@@ -222,7 +222,9 @@ export function ResubmitAssessmentButton({
       size="lg"
       className={
         "w-full bg-[var(--cityscape-yellow)] hover:bg-[var(--cityscape-yellow)]/90 text-gray-900 font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto " +
-        (isPending ? "h-auto min-w-[280px] justify-start whitespace-normal px-4 py-3" : "")
+        (isPending
+          ? "h-auto min-w-[280px] justify-start whitespace-normal border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 hover:bg-amber-50"
+          : "")
       }
     >
       {isPending ? (
@@ -239,15 +241,19 @@ export function ResubmitAssessmentButton({
                     className={
                       "h-2 w-2 rounded-full transition-all duration-200 motion-reduce:transition-none " +
                       (isActive
-                        ? "bg-gray-900 shadow-[0_0_0_4px_rgba(17,24,39,0.12)]"
+                        ? "animate-pulse bg-amber-600 shadow-[0_0_0_4px_rgba(217,119,6,0.16)] motion-reduce:animate-none"
                         : isCompleted
-                          ? "bg-gray-700"
-                          : "bg-gray-400/70")
+                          ? "bg-amber-500"
+                          : "bg-amber-200")
                     }
                   />
                   <span
                     className={
-                      isActive ? "text-gray-900" : isCompleted ? "text-gray-700" : "text-gray-500"
+                      isActive
+                        ? "animate-pulse text-amber-900 motion-reduce:animate-none"
+                        : isCompleted
+                          ? "text-amber-700"
+                          : "text-amber-500"
                     }
                   >
                     {step}
@@ -256,19 +262,24 @@ export function ResubmitAssessmentButton({
               );
             })}
           </span>
-          <span className="text-left text-sm font-semibold leading-tight text-gray-900">
+          <span className="animate-pulse text-left text-sm font-semibold leading-tight text-amber-900 motion-reduce:animate-none">
             {loadingText}
           </span>
           <span
             aria-hidden="true"
-            className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/45"
+            className="relative h-1.5 w-full overflow-hidden rounded-full bg-amber-100"
           >
             <span
               className={
-                "absolute inset-y-0 left-0 rounded-full bg-gray-900 transition-[width] duration-300 motion-reduce:transition-none " +
+                "absolute inset-y-0 left-0 overflow-hidden rounded-full bg-amber-500 transition-[width] duration-300 motion-reduce:transition-none " +
                 progressWidthClass
               }
-            />
+            >
+              <span
+                data-testid="submission-progress-shine"
+                className="absolute inset-y-0 left-[-35%] w-1/3 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/75 to-transparent animate-[shine_1.6s_linear_infinite] motion-reduce:animate-none"
+              />
+            </span>
           </span>
         </span>
       ) : (
