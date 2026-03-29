@@ -51,6 +51,7 @@ interface FileListProps {
   onDownload?: (file: MOVFileResponse) => void;
   onRotate?: (fileId: number) => void;
   canDelete?: boolean | ((file: MOVFileResponse) => boolean);
+  deletingFileId?: number | null;
   canRotate?: boolean;
   loading?: boolean;
   emptyMessage?: string;
@@ -200,6 +201,7 @@ export function FileList({
   onDownload,
   onRotate,
   canDelete = false,
+  deletingFileId = null,
   canRotate = false,
   loading = false,
   emptyMessage = "No files uploaded yet",
@@ -591,11 +593,16 @@ export function FileList({
                         type="button"
                         variant="ghost"
                         size="sm"
+                        disabled={deletingFileId === file.id}
                         onClick={() => onDelete(file.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Delete file"
+                        className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 disabled:cursor-wait disabled:text-red-400"
+                        title={deletingFileId === file.id ? "Removing file" : "Delete file"}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deletingFileId === file.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     )}
                   </div>

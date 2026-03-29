@@ -116,6 +116,7 @@ class AssessorService:
             "content_type": mov_file.file_type,
             "storage_path": mov_file.file_url,
             "status": "uploaded",  # MOVFile doesn't have status field
+            "uploaded_by": mov_file.uploaded_by,
             "uploaded_at": (
                 mov_file.uploaded_at.isoformat() + "Z" if mov_file.uploaded_at else None
             ),

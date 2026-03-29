@@ -3,7 +3,7 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AlertCircle, FileIcon, Upload, X } from "lucide-react";
+import { AlertCircle, FileIcon, Loader2, Upload, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
@@ -20,6 +20,7 @@ interface FileUploadProps {
   onFileRemove: () => void;
   selectedFile: File | null;
   disabled?: boolean;
+  isUploading?: boolean;
   error?: string | null;
   className?: string;
 }
@@ -29,6 +30,7 @@ export function FileUpload({
   onFileRemove,
   selectedFile,
   disabled = false,
+  isUploading = false,
   error = null,
   className,
 }: FileUploadProps) {
@@ -125,13 +127,20 @@ export function FileUpload({
         <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--card)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <FileIcon className="h-8 w-8 text-blue-600 flex-shrink-0" />
+              {isUploading ? (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              ) : (
+                <FileIcon className="h-8 w-8 text-blue-600 flex-shrink-0" />
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                   {selectedFile.name}
                 </p>
                 <p className="text-xs text-[var(--text-secondary)]">
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  {isUploading ? " • Uploading…" : ""}
                 </p>
               </div>
             </div>

@@ -10,6 +10,7 @@ import { MiddleMovFilesPanel } from "../MiddleMovFilesPanel";
 
 const mockUploadMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
+let isUploadPending = false;
 
 vi.mock("@sinag/shared", () => ({
   getGetAssessorAssessmentsAssessmentIdQueryKey: vi.fn((assessmentId: number) => [
@@ -23,7 +24,7 @@ vi.mock("@sinag/shared", () => ({
   })),
   usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload: vi.fn(() => ({
     mutate: mockUploadMutate,
-    isPending: false,
+    isPending: isUploadPending,
   })),
   useDeleteMovsFilesFileId: vi.fn(() => ({
     mutate: mockDeleteMutate,
@@ -60,8 +61,8 @@ vi.mock("@/store/useAuthStore", () => ({
   })),
 }));
 
-vi.mock("react-hot-toast", () => ({
-  default: {
+vi.mock("sonner", () => ({
+  toast: {
     success: vi.fn(),
     error: vi.fn(),
   },
@@ -211,7 +212,7 @@ describe("MiddleMovFilesPanel", () => {
     vi.clearAllMocks();
     mockUploadMutate.mockReset();
     mockDeleteMutate.mockReset();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    isUploadPending = false;
   });
 
   it("opens the shared image preview controls from the review panel", async () => {
@@ -328,6 +329,44 @@ describe("MiddleMovFilesPanel", () => {
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
   });
 
+  it("shows a pending upload state while validator evidence is uploading", async () => {
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 42, role: "VALIDATOR" },
+    });
+    isUploadPending = true;
+
+    const pendingAssessment = {
+      assessment: {
+        id: 2,
+        status: "SUBMITTED",
+        responses: [
+          {
+            id: 101,
+            assessment_id: 2,
+            indicator: {
+              id: 2,
+              name: "Indicator A",
+              form_schema: {
+                fields: [
+                  {
+                    field_id: "upload_section_1",
+                    field_type: "file_upload",
+                    label: "BFDP Monitoring Form A",
+                  },
+                ],
+              },
+            },
+            movs: [],
+          },
+        ],
+      },
+    };
+
+    render(wrap(<MiddleMovFilesPanel assessment={pendingAssessment as any} expandedId={101} />));
+
+    expect(screen.getByRole("button", { name: /uploading\.\.\./i })).toBeDisabled();
+  });
+
   it("shows all current barangay uploads without hiding sibling MOVs in history", () => {
     render(wrap(<MiddleMovFilesPanel assessment={multiFileAssessment as any} expandedId={101} />));
 
@@ -407,8 +446,14 @@ describe("MiddleMovFilesPanel", () => {
     expect(screen.queryByRole("button", { name: /delete barangay\.pdf/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /delete validator-own\.pdf/i }));
+    expect(screen.getByText(/remove validator upload\?/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /this will remove the validator-uploaded file from the assessment evidence list/i
+      )
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /remove file/i }));
 
-    expect(window.confirm).toHaveBeenCalledWith("Remove this validator-uploaded file?");
     expect(mockDeleteMutate).toHaveBeenCalledWith({ fileId: 11 });
   });
 });

@@ -3,6 +3,7 @@
 
 import { FileList } from "@/components/features/movs/FileList";
 import { FileUpload } from "@/components/features/movs/FileUpload";
+import { ConfirmationDialog } from "@/components/shared/ConfirmationDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,7 +44,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 // Dynamically import PdfAnnotator to avoid SSR issues
 const PdfAnnotator = dynamic(() => import("@/components/shared/PdfAnnotator"), {
@@ -316,6 +317,7 @@ function ReviewFileSection({
   onDownload,
   canDelete = false,
   onDelete,
+  deletingFileId = null,
 }: {
   title: string;
   files: MOVFileResponse[];
@@ -330,6 +332,7 @@ function ReviewFileSection({
   onDownload: (file: MOVFileResponse) => void;
   canDelete?: boolean | ((file: MOVFileResponse) => boolean);
   onDelete?: (fileId: number) => void;
+  deletingFileId?: number | null;
 }) {
   const sortedFiles = React.useMemo(() => sortFilesByUploadedAtDesc(files), [files]);
   const visibleFiles = collapseHistory ? sortedFiles.slice(0, 1) : sortedFiles;
@@ -361,6 +364,7 @@ function ReviewFileSection({
         onDownload={onDownload}
         canDelete={canDelete}
         onDelete={onDelete}
+        deletingFileId={deletingFileId}
         loading={false}
         emptyMessage=""
         movAnnotations={movAnnotations}
@@ -397,6 +401,7 @@ function ReviewFileSection({
                 onDownload={onDownload}
                 canDelete={canDelete}
                 onDelete={onDelete}
+                deletingFileId={deletingFileId}
                 loading={false}
                 emptyMessage=""
                 movAnnotations={movAnnotations}
@@ -445,6 +450,8 @@ export function MiddleMovFilesPanel({
   const [selectedUploadFieldId, setSelectedUploadFieldId] = React.useState<string | null>(null);
   const [selectedUploadFile, setSelectedUploadFile] = React.useState<File | null>(null);
   const [isUploadPanelOpen, setIsUploadPanelOpen] = React.useState(false);
+  const [pendingDeleteFileId, setPendingDeleteFileId] = React.useState<number | null>(null);
+  const [deletingValidatorFileId, setDeletingValidatorFileId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     if (uploadFieldOptions.length === 1) {
@@ -465,14 +472,21 @@ export function MiddleMovFilesPanel({
   React.useEffect(() => {
     setSelectedUploadFile(null);
     setIsUploadPanelOpen(false);
+    setPendingDeleteFileId(null);
+    setDeletingValidatorFileId(null);
   }, [expandedId]);
 
   const validatorUploadMutation = usePostMovsAssessmentsAssessmentIdIndicatorsIndicatorIdUpload({
     mutation: {
       onSuccess: () => {
+        const uploadedFileName = selectedUploadFile?.name;
         setSelectedUploadFile(null);
         setIsUploadPanelOpen(false);
-        toast.success("Validator file uploaded");
+        toast.success(
+          uploadedFileName
+            ? `Uploaded ${uploadedFileName} on behalf of the barangay`
+            : "Validator file uploaded"
+        );
         if (assessmentId > 0) {
           queryClient.invalidateQueries({
             queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
@@ -488,7 +502,9 @@ export function MiddleMovFilesPanel({
   const deleteValidatorMovMutation = useDeleteMovsFilesFileId({
     mutation: {
       onSuccess: () => {
-        toast.success("Validator file removed");
+        setDeletingValidatorFileId(null);
+        setPendingDeleteFileId(null);
+        toast.success("Validator upload removed");
         if (assessmentId > 0) {
           queryClient.invalidateQueries({
             queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
@@ -497,6 +513,7 @@ export function MiddleMovFilesPanel({
         }
       },
       onError: (error: any) => {
+        setDeletingValidatorFileId(null);
         toast.error(error?.message || "Failed to remove validator file");
       },
     },
@@ -961,19 +978,24 @@ export function MiddleMovFilesPanel({
     [assessmentStatus, isValidator, user?.id]
   );
 
-  const handleDeleteValidatorFile = React.useCallback(
-    (fileId: number) => {
-      if (!window.confirm("Remove this validator-uploaded file?")) {
-        return;
-      }
+  const handleDeleteValidatorFile = React.useCallback((fileId: number) => {
+    setPendingDeleteFileId(fileId);
+  }, []);
 
-      deleteValidatorMovMutation.mutate({ fileId });
-    },
-    [deleteValidatorMovMutation]
-  );
+  const confirmDeleteValidatorFile = React.useCallback(() => {
+    if (pendingDeleteFileId === null) {
+      return;
+    }
+
+    setDeletingValidatorFileId(pendingDeleteFileId);
+    deleteValidatorMovMutation.mutate({ fileId: pendingDeleteFileId });
+  }, [deleteValidatorMovMutation, pendingDeleteFileId]);
   const selectedUploadField = uploadFieldOptions.find(
     (option) => option.fieldId === selectedUploadFieldId
   );
+  const uploadingFileName = validatorUploadMutation.isPending
+    ? (selectedUploadFile?.name ?? null)
+    : null;
 
   const handleValidatorFileSelect = React.useCallback(
     (file: File) => {
@@ -1038,16 +1060,36 @@ export function MiddleMovFilesPanel({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 shrink-0 text-xs"
+                  className="h-8 shrink-0 text-xs cursor-pointer disabled:cursor-wait"
+                  disabled={validatorUploadMutation.isPending}
                   onClick={() => setIsUploadPanelOpen((current) => !current)}
                 >
-                  {isUploadPanelOpen ? "Hide" : "Add file"}
+                  {validatorUploadMutation.isPending
+                    ? "Uploading..."
+                    : isUploadPanelOpen
+                      ? "Hide"
+                      : "Add file"}
                 </Button>
               ) : null}
             </div>
 
             {canValidatorUpload && isUploadPanelOpen ? (
               <div className="space-y-3 rounded-sm border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/40 p-3">
+                {uploadingFileName ? (
+                  <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:border-blue-900/70 dark:bg-blue-950/40 dark:text-blue-200">
+                    <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+                    <div className="min-w-0">
+                      <p className="font-semibold">Uploading validator evidence</p>
+                      <p className="mt-0.5 text-[11px] leading-5 text-blue-700/90 dark:text-blue-200/90">
+                        {uploadingFileName}
+                        {selectedUploadField?.label
+                          ? ` is being attached to ${selectedUploadField.label}.`
+                          : " is being attached to the selected file field."}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
                 {uploadFieldOptions.length > 1 && (
                   <div className="space-y-1.5">
                     <Label className="text-xs text-slate-600 dark:text-slate-400">
@@ -1056,6 +1098,7 @@ export function MiddleMovFilesPanel({
                     <Select
                       value={selectedUploadFieldId ?? undefined}
                       onValueChange={setSelectedUploadFieldId}
+                      disabled={validatorUploadMutation.isPending}
                     >
                       <SelectTrigger className="h-8 text-xs">
                         <SelectValue placeholder="Select file field" />
@@ -1075,6 +1118,7 @@ export function MiddleMovFilesPanel({
                   onFileSelect={handleValidatorFileSelect}
                   onFileRemove={() => setSelectedUploadFile(null)}
                   selectedFile={selectedUploadFile}
+                  isUploading={validatorUploadMutation.isPending}
                   disabled={!selectedUploadFieldId || validatorUploadMutation.isPending}
                   className="space-y-2"
                 />
@@ -1084,7 +1128,8 @@ export function MiddleMovFilesPanel({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-8 text-xs"
+                    className="h-8 text-xs cursor-pointer disabled:cursor-not-allowed"
+                    disabled={validatorUploadMutation.isPending}
                     onClick={() => {
                       setSelectedUploadFile(null);
                       setIsUploadPanelOpen(false);
@@ -1100,7 +1145,9 @@ export function MiddleMovFilesPanel({
                   ? "Validator uploads are available only while the assessment is submitted and not active in the BLGU workspace."
                   : uploadFieldOptions.length === 0
                     ? "This indicator has no file upload field to attach validator evidence to."
-                    : "Expand this action only when you need to add supporting evidence on behalf of the barangay."}
+                    : validatorUploadMutation.isPending
+                      ? "Uploading validator evidence now. The files list will refresh automatically once the upload finishes."
+                      : "Expand this action only when you need to add supporting evidence on behalf of the barangay."}
               </p>
             )}
           </div>
@@ -1192,6 +1239,7 @@ export function MiddleMovFilesPanel({
                 onDownload={handleDownload}
                 canDelete={canDeleteValidatorFile}
                 onDelete={handleDeleteValidatorFile}
+                deletingFileId={deletingValidatorFileId}
               />
             )}
 
@@ -1238,6 +1286,7 @@ export function MiddleMovFilesPanel({
                 onDownload={handleDownload}
                 canDelete={canDeleteValidatorFile}
                 onDelete={handleDeleteValidatorFile}
+                deletingFileId={deletingValidatorFileId}
               />
             )}
             {normalPreviousFiles.length > 0 && (
@@ -1565,6 +1614,19 @@ export function MiddleMovFilesPanel({
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={pendingDeleteFileId !== null}
+        onClose={() => setPendingDeleteFileId(null)}
+        onConfirm={confirmDeleteValidatorFile}
+        title="Remove validator upload?"
+        message="This will remove the validator-uploaded file from the assessment evidence list. Barangay uploads will remain unchanged."
+        confirmText="Remove file"
+        pendingText="Removing..."
+        cancelText="Cancel"
+        variant="danger"
+        isPending={deleteValidatorMovMutation.isPending}
+      />
     </div>
   );
 }

@@ -1,7 +1,13 @@
 from datetime import datetime
 
 from app.db.enums import AssessmentStatus, UserRole, ValidationStatus
-from app.db.models.assessment import Assessment, AssessmentResponse, FeedbackComment
+from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
+    Assessment,
+    AssessmentResponse,
+    FeedbackComment,
+    MOVFile,
+)
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import Indicator
 from app.db.models.system import AssessmentYear
@@ -411,3 +417,38 @@ def test_assessor_validation_round_trip_persists_and_returns_latest_values(
     assert saved_response["response_data"]["assessor_val_item_1"] is False
     assert saved_response["response_data"]["assessor_val_item_2"] == "456"
     assert saved_response["feedback_comments"][0]["comment"] == "New assessor feedback"
+
+
+def test_get_assessment_details_for_assessor_includes_mov_uploaded_by(
+    db_session, mock_governance_area, validator_user
+):
+    response = create_validation_context(db_session, mock_governance_area)
+
+    mov_file = MOVFile(
+        assessment_id=response.assessment_id,
+        indicator_id=response.indicator_id,
+        uploaded_by=validator_user.id,
+        upload_origin=MOV_UPLOAD_ORIGIN_VALIDATOR,
+        file_name="validator-upload.pdf",
+        file_url="https://storage.example.com/validator-upload.pdf",
+        file_type="application/pdf",
+        file_size=1024,
+        field_id="supporting_file",
+        uploaded_at=datetime(2026, 3, 29),
+    )
+    db_session.add(mov_file)
+    db_session.commit()
+
+    details = assessor_service.get_assessment_details_for_assessor(
+        db=db_session,
+        assessment_id=response.assessment_id,
+        assessor=validator_user,
+    )
+
+    assert details["success"] is True
+    saved_response = next(
+        item for item in details["assessment"]["responses"] if item["id"] == response.id
+    )
+    mov = saved_response["movs"][0]
+    assert mov["uploaded_by"] == validator_user.id
+    assert mov["upload_origin"] == MOV_UPLOAD_ORIGIN_VALIDATOR
