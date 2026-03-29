@@ -29,7 +29,7 @@ import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
 
@@ -264,7 +264,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   const assessment: AnyRecord = (data as unknown as AnyRecord) ?? {};
   const core = (assessment.assessment as AnyRecord) ?? assessment;
-  const responses: AnyRecord[] = (core.responses as AnyRecord[]) ?? [];
+  const responsesSource = core.responses as AnyRecord[] | undefined;
+  const responses: AnyRecord[] = useMemo(() => responsesSource ?? [], [responsesSource]);
   const barangayName: string = (core?.blgu_user?.barangay?.name ??
     core?.barangay?.name ??
     core?.barangay_name ??

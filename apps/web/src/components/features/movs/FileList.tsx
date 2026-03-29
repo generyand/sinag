@@ -50,7 +50,9 @@ interface FileListProps {
   onPreview?: (file: MOVFileResponse) => void;
   onDownload?: (file: MOVFileResponse) => void;
   onRotate?: (fileId: number) => void;
-  canDelete?: boolean;
+  canDelete?: boolean | ((file: MOVFileResponse) => boolean);
+  deletingFileId?: number | null;
+  downloadingFileId?: number | null;
   canRotate?: boolean;
   loading?: boolean;
   emptyMessage?: string;
@@ -200,6 +202,8 @@ export function FileList({
   onDownload,
   onRotate,
   canDelete = false,
+  deletingFileId = null,
+  downloadingFileId = null,
   canRotate = false,
   loading = false,
   emptyMessage = "No files uploaded yet",
@@ -221,6 +225,9 @@ export function FileList({
   const getAnnotationsForFile = (fileId: number) => {
     return movAnnotations.filter((ann: any) => ann.mov_file_id === fileId);
   };
+
+  const canDeleteFile = (file: MOVFileResponse) =>
+    typeof canDelete === "function" ? canDelete(file) : canDelete;
 
   // Helper function to check if file is flagged by MLGOO and get comment
   const getMlgooFlaggedInfo = (fileId: number) => {
@@ -570,29 +577,39 @@ export function FileList({
                         type="button"
                         variant="ghost"
                         size="sm"
+                        disabled={downloadingFileId === file.id}
                         onClick={() => onDownload(file)}
-                        title="Download file"
+                        title={downloadingFileId === file.id ? "Downloading file" : "Download file"}
                         className={
                           mlgooFlagged.isFlagged
-                            ? "text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100"
+                            ? "cursor-pointer text-red-700 hover:text-red-900 hover:bg-red-100 dark:text-red-300 dark:hover:text-red-100 disabled:cursor-wait disabled:text-red-300"
                             : hasAnnotations || isFlaggedForRework
-                              ? "text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100"
-                              : ""
+                              ? "cursor-pointer text-orange-700 hover:text-orange-900 hover:bg-orange-100 dark:text-orange-300 dark:hover:text-orange-100 disabled:cursor-wait disabled:text-orange-300"
+                              : "cursor-pointer disabled:cursor-wait"
                         }
                       >
-                        <Download className="h-4 w-4" />
+                        {downloadingFileId === file.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
                       </Button>
                     )}
-                    {canDelete && onDelete && (
+                    {canDeleteFile(file) && onDelete && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
+                        disabled={deletingFileId === file.id}
                         onClick={() => onDelete(file.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Delete file"
+                        className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 disabled:cursor-wait disabled:text-red-400"
+                        title={deletingFileId === file.id ? "Removing file" : "Delete file"}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deletingFileId === file.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     )}
                   </div>

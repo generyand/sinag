@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.core.year_resolver import YearPlaceholderResolver
 from app.db.enums import AssessmentStatus, UserRole
 from app.db.models.assessment import (
+    MOV_UPLOAD_ORIGIN_VALIDATOR,
     MOV_UPLOAD_ORIGIN_VALUES,
     Assessment,
     AssessmentResponse,
@@ -696,6 +697,21 @@ class StorageService:
         if not assessment:
             return False, "Assessment not found"
 
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if user and user.role == UserRole.VALIDATOR:
+            if mov_file.upload_origin != MOV_UPLOAD_ORIGIN_VALIDATOR:
+                return False, "Validators can only delete validator-uploaded files"
+
+            if assessment.status != AssessmentStatus.SUBMITTED:
+                return (
+                    False,
+                    f"Cannot delete validator-uploaded files from {assessment.status} assessments. "
+                    f"Deletion is only allowed while the assessment is Submitted.",
+                )
+
+            return True, None
+
         # Check assessment status - only allow deletion for DRAFT, REWORK, or NEEDS_REWORK
         allowed_statuses = [
             AssessmentStatus.DRAFT,
@@ -709,7 +725,6 @@ class StorageService:
                 f"Deletion is only allowed for Draft or Rework assessments.",
             )
 
-        user = db.query(User).filter(User.id == user_id).first()
         if user and user.role == UserRole.BLGU_USER:
             try:
                 assessment_lock_service.ensure_blgu_write_allowed(

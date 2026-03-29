@@ -53,6 +53,8 @@ export interface ConfirmationDialogProps {
   title: string;
   message: string;
   confirmText?: string;
+  pendingText?: string;
   cancelText?: string;
   variant?: "danger" | "warning" | "info";
+  isPending?: boolean;
 }

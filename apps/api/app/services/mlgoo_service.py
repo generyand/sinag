@@ -9,9 +9,11 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.enums import AssessmentStatus, UserRole, ValidationStatus
 from app.db.models.assessment import (
+    TOTAL_GOVERNANCE_AREAS,
     Assessment,
     AssessmentResponse,
     FeedbackComment,
@@ -835,6 +837,29 @@ class MLGOOService:
         assessment.reopened_at = datetime.utcnow()
         assessment.reopen_reason = reopen_reason
         assessment.reopen_from_status = original_status
+
+        # Reset per-area submission state so the BLGU can re-submit each governance area.
+        reset_area_status: dict[str, dict[str, Any]] = {}
+        for area_id in range(1, TOTAL_GOVERNANCE_AREAS + 1):
+            area_key = str(area_id)
+            existing_area_data = (
+                assessment.area_submission_status.get(area_key, {})
+                if assessment.area_submission_status
+                else {}
+            )
+            preserved_area_data = {
+                key: value
+                for key, value in existing_area_data.items()
+                if key in {"rework_used", "calibration_used"}
+            }
+            reset_area_status[area_key] = {"status": "draft", **preserved_area_data}
+
+        assessment.area_submission_status = reset_area_status
+        assessment.area_assessor_approved = {
+            str(area_id): False for area_id in range(1, TOTAL_GOVERNANCE_AREAS + 1)
+        }
+        flag_modified(assessment, "area_submission_status")
+        flag_modified(assessment, "area_assessor_approved")
 
         # Persist the workflow change and activity in the same transaction.
         assessment_activity_service.log_activity(

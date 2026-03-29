@@ -140,19 +140,39 @@ function AccomplishmentAutoCalculator({
   const assessmentFieldId = assessmentFieldMap[subIndicatorCode]?.[type];
   const yesKey = assessmentFieldId ? `checklist_${responseId}_${assessmentFieldId}_yes` : null;
   const noKey = assessmentFieldId ? `checklist_${responseId}_${assessmentFieldId}_no` : null;
+  const currentYesValue = yesKey ? watched[yesKey] === true : false;
+  const currentNoValue = noKey ? watched[noKey] === true : false;
 
   // Auto-set YES/NO based on calculation - CANNOT BE OVERRIDDEN
   React.useEffect(() => {
     if (!hasValues || !yesKey || !noKey) return;
 
     if (meetsThreshold) {
-      syncChecklistValue(yesKey, true);
-      syncChecklistValue(noKey, false);
+      if (!currentYesValue) {
+        syncChecklistValue(yesKey, true);
+      }
+      if (currentNoValue) {
+        syncChecklistValue(noKey, false);
+      }
     } else {
-      syncChecklistValue(yesKey, false);
-      syncChecklistValue(noKey, true);
+      if (currentYesValue) {
+        syncChecklistValue(yesKey, false);
+      }
+      if (!currentNoValue) {
+        syncChecklistValue(noKey, true);
+      }
     }
-  }, [numerator, denominator, meetsThreshold, hasValues, yesKey, noKey, syncChecklistValue]);
+  }, [
+    currentNoValue,
+    currentYesValue,
+    denominator,
+    hasValues,
+    meetsThreshold,
+    numerator,
+    noKey,
+    syncChecklistValue,
+    yesKey,
+  ]);
 
   if (!hasValues) return null;
 
@@ -245,6 +265,25 @@ function sortIndicatorCode(a: string, b: string): number {
     }
   }
   return 0;
+}
+
+function sanitizeNumericInput(value: string, options: { allowDecimal: boolean }): string {
+  const sanitized = value.replace(options.allowDecimal ? /[^0-9.]/g : /[^0-9]/g, "");
+  if (!options.allowDecimal) {
+    return sanitized;
+  }
+
+  const [integerPart = "", ...decimalParts] = sanitized.split(".");
+  if (decimalParts.length === 0) {
+    return sanitized;
+  }
+
+  return `${integerPart}.${decimalParts.join("")}`;
+}
+
+function isHazardTextInput(item: AnyRecord): boolean {
+  const content = `${item.label ?? ""} ${item.mov_description ?? ""}`.toLowerCase();
+  return content.includes("hazard");
 }
 
 /**
@@ -1174,47 +1213,60 @@ export function RightAssessorPanel({
                                 ) : item.item_type === "document_count" ||
                                   item.requires_document_count ? (
                                   // Document count input item (no checkbox, just description + input)
-                                  <div className="space-y-2">
-                                    {item.mov_description && (
-                                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
-                                        <div className="text-xs text-orange-800 dark:text-orange-300 italic">
-                                          {item.mov_description}
+                                  (() => {
+                                    const isNumericInput = !isHazardTextInput(item);
+
+                                    return (
+                                      <div className="space-y-2">
+                                        {item.mov_description && (
+                                          <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded px-3 py-2">
+                                            <div className="text-xs text-orange-800 dark:text-orange-300 italic">
+                                              {item.mov_description}
+                                            </div>
+                                          </div>
+                                        )}
+                                        <div className="flex items-start gap-2">
+                                          <Controller
+                                            name={itemKey as any}
+                                            control={control}
+                                            render={({ field }) => (
+                                              <Input
+                                                id={itemKey}
+                                                type="text"
+                                                inputMode={isNumericInput ? "numeric" : undefined}
+                                                pattern={isNumericInput ? "[0-9]*" : undefined}
+                                                placeholder={
+                                                  item.label?.toLowerCase().includes("hazard")
+                                                    ? "Enter Type of Hazard"
+                                                    : "Enter count"
+                                                }
+                                                value={field.value as any}
+                                                onChange={(event) => {
+                                                  const nextValue = isNumericInput
+                                                    ? sanitizeNumericInput(event.target.value, {
+                                                        allowDecimal: false,
+                                                      })
+                                                    : event.target.value;
+                                                  syncChecklistFieldChange(
+                                                    itemKey,
+                                                    nextValue,
+                                                    field.onChange
+                                                  );
+                                                }}
+                                                onBlur={field.onBlur}
+                                                name={field.name}
+                                                ref={field.ref}
+                                                className="h-9 text-sm w-32 flex-shrink-0"
+                                              />
+                                            )}
+                                          />
+                                          <span className="text-xs text-foreground leading-relaxed">
+                                            {item.label}
+                                          </span>
                                         </div>
                                       </div>
-                                    )}
-                                    <div className="flex items-start gap-2">
-                                      <Controller
-                                        name={itemKey as any}
-                                        control={control}
-                                        render={({ field }) => (
-                                          <Input
-                                            id={itemKey}
-                                            type="text"
-                                            placeholder={
-                                              item.label?.toLowerCase().includes("hazard")
-                                                ? "Enter Type of Hazard"
-                                                : "Enter count"
-                                            }
-                                            value={field.value as any}
-                                            onChange={(event) =>
-                                              syncChecklistFieldChange(
-                                                itemKey,
-                                                event.target.value,
-                                                field.onChange
-                                              )
-                                            }
-                                            onBlur={field.onBlur}
-                                            name={field.name}
-                                            ref={field.ref}
-                                            className="h-9 text-sm w-32 flex-shrink-0"
-                                          />
-                                        )}
-                                      />
-                                      <span className="text-xs text-foreground leading-relaxed">
-                                        {item.label}
-                                      </span>
-                                    </div>
-                                  </div>
+                                    );
+                                  })()
                                 ) : item.item_type === "info_text" ? (
                                   // Instructional text (no input control)
                                   item.label === "OR" ? (
@@ -1375,15 +1427,23 @@ export function RightAssessorPanel({
                                           <Input
                                             id={itemKey}
                                             type="text"
+                                            inputMode="decimal"
+                                            pattern="[0-9]*[.]?[0-9]*"
                                             placeholder="Enter value"
                                             value={field.value as any}
-                                            onChange={(event) =>
+                                            onChange={(event) => {
+                                              const nextValue = sanitizeNumericInput(
+                                                event.target.value,
+                                                {
+                                                  allowDecimal: true,
+                                                }
+                                              );
                                               syncChecklistFieldChange(
                                                 itemKey,
-                                                event.target.value,
+                                                nextValue,
                                                 field.onChange
-                                              )
-                                            }
+                                              );
+                                            }}
                                             onBlur={field.onBlur}
                                             name={field.name}
                                             ref={field.ref}
