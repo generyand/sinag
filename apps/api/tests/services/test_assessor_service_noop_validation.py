@@ -452,3 +452,18 @@ def test_get_assessment_details_for_assessor_includes_mov_uploaded_by(
     mov = saved_response["movs"][0]
     assert mov["uploaded_by"] == validator_user.id
     assert mov["upload_origin"] == MOV_UPLOAD_ORIGIN_VALIDATOR
+
+
+def test_validator_cannot_access_assessor_stage_assessment_details(
+    db_session, mock_governance_area, validator_user
+):
+    response = create_validation_context(db_session, mock_governance_area)
+
+    details = assessor_service.get_assessment_details_for_assessor(
+        db=db_session,
+        assessment_id=response.assessment_id,
+        assessor=validator_user,
+    )
+
+    assert details["success"] is False
+    assert "Validators can only access" in details["message"]

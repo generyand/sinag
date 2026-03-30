@@ -642,6 +642,15 @@
     transform: rotate(360deg);
   }
 }
+
+@keyframes shine {
+  from {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(340%) skewX(-20deg);
+  }
+}
 .animate-spin-slow {
   animation: spin-slow 3s linear infinite;
 }

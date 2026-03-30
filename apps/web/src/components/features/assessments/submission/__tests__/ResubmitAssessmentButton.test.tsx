@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/tests/test-utils";
 import userEvent from "@testing-library/user-event";
 import { ResubmitAssessmentButton } from "../ResubmitAssessmentButton";
@@ -87,7 +87,7 @@ describe("ResubmitAssessmentButton", () => {
         />
       );
 
-      expect(screen.getByRole("button", { name: /Resubmitting/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Preparing your submission/ })).toBeInTheDocument();
     });
   });
 
@@ -473,6 +473,50 @@ describe("ResubmitAssessmentButton", () => {
   });
 
   describe("Loading State", () => {
+    it("should rotate loading messages while submission is pending", async () => {
+      vi.useFakeTimers();
+
+      mockUseResubmit.mockReturnValue({
+        mutate: vi.fn(),
+        isPending: true,
+      });
+
+      renderWithProviders(
+        <ResubmitAssessmentButton
+          assessmentId={mockAssessmentId}
+          isComplete={true}
+          onSuccess={mockOnSuccess}
+        />
+      );
+
+      expect(screen.getByRole("button", { name: /Preparing your submission/ })).toBeDisabled();
+      expect(screen.getByText("Preparing")).toHaveClass("text-amber-900", "animate-pulse");
+      expect(screen.getByText("Sending")).toHaveClass("text-amber-500");
+      expect(screen.getByText("Finalizing")).toHaveClass("text-amber-500");
+      expect(screen.getByTestId("submission-progress-shine")).toHaveClass(
+        "animate-[shine_1.6s_linear_infinite]"
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(screen.getByRole("button", { name: /Sending your revisions/ })).toBeDisabled();
+      expect(screen.getByText("Sending")).toHaveClass("text-amber-900", "animate-pulse");
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(screen.getByRole("button", { name: /Processing your submission/ })).toBeDisabled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(screen.getByRole("button", { name: /Finalizing your submission/ })).toBeDisabled();
+      expect(screen.getByText("Finalizing")).toHaveClass("text-amber-900", "animate-pulse");
+
+      vi.useRealTimers();
+    });
+
     it("should disable cancel button during submission", () => {
       mockUseResubmit.mockReturnValue({
         mutate: vi.fn(),
@@ -489,7 +533,7 @@ describe("ResubmitAssessmentButton", () => {
 
       // Button is disabled during loading, so we can't open dialog
       // Just verify the button shows loading state
-      expect(screen.getByRole("button", { name: /Resubmitting/ })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /Preparing your submission/ })).toBeDisabled();
     });
   });
 });

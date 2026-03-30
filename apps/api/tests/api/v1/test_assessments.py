@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.db.enums import AreaType, AssessmentStatus
-from app.db.models.assessment import Assessment, AssessmentResponse
+from app.db.models.assessment import TOTAL_GOVERNANCE_AREAS, Assessment, AssessmentResponse
 from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.system import AssessmentYear
 from app.db.models.user import User
@@ -225,3 +225,65 @@ def test_reopened_by_mlgoo_resubmit_routes_back_based_on_reopen_source(
         + mock_recalibration_notify.call_count
         >= 0
     )
+
+
+def test_restores_area_statuses_after_mlgoo_reopen(
+    client: TestClient,
+    db_session: Session,
+    blgu_user: User,
+    active_assessment_year,
+):
+    _authenticate_blgu(client, blgu_user, db_session)
+    area_ids = tuple(range(1, TOTAL_GOVERNANCE_AREAS + 1))
+
+    assessment = Assessment(
+        blgu_user_id=blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.REOPENED_BY_MLGOO,
+        reopen_from_status=AssessmentStatus.SUBMITTED_FOR_REVIEW,
+        rework_count=1,
+        calibration_count=1,
+        mlgoo_recalibration_count=1,
+        area_submission_status={
+            str(area_id): {
+                "status": "draft",
+                "rework_used": area_id in {2, 5},
+                "calibration_used": area_id in {3},
+            }
+            for area_id in area_ids
+        },
+        area_assessor_approved={str(area_id): False for area_id in area_ids},
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    with (
+        patch(
+            "app.api.v1.assessments.submission_validation_service.validate_submission"
+        ) as mock_validate,
+        patch(
+            "app.workers.notifications.send_rework_resubmission_notification.delay"
+        ) as mock_rework_notify,
+    ):
+        mock_validate.return_value = MagicMock(
+            is_valid=True,
+            error_message=None,
+            incomplete_indicators=[],
+            missing_movs=[],
+        )
+
+        response = client.post(f"/api/v1/assessments/{assessment.id}/resubmit")
+
+    assert response.status_code == 200
+
+    db_session.refresh(assessment)
+    assert assessment.status == AssessmentStatus.SUBMITTED_FOR_REVIEW
+    assert assessment.area_submission_status is not None
+    for area_id in area_ids:
+        area_payload = assessment.area_submission_status[str(area_id)]
+        assert area_payload["status"] == "submitted"
+        assert area_payload["rework_used"] is (area_id in {2, 5})
+        assert area_payload["calibration_used"] is (area_id in {3})
+    assert assessment.area_assessor_approved == {str(area_id): False for area_id in area_ids}
+    assert mock_rework_notify.call_count == 1

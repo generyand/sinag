@@ -246,6 +246,15 @@ async def get_assessment_details(
         db=db, assessment_id=assessment_id, assessor=current_assessor
     )
 
+    if not result.get("success", True):
+        if result.get("message") == "Assessment not found":
+            raise HTTPException(status_code=404, detail=result["message"])
+        if result.get("message", "").startswith("Validators can only access"):
+            raise HTTPException(status_code=403, detail=result["message"])
+        if result.get("message", "").startswith("Access denied"):
+            raise HTTPException(status_code=403, detail=result["message"])
+        raise HTTPException(status_code=400, detail=result.get("message", "Unknown error"))
+
     return AssessmentDetailsResponse(**result)
 
 

@@ -37,6 +37,10 @@ export default function BLGUAssessmentsPage() {
     {
       query: {
         enabled: !!assessment?.id,
+        refetchOnWindowFocus: true,
+        refetchOnMount: "always",
+        staleTime: 0,
+        gcTime: 5 * 60 * 1000,
       } as any,
     }
   );
@@ -46,6 +50,10 @@ export default function BLGUAssessmentsPage() {
     useGetAssessmentsAssessmentIdAreaStatus(assessment ? parseInt(assessment.id) : 0, {
       query: {
         enabled: !!assessment?.id,
+        refetchOnWindowFocus: true,
+        refetchOnMount: "always",
+        staleTime: 0,
+        gcTime: 5 * 60 * 1000,
       } as any,
     });
 

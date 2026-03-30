@@ -43,9 +43,10 @@ export function MlgooReopenSubmissionButton({
 }: MlgooReopenSubmissionButtonProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [reason, setReason] = React.useState("");
+  const [reopenCompleted, setReopenCompleted] = React.useState(false);
   const reopenMutation = usePostMlgooAssessmentsAssessmentIdReopen();
 
-  if (!canReopenSubmission(assessmentStatus, isLockedForBlgu)) {
+  if (reopenCompleted || !canReopenSubmission(assessmentStatus, isLockedForBlgu)) {
     return null;
   }
 
@@ -68,6 +69,7 @@ export function MlgooReopenSubmissionButton({
 
       setReason("");
       setIsOpen(false);
+      setReopenCompleted(true);
       await onSuccess?.();
     } catch (err: any) {
       toast.dismiss(`reopen-submission-${assessmentId}`);

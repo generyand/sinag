@@ -6,7 +6,7 @@
  * Displays the overall assessment progress as a percentage with a visual progress bar.
  * Progress is calculated based on the assessment status:
  *
- * - 0–20%: Preparation and Drafting (DRAFT status)
+ * - 0–20%: Preparation and Drafting (DRAFT, REOPENED_BY_MLGOO)
  * - 20–45%: Phase 1 (SUBMITTED, IN_REVIEW)
  * - 45–55%: Phase 1 Rework (REWORK/NEEDS_REWORK, not calibration)
  * - 55–80%: Phase 2 (AWAITING_FINAL_VALIDATION)
@@ -22,7 +22,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 /** Assessment status union type for type safety */
 type AssessmentStatus =
   | "DRAFT"
+  | "REOPENED_BY_MLGOO"
   | "SUBMITTED"
+  | "SUBMITTED_FOR_REVIEW"
   | "IN_REVIEW"
   | "REWORK"
   | "NEEDS_REWORK"
@@ -130,8 +132,8 @@ function calculateProgress(
     };
   }
 
-  // Phase 1: Submitted
-  if (status === "SUBMITTED") {
+  // Phase 1: Submitted / awaiting assessor review
+  if (status === "SUBMITTED" || status === "SUBMITTED_FOR_REVIEW") {
     return {
       percentage: 25,
       phase: "Phase 1",
@@ -139,8 +141,8 @@ function calculateProgress(
     };
   }
 
-  // DRAFT status: Map completion percentage to 0-20% range
-  if (status === "DRAFT") {
+  // Editable drafting states: map completion percentage to the 0-20% range
+  if (status === "DRAFT" || status === "REOPENED_BY_MLGOO") {
     // Scale the completion percentage to the 0-20% range
     const scaledProgress = Math.round((completionPercentage / 100) * 20);
     return {
