@@ -15,26 +15,36 @@ from app.db.models.user import User
 from app.services.assessment_activity_service import assessment_activity_service
 from app.services.assessor_service import assessor_service
 
+_validation_context_counter = 0
+
 
 def create_validation_context(db_session, mock_governance_area):
-    assessment_year = AssessmentYear(
-        year=2025,
-        assessment_period_start=datetime(2025, 1, 1),
-        assessment_period_end=datetime(2025, 12, 31),
-        is_active=True,
-        is_published=True,
-    )
-    db_session.add(assessment_year)
-    db_session.commit()
+    global _validation_context_counter
+    _validation_context_counter += 1
+    context_suffix = _validation_context_counter
 
-    barangay = Barangay(name="No-op Barangay")
+    assessment_year = (
+        db_session.query(AssessmentYear).filter(AssessmentYear.year == 2025).one_or_none()
+    )
+    if assessment_year is None:
+        assessment_year = AssessmentYear(
+            year=2025,
+            assessment_period_start=datetime(2025, 1, 1),
+            assessment_period_end=datetime(2025, 12, 31),
+            is_active=True,
+            is_published=True,
+        )
+        db_session.add(assessment_year)
+        db_session.commit()
+
+    barangay = Barangay(name=f"No-op Barangay {context_suffix}")
     db_session.add(barangay)
     db_session.commit()
     db_session.refresh(barangay)
 
     blgu_user = User(
-        email="noop-blgu@test.com",
-        name="No-op BLGU User",
+        email=f"noop-blgu-{context_suffix}@test.com",
+        name=f"No-op BLGU User {context_suffix}",
         role=UserRole.BLGU_USER,
         barangay_id=barangay.id,
         hashed_password="hashed_password",
@@ -45,11 +55,11 @@ def create_validation_context(db_session, mock_governance_area):
     db_session.refresh(blgu_user)
 
     indicator = Indicator(
-        name="No-op Indicator",
+        name=f"No-op Indicator {context_suffix}",
         governance_area_id=mock_governance_area.id,
         description="Indicator for no-op validation tests",
         form_schema={"type": "object", "properties": {}},
-        indicator_code="1.1.1",
+        indicator_code=f"1.1.1-{context_suffix}",
     )
     db_session.add(indicator)
     db_session.commit()
@@ -338,22 +348,40 @@ def test_get_validator_queue_does_not_count_false_only_checklist_data_as_reviewe
     assert queue[0]["re_review_progress"] == 0
 
 
-def test_get_validator_queue_includes_submitted_assessments_for_validator_uploads(
+def test_get_validator_queue_phase_gating_excludes_submitted_but_keeps_validation_and_calibration_rework(
     db_session, mock_governance_area, validator_user
 ):
-    response = create_validation_context(db_session, mock_governance_area)
+    submitted_response = create_validation_context(db_session, mock_governance_area)
+    submitted_assessment = submitted_response.assessment
+    submitted_assessment.status = AssessmentStatus.SUBMITTED
+    submitted_assessment.submitted_at = datetime(2025, 2, 1)
 
-    assessment = response.assessment
-    assessment.status = AssessmentStatus.SUBMITTED
-    assessment.submitted_at = datetime(2025, 2, 1)
-    db_session.add(assessment)
+    awaiting_validation_response = create_validation_context(db_session, mock_governance_area)
+    awaiting_validation_assessment = awaiting_validation_response.assessment
+    awaiting_validation_assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+    awaiting_validation_assessment.submitted_at = datetime(2025, 2, 2)
+
+    calibration_rework_response = create_validation_context(db_session, mock_governance_area)
+    calibration_rework_assessment = calibration_rework_response.assessment
+    calibration_rework_assessment.status = AssessmentStatus.REWORK
+    calibration_rework_assessment.is_calibration_rework = True
+    calibration_rework_assessment.submitted_at = datetime(2025, 2, 3)
+
+    db_session.add_all(
+        [
+            submitted_assessment,
+            awaiting_validation_assessment,
+            calibration_rework_assessment,
+        ]
+    )
     db_session.commit()
 
     queue = assessor_service.get_assessor_queue(db_session, validator_user, assessment_year=2025)
+    returned_ids = {item["assessment_id"] for item in queue}
 
-    assert len(queue) == 1
-    assert queue[0]["assessment_id"] == assessment.id
-    assert queue[0]["status"] == AssessmentStatus.SUBMITTED.value
+    assert submitted_assessment.id not in returned_ids
+    assert awaiting_validation_assessment.id in returned_ids
+    assert calibration_rework_assessment.id in returned_ids
 
 
 def test_assessor_validation_round_trip_persists_and_returns_latest_values(
@@ -423,6 +451,11 @@ def test_get_assessment_details_for_assessor_includes_mov_uploaded_by(
     db_session, mock_governance_area, validator_user
 ):
     response = create_validation_context(db_session, mock_governance_area)
+    assessment = response.assessment
+    assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+    assessment.submitted_at = datetime(2025, 2, 1)
+    db_session.add(assessment)
+    db_session.commit()
 
     mov_file = MOVFile(
         assessment_id=response.assessment_id,

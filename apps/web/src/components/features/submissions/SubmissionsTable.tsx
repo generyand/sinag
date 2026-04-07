@@ -88,13 +88,18 @@ export function SubmissionsTable({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-    if (diffDays === 1) {
-      return "1 day ago";
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
+    if (diffHours < 1) {
+      return "Just now";
+    } else if (diffHours < 12) {
+      return "A few hours";
+    } else if (diffHours < 24) {
+      return "Today";
+    } else if (diffDays < 2) {
+      return "Yesterday";
     } else {
       return date.toLocaleDateString();
     }
