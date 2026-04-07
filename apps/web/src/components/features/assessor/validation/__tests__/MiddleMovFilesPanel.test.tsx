@@ -367,6 +367,63 @@ describe("MiddleMovFilesPanel", () => {
     expect(screen.getByRole("button", { name: /uploading\.\.\./i })).toBeDisabled();
   });
 
+  it("keeps validator upload actions available during awaiting final validation", () => {
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 42, role: "VALIDATOR" },
+    });
+
+    const awaitingFinalValidationAssessment = {
+      assessment: {
+        id: 2,
+        status: "AWAITING_FINAL_VALIDATION",
+        responses: [
+          {
+            id: 101,
+            assessment_id: 2,
+            indicator_id: 2,
+            indicator: {
+              id: 2,
+              name: "Indicator A",
+              form_schema: {
+                fields: [
+                  {
+                    field_id: "upload_section_1",
+                    field_type: "file_upload",
+                    label: "BFDP Monitoring Form A",
+                  },
+                ],
+              },
+            },
+            movs: [
+              {
+                id: 11,
+                original_filename: "validator-own.pdf",
+                filename: "validator-own.pdf",
+                content_type: "application/pdf",
+                file_size: 1024,
+                uploaded_at: "2026-03-20T00:00:00.000Z",
+                upload_origin: "validator",
+                uploaded_by: 42,
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(
+      wrap(
+        <MiddleMovFilesPanel
+          assessment={awaitingFinalValidationAssessment as any}
+          expandedId={101}
+        />
+      )
+    );
+
+    expect(screen.getByRole("button", { name: /add file/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /delete validator-own\.pdf/i })).toBeInTheDocument();
+  });
+
   it("shows all current barangay uploads without hiding sibling MOVs in history", () => {
     render(wrap(<MiddleMovFilesPanel assessment={multiFileAssessment as any} expandedId={101} />));
 

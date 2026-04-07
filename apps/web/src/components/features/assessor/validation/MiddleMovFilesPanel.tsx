@@ -973,19 +973,21 @@ export function MiddleMovFilesPanel({
       rejectedOldFiles: rejected,
     };
   }, [barangayFiles, movFiles, effectiveTimestamp, hasReviewerFlag, hasReviewerNotes, isValidator]);
+  const validatorUploadStatuses = new Set(["SUBMITTED", "AWAITING_FINAL_VALIDATION"]);
+  const isValidatorUploadStage = validatorUploadStatuses.has(assessmentStatus);
   const canValidatorUpload =
     isValidator &&
-    assessmentStatus === "SUBMITTED" &&
+    isValidatorUploadStage &&
     selectedIndicatorId > 0 &&
     uploadFieldOptions.length > 0;
 
   const canDeleteValidatorFile = React.useCallback(
     (file: MOVFileResponse) =>
       isValidator &&
-      assessmentStatus === "SUBMITTED" &&
+      isValidatorUploadStage &&
       file.upload_origin === "validator" &&
       Number(file.uploaded_by ?? 0) === Number(user?.id ?? 0),
-    [assessmentStatus, isValidator, user?.id]
+    [isValidatorUploadStage, isValidator, user?.id]
   );
 
   const handleDeleteValidatorFile = React.useCallback((fileId: number) => {
@@ -1151,8 +1153,8 @@ export function MiddleMovFilesPanel({
               </div>
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {assessmentStatus !== "SUBMITTED"
-                  ? "Validator uploads are available only while the assessment is submitted and not active in the BLGU workspace."
+                {!isValidatorUploadStage
+                  ? "Validator uploads are available while the assessment is submitted or awaiting final validation."
                   : uploadFieldOptions.length === 0
                     ? "This indicator has no file upload field to attach validator evidence to."
                     : validatorUploadMutation.isPending
