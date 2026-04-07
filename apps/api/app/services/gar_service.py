@@ -181,7 +181,7 @@ class GARService:
             summary.append(
                 GARSummaryItem(
                     area_name=area.name,
-                    area_type=area.area_type or "Core",
+                    area_type=area.area_type.value.title() if area.area_type else "Core",
                     result=gar_area.overall_result,
                 )
             )
