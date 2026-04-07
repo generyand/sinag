@@ -190,10 +190,10 @@ class AssessorService:
         - These are assessments ready for area-specific review
 
         **Validators** (users without assessor_area_id - system-wide, 3 users):
-        - See assessments in SUBMITTED or AWAITING_FINAL_VALIDATION status
+        - See assessments in AWAITING_FINAL_VALIDATION status
         - System-wide access (all governance areas)
         - Can request CALIBRATION
-        - ALSO see assessments in REWORK status if they haven't calibrated yet
+        - ALSO see assessments in REWORK status only when is_calibration_rework == True
           (parallel calibration support)
 
         Args:
@@ -258,12 +258,11 @@ class AssessorService:
             )
         elif is_validator:
             # Validators: System-wide access
-            # Show assessments in SUBMITTED or AWAITING_FINAL_VALIDATION
-            # ALSO show REWORK ONLY if it's a calibration rework (validator-initiated)
-            # Do NOT show assessor-initiated rework (is_calibration_rework = False)
+            # Show AWAITING_FINAL_VALIDATION assessments.
+            # ALSO show REWORK only when it's a calibration rework (validator-initiated).
+            # Do NOT show Phase 1 SUBMITTED assessments or assessor-initiated rework.
             query = query.filter(
                 or_(
-                    Assessment.status == AssessmentStatus.SUBMITTED,
                     Assessment.status == AssessmentStatus.AWAITING_FINAL_VALIDATION,
                     and_(
                         Assessment.status == AssessmentStatus.REWORK,
@@ -331,7 +330,7 @@ class AssessorService:
                 # PARALLEL CALIBRATION: Check if validator has pending calibration for this assessment
                 # If they already requested calibration, don't show until BLGU resubmits
                 # (Validators are now system-wide, so check across all areas)
-                pass  # Validators see all assessments in AWAITING_FINAL_VALIDATION status
+                pass  # Validators see AWAITING_FINAL_VALIDATION and calibration REWORK items.
 
             barangay_name = getattr(getattr(a.blgu_user, "barangay", None), "name", "-")
 
