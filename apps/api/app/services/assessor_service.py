@@ -503,7 +503,7 @@ class AssessorService:
                     "global_status": a.status.value
                     if hasattr(a.status, "value")
                     else str(a.status),
-                    "updated_at": a.updated_at,
+                    "updated_at": a.updated_at.isoformat() + "Z" if a.updated_at else None,
                     "is_calibration_rework": a.is_calibration_rework,
                     "pending_calibrations_count": pending_count,
                     "area_progress": area_progress,

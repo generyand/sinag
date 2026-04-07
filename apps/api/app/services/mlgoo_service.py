@@ -1931,7 +1931,7 @@ class MLGOOService:
             "barangay_name": barangay_name,
             "updated_indicators": updated_indicators,
             "updated_by": mlgoo_user.name,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat() + "Z",
         }
 
     def override_validation_status(
@@ -2034,7 +2034,7 @@ class MLGOOService:
             "new_status": new_status.value,
             "remarks": remarks,
             "updated_by": mlgoo_user.name,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat() + "Z",
         }
 
 
