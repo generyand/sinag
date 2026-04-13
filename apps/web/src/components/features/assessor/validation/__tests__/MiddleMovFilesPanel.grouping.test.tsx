@@ -219,6 +219,56 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
     expect(within(validatorSection).getByText("validator-current.pdf")).toBeInTheDocument();
   });
 
+  it("keeps all existing accepted files visible during calibration review", () => {
+    const assessment = buildAssessment([
+      {
+        id: 1,
+        filename: "existing-a.pdf",
+        original_filename: "existing-a.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/existing-a",
+        uploaded_at: "2026-03-01T10:00:00Z",
+      },
+      {
+        id: 2,
+        filename: "existing-b.pdf",
+        original_filename: "existing-b.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/existing-b",
+        uploaded_at: "2026-03-02T10:00:00Z",
+      },
+      {
+        id: 3,
+        filename: "latest-upload.pdf",
+        original_filename: "latest-upload.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/latest",
+        uploaded_at: "2026-03-14T10:00:00Z",
+      },
+    ]);
+
+    render(
+      wrap(
+        <MiddleMovFilesPanel
+          assessment={assessment}
+          expandedId={101}
+          calibrationRequestedAt="2026-03-10T10:00:00Z"
+        />
+      )
+    );
+
+    const existingSection = getSectionContainer("Existing File");
+
+    expect(within(existingSection).getByText("existing-a.pdf")).toBeInTheDocument();
+    expect(within(existingSection).getByText("existing-b.pdf")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /view existing file history/i })
+    ).not.toBeInTheDocument();
+  });
+
   it("shows validator uploads in a separate provenance section", () => {
     const assessment = buildAssessment([
       {
