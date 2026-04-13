@@ -33,6 +33,7 @@ interface TreeNavigatorProps {
   onAreaSubmitSuccess?: () => void;
   areaAssessorStatus?: AreaAssessorStatusItem[];
   isAssessmentLockedForBlgu?: boolean;
+  movAttentionVariant?: "warning" | "danger";
 }
 
 export function TreeNavigator({
@@ -43,6 +44,7 @@ export function TreeNavigator({
   onAreaSubmitSuccess,
   areaAssessorStatus,
   isAssessmentLockedForBlgu = false,
+  movAttentionVariant = "warning",
 }: TreeNavigatorProps) {
   // Load expanded state from sessionStorage or auto-expand first incomplete
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(() => {
@@ -119,6 +121,7 @@ export function TreeNavigator({
             isActive={selectedIndicatorId === indicator.id}
             onClick={() => handleIndicatorClick(indicator.id)}
             level={level}
+            movAttentionVariant={movAttentionVariant}
           />
         </div>
       );
