@@ -32,6 +32,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
+import { getValidatorIndicatorProgress, hasExistingValidationStatus } from "./validator-progress";
 
 // Lazy load heavy RightAssessorPanel component (1400+ LOC)
 const RightAssessorPanel = dynamic(
@@ -298,80 +299,26 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
   // Default label (MiddleMovFilesPanel will override based on indicator context)
   const separationLabel = calibrationRequestedAt ? "After Calibration" : "After Rework";
+  const isPostCalibrationReview = Boolean(calibrationRequestedAt);
 
   useEffect(() => {
     responsesRef.current = responses;
   }, [responses]);
 
-  // Helper: Check if a response has any checklist items checked by the validator
-  const hasChecklistItemsChecked = (responseId: number): boolean => {
-    return Object.keys(checklistState).some(
-      (key) => key.startsWith(`checklist_${responseId}_`) && checklistState[key] === true
-    );
-  };
-
-  // Helper: Check if a response already has a validation status from database
-  const hasExistingValidationStatus = (responseId: number): boolean => {
-    const response = responses.find((r: any) => r.id === responseId);
-    if (!response) return false;
-    const status = (response as any).validation_status;
-    // Check if status is PASS, FAIL, or CONDITIONAL (case-insensitive)
-    if (!status) return false;
-    const statusUpper = String(status).toUpperCase();
-    return statusUpper === "PASS" || statusUpper === "FAIL" || statusUpper === "CONDITIONAL";
-  };
-
-  // Helper: Check if validator has entered a comment/finding for this response
-  const hasValidatorComment = (responseId: number): boolean => {
-    const formData = form[responseId];
-    return !!(formData?.publicComment && formData.publicComment.trim().length > 0);
-  };
-
-  const responseHasServerMovAttention = (response: AnyRecord): boolean => {
-    const movs = Array.isArray(response.movs) ? response.movs : [];
-
-    return movs.some((mov: AnyRecord) => {
-      const hasValidatorNotes = Boolean(
-        mov.validator_notes && String(mov.validator_notes).trim().length > 0
-      );
-
-      return hasValidatorNotes || mov.flagged_for_calibration === true;
+  const getProgressForResponse = (response: AnyRecord) =>
+    getValidatorIndicatorProgress(response, {
+      checklistState,
+      localMovAttentionByFileId: movAttentionByResponse[response.id] ?? {},
+      responseCalibrationFlag: calibrationFlags[response.id] === true,
+      strictChecklistRequired: isPostCalibrationReview,
     });
-  };
-
-  const responseHasAttention = (response: AnyRecord): boolean => {
-    const localFileAttention = Object.values(movAttentionByResponse[response.id] ?? {}).some(
-      Boolean
-    );
-
-    return (
-      responseHasServerMovAttention(response) ||
-      localFileAttention ||
-      calibrationFlags[response.id] === true
-    );
-  };
-
-  // Helper: Check if an indicator is "reviewed"
-  // An indicator is reviewed if:
-  // 1. Has checklist items checked in current session, OR
-  // 2. Flagged for calibration, OR
-  // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration), OR
-  // 4. Validator has entered a comment/finding
-  const isIndicatorReviewed = (responseId: number): boolean => {
-    const response = responses.find((r: AnyRecord) => r.id === responseId);
-
-    return (
-      hasChecklistItemsChecked(responseId) ||
-      (response ? responseHasAttention(response) : calibrationFlags[responseId] === true) ||
-      hasExistingValidationStatus(responseId) ||
-      hasValidatorComment(responseId)
-    );
-  };
 
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
-    completedIndicators: responses.filter((r: any) => isIndicatorReviewed(r.id)).length,
+    completedIndicators: responses.filter(
+      (r: AnyRecord) => getProgressForResponse(r).status === "completed"
+    ).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
@@ -396,9 +343,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || "Unnamed Indicator",
-        // For validators: Show completed if checklist items checked OR flagged for calibration
-        status: isIndicatorReviewed(resp.id) ? "completed" : "not_started",
-        hasMovNotes: responseHasAttention(resp),
+        status: getProgressForResponse(resp).status,
+        hasMovNotes: getProgressForResponse(resp).hasMovNotes,
       });
 
       // Sort indicators by code after adding
@@ -409,15 +355,12 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const total = responses.length;
-  // For validators: "reviewed" means checklist items checked OR flagged for calibration
-  const reviewed = responses.filter((r) => isIndicatorReviewed(r.id as number)).length;
+  const reviewed = responses.filter((r) => getProgressForResponse(r).status === "completed").length;
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
   // Check if ALL responses have validation_status confirmed (via Compliance Overview)
   // This is required before finalization - validators must confirm each indicator status
-  const confirmedCount = responses.filter((r) =>
-    hasExistingValidationStatus(r.id as number)
-  ).length;
+  const confirmedCount = responses.filter((r) => hasExistingValidationStatus(r)).length;
   const allConfirmed = total > 0 && confirmedCount === total;
 
   const getResponseSnapshot = (responseId: number): string => {
