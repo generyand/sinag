@@ -30,7 +30,18 @@ import {
   usePatchAssessorMovsMovFileIdFeedback,
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, FileIcon, Loader2, LocateFixed, Save, Upload, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  FileIcon,
+  History,
+  Loader2,
+  LocateFixed,
+  Save,
+  Upload,
+  X,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import * as React from "react";
 import { toast } from "sonner";
@@ -72,14 +83,14 @@ function getUploadedAtMs(file: AnyRecord): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function groupValidatorFilesForDisplay(files: AnyRecord[]): {
-  newFiles: AnyRecord[];
-  acceptedOldFiles: AnyRecord[];
-  rejectedOldFiles: AnyRecord[];
+function groupValidatorFilesForDisplay(files: (MOVFileResponse & AnyRecord)[]): {
+  newFiles: (MOVFileResponse & AnyRecord)[];
+  acceptedOldFiles: (MOVFileResponse & AnyRecord)[];
+  rejectedOldFiles: (MOVFileResponse & AnyRecord)[];
 } {
-  const newFiles: AnyRecord[] = [];
-  const acceptedOldFiles: AnyRecord[] = [];
-  const rejectedOldFiles: AnyRecord[] = [];
+  const newFiles: (MOVFileResponse & AnyRecord)[] = [];
+  const acceptedOldFiles: (MOVFileResponse & AnyRecord)[] = [];
+  const rejectedOldFiles: (MOVFileResponse & AnyRecord)[] = [];
 
   for (const file of files) {
     const uploadedAt = getUploadedAtMs(file);
@@ -353,6 +364,8 @@ function patchMovFeedbackInAssessmentCache(
 function ReviewFileSection({
   title,
   files,
+  historyLabel = "View file history",
+  collapseHistory = true,
   badgeClassName,
   titleClassName,
   containerClassName,
@@ -366,7 +379,9 @@ function ReviewFileSection({
   downloadingFileId = null,
 }: {
   title: string;
-  files: MOVFileResponse[];
+  files: (MOVFileResponse & AnyRecord)[];
+  historyLabel?: string;
+  collapseHistory?: boolean;
   badgeClassName?: string;
   titleClassName?: string;
   containerClassName: string;
@@ -380,6 +395,15 @@ function ReviewFileSection({
   downloadingFileId?: number | null;
 }) {
   const sortedFiles = React.useMemo(() => sortFilesByUploadedAtDesc(files), [files]);
+  const visibleFiles = collapseHistory ? sortedFiles.slice(0, 1) : sortedFiles;
+  const archivedFiles = collapseHistory ? sortedFiles.slice(1) : [];
+  const [showHistory, setShowHistory] = React.useState(false);
+
+  React.useEffect(() => {
+    if (archivedFiles.length === 0 && showHistory) {
+      setShowHistory(false);
+    }
+  }, [archivedFiles.length, showHistory]);
 
   if (sortedFiles.length === 0) {
     return null;
@@ -395,7 +419,7 @@ function ReviewFileSection({
       </div>
 
       <FileList
-        files={sortedFiles}
+        files={visibleFiles}
         onPreview={onPreview}
         onDownload={onDownload}
         canDelete={canDelete}
@@ -405,10 +429,57 @@ function ReviewFileSection({
         loading={false}
         emptyMessage=""
         movAnnotations={movAnnotations}
+        hideHeader={true}
       />
 
-      {description && (
+      {description && archivedFiles.length === 0 && (
         <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{description}</p>
+      )}
+
+      {archivedFiles.length > 0 && (
+        <div className="mt-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-between px-3 py-2 h-auto text-left"
+            onClick={() => setShowHistory((prev) => !prev)}
+            aria-expanded={showHistory}
+          >
+            <span className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-200">
+              <History className="h-3.5 w-3.5" aria-hidden="true" />
+              {historyLabel}
+              <span className="text-slate-500 dark:text-slate-400 font-normal">
+                ({archivedFiles.length})
+              </span>
+            </span>
+            {showHistory ? (
+              <ChevronUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden="true" />
+            )}
+          </Button>
+
+          {showHistory && (
+            <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-3">
+              <FileList
+                files={archivedFiles}
+                onPreview={onPreview}
+                onDownload={onDownload}
+                canDelete={canDelete}
+                onDelete={onDelete}
+                deletingFileId={deletingFileId}
+                downloadingFileId={downloadingFileId}
+                loading={false}
+                emptyMessage=""
+                movAnnotations={movAnnotations}
+                hideHeader={true}
+              />
+              {description && (
+                <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{description}</p>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -541,7 +612,7 @@ export function MiddleMovFilesPanel({
   }, [selectedResponse, calibrationRequestedAt, reworkRequestedAt, separationLabel]);
 
   // Get MOV files from the selected response with isNew flag for calibration separation
-  const movFiles = React.useMemo(() => {
+  const movFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(() => {
     if (!selectedResponse) return [];
 
     // MOV files are in the 'movs' array according to the backend schema
@@ -906,7 +977,7 @@ export function MiddleMovFilesPanel({
     [handleDeleteAnnotation]
   );
 
-  const normalPreviousFiles = React.useMemo(
+  const normalPreviousFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(
     () =>
       sortFilesByUploadedAtDesc(
         movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file))
@@ -914,14 +985,14 @@ export function MiddleMovFilesPanel({
     [movFiles, hasReviewerNotes, hasReviewerFlag]
   );
 
-  const barangayFiles = React.useMemo(
+  const barangayFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(
     () =>
       sortFilesByUploadedAtDesc(
         movFiles.filter((file) => (file as AnyRecord).upload_origin !== "validator")
       ),
     [movFiles]
   );
-  const validatorFiles = React.useMemo(
+  const validatorFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(
     () =>
       sortFilesByUploadedAtDesc(
         movFiles.filter((file) => (file as AnyRecord).upload_origin === "validator")
@@ -932,7 +1003,11 @@ export function MiddleMovFilesPanel({
   // - newFiles: Files uploaded AFTER rework/calibration (replacement files)
   // - acceptedOldFiles: Files uploaded BEFORE but were accepted (no annotations, didn't need re-upload)
   // - rejectedOldFiles: Files uploaded BEFORE and were rejected/replaced
-  const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo(() => {
+  const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo<{
+    newFiles: (MOVFileResponse & AnyRecord)[];
+    acceptedOldFiles: (MOVFileResponse & AnyRecord)[];
+    rejectedOldFiles: (MOVFileResponse & AnyRecord)[];
+  }>(() => {
     if (!effectiveTimestamp) {
       // No separation timestamp - all files are treated as accepted (normal view)
       return { newFiles: [], acceptedOldFiles: movFiles, rejectedOldFiles: [] };
@@ -1205,10 +1280,31 @@ export function MiddleMovFilesPanel({
           </div>
         ) : effectiveTimestamp ? (
           <div className="space-y-4">
+            {validatorFiles.length > 0 && (
+              <ReviewFileSection
+                title="Validator Uploads"
+                files={validatorFiles}
+                collapseHistory={false}
+                historyLabel="View validator upload history"
+                titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
+                badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border border-blue-200 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/20 p-3"
+                description="Files uploaded by validators are kept separate from barangay evidence."
+                movAnnotations={safeAnnotations}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+                canDelete={canDeleteValidatorFile}
+                onDelete={handleDeleteValidatorFile}
+                deletingFileId={deletingValidatorFileId}
+                downloadingFileId={downloadingFileId}
+              />
+            )}
+
             {newFiles.length > 0 && (
               <ReviewFileSection
                 title={`Latest File (${effectiveLabel})`}
                 files={newFiles}
+                historyLabel="View newer upload history"
                 titleClassName="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide"
                 badgeClassName="text-xs text-emerald-600 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full"
                 containerClassName="rounded-sm border-2 border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3"
@@ -1224,6 +1320,8 @@ export function MiddleMovFilesPanel({
               <ReviewFileSection
                 title="Existing File"
                 files={acceptedOldFiles}
+                collapseHistory={false}
+                historyLabel="View existing file history"
                 titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
                 badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
                 containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
@@ -1238,6 +1336,7 @@ export function MiddleMovFilesPanel({
               <ReviewFileSection
                 title="Previous File"
                 files={rejectedOldFiles}
+                historyLabel="View previous file history"
                 titleClassName="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide"
                 badgeClassName="text-xs text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full"
                 containerClassName="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75"
@@ -1245,24 +1344,6 @@ export function MiddleMovFilesPanel({
                 movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
-              />
-            )}
-
-            {validatorFiles.length > 0 && (
-              <ReviewFileSection
-                title="Validator Uploads"
-                files={validatorFiles}
-                titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
-                badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
-                containerClassName="rounded-sm border border-blue-200 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/20 p-3"
-                description="Files uploaded by validators are kept separate from barangay evidence."
-                movAnnotations={safeAnnotations}
-                onPreview={handlePreview}
-                onDownload={handleDownload}
-                canDelete={canDeleteValidatorFile}
-                onDelete={handleDeleteValidatorFile}
-                deletingFileId={deletingValidatorFileId}
-                downloadingFileId={downloadingFileId}
               />
             )}
 
@@ -1281,22 +1362,12 @@ export function MiddleMovFilesPanel({
           </div>
         ) : (
           <div className="space-y-4">
-            <ReviewFileSection
-              title="Barangay Uploads"
-              files={barangayFiles}
-              titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
-              badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
-              containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
-              description="Barangay uploads remain visible in this section."
-              movAnnotations={safeAnnotations}
-              onPreview={handlePreview}
-              onDownload={handleDownload}
-              downloadingFileId={downloadingFileId}
-            />
             {validatorFiles.length > 0 && (
               <ReviewFileSection
                 title="Validator Uploads"
                 files={validatorFiles}
+                collapseHistory={false}
+                historyLabel="View validator upload history"
                 titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
                 badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
                 containerClassName="rounded-sm border border-blue-200 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/20 p-3"
@@ -1310,10 +1381,25 @@ export function MiddleMovFilesPanel({
                 downloadingFileId={downloadingFileId}
               />
             )}
+            <ReviewFileSection
+              title="Barangay Uploads"
+              files={barangayFiles}
+              collapseHistory={false}
+              historyLabel="View barangay upload history"
+              titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+              badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
+              containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
+              description="Barangay uploads remain available in history."
+              movAnnotations={safeAnnotations}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              downloadingFileId={downloadingFileId}
+            />
             {normalPreviousFiles.length > 0 && (
               <ReviewFileSection
                 title="Previous File"
                 files={normalPreviousFiles}
+                historyLabel="View previous file history"
                 titleClassName="text-xs font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide"
                 badgeClassName="text-xs text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full"
                 containerClassName="rounded-sm border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 p-3 opacity-75"

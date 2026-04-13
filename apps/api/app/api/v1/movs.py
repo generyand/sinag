@@ -118,10 +118,15 @@ def upload_mov_file(
         upload_origin = MOV_UPLOAD_ORIGIN_BLGU
     elif current_user.role == UserRole.VALIDATOR:
         assert assessment is not None
-        if assessment.status != AssessmentStatus.SUBMITTED:
+        if assessment.status not in (
+            AssessmentStatus.AWAITING_FINAL_VALIDATION,
+            AssessmentStatus.REWORK,
+        ) or (
+            assessment.status == AssessmentStatus.REWORK and not assessment.is_calibration_rework
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Validators can only upload MOV files for submitted assessments",
+                detail="Validators can only upload MOV files for assessments awaiting final validation",
             )
         response = (
             db.query(AssessmentResponse)
