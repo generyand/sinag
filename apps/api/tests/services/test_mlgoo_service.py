@@ -2,16 +2,17 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.db.enums import AssessmentStatus
+from app.db.enums import AreaType, AssessmentStatus
 from app.db.models.assessment import (
     MOV_UPLOAD_ORIGIN_BLGU,
     MOV_UPLOAD_ORIGIN_VALIDATOR,
     Assessment,
     AssessmentResponse,
+    FeedbackComment,
     MOVFile,
 )
 from app.db.models.assessment_activity import AssessmentActivity
-from app.db.models.governance_area import Indicator
+from app.db.models.governance_area import GovernanceArea, Indicator
 from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 from app.services.mlgoo_service import mlgoo_service
@@ -704,3 +705,201 @@ def test_get_assessment_details_keeps_mlgoo_recalibration_target_pending_until_l
     assert area_progress["validator"]["total_indicators"] == 2
     assert area_progress["validator"]["progress_percent"] == 50
     assert target_indicator["validator_reviewed"] is False
+
+
+def test_get_assessment_details_summarizes_all_rework_and_calibration_requesters(
+    db_session,
+    mlgoo_user: User,
+    mock_blgu_user: User,
+    active_assessment_year: AssessmentYear,
+):
+    from app.db.enums import UserRole
+
+    financial_area = GovernanceArea(
+        id=101,
+        name="Financial Administration and Sustainability",
+        code="FI",
+        area_type=AreaType.CORE,
+    )
+    social_area = GovernanceArea(
+        id=102,
+        name="Social Protection and Sensitivity",
+        code="SP",
+        area_type=AreaType.CORE,
+    )
+    peace_area = GovernanceArea(
+        id=103,
+        name="Peace and Order",
+        code="PO",
+        area_type=AreaType.ESSENTIAL,
+    )
+    db_session.add_all([financial_area, social_area, peace_area])
+    db_session.flush()
+
+    financial_assessor = User(
+        email="financial.assessor@test.gov.ph",
+        name="Assessor - Financial Admin",
+        hashed_password="test",
+        role=UserRole.ASSESSOR,
+        assessor_area_id=financial_area.id,
+        is_active=True,
+    )
+    social_assessor = User(
+        email="social.assessor@test.gov.ph",
+        name="Assessor - Social Protection",
+        hashed_password="test",
+        role=UserRole.ASSESSOR,
+        assessor_area_id=social_area.id,
+        is_active=True,
+    )
+    validator = User(
+        email="validator.one@test.gov.ph",
+        name="Validator 1",
+        hashed_password="test",
+        role=UserRole.VALIDATOR,
+        is_active=True,
+    )
+    db_session.add_all([financial_assessor, social_assessor, validator])
+    db_session.flush()
+
+    indicators = [
+        Indicator(
+            name="Financial Indicator",
+            indicator_code="1.6.1",
+            governance_area_id=financial_area.id,
+            sort_order=1,
+            description="Financial",
+        ),
+        Indicator(
+            name="Social Indicator",
+            indicator_code="4.5.5",
+            governance_area_id=social_area.id,
+            sort_order=1,
+            description="Social",
+        ),
+        Indicator(
+            name="Validator Indicator",
+            indicator_code="5.1.2",
+            governance_area_id=peace_area.id,
+            sort_order=1,
+            description="Validator",
+        ),
+    ]
+    db_session.add_all(indicators)
+    db_session.flush()
+
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.REWORK,
+        rework_count=1,
+        rework_requested_at=datetime(2026, 4, 11, 9, 30, 0),
+        calibration_requested_at=datetime(2026, 4, 11, 13, 30, 0),
+        is_calibration_rework=True,
+        calibration_validator_id=validator.id,
+        area_submission_status={
+            str(financial_area.id): {
+                "status": "rework",
+                "rework_requested_at": "2026-04-11T09:30:00",
+                "assessor_id": financial_assessor.id,
+                "rework_comments": "Financial documents need revision.",
+                "rework_used": True,
+            },
+            str(social_area.id): {
+                "status": "rework",
+                "rework_requested_at": "2026-04-11T10:15:00",
+                "assessor_id": social_assessor.id,
+                "rework_comments": "Social protection evidence needs updates.",
+                "rework_used": True,
+            },
+        },
+        pending_calibrations=[
+            {
+                "validator_id": validator.id,
+                "governance_area_id": peace_area.id,
+                "requested_at": "2026-04-11T13:30:00+00:00",
+                "comments": "Validator requires more supporting evidence.",
+                "approved": False,
+            }
+        ],
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    responses = [
+        AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=indicators[0].id,
+            requires_rework=True,
+            is_completed=False,
+            response_data={"answer": "financial"},
+        ),
+        AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=indicators[1].id,
+            requires_rework=True,
+            is_completed=False,
+            response_data={"answer": "social"},
+        ),
+        AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=indicators[2].id,
+            requires_rework=True,
+            is_completed=False,
+            response_data={"answer": "validator"},
+        ),
+    ]
+    db_session.add_all(responses)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            FeedbackComment(
+                response_id=responses[0].id,
+                assessor_id=financial_assessor.id,
+                comment="Please update the supporting resolution.",
+                comment_type="validation",
+            ),
+            FeedbackComment(
+                response_id=responses[1].id,
+                assessor_id=social_assessor.id,
+                comment="Missing supporting social protection documents.",
+                comment_type="validation",
+            ),
+        ]
+    )
+    db_session.commit()
+
+    details = mlgoo_service.get_assessment_details(
+        db=db_session,
+        assessment_id=assessment.id,
+        mlgoo_user=mlgoo_user,
+    )
+
+    summary = details["rework_calibration_summary"]
+    requester_names = [item["requester_name"] for item in summary["requesters"]]
+    indicator_statuses = {
+        item["indicator_code"]: item["status"] for item in summary["rework_indicators"]
+    }
+
+    assert requester_names == [
+        "Assessor - Financial Admin",
+        "Assessor - Social Protection",
+        "Validator 1",
+    ]
+    assert [item["request_type"] for item in summary["requesters"]] == [
+        "rework",
+        "rework",
+        "calibration",
+    ]
+    assert [item["requested_at"] for item in summary["requesters"]] == [
+        "2026-04-11T09:30:00Z",
+        "2026-04-11T10:15:00Z",
+        "2026-04-11T13:30:00Z",
+    ]
+    assert len(summary["rework_indicators"]) == 3
+    assert indicator_statuses == {
+        "1.6.1": "rework",
+        "4.5.5": "rework",
+        "5.1.2": "calibration",
+    }

@@ -73,6 +73,24 @@ class MLGOOService:
         except (ValueError, AttributeError):
             return (999,)  # Put invalid codes at the end
 
+    def _format_maybe_iso_datetime(self, value: Any) -> str | None:
+        """Format naive/aware datetimes or ISO strings as UTC-style timestamps for the API."""
+        if isinstance(value, datetime):
+            return self._format_utc_datetime(value)
+        if not isinstance(value, str) or not value.strip():
+            return None
+
+        normalized = value.strip()
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError:
+            return None
+
+        return self._format_utc_datetime(parsed.replace(tzinfo=None) if parsed.tzinfo else parsed)
+
     def _build_assessment_progress_overview(
         self, db: Session, assessment: Assessment, areas_data: dict[int, dict[str, Any]]
     ) -> dict[str, Any]:
@@ -311,6 +329,7 @@ class MLGOOService:
             "calibration_validator_name": None,
             "calibration_comments": None,
             "pending_calibrations": [],
+            "requesters": [],
             "rework_indicators": [],
         }
 
@@ -322,6 +341,28 @@ class MLGOOService:
             user_ids.add(assessment.rework_requested_by)
         if assessment.calibration_validator_id:
             user_ids.add(assessment.calibration_validator_id)
+
+        area_rework_requesters: list[dict[str, Any]] = []
+        for area_key, area_data in (assessment.area_submission_status or {}).items():
+            if not isinstance(area_data, dict) or area_data.get("status") != "rework":
+                continue
+            assessor_id = area_data.get("assessor_id")
+            if assessor_id:
+                user_ids.add(assessor_id)
+            try:
+                area_id = int(area_key)
+            except (TypeError, ValueError):
+                area_id = None
+            if area_id:
+                area_ids.add(area_id)
+            area_rework_requesters.append(
+                {
+                    "assessor_id": assessor_id,
+                    "governance_area_id": area_id,
+                    "requested_at": area_data.get("rework_requested_at"),
+                    "comments": area_data.get("rework_comments"),
+                }
+            )
 
         # Collect IDs from pending calibrations (with defensive type checking)
         for cal in assessment.pending_calibrations or []:
@@ -360,6 +401,42 @@ class MLGOOService:
                 summary["calibration_validator_id"] = calibration_validator.id
                 summary["calibration_validator_name"] = calibration_validator.name
 
+        for requester in area_rework_requesters:
+            assessor_id = requester.get("assessor_id")
+            if not assessor_id:
+                continue
+            assessor = users_by_id.get(assessor_id)
+            if not assessor:
+                continue
+            area_id = requester.get("governance_area_id")
+            area = areas_by_id.get(area_id) if area_id else None
+            summary["requesters"].append(
+                {
+                    "request_type": "rework",
+                    "requester_id": assessor.id,
+                    "requester_name": assessor.name,
+                    "governance_area_id": area.id if area else area_id,
+                    "governance_area_name": area.name if area else None,
+                    "requested_at": self._format_maybe_iso_datetime(requester.get("requested_at")),
+                    "comments": requester.get("comments"),
+                }
+            )
+
+        if not summary["requesters"] and assessment.rework_requested_by:
+            rework_requester = users_by_id.get(assessment.rework_requested_by)
+            if rework_requester:
+                summary["requesters"].append(
+                    {
+                        "request_type": "rework",
+                        "requester_id": rework_requester.id,
+                        "requester_name": rework_requester.name,
+                        "governance_area_id": None,
+                        "governance_area_name": None,
+                        "requested_at": self._format_utc_datetime(assessment.rework_requested_at),
+                        "comments": assessment.rework_comments,
+                    }
+                )
+
         # Build pending calibrations list (parallel calibration support)
         for cal in assessment.pending_calibrations or []:
             if not isinstance(cal, dict):
@@ -384,6 +461,38 @@ class MLGOOService:
                             "comments": cal.get("comments"),
                         }
                     )
+                    summary["requesters"].append(
+                        {
+                            "request_type": "calibration",
+                            "requester_id": validator.id,
+                            "requester_name": validator.name,
+                            "governance_area_id": area.id,
+                            "governance_area_name": area.name,
+                            "requested_at": self._format_maybe_iso_datetime(cal.get("requested_at")),
+                            "comments": cal.get("comments"),
+                        }
+                    )
+
+        if not summary["pending_calibrations"] and assessment.calibration_validator_id:
+            calibration_validator = users_by_id.get(assessment.calibration_validator_id)
+            if calibration_validator:
+                summary["requesters"].append(
+                    {
+                        "request_type": "calibration",
+                        "requester_id": calibration_validator.id,
+                        "requester_name": calibration_validator.name,
+                        "governance_area_id": None,
+                        "governance_area_name": None,
+                        "requested_at": self._format_utc_datetime(
+                            assessment.calibration_requested_at
+                        ),
+                        "comments": None,
+                    }
+                )
+
+        summary["requesters"].sort(
+            key=lambda item: (item.get("requested_at") is None, item.get("requested_at") or "")
+        )
 
         # Get indicators flagged for rework/calibration with their feedback
         responses_with_feedback = (
@@ -402,12 +511,27 @@ class MLGOOService:
 
         # Filter to only include responses that need rework/calibration
         mlgoo_recalibration_ids = set(assessment.mlgoo_recalibration_indicator_ids or [])
+        calibration_area_ids = {
+            int(cal["governance_area_id"])
+            for cal in assessment.pending_calibrations or []
+            if isinstance(cal, dict) and cal.get("governance_area_id") is not None
+        }
+        if not calibration_area_ids:
+            calibration_area_ids = {int(area_id) for area_id in (assessment.calibrated_area_ids or [])}
 
         # Collect indicator IDs that need rework/calibration for batch MOV query
         indicator_ids_for_mov: list[int] = []
         for response in responses_with_feedback:
             is_rework = response.requires_rework
-            is_calibration = response.flagged_for_calibration
+            response_area_id = (
+                response.indicator.governance_area_id if response.indicator else None
+            )
+            is_calibration = response.flagged_for_calibration or (
+                has_calibration
+                and response_area_id is not None
+                and response.requires_rework
+                and response_area_id in calibration_area_ids
+            )
             is_mlgoo_recal = response.indicator_id in mlgoo_recalibration_ids
             if is_rework or is_calibration or is_mlgoo_recal:
                 indicator_ids_for_mov.append(response.indicator_id)
@@ -447,7 +571,13 @@ class MLGOOService:
         # Build the rework indicators list
         for response in responses_with_feedback:
             is_rework = response.requires_rework
-            is_calibration = response.flagged_for_calibration
+            response_area_id = response.indicator.governance_area_id if response.indicator else None
+            is_calibration = response.flagged_for_calibration or (
+                has_calibration
+                and response_area_id is not None
+                and response.requires_rework
+                and response_area_id in calibration_area_ids
+            )
             is_mlgoo_recal = response.indicator_id in mlgoo_recalibration_ids
 
             if not (is_rework or is_calibration or is_mlgoo_recal):
