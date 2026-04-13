@@ -324,6 +324,22 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     return !!(formData?.publicComment && formData.publicComment.trim().length > 0);
   };
 
+  const responseHasServerMovAttention = (response: AnyRecord): boolean => {
+    const movs = Array.isArray(response.movs) ? response.movs : [];
+
+    return movs.some((mov: AnyRecord) => {
+      const hasValidatorNotes = Boolean(
+        mov.validator_notes && String(mov.validator_notes).trim().length > 0
+      );
+
+      return hasValidatorNotes || mov.flagged_for_calibration === true;
+    });
+  };
+
+  const responseHasAttention = (response: AnyRecord): boolean => {
+    return responseHasServerMovAttention(response) || calibrationFlags[response.id] === true;
+  };
+
   // Helper: Check if an indicator is "reviewed"
   // An indicator is reviewed if:
   // 1. Has checklist items checked in current session, OR
@@ -369,6 +385,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         name: indicator.name || "Unnamed Indicator",
         // For validators: Show completed if checklist items checked OR flagged for calibration
         status: isIndicatorReviewed(resp.id) ? "completed" : "not_started",
+        hasMovNotes: responseHasAttention(resp),
       });
 
       // Sort indicators by code after adding
@@ -1016,6 +1033,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   assessment={transformedAssessment as any}
                   selectedIndicatorId={selectedIndicatorId}
                   onIndicatorSelect={handleIndicatorSelect}
+                  movAttentionVariant="danger"
                 />
               </div>
             )}
@@ -1071,6 +1089,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   assessment={transformedAssessment as any}
                   selectedIndicatorId={selectedIndicatorId}
                   onIndicatorSelect={handleIndicatorSelect}
+                  movAttentionVariant="danger"
                 />
               </div>
             </div>
@@ -1163,6 +1182,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   assessment={transformedAssessment as any}
                   selectedIndicatorId={selectedIndicatorId}
                   onIndicatorSelect={handleIndicatorSelect}
+                  movAttentionVariant="danger"
                 />
               </div>
             </div>
