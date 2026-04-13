@@ -269,6 +269,141 @@ describe("MiddleMovFilesPanel MOV grouping in validator mode", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("moves an older flagged BLGU file to previous history when replaced in the same field", () => {
+    const assessment = buildAssessment([
+      {
+        id: 1,
+        filename: "old-ordinance.pdf",
+        original_filename: "old-ordinance.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/old-ordinance",
+        field_id: "ordinance",
+        uploaded_at: "2026-03-01T10:00:00Z",
+        upload_origin: "blgu",
+        validator_notes: "missing signature",
+        flagged_for_calibration: true,
+      },
+      {
+        id: 2,
+        filename: "new-ordinance.pdf",
+        original_filename: "new-ordinance.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/new-ordinance",
+        field_id: "ordinance",
+        uploaded_at: "2026-03-12T10:00:00Z",
+        upload_origin: "blgu",
+      },
+    ]);
+
+    render(
+      wrap(
+        <MiddleMovFilesPanel
+          assessment={assessment}
+          expandedId={101}
+          calibrationRequestedAt="2026-03-10T10:00:00Z"
+        />
+      )
+    );
+
+    const latestSection = getSectionContainer("Latest File (After Calibration)");
+    const previousSection = getSectionContainer("Previous File");
+
+    expect(within(latestSection).getByText("new-ordinance.pdf")).toBeInTheDocument();
+    expect(within(previousSection).getByText("old-ordinance.pdf")).toBeInTheDocument();
+  });
+
+  it("keeps an older flagged BLGU file active when the newer BLGU upload is a different field", () => {
+    const assessment = buildAssessment([
+      {
+        id: 1,
+        filename: "old-ordinance.pdf",
+        original_filename: "old-ordinance.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/old-ordinance",
+        field_id: "ordinance",
+        uploaded_at: "2026-03-01T10:00:00Z",
+        upload_origin: "blgu",
+        validator_notes: "missing signature",
+        flagged_for_calibration: true,
+      },
+      {
+        id: 2,
+        filename: "new-attendance.pdf",
+        original_filename: "new-attendance.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/new-attendance",
+        field_id: "attendance",
+        uploaded_at: "2026-03-12T10:00:00Z",
+        upload_origin: "blgu",
+      },
+    ]);
+
+    render(
+      wrap(
+        <MiddleMovFilesPanel
+          assessment={assessment}
+          expandedId={101}
+          calibrationRequestedAt="2026-03-10T10:00:00Z"
+        />
+      )
+    );
+
+    const existingSection = getSectionContainer("Existing File");
+    const latestSection = getSectionContainer("Latest File (After Calibration)");
+
+    expect(within(existingSection).getByText("old-ordinance.pdf")).toBeInTheDocument();
+    expect(within(latestSection).getByText("new-attendance.pdf")).toBeInTheDocument();
+  });
+
+  it("keeps an older flagged BLGU file active when the newer same-field upload is from a validator", () => {
+    const assessment = buildAssessment([
+      {
+        id: 1,
+        filename: "old-ordinance.pdf",
+        original_filename: "old-ordinance.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/old-ordinance",
+        field_id: "ordinance",
+        uploaded_at: "2026-03-01T10:00:00Z",
+        upload_origin: "blgu",
+        validator_notes: "missing signature",
+        flagged_for_calibration: true,
+      },
+      {
+        id: 2,
+        filename: "validator-ordinance.pdf",
+        original_filename: "validator-ordinance.pdf",
+        file_size: 100,
+        content_type: "application/pdf",
+        storage_path: "/validator-ordinance",
+        field_id: "ordinance",
+        uploaded_at: "2026-03-12T10:00:00Z",
+        upload_origin: "validator",
+      },
+    ]);
+
+    render(
+      wrap(
+        <MiddleMovFilesPanel
+          assessment={assessment}
+          expandedId={101}
+          calibrationRequestedAt="2026-03-10T10:00:00Z"
+        />
+      )
+    );
+
+    const existingSection = getSectionContainer("Existing File");
+    const validatorSection = getSectionContainer("Validator Uploads");
+
+    expect(within(existingSection).getByText("old-ordinance.pdf")).toBeInTheDocument();
+    expect(within(validatorSection).getByText("validator-ordinance.pdf")).toBeInTheDocument();
+  });
+
   it("shows validator uploads in a separate provenance section", () => {
     const assessment = buildAssessment([
       {

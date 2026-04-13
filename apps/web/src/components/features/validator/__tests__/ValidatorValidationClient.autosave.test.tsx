@@ -158,7 +158,10 @@ function expectSidebarAttention(responseId: number, hasAttention: boolean) {
   });
 }
 
-function makeAssessment(responseOverrides: Record<string, any> = {}) {
+function makeAssessment(
+  responseOverrides: Record<string, any> = {},
+  assessmentOverrides: Record<string, any> = {}
+) {
   return {
     success: true,
     assessment_id: 1,
@@ -172,6 +175,7 @@ function makeAssessment(responseOverrides: Record<string, any> = {}) {
         barangay: { id: 1, name: "Test Barangay" },
       },
       calibrated_area_ids: [],
+      ...assessmentOverrides,
       responses: [
         {
           id: 201,
@@ -181,6 +185,8 @@ function makeAssessment(responseOverrides: Record<string, any> = {}) {
             name: "Test Indicator",
             indicator_code: "2.1.1",
             governance_area: { id: 2, name: "Disaster Preparedness" },
+            checklist_items: [{ item_id: "requirement_1", item_type: "checkbox", required: true }],
+            validation_rule: "ALL_ITEMS_REQUIRED",
           },
           movs: [{ id: 1, uploaded_at: "2024-01-01T00:00:00Z" }],
           response_data: {},
@@ -450,5 +456,90 @@ describe("ValidatorValidationClient autosave", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Clear validator MOV note" })[0]);
 
     expectSidebarAttention(201, true);
+  });
+
+  it("shows completed sidebar state after post-calibration same-field replacement files are clean", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(
+        {
+          flagged_for_calibration: true,
+          validation_status: "PASS",
+          response_data: {
+            validator_val_requirement_1: true,
+          },
+          movs: [
+            {
+              id: 1,
+              field_id: "ordinance",
+              uploaded_at: "2026-03-01T00:00:00.000Z",
+              upload_origin: "blgu",
+              validator_notes: "missing signature",
+              flagged_for_calibration: true,
+            },
+            {
+              id: 2,
+              field_id: "ordinance",
+              uploaded_at: "2026-04-01T00:00:00.000Z",
+              upload_origin: "blgu",
+              validator_notes: "",
+              flagged_for_calibration: false,
+            },
+          ],
+        },
+        { calibration_requested_at: "2026-03-15T00:00:00.000Z" }
+      ),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    screen.getAllByTestId("tree-indicator-201").forEach((indicator) => {
+      expect(indicator).toHaveAttribute("data-status", "completed");
+      expect(indicator).toHaveAttribute("data-has-mov-notes", "false");
+    });
+  });
+
+  it("keeps sidebar attention when a flagged existing file is not superseded by a different field", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(
+        {
+          validation_status: "PASS",
+          response_data: {
+            validator_val_requirement_1: true,
+          },
+          movs: [
+            {
+              id: 1,
+              field_id: "ordinance",
+              uploaded_at: "2026-03-01T00:00:00.000Z",
+              upload_origin: "blgu",
+              validator_notes: "missing signature",
+              flagged_for_calibration: true,
+            },
+            {
+              id: 2,
+              field_id: "attendance",
+              uploaded_at: "2026-04-01T00:00:00.000Z",
+              upload_origin: "blgu",
+              validator_notes: "",
+              flagged_for_calibration: false,
+            },
+          ],
+        },
+        { calibration_requested_at: "2026-03-15T00:00:00.000Z" }
+      ),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    screen.getAllByTestId("tree-indicator-201").forEach((indicator) => {
+      expect(indicator).toHaveAttribute("data-status", "not_started");
+      expect(indicator).toHaveAttribute("data-has-mov-notes", "true");
+    });
   });
 });
