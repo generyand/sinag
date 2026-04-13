@@ -66,6 +66,10 @@ export interface AssessorProgressItem {
   assessor_id: AssessorProgressItemAssessorId;
   assessor_name: AssessorProgressItemAssessorName;
   status: string;
+  /** @minimum 0 */
+  reviewed_indicators?: number;
+  /** @minimum 0 */
+  total_indicators?: number;
   /**
    * @minimum 0
    * @maximum 100

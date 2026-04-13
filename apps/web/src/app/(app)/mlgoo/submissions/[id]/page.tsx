@@ -276,6 +276,8 @@ interface AssessorProgressData {
   assessor_id?: number | null;
   assessor_name?: string | null;
   status?: string;
+  reviewed_indicators?: number;
+  total_indicators?: number;
   progress_percent?: number;
   label?: string;
 }
@@ -2412,7 +2414,8 @@ export default function SubmissionDetailsPage() {
                     const assessorName =
                       areaProgress.assessor.assessor_name || "Unassigned Assessor";
                     const validatorDisplayName = "Validators";
-                    const assessorTotalIndicators = areaProgress.total_indicators || 0;
+                    const assessorTotalIndicators =
+                      areaProgress.assessor.total_indicators || areaProgress.total_indicators || 0;
                     const fallbackAssessorReviewedIndicators = [
                       "reviewed",
                       "sent_for_rework",
@@ -2445,10 +2448,13 @@ export default function SubmissionDetailsPage() {
                         sensitivity: "base",
                       })
                     );
+                    const apiAssessorReviewedIndicators = areaProgress.assessor.reviewed_indicators;
                     const assessorReviewedIndicators =
-                      sortedIndicators.length > 0
-                        ? sortedIndicators.filter(isAssessorIndicatorCompleted).length
-                        : fallbackAssessorReviewedIndicators;
+                      typeof apiAssessorReviewedIndicators === "number"
+                        ? apiAssessorReviewedIndicators
+                        : sortedIndicators.length > 0
+                          ? sortedIndicators.filter(isAssessorIndicatorCompleted).length
+                          : fallbackAssessorReviewedIndicators;
                     const validatorReviewedIndicators =
                       sortedIndicators.length > 0
                         ? sortedIndicators.filter(isValidatorIndicatorCompleted).length

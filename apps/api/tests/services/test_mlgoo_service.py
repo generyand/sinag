@@ -443,3 +443,100 @@ def test_get_assessment_details_keeps_cumulative_assessor_progress_after_rework_
     assert area_progress["assessor"]["total_indicators"] == 9
     assert area_progress["assessor"]["progress_percent"] == 89
     assert area_progress["assessor"]["status"] == "in_progress"
+
+
+def test_get_assessment_details_keeps_mlgoo_recalibration_target_pending_until_later_validation(
+    db_session,
+    mlgoo_user: User,
+    mock_blgu_user: User,
+    active_assessment_year: AssessmentYear,
+    mock_governance_area,
+):
+    from app.db.enums import ValidationStatus
+
+    parent = Indicator(
+        name="Recalibration Parent",
+        indicator_code="R",
+        governance_area_id=mock_governance_area.id,
+        sort_order=0,
+        description="Parent grouping",
+    )
+    db_session.add(parent)
+    db_session.flush()
+
+    reviewed_indicator = Indicator(
+        name="Reviewed Indicator",
+        indicator_code="1.1",
+        governance_area_id=mock_governance_area.id,
+        parent_id=parent.id,
+        sort_order=1,
+        description="Reviewed indicator",
+    )
+    recalibration_indicator = Indicator(
+        name="Recalibration Indicator",
+        indicator_code="1.2",
+        governance_area_id=mock_governance_area.id,
+        parent_id=parent.id,
+        sort_order=2,
+        description="Recalibration indicator",
+    )
+    db_session.add_all([reviewed_indicator, recalibration_indicator])
+    db_session.flush()
+
+    recalibration_submitted_at = datetime(2026, 4, 11, 9, 0, 0)
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+        is_mlgoo_recalibration=True,
+        mlgoo_recalibration_indicator_ids=[recalibration_indicator.id],
+        mlgoo_recalibration_requested_at=datetime(2026, 4, 10, 8, 0, 0),
+        mlgoo_recalibration_submitted_at=recalibration_submitted_at,
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=reviewed_indicator.id,
+                response_data={"assessor_val_status": "complete"},
+                is_completed=True,
+                validation_status=ValidationStatus.PASS,
+                updated_at=recalibration_submitted_at - timedelta(hours=2),
+            ),
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=recalibration_indicator.id,
+                response_data={"assessor_val_status": "complete"},
+                is_completed=True,
+                validation_status=ValidationStatus.PASS,
+                updated_at=recalibration_submitted_at,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    details = mlgoo_service.get_assessment_details(
+        db=db_session,
+        assessment_id=assessment.id,
+        mlgoo_user=mlgoo_user,
+    )
+
+    [area_progress] = [
+        area
+        for area in details["assessment_progress"]["governance_areas"]
+        if area["governance_area_id"] == mock_governance_area.id
+    ]
+    [target_indicator] = [
+        indicator
+        for area in details["governance_areas"]
+        for indicator in area["indicators"]
+        if indicator["indicator_id"] == recalibration_indicator.id
+    ]
+
+    assert area_progress["validator"]["reviewed_indicators"] == 1
+    assert area_progress["validator"]["total_indicators"] == 2
+    assert area_progress["validator"]["progress_percent"] == 50
+    assert target_indicator["validator_reviewed"] is False

@@ -310,6 +310,8 @@ class AssessorProgressItem(BaseModel):
     assessor_id: int | None
     assessor_name: str | None
     status: str  # pending, in_progress, reviewed, sent_for_rework
+    reviewed_indicators: int = Field(default=0, ge=0)
+    total_indicators: int = Field(default=0, ge=0)
     progress_percent: int = Field(ge=0, le=100)
     label: str
 
