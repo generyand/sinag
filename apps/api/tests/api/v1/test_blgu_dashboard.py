@@ -16,10 +16,11 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.db.enums import AssessmentStatus, UserRole
-from app.db.models.assessment import Assessment
+from app.db.enums import AreaType, AssessmentStatus, UserRole
+from app.db.models.assessment import Assessment, AssessmentResponse, MOVFile
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -239,6 +240,127 @@ class TestBLGUDashboardEndpoint:
         else:
             # If no indicators, percentage should be 0
             assert data["completion_percentage"] == 0.0
+
+    def test_get_dashboard_includes_flagged_indicators_from_all_active_rework_areas(
+        self, client: TestClient, db_session: Session, blgu_user
+    ):
+        """Per-area rework feedback should surface all affected indicators, not only legacy flags."""
+        authenticate_user(client, blgu_user, db_session)
+
+        financial_area = GovernanceArea(
+            name=f"Financial {uuid.uuid4().hex[:6]}", code="FI", area_type=AreaType.CORE
+        )
+        disaster_area = GovernanceArea(
+            name=f"Disaster {uuid.uuid4().hex[:6]}", code="DP", area_type=AreaType.CORE
+        )
+        db_session.add_all([financial_area, disaster_area])
+        db_session.flush()
+
+        financial_indicator = Indicator(
+            name="Financial Indicator",
+            indicator_code="1.6.1",
+            governance_area_id=financial_area.id,
+            sort_order=1,
+            description="Financial",
+        )
+        disaster_indicator = Indicator(
+            name="Disaster Indicator",
+            indicator_code="2.1.1",
+            governance_area_id=disaster_area.id,
+            sort_order=1,
+            description="Disaster",
+        )
+        db_session.add_all([financial_indicator, disaster_indicator])
+        db_session.flush()
+
+        assessment_year = AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            assessment_period_end=datetime(2026, 12, 31, tzinfo=UTC),
+            is_active=True,
+            is_published=True,
+        )
+        db_session.add(assessment_year)
+        db_session.flush()
+
+        assessment = Assessment(
+            blgu_user_id=blgu_user.id,
+            assessment_year=assessment_year.year,
+            status=AssessmentStatus.SUBMITTED,
+            area_submission_status={
+                str(financial_area.id): {
+                    "status": "rework",
+                    "rework_requested_at": "2026-04-13T12:00:00",
+                    "rework_comments": "Financial needs updates",
+                },
+                str(disaster_area.id): {
+                    "status": "rework",
+                    "rework_requested_at": "2026-04-13T12:05:00",
+                    "rework_comments": "Disaster needs updates",
+                },
+            },
+        )
+        db_session.add(assessment)
+        db_session.flush()
+
+        financial_response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=financial_indicator.id,
+            is_completed=False,
+            requires_rework=True,
+            response_data={"answer": "financial"},
+        )
+        disaster_response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=disaster_indicator.id,
+            is_completed=False,
+            requires_rework=False,
+            response_data={"answer": "disaster"},
+        )
+        db_session.add_all([financial_response, disaster_response])
+        db_session.flush()
+
+        db_session.add_all(
+            [
+                MOVFile(
+                    assessment_id=assessment.id,
+                    indicator_id=financial_indicator.id,
+                    file_name="financial.pdf",
+                    file_url="/financial.pdf",
+                    file_type="application/pdf",
+                    file_size=100,
+                    assessor_notes="Financial MOV needs revision",
+                    flagged_for_rework=True,
+                    uploaded_at=datetime(2026, 4, 10, 8, 0, 0),
+                ),
+                MOVFile(
+                    assessment_id=assessment.id,
+                    indicator_id=disaster_indicator.id,
+                    file_name="disaster.pdf",
+                    file_url="/disaster.pdf",
+                    file_type="application/pdf",
+                    file_size=100,
+                    assessor_notes="Disaster MOV needs revision",
+                    flagged_for_rework=True,
+                    uploaded_at=datetime(2026, 4, 10, 8, 0, 0),
+                ),
+            ]
+        )
+        db_session.commit()
+
+        response = client.get(f"/api/v1/blgu-dashboard/{assessment.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert set(data["flagged_indicator_ids"]) == {
+            financial_indicator.id,
+            disaster_indicator.id,
+        }
+        assert {comment["indicator_id"] for comment in data["rework_comments"]} == {
+            financial_indicator.id,
+            disaster_indicator.id,
+        }
 
 
 class TestIndicatorNavigationEndpoint:

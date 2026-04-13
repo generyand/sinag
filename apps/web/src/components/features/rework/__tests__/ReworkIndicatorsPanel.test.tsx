@@ -103,4 +103,37 @@ describe("ReworkIndicatorsPanel", () => {
     expect(screen.getByText("Indicator 101")).toBeInTheDocument();
     expect(screen.getByText("Indicator 102")).toBeInTheDocument();
   });
+
+  it("keeps feedback-backed indicators visible even when flagged ids are incomplete", () => {
+    const dashboardData = {
+      is_calibration_rework: false,
+      is_mlgoo_recalibration: false,
+      governance_areas: [
+        {
+          governance_area_id: 1,
+          governance_area_name: "Financial Administration",
+          indicators: [{ indicator_id: 101, indicator_name: "Indicator 101", is_complete: false }],
+        },
+        {
+          governance_area_id: 2,
+          governance_area_name: "Disaster Preparedness",
+          indicators: [{ indicator_id: 201, indicator_name: "Indicator 201", is_complete: false }],
+        },
+      ],
+      flagged_indicator_ids: [101],
+      addressed_indicator_ids: [],
+      rework_comments: [
+        { indicator_id: 101, indicator_name: "Indicator 101", comment: "Fix financial issue" },
+        { indicator_id: 201, indicator_name: "Indicator 201", comment: "Fix disaster issue" },
+      ],
+      mov_annotations_by_indicator: {},
+      mov_notes_by_indicator: {},
+    } as any;
+
+    render(<ReworkIndicatorsPanel dashboardData={dashboardData} assessmentId={31} />);
+
+    expect(screen.getByText("Indicator 101")).toBeInTheDocument();
+    expect(screen.getByText("Indicator 201")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Disaster Preparedness/i })).toBeInTheDocument();
+  });
 });

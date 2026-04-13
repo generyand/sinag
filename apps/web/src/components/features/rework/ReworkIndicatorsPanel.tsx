@@ -154,6 +154,47 @@ export function ReworkIndicatorsPanel({
       return null;
     };
 
+    const addIndicatorToMap = (
+      indicatorId: number,
+      indicatorName?: string,
+      onlyWhenAreaMissing = false
+    ) => {
+      if (indicatorMap.has(indicatorId)) {
+        return indicatorMap.get(indicatorId);
+      }
+
+      const indicator = findIndicator(indicatorId);
+      if (!indicator) {
+        return undefined;
+      }
+
+      if (onlyWhenAreaMissing) {
+        const existingAreaIds = new Set(
+          Array.from(indicatorMap.values()).map((item) => item.governance_area_id)
+        );
+        if (existingAreaIds.has(indicator.governance_area_id)) {
+          return undefined;
+        }
+      }
+
+      const nextItem: FailedIndicator = {
+        indicator_id: indicatorId,
+        indicator_name: indicatorName || indicator.indicator_name,
+        governance_area_id: indicator.governance_area_id,
+        governance_area_name: indicator.governance_area_name,
+        is_complete: indicator.is_complete,
+        is_addressed: addressedIds.has(indicatorId),
+        comments: [],
+        annotations: [],
+        total_feedback_items: 0,
+        has_mov_issues: false,
+        has_field_issues: false,
+        route_path: `/blgu/assessments?indicator=${indicatorId}`,
+      };
+      indicatorMap.set(indicatorId, nextItem);
+      return nextItem;
+    };
+
     // For MLGOO RE-CALIBRATION: Show indicators that have flagged files OR are explicitly selected
     if (
       isMlgooRecalibration &&
@@ -260,29 +301,13 @@ export function ReworkIndicatorsPanel({
     // start from flagged indicators, then reduce as they are addressed.
     else if (flaggedIndicatorIds.size > 0) {
       flaggedIndicatorIds.forEach((indicatorId) => {
-        const indicator = findIndicator(indicatorId);
-        if (!indicator) {
-          return;
-        }
-
-        indicatorMap.set(indicatorId, {
-          indicator_id: indicatorId,
-          indicator_name: indicator.indicator_name,
-          governance_area_id: indicator.governance_area_id,
-          governance_area_name: indicator.governance_area_name,
-          is_complete: indicator.is_complete,
-          is_addressed: addressedIds.has(indicatorId),
-          comments: [],
-          annotations: [],
-          total_feedback_items: 0,
-          has_mov_issues: false,
-          has_field_issues: false,
-          route_path: `/blgu/assessments?indicator=${indicatorId}`,
-        });
+        addIndicatorToMap(indicatorId);
       });
 
       dashboardData.rework_comments?.forEach((comment: any) => {
-        const failed = indicatorMap.get(comment.indicator_id);
+        const failed =
+          indicatorMap.get(comment.indicator_id) ??
+          addIndicatorToMap(comment.indicator_id, comment.indicator_name, true);
         if (failed) {
           failed.comments.push(comment);
         }
@@ -290,7 +315,12 @@ export function ReworkIndicatorsPanel({
 
       Object.entries(movNotesByIndicator).forEach(([indicatorIdStr, notes]) => {
         const indicatorId = Number(indicatorIdStr);
-        const failed = indicatorMap.get(indicatorId);
+        const noteName =
+          Array.isArray(notes) && notes.length > 0
+            ? notes[0]?.indicator_name || undefined
+            : undefined;
+        const failed =
+          indicatorMap.get(indicatorId) ?? addIndicatorToMap(indicatorId, noteName, true);
         if (!failed) {
           return;
         }
@@ -310,7 +340,12 @@ export function ReworkIndicatorsPanel({
       Object.entries(dashboardData.mov_annotations_by_indicator || {}).forEach(
         ([indicatorIdStr, annotations]: [string, any]) => {
           const indicatorId = Number(indicatorIdStr);
-          const failed = indicatorMap.get(indicatorId);
+          const annotationName =
+            Array.isArray(annotations) && annotations.length > 0
+              ? annotations[0]?.indicator_name || undefined
+              : undefined;
+          const failed =
+            indicatorMap.get(indicatorId) ?? addIndicatorToMap(indicatorId, annotationName, true);
           if (failed) {
             failed.annotations.push(...annotations);
           }

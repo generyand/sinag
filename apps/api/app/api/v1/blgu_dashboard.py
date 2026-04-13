@@ -439,6 +439,25 @@ def get_blgu_dashboard(
     addressed_indicator_ids = None
     flagged_indicator_ids = None
     area_submission_status_payload = assessment.area_submission_status or {}
+    active_rework_area_ids = {
+        int(area_key)
+        for area_key, area_data in area_submission_status_payload.items()
+        if isinstance(area_data, dict) and str(area_data.get("status", "")).lower() == "rework"
+    }
+    pending_calibrations = assessment.pending_calibrations or []
+    active_calibration_area_ids = {
+        int(pc.get("governance_area_id"))
+        for pc in pending_calibrations
+        if isinstance(pc, dict)
+        and pc.get("governance_area_id") is not None
+        and not pc.get("approved", False)
+    }
+    if assessment.is_calibration_rework and not active_calibration_area_ids:
+        active_calibration_area_ids = {
+            int(area_id)
+            for area_id in (assessment.calibrated_area_ids or [])
+            if area_id is not None
+        }
     has_pending_area_rework = any(
         isinstance(v, dict) and str(v.get("status", "")).lower() == "rework"
         for v in area_submission_status_payload.values()
@@ -498,6 +517,22 @@ def get_blgu_dashboard(
             if response.requires_rework and response.indicator_id is not None
         }
 
+        def should_include_feedback_indicator(indicator_id: int | None) -> bool:
+            if indicator_id is None:
+                return False
+
+            response = response_lookup.get(indicator_id)
+            area_id = (
+                response.indicator.governance_area_id if response and response.indicator else None
+            )
+            if area_id is None:
+                return not active_rework_area_ids and not active_calibration_area_ids
+
+            if not active_rework_area_ids and not active_calibration_area_ids:
+                return True
+
+            return area_id in active_rework_area_ids or area_id in active_calibration_area_ids
+
         # Build per-governance-area rework timestamps for per-area assessor workflow.
         area_rework_requested_at: dict[int, datetime] = {}
         for area_key, area_data in area_submission_status_payload.items():
@@ -535,9 +570,21 @@ def get_blgu_dashboard(
             if has_new_files and response and response.is_completed:
                 addressed_indicator_ids.append(indicator_id)
 
+        for comment in comments_list:
+            indicator_id = comment.get("indicator_id")
+            if should_include_feedback_indicator(indicator_id):
+                flagged_indicator_ids.add(indicator_id)
+
+        for indicator_id in mov_notes_by_indicator_dict.keys():
+            if should_include_feedback_indicator(indicator_id):
+                flagged_indicator_ids.add(indicator_id)
+
+        for indicator_id in annotations_by_indicator_dict.keys():
+            if should_include_feedback_indicator(indicator_id):
+                flagged_indicator_ids.add(indicator_id)
+
     # PARALLEL CALIBRATION: Get all pending calibration info
     # pending_calibrations is a list of calibration requests from different validators
-    pending_calibrations = assessment.pending_calibrations or []
     calibration_governance_area_id = None
     calibration_governance_area_name = None
     calibration_governance_areas = []  # List of all pending calibration areas
