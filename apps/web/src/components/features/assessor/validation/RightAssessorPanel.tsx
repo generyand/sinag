@@ -52,6 +52,47 @@ type AnyRecord = Record<string, any>;
 
 type LocalStatus = "Pass" | "Fail" | "Conditional" | undefined;
 
+function getTimestampMs(value: unknown): number | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getActiveFeedbackBoundaryMs(
+  core: AnyRecord,
+  response: AnyRecord,
+  isValidator: boolean
+): number | null {
+  if (!isValidator) {
+    return getTimestampMs(core?.rework_requested_at);
+  }
+
+  const governanceAreaId = Number(
+    response?.indicator?.governance_area?.id ??
+      response?.indicator?.governance_area_id ??
+      response?.governance_area_id ??
+      NaN
+  );
+
+  if (Array.isArray(core?.pending_calibrations) && Number.isFinite(governanceAreaId)) {
+    const matchingPendingCalibration = core.pending_calibrations.find((item: AnyRecord) => {
+      return Number(item?.governance_area_id ?? NaN) === governanceAreaId;
+    });
+
+    const pendingCalibrationMs = getTimestampMs(matchingPendingCalibration?.requested_at);
+    if (pendingCalibrationMs !== null) {
+      return pendingCalibrationMs;
+    }
+  }
+
+  return (
+    getTimestampMs(core?.calibration_requested_at) ?? getTimestampMs(core?.rework_requested_at)
+  );
+}
+
 /**
  * Physical/Financial Accomplishment Auto-Calculator
  *
@@ -634,29 +675,34 @@ export function RightAssessorPanel({
       const key = String(r.id);
 
       // Load public comment from feedback_comments
-      // For ASSESSORS: Skip loading old comments for indicators requiring rework (first review cycle)
-      // For VALIDATORS: Always load comments - they're reviewing after BLGU rework
-      // IMPORTANT: Only load comments made by users of the same role (validators see validator comments, assessors see assessor comments)
+      // Only hydrate same-role comments that belong to the active review cycle.
+      // Older comments remain in feedback history but should not prefill the new review textarea.
       let publicComment = "";
-      // Load public comment from feedback_comments array (get LATEST comment, not first)
       const feedbackComments = (r as AnyRecord).feedback_comments || [];
-      // Filter by comment_type, not internal note, AND by role
-      // Validators should only see validator comments, assessors should only see assessor comments
+      const feedbackBoundaryMs = getActiveFeedbackBoundaryMs(core, r, isValidator);
       const validationComments = feedbackComments.filter((fc: any) => {
         if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
-        // Filter by role - validators see validator comments, assessors see assessor comments
         const commenterRole = fc.assessor?.role?.toLowerCase() || "";
-        if (isValidator) {
-          return commenterRole === "validator";
-        } else {
-          return commenterRole === "assessor";
+        const isSameReviewerRole = isValidator
+          ? commenterRole === "validator"
+          : commenterRole === "assessor";
+
+        if (!isSameReviewerRole) {
+          return false;
         }
+
+        if (feedbackBoundaryMs === null) {
+          return true;
+        }
+
+        const createdAtMs = getTimestampMs(fc.created_at);
+        return createdAtMs !== null && createdAtMs > feedbackBoundaryMs;
       });
-      // Sort by created_at DESC to get the latest comment
+
       validationComments.sort((a: any, b: any) => {
         const dateA = new Date(a.created_at || 0).getTime();
         const dateB = new Date(b.created_at || 0).getTime();
-        return dateB - dateA; // DESC order
+        return dateB - dateA;
       });
       const publicFeedback = validationComments[0];
       publicComment = publicFeedback?.comment || form[r.id]?.publicComment || "";

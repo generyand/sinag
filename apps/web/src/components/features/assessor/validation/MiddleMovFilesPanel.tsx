@@ -432,6 +432,10 @@ function ReviewFileSection({
         hideHeader={true}
       />
 
+      {description && archivedFiles.length === 0 && (
+        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{description}</p>
+      )}
+
       {archivedFiles.length > 0 && (
         <div className="mt-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
           <Button
@@ -1304,7 +1308,7 @@ export function MiddleMovFilesPanel({
                 titleClassName="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide"
                 badgeClassName="text-xs text-emerald-600 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full"
                 containerClassName="rounded-sm border-2 border-emerald-500 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3"
-                description={`Older uploads made ${effectiveLabel.toLowerCase()} are kept in history.`}
+                description={`Uploads made ${effectiveLabel.toLowerCase()} remain visible here.`}
                 movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}
@@ -1316,11 +1320,12 @@ export function MiddleMovFilesPanel({
               <ReviewFileSection
                 title="Existing File"
                 files={acceptedOldFiles}
+                collapseHistory={false}
                 historyLabel="View existing file history"
                 titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
                 badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
                 containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
-                description="Older accepted uploads are kept here for reference."
+                description="Accepted uploads from earlier submissions remain visible for reference."
                 movAnnotations={safeAnnotations}
                 onPreview={handlePreview}
                 onDownload={handleDownload}

@@ -8,7 +8,7 @@
  * - Permission-based controls
  */
 
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FileFieldComponent } from "../FileFieldComponent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -260,6 +260,15 @@ describe("FileFieldComponent", () => {
             file_url: "https://example.com/validator.pdf",
             upload_origin: "validator",
           },
+          {
+            id: 3,
+            file_name: "validator-older-document.pdf",
+            field_id: "test_mov_upload",
+            file_size: 1024000,
+            uploaded_at: "2026-03-19T00:00:00.000Z",
+            file_url: "https://example.com/validator-older.pdf",
+            upload_origin: "validator",
+          },
         ],
       },
       isLoading: false,
@@ -270,7 +279,11 @@ describe("FileFieldComponent", () => {
 
     expect(await screen.findByText("Validator Uploads")).toBeInTheDocument();
     expect(screen.getByText("validator-document.pdf")).toBeInTheDocument();
+    expect(screen.getByText("validator-older-document.pdf")).toBeInTheDocument();
     expect(screen.getByText("barangay-document.pdf")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /view validator upload history/i })
+    ).not.toBeInTheDocument();
   });
 
   it("should show loading state while fetching files", async () => {
@@ -481,7 +494,7 @@ describe("FileFieldComponent", () => {
     expect(screen.getByText(/0\.98\s*MB/i)).toBeInTheDocument();
   });
 
-  it("should show only the latest upload by default and reveal older uploads in file history", async () => {
+  it("should show all uploaded files without hiding older ones in file history", async () => {
     const sinag = await import("@sinag/shared");
 
     vi.mocked(sinag.useGetMovsAssessmentsAssessmentIdIndicatorsIndicatorIdFiles).mockReturnValue({
@@ -512,10 +525,7 @@ describe("FileFieldComponent", () => {
     renderComponent();
 
     expect(screen.getByText("latest-document.pdf")).toBeInTheDocument();
-    expect(screen.queryByText("older-document.pdf")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /view file history/i }));
-
     expect(screen.getByText("older-document.pdf")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /view file history/i })).not.toBeInTheDocument();
   });
 });
