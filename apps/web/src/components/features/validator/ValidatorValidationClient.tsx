@@ -29,7 +29,7 @@ import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
 
@@ -97,6 +97,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
   // Store calibration flag state (which indicators are flagged for calibration)
   const [calibrationFlags, setCalibrationFlags] = useState<Record<number, boolean>>({});
+  const [movAttentionByResponse, setMovAttentionByResponse] = useState<
+    Record<number, Record<number, boolean>>
+  >({});
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
   const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
   const [dirtyResponseIds, setDirtyResponseIds] = useState<number[]>([]);
@@ -324,6 +327,30 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     return !!(formData?.publicComment && formData.publicComment.trim().length > 0);
   };
 
+  const responseHasServerMovAttention = (response: AnyRecord): boolean => {
+    const movs = Array.isArray(response.movs) ? response.movs : [];
+
+    return movs.some((mov: AnyRecord) => {
+      const hasValidatorNotes = Boolean(
+        mov.validator_notes && String(mov.validator_notes).trim().length > 0
+      );
+
+      return hasValidatorNotes || mov.flagged_for_calibration === true;
+    });
+  };
+
+  const responseHasAttention = (response: AnyRecord): boolean => {
+    const localFileAttention = Object.values(movAttentionByResponse[response.id] ?? {}).some(
+      Boolean
+    );
+
+    return (
+      responseHasServerMovAttention(response) ||
+      localFileAttention ||
+      calibrationFlags[response.id] === true
+    );
+  };
+
   // Helper: Check if an indicator is "reviewed"
   // An indicator is reviewed if:
   // 1. Has checklist items checked in current session, OR
@@ -331,9 +358,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration), OR
   // 4. Validator has entered a comment/finding
   const isIndicatorReviewed = (responseId: number): boolean => {
+    const response = responses.find((r: AnyRecord) => r.id === responseId);
+
     return (
       hasChecklistItemsChecked(responseId) ||
-      calibrationFlags[responseId] === true ||
+      (response ? responseHasAttention(response) : calibrationFlags[responseId] === true) ||
       hasExistingValidationStatus(responseId) ||
       hasValidatorComment(responseId)
     );
@@ -369,6 +398,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         name: indicator.name || "Unnamed Indicator",
         // For validators: Show completed if checklist items checked OR flagged for calibration
         status: isIndicatorReviewed(resp.id) ? "completed" : "not_started",
+        hasMovNotes: responseHasAttention(resp),
       });
 
       // Sort indicators by code after adding
@@ -881,6 +911,19 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }, 0);
   };
 
+  const handleMovAttentionChange = useCallback(
+    (responseId: number, movFileId: number, hasAttention: boolean) => {
+      setMovAttentionByResponse((prev) => ({
+        ...prev,
+        [responseId]: {
+          ...(prev[responseId] ?? {}),
+          [movFileId]: hasAttention,
+        },
+      }));
+    },
+    []
+  );
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
@@ -1016,6 +1059,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   assessment={transformedAssessment as any}
                   selectedIndicatorId={selectedIndicatorId}
                   onIndicatorSelect={handleIndicatorSelect}
+                  movAttentionVariant="danger"
                 />
               </div>
             )}
@@ -1040,6 +1084,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       handleCalibrationFlagChange(responseId, false);
                     }
                   }}
+                  onMovAttentionChange={handleMovAttentionChange}
                 />
               </div>
             )}
@@ -1071,6 +1116,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   assessment={transformedAssessment as any}
                   selectedIndicatorId={selectedIndicatorId}
                   onIndicatorSelect={handleIndicatorSelect}
+                  movAttentionVariant="danger"
                 />
               </div>
             </div>
@@ -1130,6 +1176,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                           handleCalibrationFlagChange(responseId, false);
                         }
                       }}
+                      onMovAttentionChange={handleMovAttentionChange}
                     />
                   </div>
                 )}
@@ -1163,6 +1210,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   assessment={transformedAssessment as any}
                   selectedIndicatorId={selectedIndicatorId}
                   onIndicatorSelect={handleIndicatorSelect}
+                  movAttentionVariant="danger"
                 />
               </div>
             </div>
@@ -1188,6 +1236,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     handleCalibrationFlagChange(responseId, false);
                   }
                 }}
+                onMovAttentionChange={handleMovAttentionChange}
               />
             </div>
 
