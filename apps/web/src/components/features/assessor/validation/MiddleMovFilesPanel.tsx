@@ -260,6 +260,8 @@ interface MiddleMovFilesPanelProps {
   onReworkFlagSaved?: (responseId: number, movFileId: number, flagged: boolean) => void;
   /** Callback when validator toggles calibration flag (validators only) */
   onCalibrationFlagChange?: (responseId: number, flagged: boolean) => void;
+  /** Callback while validator MOV note/flag edits make one open file need attention */
+  onMovAttentionChange?: (responseId: number, movFileId: number, hasAttention: boolean) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -301,6 +303,62 @@ function sortFilesByUploadedAtDesc<T extends { uploaded_at?: string | null }>(fi
     const bTime = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
     return bTime - aTime;
   });
+}
+
+function patchMovFeedbackInAssessmentCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  assessmentId: number,
+  movFileId: number,
+  feedback: AnyRecord
+) {
+  if (assessmentId <= 0) return;
+
+  const queryKey = getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId);
+
+  queryClient.setQueryData(queryKey, (current: unknown) => {
+    if (!current || typeof current !== "object") return current;
+
+    const root = current as AnyRecord;
+    const core = (root.assessment as AnyRecord | undefined) ?? root;
+    const responses = Array.isArray(core.responses) ? core.responses : null;
+    if (!responses) return current;
+
+    let didUpdateMov = false;
+    const nextResponses = responses.map((response: AnyRecord) => {
+      const movs = Array.isArray(response.movs) ? response.movs : null;
+      if (!movs) return response;
+
+      const nextMovs = movs.map((mov: AnyRecord) => {
+        if (Number(mov.id) !== movFileId) return mov;
+
+        didUpdateMov = true;
+        return {
+          ...mov,
+          assessor_notes:
+            feedback.assessor_notes !== undefined ? feedback.assessor_notes : mov.assessor_notes,
+          flagged_for_rework:
+            feedback.flagged_for_rework !== undefined
+              ? feedback.flagged_for_rework
+              : mov.flagged_for_rework,
+          validator_notes:
+            feedback.validator_notes !== undefined ? feedback.validator_notes : mov.validator_notes,
+          flagged_for_calibration:
+            feedback.flagged_for_calibration !== undefined
+              ? feedback.flagged_for_calibration
+              : mov.flagged_for_calibration,
+        };
+      });
+
+      return didUpdateMov ? { ...response, movs: nextMovs } : response;
+    });
+
+    if (!didUpdateMov) return current;
+
+    const nextCore = { ...core, responses: nextResponses };
+    return root.assessment ? { ...root, assessment: nextCore } : nextCore;
+  });
+
+  void queryClient.invalidateQueries({ queryKey, refetchType: "active" });
 }
 
 function ReviewFileSection({
@@ -431,6 +489,7 @@ export function MiddleMovFilesPanel({
   onAnnotationDeleted,
   onReworkFlagSaved,
   onCalibrationFlagChange,
+  onMovAttentionChange,
 }: MiddleMovFilesPanelProps) {
   const { user } = useAuthStore();
   const isValidator = user?.role === "VALIDATOR";
@@ -641,6 +700,12 @@ export function MiddleMovFilesPanel({
       onSuccess: (_data, variables) => {
         toast.success("Feedback saved");
         setFeedbackDirty(false);
+        patchMovFeedbackInAssessmentCache(
+          queryClient,
+          assessmentId,
+          variables.movFileId,
+          variables.data as AnyRecord
+        );
         const flaggedValue = isValidator
           ? (variables.data as AnyRecord).flagged_for_calibration
           : (variables.data as AnyRecord).flagged_for_rework;
@@ -682,6 +747,20 @@ export function MiddleMovFilesPanel({
       setFeedbackDirty(false);
     }
   }, [isAnnotating]);
+
+  React.useEffect(() => {
+    if (!isValidator || !expandedId || !selectedFile?.id || !onMovAttentionChange) return;
+
+    const currentResponseId = expandedId;
+    const currentMovFileId = selectedFile.id;
+    const hasAttention = movFlagged || movNotes.trim().length > 0;
+
+    onMovAttentionChange(currentResponseId, currentMovFileId, hasAttention);
+
+    return () => {
+      onMovAttentionChange(currentResponseId, currentMovFileId, false);
+    };
+  }, [movNotes, movFlagged, isValidator, expandedId, selectedFile?.id, onMovAttentionChange]);
 
   // Auto-toggle flag when notes are added
   const handleNotesChange = (value: string) => {

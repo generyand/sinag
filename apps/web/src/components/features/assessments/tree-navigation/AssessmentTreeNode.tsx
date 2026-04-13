@@ -40,6 +40,7 @@ interface AssessmentTreeNodeProps {
   // Per-area rework/calibration tracking
   remainingAttempts?: { reworkLeft: boolean; calibrationLeft: boolean };
   isAssessmentLockedForBlgu?: boolean;
+  movAttentionVariant?: "warning" | "danger";
 }
 
 export function AssessmentTreeNode({
@@ -58,6 +59,7 @@ export function AssessmentTreeNode({
   onAreaSubmitSuccess,
   remainingAttempts,
   isAssessmentLockedForBlgu = false,
+  movAttentionVariant = "warning",
 }: AssessmentTreeNodeProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -160,19 +162,47 @@ export function AssessmentTreeNode({
 
     // Show yellow warning for indicators with MOV notes or flagged files
     if (indicator.hasMovNotes) {
-      // If also completed, show warning triangle (notes take visual priority)
-      return <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" aria-hidden="true" />;
+      // If also completed, MOV attention takes visual priority.
+      if (movAttentionVariant === "danger") {
+        return (
+          <AlertCircle
+            className="h-3.5 w-3.5 text-red-500"
+            aria-label="Indicator needs attention"
+          />
+        );
+      }
+
+      return (
+        <AlertTriangle
+          className="h-3.5 w-3.5 text-yellow-500"
+          aria-label="Indicator has MOV notes"
+        />
+      );
     }
 
     switch (indicator.status) {
       case "completed":
-        return <CheckCircle className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />;
+        return (
+          <CheckCircle className="h-3.5 w-3.5 text-green-500" aria-label="Indicator complete" />
+        );
       case "flagged_for_rework":
-        return <AlertTriangle className="h-3.5 w-3.5 text-orange-500" aria-hidden="true" />;
+        return (
+          <AlertTriangle
+            className="h-3.5 w-3.5 text-orange-500"
+            aria-label="Indicator flagged for rework"
+          />
+        );
       case "needs_rework":
-        return <AlertCircle className="h-3.5 w-3.5 text-orange-500" aria-hidden="true" />;
+        return (
+          <AlertCircle
+            className="h-3.5 w-3.5 text-orange-500"
+            aria-label="Indicator needs rework"
+          />
+        );
       default:
-        return <Circle className="h-3.5 w-3.5 text-[var(--border)]" aria-hidden="true" />;
+        return (
+          <Circle className="h-3.5 w-3.5 text-[var(--border)]" aria-label="Indicator not started" />
+        );
     }
   };
 
