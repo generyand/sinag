@@ -703,11 +703,17 @@ class StorageService:
             if mov_file.upload_origin != MOV_UPLOAD_ORIGIN_VALIDATOR:
                 return False, "Validators can only delete validator-uploaded files"
 
-            if assessment.status != AssessmentStatus.SUBMITTED:
+            if assessment.status not in (
+                AssessmentStatus.AWAITING_FINAL_VALIDATION,
+                AssessmentStatus.REWORK,
+            ) or (
+                assessment.status == AssessmentStatus.REWORK
+                and not assessment.is_calibration_rework
+            ):
                 return (
                     False,
                     f"Cannot delete validator-uploaded files from {assessment.status} assessments. "
-                    f"Deletion is only allowed while the assessment is Submitted.",
+                    f"Deletion is only allowed for assessments awaiting final validation.",
                 )
 
             return True, None
