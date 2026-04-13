@@ -462,6 +462,7 @@ describe("ValidatorValidationClient autosave", () => {
     mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
       data: makeAssessment(
         {
+          flagged_for_calibration: true,
           validation_status: "PASS",
           response_data: {
             validator_val_requirement_1: true,

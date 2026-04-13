@@ -180,7 +180,6 @@ describe("validator-progress", () => {
       getValidatorIndicatorProgress(response(), {
         checklistState: { checklist_201_requirement_1: true },
         localMovAttentionByFileId: {},
-        responseCalibrationFlag: false,
         strictChecklistRequired: true,
       })
     ).toEqual({ status: "completed", hasMovNotes: false });
@@ -201,11 +200,33 @@ describe("validator-progress", () => {
         {
           checklistState: { checklist_201_requirement_1: true },
           localMovAttentionByFileId: {},
-          responseCalibrationFlag: false,
           strictChecklistRequired: true,
         }
       )
     ).toEqual({ status: "not_started", hasMovNotes: true });
+  });
+
+  it("does not keep strict post-calibration attention from a stale response-level flag when same-field BLGU files are clean", () => {
+    const oldFile = mov({
+      id: 1,
+      field_id: "ordinance",
+      uploaded_at: "2026-03-01T00:00:00.000Z",
+      validator_notes: "missing signature",
+      flagged_for_calibration: true,
+    });
+    const replacement = mov({
+      id: 2,
+      field_id: "ordinance",
+      uploaded_at: "2026-04-01T00:00:00.000Z",
+    });
+
+    expect(
+      getValidatorIndicatorProgress(response({ movs: [oldFile, replacement] }), {
+        checklistState: { checklist_201_requirement_1: true },
+        localMovAttentionByFileId: {},
+        strictChecklistRequired: true,
+      })
+    ).toEqual({ status: "completed", hasMovNotes: false });
   });
 
   it("does not turn green from validation_status alone in strict post-calibration mode", () => {
@@ -213,7 +234,6 @@ describe("validator-progress", () => {
       getValidatorIndicatorProgress(response({ validation_status: "PASS" }), {
         checklistState: {},
         localMovAttentionByFileId: {},
-        responseCalibrationFlag: false,
         strictChecklistRequired: true,
       })
     ).toEqual({ status: "not_started", hasMovNotes: false });
@@ -224,7 +244,6 @@ describe("validator-progress", () => {
       getValidatorIndicatorProgress(response({ validation_status: "PASS" }), {
         checklistState: {},
         localMovAttentionByFileId: {},
-        responseCalibrationFlag: false,
         strictChecklistRequired: false,
       })
     ).toEqual({ status: "completed", hasMovNotes: false });

@@ -3,7 +3,6 @@ type AnyRecord = Record<string, any>;
 export interface ValidatorProgressInput {
   checklistState: Record<string, any>;
   localMovAttentionByFileId: Record<number, boolean | undefined>;
-  responseCalibrationFlag: boolean;
   strictChecklistRequired: boolean;
 }
 
@@ -179,11 +178,9 @@ export function getValidatorIndicatorProgress(
   response: AnyRecord,
   input: ValidatorProgressInput
 ): ValidatorIndicatorProgress {
-  const hasMovNotes =
-    input.responseCalibrationFlag ||
-    hasActiveValidatorMovAttention(response, {
-      localMovAttentionByFileId: input.localMovAttentionByFileId,
-    });
+  const hasMovNotes = hasActiveValidatorMovAttention(response, {
+    localMovAttentionByFileId: input.localMovAttentionByFileId,
+  });
   const checklistCompletion = getValidatorChecklistCompletion(response, input.checklistState);
 
   const reviewed = input.strictChecklistRequired

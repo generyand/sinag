@@ -309,7 +309,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     getValidatorIndicatorProgress(response, {
       checklistState,
       localMovAttentionByFileId: movAttentionByResponse[response.id] ?? {},
-      responseCalibrationFlag: calibrationFlags[response.id] === true,
       strictChecklistRequired: isPostCalibrationReview,
     });
 
