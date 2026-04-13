@@ -358,9 +358,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration), OR
   // 4. Validator has entered a comment/finding
   const isIndicatorReviewed = (responseId: number): boolean => {
+    const response = responses.find((r: AnyRecord) => r.id === responseId);
+
     return (
       hasChecklistItemsChecked(responseId) ||
-      calibrationFlags[responseId] === true ||
+      (response ? responseHasAttention(response) : calibrationFlags[responseId] === true) ||
       hasExistingValidationStatus(responseId) ||
       hasValidatorComment(responseId)
     );

@@ -347,6 +347,32 @@ describe("ValidatorValidationClient autosave", () => {
     expectSidebarAttention(201, true);
   });
 
+  it("counts a saved validator MOV note as reviewed even without a validation status", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({
+        validation_status: null,
+        movs: [
+          {
+            id: 1,
+            uploaded_at: "2024-01-01T00:00:00Z",
+            validator_notes: "no signature",
+            flagged_for_calibration: false,
+          },
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    screen.getAllByTestId("tree-indicator-201").forEach((indicator) => {
+      expect(indicator).toHaveAttribute("data-has-mov-notes", "true");
+      expect(indicator).toHaveAttribute("data-status", "completed");
+    });
+  });
+
   it("marks a validator sidebar indicator as needing attention when a MOV is flagged for calibration", () => {
     mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
       data: makeAssessment({

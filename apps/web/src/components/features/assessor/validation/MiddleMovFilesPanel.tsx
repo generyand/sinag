@@ -305,6 +305,62 @@ function sortFilesByUploadedAtDesc<T extends { uploaded_at?: string | null }>(fi
   });
 }
 
+function patchMovFeedbackInAssessmentCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  assessmentId: number,
+  movFileId: number,
+  feedback: AnyRecord
+) {
+  if (assessmentId <= 0) return;
+
+  const queryKey = getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId);
+
+  queryClient.setQueryData(queryKey, (current: unknown) => {
+    if (!current || typeof current !== "object") return current;
+
+    const root = current as AnyRecord;
+    const core = (root.assessment as AnyRecord | undefined) ?? root;
+    const responses = Array.isArray(core.responses) ? core.responses : null;
+    if (!responses) return current;
+
+    let didUpdateMov = false;
+    const nextResponses = responses.map((response: AnyRecord) => {
+      const movs = Array.isArray(response.movs) ? response.movs : null;
+      if (!movs) return response;
+
+      const nextMovs = movs.map((mov: AnyRecord) => {
+        if (Number(mov.id) !== movFileId) return mov;
+
+        didUpdateMov = true;
+        return {
+          ...mov,
+          assessor_notes:
+            feedback.assessor_notes !== undefined ? feedback.assessor_notes : mov.assessor_notes,
+          flagged_for_rework:
+            feedback.flagged_for_rework !== undefined
+              ? feedback.flagged_for_rework
+              : mov.flagged_for_rework,
+          validator_notes:
+            feedback.validator_notes !== undefined ? feedback.validator_notes : mov.validator_notes,
+          flagged_for_calibration:
+            feedback.flagged_for_calibration !== undefined
+              ? feedback.flagged_for_calibration
+              : mov.flagged_for_calibration,
+        };
+      });
+
+      return didUpdateMov ? { ...response, movs: nextMovs } : response;
+    });
+
+    if (!didUpdateMov) return current;
+
+    const nextCore = { ...core, responses: nextResponses };
+    return root.assessment ? { ...root, assessment: nextCore } : nextCore;
+  });
+
+  void queryClient.invalidateQueries({ queryKey, refetchType: "active" });
+}
+
 function ReviewFileSection({
   title,
   files,
@@ -644,6 +700,12 @@ export function MiddleMovFilesPanel({
       onSuccess: (_data, variables) => {
         toast.success("Feedback saved");
         setFeedbackDirty(false);
+        patchMovFeedbackInAssessmentCache(
+          queryClient,
+          assessmentId,
+          variables.movFileId,
+          variables.data as AnyRecord
+        );
         const flaggedValue = isValidator
           ? (variables.data as AnyRecord).flagged_for_calibration
           : (variables.data as AnyRecord).flagged_for_rework;
