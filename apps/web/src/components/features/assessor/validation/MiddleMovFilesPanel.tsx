@@ -3,6 +3,11 @@
 
 import { FileList } from "@/components/features/movs/FileList";
 import { FileUpload } from "@/components/features/movs/FileUpload";
+import {
+  hasValidatorFileFeedback,
+  isBlguEvidenceFile,
+  isSupersededBlguMovFile,
+} from "@/components/features/validator/validator-progress";
 import { ConfirmationDialog } from "@/components/shared/ConfirmationDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -71,18 +76,6 @@ function hasAssessorFileFeedback(file: AnyRecord): boolean {
   );
 }
 
-function hasValidatorFileFeedback(file: AnyRecord): boolean {
-  return (
-    Boolean(file.validator_notes && String(file.validator_notes).trim()) ||
-    file.flagged_for_calibration === true
-  );
-}
-
-function getUploadedAtMs(file: AnyRecord): number {
-  const timestamp = file.uploaded_at ? new Date(String(file.uploaded_at)).getTime() : 0;
-  return Number.isFinite(timestamp) ? timestamp : 0;
-}
-
 function groupValidatorFilesForDisplay(files: (MOVFileResponse & AnyRecord)[]): {
   newFiles: (MOVFileResponse & AnyRecord)[];
   acceptedOldFiles: (MOVFileResponse & AnyRecord)[];
@@ -93,22 +86,23 @@ function groupValidatorFilesForDisplay(files: (MOVFileResponse & AnyRecord)[]): 
   const rejectedOldFiles: (MOVFileResponse & AnyRecord)[] = [];
 
   for (const file of files) {
-    const uploadedAt = getUploadedAtMs(file);
-    const hasNewerUpload = files.some((candidate) => getUploadedAtMs(candidate) > uploadedAt);
-    const hasAssessorFeedback = hasAssessorFileFeedback(file);
-    const hasValidatorFeedback = hasValidatorFileFeedback(file);
-
-    if (hasValidatorFeedback) {
-      if (hasNewerUpload) {
-        rejectedOldFiles.push(file);
-      } else {
-        acceptedOldFiles.push(file);
-      }
+    if (!isBlguEvidenceFile(file)) {
+      acceptedOldFiles.push(file);
       continue;
     }
 
-    if (hasAssessorFeedback) {
-      rejectedOldFiles.push(file);
+    const superseded = isSupersededBlguMovFile(file, files);
+    const hasAssessorFeedback = hasAssessorFileFeedback(file);
+    const hasValidatorFeedback = hasValidatorFileFeedback(file);
+
+    if (hasValidatorFeedback || hasAssessorFeedback) {
+      if (superseded) {
+        rejectedOldFiles.push(file);
+      } else if (hasValidatorFeedback) {
+        acceptedOldFiles.push(file);
+      } else {
+        rejectedOldFiles.push(file);
+      }
       continue;
     }
 
