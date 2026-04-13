@@ -54,6 +54,12 @@ import {
 } from "@/lib/assessment-locks";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
+  getAssessorIndicatorDetail,
+  getValidatorIndicatorDetail,
+  isAssessorIndicatorCompleted,
+  isValidatorIndicatorCompleted,
+} from "./assessment-progress-status";
+import {
   getGetMlgooAssessmentsAssessmentIdQueryKey,
   getGetCapdevAssessmentsAssessmentIdQueryKey,
   useGetAssessmentsList,
@@ -334,44 +340,6 @@ function getProgressFillClass(status?: string): string {
   }
 }
 
-function isAssessorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
-  const indicatorWithProgress = indicator as IndicatorDetailItem & {
-    assessor_reviewed?: boolean;
-  };
-  if (typeof indicatorWithProgress.assessor_reviewed === "boolean") {
-    return indicatorWithProgress.assessor_reviewed;
-  }
-
-  return Boolean(indicator.assessor_remarks && indicator.assessor_remarks.trim().length > 0);
-}
-
-function isValidatorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
-  const indicatorWithProgress = indicator as IndicatorDetailItem & {
-    validator_reviewed?: boolean;
-  };
-  if (typeof indicatorWithProgress.validator_reviewed === "boolean") {
-    return indicatorWithProgress.validator_reviewed;
-  }
-
-  const validationStatus = (indicator.validation_status || "").toUpperCase();
-  return (
-    validationStatus === "PASS" || validationStatus === "FAIL" || validationStatus === "CONDITIONAL"
-  );
-}
-
-function getValidationStatusLabel(status?: string | null): string {
-  switch ((status || "").toUpperCase()) {
-    case "PASS":
-      return "Pass";
-    case "FAIL":
-      return "Fail";
-    case "CONDITIONAL":
-      return "Conditional";
-    default:
-      return "Pending";
-  }
-}
-
 function formatDateTime(value: string | null | undefined): string {
   if (!value) {
     return "Not set";
@@ -383,36 +351,6 @@ function formatDateTime(value: string | null | undefined): string {
   }
 
   return parsed.toLocaleString();
-}
-
-function getAssessorIndicatorDetail(indicator: IndicatorDetailItem): {
-  label: string;
-  isPositive: boolean;
-} {
-  if (indicator.requires_rework) {
-    return { label: "Flagged for Rework", isPositive: false };
-  }
-
-  if (isAssessorIndicatorCompleted(indicator)) {
-    return { label: "Complete", isPositive: true };
-  }
-
-  return { label: "Pending", isPositive: false };
-}
-
-function getValidatorIndicatorDetail(indicator: IndicatorDetailItem): {
-  label: string;
-  isPositive: boolean;
-} {
-  if (indicator.flagged_for_calibration) {
-    return { label: "Flagged for Calibration", isPositive: false };
-  }
-
-  if (isValidatorIndicatorCompleted(indicator)) {
-    return { label: getValidationStatusLabel(indicator.validation_status), isPositive: true };
-  }
-
-  return { label: "Pending", isPositive: false };
 }
 
 export default function SubmissionDetailsPage() {

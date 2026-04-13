@@ -707,6 +707,115 @@ def test_get_assessment_details_keeps_mlgoo_recalibration_target_pending_until_l
     assert target_indicator["validator_reviewed"] is False
 
 
+def test_get_assessment_details_marks_active_calibration_indicators_in_progress_detail(
+    db_session,
+    mlgoo_user: User,
+    mock_blgu_user: User,
+    active_assessment_year: AssessmentYear,
+    mock_governance_area,
+):
+    from app.db.enums import ValidationStatus
+
+    parent = Indicator(
+        name="Calibration Parent",
+        indicator_code="C",
+        governance_area_id=mock_governance_area.id,
+        sort_order=0,
+        description="Parent grouping",
+    )
+    db_session.add(parent)
+    db_session.flush()
+
+    reviewed_indicator = Indicator(
+        name="Reviewed Indicator",
+        indicator_code="1.1",
+        governance_area_id=mock_governance_area.id,
+        parent_id=parent.id,
+        sort_order=1,
+        description="Reviewed indicator",
+    )
+    calibration_indicator = Indicator(
+        name="Calibration Indicator",
+        indicator_code="1.2",
+        governance_area_id=mock_governance_area.id,
+        parent_id=parent.id,
+        sort_order=2,
+        description="Calibration indicator",
+    )
+    db_session.add_all([reviewed_indicator, calibration_indicator])
+    db_session.flush()
+
+    calibration_requested_at = datetime(2026, 4, 11, 8, 0, 0)
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.REWORK,
+        is_calibration_rework=True,
+        calibration_requested_at=calibration_requested_at,
+        calibrated_area_ids=[mock_governance_area.id],
+        pending_calibrations=[
+            {
+                "validator_id": 999,
+                "governance_area_id": mock_governance_area.id,
+                "requested_at": "2026-04-11T08:00:00+00:00",
+                "comments": "Needs validator calibration",
+                "approved": False,
+            }
+        ],
+        area_submission_status={str(mock_governance_area.id): {"status": "submitted"}},
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=reviewed_indicator.id,
+                response_data={"assessor_val_status": "complete"},
+                is_completed=True,
+                validation_status=ValidationStatus.PASS,
+                updated_at=calibration_requested_at - timedelta(hours=2),
+            ),
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=calibration_indicator.id,
+                response_data={"assessor_val_status": "complete"},
+                is_completed=False,
+                requires_rework=True,
+                flagged_for_calibration=False,
+                validation_status=None,
+                updated_at=calibration_requested_at - timedelta(hours=1),
+            ),
+        ]
+    )
+    db_session.commit()
+
+    details = mlgoo_service.get_assessment_details(
+        db=db_session,
+        assessment_id=assessment.id,
+        mlgoo_user=mlgoo_user,
+    )
+
+    [area_progress] = [
+        area
+        for area in details["assessment_progress"]["governance_areas"]
+        if area["governance_area_id"] == mock_governance_area.id
+    ]
+    [calibration_detail] = [
+        indicator
+        for area in details["governance_areas"]
+        for indicator in area["indicators"]
+        if indicator["indicator_id"] == calibration_indicator.id
+    ]
+
+    assert area_progress["validator"]["reviewed_indicators"] == 1
+    assert area_progress["validator"]["total_indicators"] == 2
+    assert area_progress["validator"]["progress_percent"] == 50
+    assert calibration_detail["flagged_for_calibration"] is True
+    assert calibration_detail["validator_reviewed"] is False
+
+
 def test_get_assessment_details_summarizes_all_rework_and_calibration_requesters(
     db_session,
     mlgoo_user: User,
