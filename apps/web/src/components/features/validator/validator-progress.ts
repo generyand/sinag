@@ -82,9 +82,11 @@ export function getValidatorChecklistCompletion(
 ): ValidatorChecklistCompletion {
   const responseId = Number(response.id);
   const indicator = response.indicator ?? {};
-  const checklistItems = Array.isArray(indicator.checklist_items) ? indicator.checklist_items : [];
+  const checklistItems: AnyRecord[] = Array.isArray(indicator.checklist_items)
+    ? indicator.checklist_items
+    : [];
   const validationRule = indicator.validation_rule || "ALL_ITEMS_REQUIRED";
-  const validatableItems = checklistItems.filter(
+  const validatableItems: AnyRecord[] = checklistItems.filter(
     (item: AnyRecord) =>
       item.item_type !== "info_text" && !item.mov_description?.startsWith("Note:")
   );
@@ -116,7 +118,7 @@ export function getValidatorChecklistCompletion(
     }
 
     const anyGroupComplete = groupNames.some((groupName) => {
-      const group = groupedItems[groupName];
+      const group = groupedItems[groupName] ?? [];
       const hasInternalOr = groupName.includes("Option 3") || groupName.includes("OPTION 3");
 
       return hasInternalOr
