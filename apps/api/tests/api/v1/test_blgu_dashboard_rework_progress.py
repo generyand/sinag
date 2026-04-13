@@ -9,6 +9,7 @@ from app.db.enums import AreaType, AssessmentStatus, UserRole
 from app.db.models.assessment import Assessment, AssessmentResponse, MOVFile
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -71,8 +72,24 @@ def test_dashboard_only_marks_completed_flagged_indicators_as_addressed(
     db_session.flush()
 
     requested_at = datetime.now(UTC) - timedelta(days=2)
+    assessment_year = AssessmentYear(
+        year=2026,
+        assessment_period_start=requested_at - timedelta(days=90),
+        assessment_period_end=requested_at + timedelta(days=90),
+        phase1_deadline=requested_at - timedelta(days=1),
+        submission_window_days=60,
+        rework_window_days=5,
+        calibration_window_days=3,
+        default_unlock_grace_period_days=5,
+        is_active=True,
+        is_published=True,
+    )
+    db_session.add(assessment_year)
+    db_session.flush()
+
     assessment = Assessment(
         blgu_user_id=user.id,
+        assessment_year=assessment_year.year,
         status=AssessmentStatus.NEEDS_REWORK,
         rework_count=1,
         rework_requested_at=requested_at,

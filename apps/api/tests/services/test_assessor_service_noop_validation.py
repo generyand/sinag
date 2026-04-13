@@ -348,6 +348,68 @@ def test_get_validator_queue_does_not_count_false_only_checklist_data_as_reviewe
     assert queue[0]["re_review_progress"] == 0
 
 
+def test_get_assessor_queue_re_review_progress_requires_update_after_area_resubmission(
+    db_session, mock_governance_area
+):
+    response = create_validation_context(db_session, mock_governance_area)
+
+    assessor = User(
+        email="strict-re-review-assessor@test.com",
+        name="Strict Re-review Assessor",
+        role=UserRole.ASSESSOR,
+        assessor_area_id=mock_governance_area.id,
+        hashed_password="hashed_password",
+        is_active=True,
+    )
+    db_session.add(assessor)
+    db_session.commit()
+    db_session.refresh(assessor)
+
+    resubmitted_at = datetime(2025, 2, 2, 9, 0, 0)
+    assessment = response.assessment
+    assessment.status = AssessmentStatus.SUBMITTED_FOR_REVIEW
+    assessment.submitted_at = datetime(2025, 2, 1, 9, 0, 0)
+    assessment.area_submission_status = {
+        str(mock_governance_area.id): {
+            "status": "submitted",
+            "submitted_at": resubmitted_at.isoformat(),
+            "resubmitted_after_rework": True,
+        }
+    }
+    response.response_data = {"assessor_val_item_1": True}
+    response.requires_rework = False
+    response.updated_at = resubmitted_at
+    db_session.add_all([assessment, response])
+    db_session.commit()
+
+    queue = assessor_service.get_assessor_queue(db_session, assessor, assessment_year=2025)
+
+    assert len(queue) == 1
+    assert queue[0]["re_review_progress"] == 0
+
+
+def test_get_validator_queue_re_review_progress_requires_update_after_calibration_submission(
+    db_session, mock_governance_area, validator_user
+):
+    response = create_validation_context(db_session, mock_governance_area)
+
+    calibration_submitted_at = datetime(2025, 2, 2, 9, 0, 0)
+    assessment = response.assessment
+    assessment.status = AssessmentStatus.AWAITING_FINAL_VALIDATION
+    assessment.submitted_at = datetime(2025, 2, 1, 9, 0, 0)
+    assessment.calibration_submitted_at = calibration_submitted_at
+    response.validation_status = ValidationStatus.PASS
+    response.requires_rework = False
+    response.updated_at = calibration_submitted_at
+    db_session.add_all([assessment, response])
+    db_session.commit()
+
+    queue = assessor_service.get_assessor_queue(db_session, validator_user, assessment_year=2025)
+
+    assert len(queue) == 1
+    assert queue[0]["re_review_progress"] == 0
+
+
 def test_get_validator_queue_phase_gating_excludes_submitted_but_keeps_validation_and_calibration_rework(
     db_session, mock_governance_area, validator_user
 ):
