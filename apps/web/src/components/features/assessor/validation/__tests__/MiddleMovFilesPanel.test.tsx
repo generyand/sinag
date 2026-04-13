@@ -10,6 +10,7 @@ import { MiddleMovFilesPanel } from "../MiddleMovFilesPanel";
 
 const mockUploadMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
+const mockPatchFeedbackMutate = vi.fn();
 let isUploadPending = false;
 
 vi.mock("@sinag/shared", () => ({
@@ -30,8 +31,11 @@ vi.mock("@sinag/shared", () => ({
     mutate: mockDeleteMutate,
     isPending: false,
   })),
-  usePatchAssessorMovsMovFileIdFeedback: vi.fn(() => ({
-    mutate: vi.fn(),
+  usePatchAssessorMovsMovFileIdFeedback: vi.fn((options: any) => ({
+    mutate: (variables: any) => {
+      mockPatchFeedbackMutate(variables);
+      options?.mutation?.onSuccess?.({}, variables);
+    },
     isPending: false,
   })),
 }));
@@ -115,13 +119,15 @@ vi.mock("@/components/features/movs/FileUpload", () => ({
   ),
 }));
 
-const wrap = (ui: React.ReactNode) => {
-  const client = new QueryClient({
+const createTestQueryClient = () =>
+  new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+
+const wrap = (ui: React.ReactNode, client = createTestQueryClient()) => {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 };
 
@@ -212,6 +218,7 @@ describe("MiddleMovFilesPanel", () => {
     vi.clearAllMocks();
     mockUploadMutate.mockReset();
     mockDeleteMutate.mockReset();
+    mockPatchFeedbackMutate.mockReset();
     isUploadPending = false;
   });
 
@@ -432,6 +439,52 @@ describe("MiddleMovFilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /view barangay upload history/i })
     ).not.toBeInTheDocument();
+  });
+
+  it("patches cached assessment MOV feedback after validator feedback is saved", async () => {
+    const user = userEvent.setup();
+    const queryClient = createTestQueryClient();
+
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 42, role: "VALIDATOR" },
+    });
+    queryClient.setQueryData(["assessor-assessment", 1], assessment);
+
+    render(
+      wrap(<MiddleMovFilesPanel assessment={assessment as any} expandedId={101} />, queryClient)
+    );
+
+    await user.click(screen.getByRole("button", { name: /preview evidence\.png/i }));
+    await user.type(
+      screen.getByPlaceholderText(/describe the specific issue with this file/i),
+      "no signature"
+    );
+    await user.click(screen.getByRole("button", { name: /save feedback/i }));
+
+    expect(mockPatchFeedbackMutate).toHaveBeenCalledWith({
+      movFileId: 9,
+      data: {
+        assessor_notes: undefined,
+        flagged_for_rework: undefined,
+        validator_notes: "no signature",
+        flagged_for_calibration: true,
+      },
+    });
+    expect(queryClient.getQueryData<any>(["assessor-assessment", 1])).toMatchObject({
+      assessment: {
+        responses: [
+          {
+            movs: [
+              {
+                id: 9,
+                validator_notes: "no signature",
+                flagged_for_calibration: true,
+              },
+            ],
+          },
+        ],
+      },
+    });
   });
 
   it("lets validators remove only their own validator-uploaded files", async () => {

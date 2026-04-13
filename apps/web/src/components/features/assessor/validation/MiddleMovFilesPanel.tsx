@@ -83,14 +83,14 @@ function getUploadedAtMs(file: AnyRecord): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function groupValidatorFilesForDisplay(files: AnyRecord[]): {
-  newFiles: AnyRecord[];
-  acceptedOldFiles: AnyRecord[];
-  rejectedOldFiles: AnyRecord[];
+function groupValidatorFilesForDisplay(files: (MOVFileResponse & AnyRecord)[]): {
+  newFiles: (MOVFileResponse & AnyRecord)[];
+  acceptedOldFiles: (MOVFileResponse & AnyRecord)[];
+  rejectedOldFiles: (MOVFileResponse & AnyRecord)[];
 } {
-  const newFiles: AnyRecord[] = [];
-  const acceptedOldFiles: AnyRecord[] = [];
-  const rejectedOldFiles: AnyRecord[] = [];
+  const newFiles: (MOVFileResponse & AnyRecord)[] = [];
+  const acceptedOldFiles: (MOVFileResponse & AnyRecord)[] = [];
+  const rejectedOldFiles: (MOVFileResponse & AnyRecord)[] = [];
 
   for (const file of files) {
     const uploadedAt = getUploadedAtMs(file);
@@ -260,6 +260,8 @@ interface MiddleMovFilesPanelProps {
   onReworkFlagSaved?: (responseId: number, movFileId: number, flagged: boolean) => void;
   /** Callback when validator toggles calibration flag (validators only) */
   onCalibrationFlagChange?: (responseId: number, flagged: boolean) => void;
+  /** Callback while validator MOV note/flag edits make one open file need attention */
+  onMovAttentionChange?: (responseId: number, movFileId: number, hasAttention: boolean) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -303,6 +305,62 @@ function sortFilesByUploadedAtDesc<T extends { uploaded_at?: string | null }>(fi
   });
 }
 
+function patchMovFeedbackInAssessmentCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  assessmentId: number,
+  movFileId: number,
+  feedback: AnyRecord
+) {
+  if (assessmentId <= 0) return;
+
+  const queryKey = getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId);
+
+  queryClient.setQueryData(queryKey, (current: unknown) => {
+    if (!current || typeof current !== "object") return current;
+
+    const root = current as AnyRecord;
+    const core = (root.assessment as AnyRecord | undefined) ?? root;
+    const responses = Array.isArray(core.responses) ? core.responses : null;
+    if (!responses) return current;
+
+    let didUpdateMov = false;
+    const nextResponses = responses.map((response: AnyRecord) => {
+      const movs = Array.isArray(response.movs) ? response.movs : null;
+      if (!movs) return response;
+
+      const nextMovs = movs.map((mov: AnyRecord) => {
+        if (Number(mov.id) !== movFileId) return mov;
+
+        didUpdateMov = true;
+        return {
+          ...mov,
+          assessor_notes:
+            feedback.assessor_notes !== undefined ? feedback.assessor_notes : mov.assessor_notes,
+          flagged_for_rework:
+            feedback.flagged_for_rework !== undefined
+              ? feedback.flagged_for_rework
+              : mov.flagged_for_rework,
+          validator_notes:
+            feedback.validator_notes !== undefined ? feedback.validator_notes : mov.validator_notes,
+          flagged_for_calibration:
+            feedback.flagged_for_calibration !== undefined
+              ? feedback.flagged_for_calibration
+              : mov.flagged_for_calibration,
+        };
+      });
+
+      return didUpdateMov ? { ...response, movs: nextMovs } : response;
+    });
+
+    if (!didUpdateMov) return current;
+
+    const nextCore = { ...core, responses: nextResponses };
+    return root.assessment ? { ...root, assessment: nextCore } : nextCore;
+  });
+
+  void queryClient.invalidateQueries({ queryKey, refetchType: "active" });
+}
+
 function ReviewFileSection({
   title,
   files,
@@ -321,7 +379,7 @@ function ReviewFileSection({
   downloadingFileId = null,
 }: {
   title: string;
-  files: MOVFileResponse[];
+  files: (MOVFileResponse & AnyRecord)[];
   historyLabel?: string;
   collapseHistory?: boolean;
   badgeClassName?: string;
@@ -371,6 +429,7 @@ function ReviewFileSection({
         loading={false}
         emptyMessage=""
         movAnnotations={movAnnotations}
+        hideHeader={true}
       />
 
       {archivedFiles.length > 0 && (
@@ -409,6 +468,7 @@ function ReviewFileSection({
                 loading={false}
                 emptyMessage=""
                 movAnnotations={movAnnotations}
+                hideHeader={true}
               />
               {description && (
                 <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">{description}</p>
@@ -431,6 +491,7 @@ export function MiddleMovFilesPanel({
   onAnnotationDeleted,
   onReworkFlagSaved,
   onCalibrationFlagChange,
+  onMovAttentionChange,
 }: MiddleMovFilesPanelProps) {
   const { user } = useAuthStore();
   const isValidator = user?.role === "VALIDATOR";
@@ -547,7 +608,7 @@ export function MiddleMovFilesPanel({
   }, [selectedResponse, calibrationRequestedAt, reworkRequestedAt, separationLabel]);
 
   // Get MOV files from the selected response with isNew flag for calibration separation
-  const movFiles = React.useMemo(() => {
+  const movFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(() => {
     if (!selectedResponse) return [];
 
     // MOV files are in the 'movs' array according to the backend schema
@@ -641,6 +702,12 @@ export function MiddleMovFilesPanel({
       onSuccess: (_data, variables) => {
         toast.success("Feedback saved");
         setFeedbackDirty(false);
+        patchMovFeedbackInAssessmentCache(
+          queryClient,
+          assessmentId,
+          variables.movFileId,
+          variables.data as AnyRecord
+        );
         const flaggedValue = isValidator
           ? (variables.data as AnyRecord).flagged_for_calibration
           : (variables.data as AnyRecord).flagged_for_rework;
@@ -682,6 +749,20 @@ export function MiddleMovFilesPanel({
       setFeedbackDirty(false);
     }
   }, [isAnnotating]);
+
+  React.useEffect(() => {
+    if (!isValidator || !expandedId || !selectedFile?.id || !onMovAttentionChange) return;
+
+    const currentResponseId = expandedId;
+    const currentMovFileId = selectedFile.id;
+    const hasAttention = movFlagged || movNotes.trim().length > 0;
+
+    onMovAttentionChange(currentResponseId, currentMovFileId, hasAttention);
+
+    return () => {
+      onMovAttentionChange(currentResponseId, currentMovFileId, false);
+    };
+  }, [movNotes, movFlagged, isValidator, expandedId, selectedFile?.id, onMovAttentionChange]);
 
   // Auto-toggle flag when notes are added
   const handleNotesChange = (value: string) => {
@@ -892,7 +973,7 @@ export function MiddleMovFilesPanel({
     [handleDeleteAnnotation]
   );
 
-  const normalPreviousFiles = React.useMemo(
+  const normalPreviousFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(
     () =>
       sortFilesByUploadedAtDesc(
         movFiles.filter((file) => hasReviewerNotes(file) || hasReviewerFlag(file))
@@ -900,14 +981,14 @@ export function MiddleMovFilesPanel({
     [movFiles, hasReviewerNotes, hasReviewerFlag]
   );
 
-  const barangayFiles = React.useMemo(
+  const barangayFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(
     () =>
       sortFilesByUploadedAtDesc(
         movFiles.filter((file) => (file as AnyRecord).upload_origin !== "validator")
       ),
     [movFiles]
   );
-  const validatorFiles = React.useMemo(
+  const validatorFiles = React.useMemo<(MOVFileResponse & AnyRecord)[]>(
     () =>
       sortFilesByUploadedAtDesc(
         movFiles.filter((file) => (file as AnyRecord).upload_origin === "validator")
@@ -918,7 +999,11 @@ export function MiddleMovFilesPanel({
   // - newFiles: Files uploaded AFTER rework/calibration (replacement files)
   // - acceptedOldFiles: Files uploaded BEFORE but were accepted (no annotations, didn't need re-upload)
   // - rejectedOldFiles: Files uploaded BEFORE and were rejected/replaced
-  const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo(() => {
+  const { newFiles, acceptedOldFiles, rejectedOldFiles } = React.useMemo<{
+    newFiles: (MOVFileResponse & AnyRecord)[];
+    acceptedOldFiles: (MOVFileResponse & AnyRecord)[];
+    rejectedOldFiles: (MOVFileResponse & AnyRecord)[];
+  }>(() => {
     if (!effectiveTimestamp) {
       // No separation timestamp - all files are treated as accepted (normal view)
       return { newFiles: [], acceptedOldFiles: movFiles, rejectedOldFiles: [] };
@@ -1191,6 +1276,26 @@ export function MiddleMovFilesPanel({
           </div>
         ) : effectiveTimestamp ? (
           <div className="space-y-4">
+            {validatorFiles.length > 0 && (
+              <ReviewFileSection
+                title="Validator Uploads"
+                files={validatorFiles}
+                collapseHistory={false}
+                historyLabel="View validator upload history"
+                titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
+                badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
+                containerClassName="rounded-sm border border-blue-200 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/20 p-3"
+                description="Files uploaded by validators are kept separate from barangay evidence."
+                movAnnotations={safeAnnotations}
+                onPreview={handlePreview}
+                onDownload={handleDownload}
+                canDelete={canDeleteValidatorFile}
+                onDelete={handleDeleteValidatorFile}
+                deletingFileId={deletingValidatorFileId}
+                downloadingFileId={downloadingFileId}
+              />
+            )}
+
             {newFiles.length > 0 && (
               <ReviewFileSection
                 title={`Latest File (${effectiveLabel})`}
@@ -1237,26 +1342,6 @@ export function MiddleMovFilesPanel({
               />
             )}
 
-            {validatorFiles.length > 0 && (
-              <ReviewFileSection
-                title="Validator Uploads"
-                files={validatorFiles}
-                collapseHistory={false}
-                historyLabel="View validator upload history"
-                titleClassName="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide"
-                badgeClassName="text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 rounded-full"
-                containerClassName="rounded-sm border border-blue-200 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/20 p-3"
-                description="Files uploaded by validators are kept separate from barangay evidence."
-                movAnnotations={safeAnnotations}
-                onPreview={handlePreview}
-                onDownload={handleDownload}
-                canDelete={canDeleteValidatorFile}
-                onDelete={handleDeleteValidatorFile}
-                deletingFileId={deletingValidatorFileId}
-                downloadingFileId={downloadingFileId}
-              />
-            )}
-
             {/* No files at all */}
             {newFiles.length === 0 &&
               acceptedOldFiles.length === 0 &&
@@ -1272,20 +1357,6 @@ export function MiddleMovFilesPanel({
           </div>
         ) : (
           <div className="space-y-4">
-            <ReviewFileSection
-              title="Barangay Uploads"
-              files={barangayFiles}
-              collapseHistory={false}
-              historyLabel="View barangay upload history"
-              titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
-              badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
-              containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
-              description="Barangay uploads remain available in history."
-              movAnnotations={safeAnnotations}
-              onPreview={handlePreview}
-              onDownload={handleDownload}
-              downloadingFileId={downloadingFileId}
-            />
             {validatorFiles.length > 0 && (
               <ReviewFileSection
                 title="Validator Uploads"
@@ -1305,6 +1376,20 @@ export function MiddleMovFilesPanel({
                 downloadingFileId={downloadingFileId}
               />
             )}
+            <ReviewFileSection
+              title="Barangay Uploads"
+              files={barangayFiles}
+              collapseHistory={false}
+              historyLabel="View barangay upload history"
+              titleClassName="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide"
+              badgeClassName="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full"
+              containerClassName="rounded-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-3"
+              description="Barangay uploads remain available in history."
+              movAnnotations={safeAnnotations}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              downloadingFileId={downloadingFileId}
+            />
             {normalPreviousFiles.length > 0 && (
               <ReviewFileSection
                 title="Previous File"

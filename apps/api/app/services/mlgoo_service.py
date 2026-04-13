@@ -166,8 +166,11 @@ class MLGOOService:
                 if indicator.get("assessor_reviewed") is True:
                     assessor_reviewed_indicators += 1
 
-                if indicator.get("validator_reviewed") is True:
+                validator_review_state = indicator.get("validator_reviewed")
+                if validator_review_state is True:
                     validated_indicators += 1
+                    continue
+                if validator_review_state is False:
                     continue
 
                 raw_status = indicator.get("validation_status")
@@ -211,13 +214,19 @@ class MLGOOService:
                     if total_indicators > 0
                     else 0
                 )
-            elif raw_area_status == "in_review":
-                assessor_status = "in_progress"
-                assessor_progress_percent = (
-                    round((assessor_reviewed_indicators / total_indicators) * 100)
-                    if total_indicators > 0
-                    else 0
-                )
+            elif raw_area_status in {"submitted", "in_review"}:
+                if assessor_reviewed_indicators == 0:
+                    assessor_status = "pending" if raw_area_status == "submitted" else "in_progress"
+                    assessor_progress_percent = 0
+                elif assessor_reviewed_indicators < total_indicators:
+                    assessor_status = "in_progress"
+                    assessor_progress_percent = round(
+                        (assessor_reviewed_indicators / total_indicators) * 100
+                    )
+                else:
+                    assessor_status = "reviewed"
+                    assessor_progress_percent = 100
+                    assessors_completed_count += 1
             else:
                 assessor_status = "pending"
                 assessor_progress_percent = 0
@@ -238,6 +247,8 @@ class MLGOOService:
                         "assessor_id": assessor_id,
                         "assessor_name": assessor_name,
                         "status": assessor_status,
+                        "reviewed_indicators": assessor_reviewed_indicators,
+                        "total_indicators": total_indicators,
                         "progress_percent": assessor_progress_percent,
                         "label": assessor_label(assessor_status),
                     },
@@ -1417,15 +1428,23 @@ class MLGOOService:
                 area_payload = assessment.area_submission_status.get(
                     str(indicator.governance_area_id), {}
                 )
-                if isinstance(area_payload, dict) and area_payload.get("resubmitted_after_rework"):
-                    submitted_at_raw = area_payload.get("submitted_at")
-                    if isinstance(submitted_at_raw, str):
-                        try:
-                            area_rework_resubmitted_at = datetime.fromisoformat(
-                                submitted_at_raw.replace("Z", "+00:00")
-                            ).replace(tzinfo=None)
-                        except ValueError:
-                            area_rework_resubmitted_at = None
+                if isinstance(area_payload, dict):
+                    is_rework_resubmission = bool(
+                        area_payload.get("resubmitted_after_rework")
+                        or area_payload.get("is_resubmission")
+                        or assessment.rework_submitted_at
+                    )
+                    if is_rework_resubmission:
+                        submitted_at_raw = area_payload.get("submitted_at")
+                        if isinstance(submitted_at_raw, str):
+                            try:
+                                area_rework_resubmitted_at = datetime.fromisoformat(
+                                    submitted_at_raw.replace("Z", "+00:00")
+                                ).replace(tzinfo=None)
+                            except ValueError:
+                                area_rework_resubmitted_at = None
+                        elif assessment.rework_submitted_at:
+                            area_rework_resubmitted_at = assessment.rework_submitted_at
 
             assessor_reviewed = bool(
                 response_data
@@ -1433,29 +1452,46 @@ class MLGOOService:
             )
             validator_reviewed = bool(response and response.validation_status is not None)
 
-            # Rework/calibration indicators are not considered reviewed until re-reviewed after resubmission.
-            if response and response.requires_rework:
-                assessor_reviewed = False
-                validator_reviewed = False
-
-            if (
+            requires_assessor_rereview = bool(response and response.requires_rework)
+            requires_validator_rereview = bool(response and response.flagged_for_calibration)
+            requires_mlgoo_rereview = bool(
                 response
-                and assessor_reviewed
-                and area_rework_resubmitted_at
-                and (not response.updated_at or response.updated_at < area_rework_resubmitted_at)
-            ):
-                assessor_reviewed = False
+                and response.indicator_id in (assessment.mlgoo_recalibration_indicator_ids or [])
+            )
 
-            if (
-                response
-                and validator_reviewed
-                and assessment.calibration_submitted_at
-                and (
-                    not response.updated_at
-                    or response.updated_at < assessment.calibration_submitted_at
-                )
-            ):
-                validator_reviewed = False
+            if requires_assessor_rereview:
+                if area_rework_resubmitted_at:
+                    assessor_reviewed = bool(
+                        response
+                        and response.updated_at
+                        and response.updated_at > area_rework_resubmitted_at
+                        and response_data
+                        and any(key.startswith("assessor_val_") for key in response_data.keys())
+                    )
+                else:
+                    assessor_reviewed = False
+
+            if requires_validator_rereview:
+                if assessment.calibration_submitted_at:
+                    validator_reviewed = bool(
+                        response
+                        and response.updated_at
+                        and response.updated_at > assessment.calibration_submitted_at
+                        and response.validation_status is not None
+                    )
+                else:
+                    validator_reviewed = False
+
+            if requires_mlgoo_rereview:
+                if assessment.mlgoo_recalibration_submitted_at:
+                    validator_reviewed = bool(
+                        response
+                        and response.updated_at
+                        and response.updated_at > assessment.mlgoo_recalibration_submitted_at
+                        and response.validation_status is not None
+                    )
+                else:
+                    validator_reviewed = False
 
             # Count statuses (only for indicators with responses and validation status)
             if response and response.validation_status:

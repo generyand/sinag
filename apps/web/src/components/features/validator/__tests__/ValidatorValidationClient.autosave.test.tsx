@@ -78,11 +78,35 @@ vi.mock("next/dynamic", () => ({
 }));
 
 vi.mock("../../assessor/validation/MiddleMovFilesPanel", () => ({
-  MiddleMovFilesPanel: () => <div data-testid="mov-panel" />,
+  MiddleMovFilesPanel: (props: any) => (
+    <div data-testid="mov-panel">
+      <button onClick={() => props.onMovAttentionChange?.(201, 1, true)}>
+        Add validator MOV note
+      </button>
+      <button onClick={() => props.onMovAttentionChange?.(201, 1, false)}>
+        Clear validator MOV note
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/features/assessments/tree-navigation", () => ({
-  TreeNavigator: () => <div data-testid="tree-nav" />,
+  TreeNavigator: ({ assessment }: any) => (
+    <div data-testid="tree-nav">
+      {assessment.governanceAreas.flatMap((area: any) =>
+        area.indicators.map((indicator: any) => (
+          <div
+            key={indicator.id}
+            data-testid={`tree-indicator-${indicator.id}`}
+            data-has-mov-notes={String(Boolean(indicator.hasMovNotes))}
+            data-status={indicator.status}
+          >
+            {indicator.code}
+          </div>
+        ))
+      )}
+    </div>
+  ),
 }));
 
 vi.mock("sonner", () => ({
@@ -125,7 +149,16 @@ function wrap(ui: React.ReactNode) {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
-function makeAssessment() {
+function expectSidebarAttention(responseId: number, hasAttention: boolean) {
+  const indicators = screen.getAllByTestId(`tree-indicator-${responseId}`);
+
+  expect(indicators.length).toBeGreaterThan(0);
+  indicators.forEach((indicator) => {
+    expect(indicator).toHaveAttribute("data-has-mov-notes", String(hasAttention));
+  });
+}
+
+function makeAssessment(responseOverrides: Record<string, any> = {}) {
   return {
     success: true,
     assessment_id: 1,
@@ -154,6 +187,7 @@ function makeAssessment() {
           feedback_comments: [],
           validation_status: "PASS",
           flagged_for_calibration: false,
+          ...responseOverrides,
         },
       ],
     },
@@ -289,5 +323,132 @@ describe("ValidatorValidationClient autosave", () => {
     }).not.toThrow();
 
     expect(screen.getByText(/loading assessment/i)).toBeInTheDocument();
+  });
+
+  it("marks a validator sidebar indicator as needing attention when a MOV has validator notes", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({
+        movs: [
+          {
+            id: 1,
+            uploaded_at: "2024-01-01T00:00:00Z",
+            validator_notes: "no signature",
+            flagged_for_calibration: false,
+          },
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    expectSidebarAttention(201, true);
+  });
+
+  it("counts a saved validator MOV note as reviewed even without a validation status", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({
+        validation_status: null,
+        movs: [
+          {
+            id: 1,
+            uploaded_at: "2024-01-01T00:00:00Z",
+            validator_notes: "no signature",
+            flagged_for_calibration: false,
+          },
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    screen.getAllByTestId("tree-indicator-201").forEach((indicator) => {
+      expect(indicator).toHaveAttribute("data-has-mov-notes", "true");
+      expect(indicator).toHaveAttribute("data-status", "completed");
+    });
+  });
+
+  it("marks a validator sidebar indicator as needing attention when a MOV is flagged for calibration", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({
+        movs: [
+          {
+            id: 1,
+            uploaded_at: "2024-01-01T00:00:00Z",
+            validator_notes: "",
+            flagged_for_calibration: true,
+          },
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    expectSidebarAttention(201, true);
+  });
+
+  it("updates the validator sidebar warning state immediately when a MOV note is added locally", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    expectSidebarAttention(201, false);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Add validator MOV note" })[0]);
+
+    expectSidebarAttention(201, true);
+  });
+
+  it("clears the validator sidebar warning state when the only local MOV attention is removed", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Add validator MOV note" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Clear validator MOV note" })[0]);
+
+    expectSidebarAttention(201, false);
+  });
+
+  it("keeps saved server MOV attention after a local override is cleared", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({
+        movs: [
+          {
+            id: 1,
+            uploaded_at: "2024-01-01T00:00:00Z",
+            validator_notes: "saved note",
+            flagged_for_calibration: false,
+          },
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Clear validator MOV note" })[0]);
+
+    expectSidebarAttention(201, true);
   });
 });
