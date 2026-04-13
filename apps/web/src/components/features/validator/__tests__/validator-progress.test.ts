@@ -186,6 +186,28 @@ describe("validator-progress", () => {
     ).toEqual({ status: "completed", hasMovNotes: false });
   });
 
+  it("does not count strict post-calibration progress as complete while active BLGU files need attention", () => {
+    expect(
+      getValidatorIndicatorProgress(
+        response({
+          movs: [
+            mov({
+              id: 1,
+              validator_notes: "missing signature",
+              flagged_for_calibration: true,
+            }),
+          ],
+        }),
+        {
+          checklistState: { checklist_201_requirement_1: true },
+          localMovAttentionByFileId: {},
+          responseCalibrationFlag: false,
+          strictChecklistRequired: true,
+        }
+      )
+    ).toEqual({ status: "not_started", hasMovNotes: true });
+  });
+
   it("does not turn green from validation_status alone in strict post-calibration mode", () => {
     expect(
       getValidatorIndicatorProgress(response({ validation_status: "PASS" }), {

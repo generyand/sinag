@@ -187,7 +187,7 @@ export function getValidatorIndicatorProgress(
   const checklistCompletion = getValidatorChecklistCompletion(response, input.checklistState);
 
   const reviewed = input.strictChecklistRequired
-    ? checklistCompletion.isComplete || hasMovNotes
+    ? checklistCompletion.isComplete && !hasMovNotes
     : checklistCompletion.isComplete || hasMovNotes || hasExistingValidationStatus(response);
 
   return {

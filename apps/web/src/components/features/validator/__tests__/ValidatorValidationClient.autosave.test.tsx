@@ -537,7 +537,7 @@ describe("ValidatorValidationClient autosave", () => {
     render(wrap(<ValidatorValidationClient assessmentId={1} />));
 
     screen.getAllByTestId("tree-indicator-201").forEach((indicator) => {
-      expect(indicator).toHaveAttribute("data-status", "completed");
+      expect(indicator).toHaveAttribute("data-status", "not_started");
       expect(indicator).toHaveAttribute("data-has-mov-notes", "true");
     });
   });
