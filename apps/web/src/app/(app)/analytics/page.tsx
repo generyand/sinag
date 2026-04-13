@@ -13,10 +13,12 @@ import {
   AggregatedCapDevCard,
   BarangayStatusTable,
   ComplianceSummaryCard,
+  PIPELINE_TO_STATUS_MAP,
   TopFailingIndicatorsCard,
 } from "@/components/features/municipal-overview";
 import { GovernanceAreaBreakdown } from "@/components/features/dashboard/GovernanceAreaBreakdown";
 import { ExportControls, VisualizationGrid } from "@/components/features/reports";
+import type { BBIAnalyticsData } from "@/lib/pdf-export";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
@@ -38,7 +40,7 @@ import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, BarChart3, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -53,6 +55,7 @@ export default function AnalyticsPage() {
   // Initialize from URL params for shareable links
   const initialPipelineFilter = searchParams.get("filter") || "all";
   const [pipelineFilter, setPipelineFilter] = useState<string>(initialPipelineFilter);
+  const [pipelineFilterTimestamp] = useState(() => Date.now());
 
   // Ref for Assessment Data section - used for auto-scroll when clicking pipeline status
   const assessmentDataRef = useRef<HTMLDivElement>(null);
@@ -131,9 +134,65 @@ export default function AnalyticsPage() {
     include_draft: true, // Include draft assessments so they show in barangay list
   });
 
+  const canReadMunicipalityBbi = user?.role === "MLGOO_DILG";
+
+  const exportMunicipalData = useMemo(() => {
+    if (!municipalData) return undefined;
+    if (pipelineFilter === "all") return municipalData;
+
+    const mappedFilter = PIPELINE_TO_STATUS_MAP[pipelineFilter] ?? pipelineFilter;
+    const filteredBarangays = (municipalData.barangay_statuses.barangays ?? []).filter(
+      (barangay) => {
+        if (pipelineFilter === "passed") return barangay.compliance_status === "PASSED";
+        if (pipelineFilter === "failed") return barangay.compliance_status === "FAILED";
+        if (pipelineFilter === "stalled") {
+          if (!barangay.submitted_at || barangay.status === "COMPLETED") return false;
+          const submittedDate = new Date(barangay.submitted_at);
+          const daysSinceSubmission = Math.floor(
+            (pipelineFilterTimestamp - submittedDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          return daysSinceSubmission > 14;
+        }
+        if (Array.isArray(mappedFilter)) return mappedFilter.includes(barangay.status);
+        return mappedFilter === "all" || barangay.status === mappedFilter;
+      }
+    );
+
+    const passedBarangays = filteredBarangays.filter(
+      (barangay) => barangay.compliance_status === "PASSED"
+    ).length;
+    const failedBarangays = filteredBarangays.filter(
+      (barangay) => barangay.compliance_status === "FAILED"
+    ).length;
+    const assessedBarangays = passedBarangays + failedBarangays;
+
+    return {
+      ...municipalData,
+      compliance_summary: {
+        ...municipalData.compliance_summary,
+        total_barangays: filteredBarangays.length,
+        assessed_barangays: assessedBarangays,
+        passed_barangays: passedBarangays,
+        failed_barangays: failedBarangays,
+        compliance_rate: assessedBarangays > 0 ? (passedBarangays / assessedBarangays) * 100 : 0,
+        assessment_rate:
+          filteredBarangays.length > 0 ? (assessedBarangays / filteredBarangays.length) * 100 : 0,
+      },
+      barangay_statuses: {
+        ...municipalData.barangay_statuses,
+        barangays: filteredBarangays,
+        total_count: filteredBarangays.length,
+      },
+    };
+  }, [municipalData, pipelineFilter, pipelineFilterTimestamp]);
+
   // BBI Analytics data hook for municipality-wide BBI status matrix
   // OPTIMIZED: Long cache times since BBI data is relatively stable
-  const { data: bbiAnalytics, isLoading: isBBILoading } = useQuery<MunicipalityBBIAnalyticsData>({
+  const {
+    data: bbiAnalytics,
+    isLoading: isBBILoading,
+    isFetching: isBBIFetching,
+  } = useQuery<MunicipalityBBIAnalyticsData>({
     queryKey: ["bbis", "analytics", "municipality", selectedYear],
     queryFn: async () => {
       const response = await api.get(`/api/v1/bbis/analytics/municipality`, {
@@ -141,13 +200,58 @@ export default function AnalyticsPage() {
       });
       return response.data as MunicipalityBBIAnalyticsData;
     },
-    enabled: !!selectedYear && activeTab === "bbi",
+    enabled: !!selectedYear && canReadMunicipalityBbi,
     // PERFORMANCE: BBI data doesn't change frequently
     staleTime: 10 * 60 * 1000, // 10 minutes - data is stable
     gcTime: 30 * 60 * 1000, // 30 minutes - matches backend cache TTL
     refetchOnWindowFocus: false, // Don't refetch on tab focus for analytics
     placeholderData: (previousData: MunicipalityBBIAnalyticsData | undefined) => previousData, // Keep showing old data while fetching
   });
+
+  const exportBbiData = useMemo<BBIAnalyticsData | undefined>(() => {
+    if (!bbiAnalytics) return undefined;
+    if (bbiAnalytics.assessment_year !== selectedYear) return undefined;
+
+    const allPercentages = bbiAnalytics.barangays.flatMap((barangay) =>
+      Object.values(barangay.bbi_statuses).map((status) => status.percentage)
+    );
+    const overallAverage =
+      allPercentages.length > 0
+        ? allPercentages.reduce((sum, percentage) => sum + percentage, 0) / allPercentages.length
+        : 0;
+
+    return {
+      summary: {
+        total_assessments: bbiAnalytics.summary.total_barangays,
+        overall_average_compliance: overallAverage,
+      },
+      bbi_breakdown: bbiAnalytics.bbis.map((bbi) => {
+        const distribution = bbiAnalytics.bbi_distributions[bbi.abbreviation];
+        const percentages = bbiAnalytics.barangays
+          .map((barangay) => barangay.bbi_statuses[bbi.abbreviation]?.percentage)
+          .filter((percentage): percentage is number => percentage !== undefined);
+        const averageCompliance =
+          percentages.length > 0
+            ? percentages.reduce((sum, percentage) => sum + percentage, 0) / percentages.length
+            : 0;
+
+        return {
+          bbi_id: bbi.bbi_id,
+          bbi_name: bbi.name,
+          bbi_abbreviation: bbi.abbreviation,
+          average_compliance: averageCompliance,
+          highly_functional_count: distribution?.highly_functional?.length ?? 0,
+          moderately_functional_count: distribution?.moderately_functional?.length ?? 0,
+          low_functional_count: distribution?.low_functional?.length ?? 0,
+          non_functional_count: distribution?.non_functional?.length ?? 0,
+          total_barangays: bbiAnalytics.summary.total_barangays,
+        };
+      }),
+    };
+  }, [bbiAnalytics, selectedYear]);
+
+  const isBbiExportLoading =
+    canReadMunicipalityBbi && !!selectedYear && (isBBILoading || isBBIFetching);
 
   // Handler for viewing CapDev insights - navigates to submissions detail page
   const handleViewCapDev = (assessmentId: number) => {
@@ -288,7 +392,7 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Export Controls */}
-                {reportsData && (
+                {reportsData && !isBbiExportLoading && (
                   <div className="flex-shrink-0">
                     <ExportControls
                       currentFilters={{
@@ -302,32 +406,36 @@ export default function AnalyticsPage() {
                       reportsData={reportsData}
                       activeTab={activeTab}
                       municipalData={
-                        municipalData
+                        exportMunicipalData
                           ? {
-                              compliance_summary: municipalData.compliance_summary,
-                              governance_area_performance: municipalData.governance_area_performance
-                                ? {
-                                    areas: municipalData.governance_area_performance.areas || [],
-                                    core_areas_pass_rate:
-                                      municipalData.governance_area_performance
-                                        .core_areas_pass_rate,
-                                    essential_areas_pass_rate:
-                                      municipalData.governance_area_performance
-                                        .essential_areas_pass_rate,
-                                  }
-                                : undefined,
-                              top_failing_indicators: municipalData.top_failing_indicators
+                              compliance_summary: exportMunicipalData.compliance_summary,
+                              barangay_statuses: exportMunicipalData.barangay_statuses,
+                              governance_area_performance:
+                                exportMunicipalData.governance_area_performance
+                                  ? {
+                                      areas:
+                                        exportMunicipalData.governance_area_performance.areas || [],
+                                      core_areas_pass_rate:
+                                        exportMunicipalData.governance_area_performance
+                                          .core_areas_pass_rate,
+                                      essential_areas_pass_rate:
+                                        exportMunicipalData.governance_area_performance
+                                          .essential_areas_pass_rate,
+                                    }
+                                  : undefined,
+                              top_failing_indicators: exportMunicipalData.top_failing_indicators
                                 ? {
                                     indicators:
-                                      municipalData.top_failing_indicators.indicators || [],
+                                      exportMunicipalData.top_failing_indicators.indicators || [],
                                     total_indicators_assessed:
-                                      municipalData.top_failing_indicators
+                                      exportMunicipalData.top_failing_indicators
                                         .total_indicators_assessed,
                                   }
                                 : undefined,
                             }
                           : undefined
                       }
+                      bbiData={exportBbiData}
                       municipalityName="Sulop"
                       generatedBy={user?.name}
                     />

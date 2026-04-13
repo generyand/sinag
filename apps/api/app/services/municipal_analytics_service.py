@@ -26,6 +26,7 @@ from app.schemas.municipal_insights import (
     TopFailingIndicatorsList,
     WorkflowStatusBreakdown,
 )
+from app.services.assessment_year_service import assessment_year_service
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,18 @@ class MunicipalAnalyticsService:
     Unlike the ExternalAnalyticsService, this service provides detailed,
     non-anonymized data since it's for internal DILG use only.
     """
+
+    def _resolve_year(self, db: Session, year: int | None) -> int | None:
+        if year is not None:
+            return year
+
+        try:
+            return assessment_year_service.get_active_year_number(db)
+        except ValueError:
+            logger.warning(
+                "No active assessment year configured; returning empty year-scoped analytics"
+            )
+            return -1
 
     def get_compliance_summary(
         self,
@@ -53,6 +66,8 @@ class MunicipalAnalyticsService:
         Returns:
             MunicipalComplianceSummary with compliance statistics
         """
+        year = self._resolve_year(db, year)
+
         # Count total barangays
         total_barangays = db.query(func.count(Barangay.id)).scalar() or 0
 
@@ -235,6 +250,8 @@ class MunicipalAnalyticsService:
         Returns:
             GovernanceAreaPerformanceList with area-by-area performance
         """
+        year = self._resolve_year(db, year)
+
         # Get all governance areas
         governance_areas = db.query(GovernanceArea).order_by(GovernanceArea.id).all()
 
@@ -390,6 +407,8 @@ class MunicipalAnalyticsService:
         Returns:
             TopFailingIndicatorsList with top failing indicators
         """
+        year = self._resolve_year(db, year)
+
         # Build base filter conditions
         filter_conditions = [Assessment.status == AssessmentStatus.COMPLETED]
         if year is not None:
@@ -463,7 +482,7 @@ class MunicipalAnalyticsService:
             fail_rate = (fail_count / total_count * 100) if total_count > 0 else 0.0
 
             # Get common issues from assessor remarks
-            common_issues = self._extract_common_issues(db, indicator_id)
+            common_issues = self._extract_common_issues(db, indicator_id, year=year)
 
             failing_indicators.append(
                 FailingIndicator(
@@ -490,21 +509,24 @@ class MunicipalAnalyticsService:
         self,
         db: Session,
         indicator_id: int,
+        year: int | None = None,
         limit: int = 5,
     ) -> list[str]:
         """Extract common issues from assessor remarks for an indicator."""
+        filter_conditions = [
+            AssessmentResponse.indicator_id == indicator_id,
+            AssessmentResponse.validation_status == ValidationStatus.FAIL,
+            AssessmentResponse.assessor_remarks.isnot(None),
+            Assessment.status == AssessmentStatus.COMPLETED,
+        ]
+        if year is not None:
+            filter_conditions.append(Assessment.assessment_year == year)
+
         # Get failed responses with remarks
         failed_responses = (
             db.query(AssessmentResponse.assessor_remarks)
             .join(Assessment, Assessment.id == AssessmentResponse.assessment_id)
-            .filter(
-                and_(
-                    AssessmentResponse.indicator_id == indicator_id,
-                    AssessmentResponse.validation_status == ValidationStatus.FAIL,
-                    AssessmentResponse.assessor_remarks.isnot(None),
-                    Assessment.status == AssessmentStatus.COMPLETED,
-                )
-            )
+            .filter(and_(*filter_conditions))
             .all()
         )
 
@@ -528,6 +550,8 @@ class MunicipalAnalyticsService:
         Returns:
             AggregatedCapDevSummary with aggregated CapDev data
         """
+        year = self._resolve_year(db, year)
+
         # Build filter conditions
         filter_conditions = [
             Assessment.status == AssessmentStatus.COMPLETED,
@@ -659,6 +683,8 @@ class MunicipalAnalyticsService:
         Returns:
             BarangayStatusList with status of each barangay
         """
+        year = self._resolve_year(db, year)
+
         # Get all barangays
         barangays = db.query(Barangay).order_by(Barangay.name).all()
 
@@ -809,6 +835,7 @@ class MunicipalAnalyticsService:
         Returns:
             MunicipalOverviewDashboard with all dashboard sections
         """
+        year = self._resolve_year(db, year)
         logger.info(f"Generating municipal overview dashboard (year: {year or 'latest'})")
 
         # Gather all dashboard sections

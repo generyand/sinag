@@ -19,10 +19,11 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, UserRole
-from app.db.models.assessment import Assessment
+from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, UserRole, ValidationStatus
+from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
-from app.db.models.governance_area import GovernanceArea
+from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -113,7 +114,23 @@ def test_governance_area(db_session: Session):
 
 
 @pytest.fixture
-def completed_assessments(db_session: Session, test_barangays):
+def active_assessment_year(db_session: Session):
+    """Create an active assessment year for tests that create assessments."""
+    assessment_year = AssessmentYear(
+        year=2025,
+        assessment_period_start=datetime(2025, 1, 1),
+        assessment_period_end=datetime(2025, 12, 31),
+        is_active=True,
+        is_published=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+    db_session.refresh(assessment_year)
+    return assessment_year
+
+
+@pytest.fixture
+def completed_assessments(db_session: Session, test_barangays, active_assessment_year):
     """Create multiple completed assessments for testing"""
     assessments = []
 
@@ -133,6 +150,7 @@ def completed_assessments(db_session: Session, test_barangays):
         # Create assessment (alternating pass/fail)
         assessment = Assessment(
             blgu_user_id=user.id,
+            assessment_year=active_assessment_year.year,
             status=AssessmentStatus.COMPLETED,
             mlgoo_approved_by=1,
             mlgoo_approved_at=datetime(2024, 1, 1),
@@ -289,10 +307,10 @@ def test_get_municipal_dashboard_with_cycle_filter(
     db_session: Session,
     mlgoo_user: User,
 ):
-    """Test dashboard with assessment_cycle filter"""
+    """Test dashboard with year filter"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get("/api/v1/municipal-overview/dashboard?assessment_cycle=2024")
+    response = client.get("/api/v1/municipal-overview/dashboard?year=2024")
 
     assert response.status_code == 200
 
@@ -359,15 +377,63 @@ def test_get_compliance_summary_counts_correct(
     assert data["failed_barangays"] == 2
 
 
+def test_get_compliance_summary_defaults_to_active_year(
+    client: TestClient,
+    db_session: Session,
+    mlgoo_user: User,
+    completed_assessments,
+):
+    """Test default compliance summary excludes assessments from inactive years."""
+    _override_user_and_db(client, mlgoo_user, db_session)
+
+    inactive_year = AssessmentYear(
+        year=2024,
+        assessment_period_start=datetime(2024, 1, 1),
+        assessment_period_end=datetime(2024, 12, 31),
+        is_active=False,
+        is_published=True,
+    )
+    prior_barangay = Barangay(name=f"Prior Year Barangay {uuid.uuid4().hex[:8]}")
+    db_session.add_all([inactive_year, prior_barangay])
+    db_session.commit()
+
+    prior_user = User(
+        email=f"prior_blgu_{uuid.uuid4().hex[:8]}@example.com",
+        name="Prior Year BLGU",
+        hashed_password=pwd_context.hash("password123"),
+        role=UserRole.BLGU_USER,
+        barangay_id=prior_barangay.id,
+        is_active=True,
+    )
+    db_session.add(prior_user)
+    db_session.commit()
+
+    prior_assessment = Assessment(
+        blgu_user_id=prior_user.id,
+        assessment_year=inactive_year.year,
+        status=AssessmentStatus.COMPLETED,
+        final_compliance_status=ComplianceStatus.PASSED,
+    )
+    db_session.add(prior_assessment)
+    db_session.commit()
+
+    response = client.get("/api/v1/municipal-overview/compliance-summary")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["assessed_barangays"] == 5
+    assert data["passed_barangays"] == 3
+
+
 def test_get_compliance_summary_with_cycle_filter(
     client: TestClient,
     db_session: Session,
     mlgoo_user: User,
 ):
-    """Test compliance summary with assessment_cycle filter"""
+    """Test compliance summary with year filter"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get("/api/v1/municipal-overview/compliance-summary?assessment_cycle=2024")
+    response = client.get("/api/v1/municipal-overview/compliance-summary?year=2024")
 
     assert response.status_code == 200
 
@@ -400,10 +466,10 @@ def test_get_governance_area_performance_with_cycle(
     db_session: Session,
     mlgoo_user: User,
 ):
-    """Test governance area performance with cycle filter"""
+    """Test governance area performance with year filter"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get("/api/v1/municipal-overview/governance-areas?assessment_cycle=2024")
+    response = client.get("/api/v1/municipal-overview/governance-areas?year=2024")
 
     assert response.status_code == 200
 
@@ -447,6 +513,80 @@ def test_get_top_failing_indicators_with_limit(
     assert len(data["indicators"]) <= 5
 
 
+def test_get_top_failing_indicators_common_issues_default_to_active_year(
+    client: TestClient,
+    db_session: Session,
+    mlgoo_user: User,
+    active_assessment_year,
+    test_governance_area,
+):
+    """Test common issues use the same active-year scope as failing indicator counts."""
+    _override_user_and_db(client, mlgoo_user, db_session)
+
+    inactive_year = AssessmentYear(
+        year=2024,
+        assessment_period_start=datetime(2024, 1, 1),
+        assessment_period_end=datetime(2024, 12, 31),
+        is_active=False,
+        is_published=True,
+    )
+    indicator = Indicator(
+        name=f"Test Indicator {uuid.uuid4().hex[:8]}",
+        indicator_code=f"TI-{uuid.uuid4().hex[:4]}",
+        governance_area_id=test_governance_area.id,
+    )
+    db_session.add_all([inactive_year, indicator])
+    db_session.commit()
+
+    def create_failed_response(year: int, remark: str) -> None:
+        barangay = Barangay(name=f"BBI Barangay {uuid.uuid4().hex[:8]}")
+        db_session.add(barangay)
+        db_session.commit()
+
+        user = User(
+            email=f"bbi_blgu_{uuid.uuid4().hex[:8]}@example.com",
+            name="BBI BLGU",
+            hashed_password=pwd_context.hash("password123"),
+            role=UserRole.BLGU_USER,
+            barangay_id=barangay.id,
+            is_active=True,
+        )
+        db_session.add(user)
+        db_session.commit()
+
+        assessment = Assessment(
+            blgu_user_id=user.id,
+            assessment_year=year,
+            status=AssessmentStatus.COMPLETED,
+            final_compliance_status=ComplianceStatus.FAILED,
+        )
+        db_session.add(assessment)
+        db_session.commit()
+
+        response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            response_data={},
+            is_completed=True,
+            validation_status=ValidationStatus.FAIL,
+            assessor_remarks=remark,
+        )
+        db_session.add(response)
+        db_session.commit()
+
+    create_failed_response(active_assessment_year.year, "active year issue")
+    create_failed_response(inactive_year.year, "inactive year issue")
+
+    response = client.get("/api/v1/municipal-overview/top-failing-indicators?limit=5")
+
+    assert response.status_code == 200
+    data = response.json()
+    exported_indicator = next(
+        item for item in data["indicators"] if item["indicator_id"] == indicator.id
+    )
+    assert exported_indicator["common_issues"] == ["active year issue"]
+
+
 def test_get_top_failing_indicators_limit_validation(
     client: TestClient,
     db_session: Session,
@@ -469,10 +609,10 @@ def test_get_top_failing_indicators_with_cycle(
     db_session: Session,
     mlgoo_user: User,
 ):
-    """Test top failing indicators with cycle filter"""
+    """Test top failing indicators with year filter"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get("/api/v1/municipal-overview/top-failing-indicators?assessment_cycle=2024")
+    response = client.get("/api/v1/municipal-overview/top-failing-indicators?year=2024")
 
     assert response.status_code == 200
 
@@ -506,10 +646,10 @@ def test_get_capdev_summary_with_cycle(
     db_session: Session,
     mlgoo_user: User,
 ):
-    """Test CapDev summary with cycle filter"""
+    """Test CapDev summary with year filter"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    response = client.get("/api/v1/municipal-overview/capdev-summary?assessment_cycle=2024")
+    response = client.get("/api/v1/municipal-overview/capdev-summary?year=2024")
 
     assert response.status_code == 200
 
@@ -580,6 +720,7 @@ def test_get_barangay_statuses_exclude_draft_by_default(
     db_session: Session,
     mlgoo_user: User,
     test_barangays,
+    active_assessment_year,
 ):
     """Test that draft assessments are excluded by default"""
     _override_user_and_db(client, mlgoo_user, db_session)
@@ -598,6 +739,7 @@ def test_get_barangay_statuses_exclude_draft_by_default(
 
     draft_assessment = Assessment(
         blgu_user_id=user.id,
+        assessment_year=active_assessment_year.year,
         status=AssessmentStatus.DRAFT,
     )
     db_session.add(draft_assessment)
@@ -627,15 +769,12 @@ def test_municipal_dashboard_handles_errors_gracefully(
     db_session: Session,
     mlgoo_user: User,
 ):
-    """Test that dashboard returns 500 on service errors"""
+    """Test that dashboard validates invalid year parameters"""
     _override_user_and_db(client, mlgoo_user, db_session)
 
-    # Test with invalid cycle that might cause errors
-    response = client.get("/api/v1/municipal-overview/dashboard?assessment_cycle=invalid")
+    response = client.get("/api/v1/municipal-overview/dashboard?year=invalid")
 
-    # Should either return 200 with empty data or 500
-    # Depending on service implementation
-    assert response.status_code in [200, 500]
+    assert response.status_code == 422
 
 
 def test_unauthorized_access_no_token(client: TestClient):
@@ -764,13 +903,9 @@ def test_query_parameter_combinations(
     _override_user_and_db(client, mlgoo_user, db_session)
 
     # Test dashboard with both cycle and include_draft
-    response = client.get(
-        "/api/v1/municipal-overview/dashboard?assessment_cycle=2024&include_draft=true"
-    )
+    response = client.get("/api/v1/municipal-overview/dashboard?year=2024&include_draft=true")
     assert response.status_code == 200
 
     # Test top failing indicators with both limit and cycle
-    response = client.get(
-        "/api/v1/municipal-overview/top-failing-indicators?limit=5&assessment_cycle=2024"
-    )
+    response = client.get("/api/v1/municipal-overview/top-failing-indicators?limit=5&year=2024")
     assert response.status_code == 200
