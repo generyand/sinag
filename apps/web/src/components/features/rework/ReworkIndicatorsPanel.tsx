@@ -19,7 +19,7 @@
 
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -47,7 +47,7 @@ export function ReworkIndicatorsPanel({
   assessmentId: _assessmentId,
 }: ReworkIndicatorsPanelProps) {
   const router = useRouter();
-  const [expandedAreas, setExpandedAreas] = useState<Set<number>>(new Set());
+  const [manualExpandedAreas, setManualExpandedAreas] = useState<Set<number> | null>(null);
 
   // Check if this is a calibration rework (from Validator, not Assessor)
   const isCalibration = dashboardData.is_calibration_rework === true;
@@ -57,16 +57,7 @@ export function ReworkIndicatorsPanel({
     governance_area_name: string;
   }> = (dashboardData as any).calibration_governance_areas || [];
   // Legacy single area support (fallback)
-  const legacyCalibrationAreaId = (dashboardData as any).calibration_governance_area_id;
   const legacyCalibrationAreaName = (dashboardData as any).calibration_governance_area_name;
-  // Build set of all calibration area IDs
-  const calibrationAreaIds = new Set<number>(
-    calibrationGovernanceAreas.length > 0
-      ? calibrationGovernanceAreas.map((a) => a.governance_area_id)
-      : legacyCalibrationAreaId
-        ? [legacyCalibrationAreaId]
-        : []
-  );
   // Get area names for display
   const calibrationAreaNames =
     calibrationGovernanceAreas.length > 0
@@ -78,8 +69,6 @@ export function ReworkIndicatorsPanel({
   // Check if this is an MLGOO RE-calibration (distinct from Validator calibration)
   // MLGOO RE-calibration targets specific indicators, not entire governance areas
   const isMlgooRecalibration = (dashboardData as any).is_mlgoo_recalibration === true;
-  const mlgooRecalibrationIndicatorIds: number[] =
-    (dashboardData as any).mlgoo_recalibration_indicator_ids || [];
   const mlgooRecalibrationComments: string | null =
     (dashboardData as any).mlgoo_recalibration_comments || null;
   // MLGOO RE-calibration can now target specific MOV files (more granular than indicators)
@@ -92,6 +81,23 @@ export function ReworkIndicatorsPanel({
   // For REWORK: Show indicators with assessor feedback (comments OR annotations)
   const failedIndicators = useMemo<FailedIndicator[]>(() => {
     const indicatorMap = new Map<number, FailedIndicator>();
+    const calibrationAreas = ((dashboardData as any).calibration_governance_areas || []) as Array<{
+      governance_area_id: number;
+      governance_area_name: string;
+    }>;
+    const activeCalibrationAreaIds = new Set<number>(
+      calibrationAreas.length > 0
+        ? calibrationAreas.map((area) => area.governance_area_id)
+        : (dashboardData as any).calibration_governance_area_id
+          ? [(dashboardData as any).calibration_governance_area_id]
+          : []
+    );
+    const selectedMlgooRecalibrationIndicatorIds =
+      ((dashboardData as any).mlgoo_recalibration_indicator_ids as number[] | undefined) || [];
+    const selectedMlgooRecalibrationMovFileIds =
+      ((dashboardData as any).mlgoo_recalibration_mov_file_ids as
+        | Array<{ mov_file_id: number; comment?: string | null }>
+        | undefined) || [];
     const movNotesByIndicator = ((dashboardData as any).mov_notes_by_indicator || {}) as Record<
       string,
       Array<{
@@ -151,10 +157,11 @@ export function ReworkIndicatorsPanel({
     // For MLGOO RE-CALIBRATION: Show indicators that have flagged files OR are explicitly selected
     if (
       isMlgooRecalibration &&
-      (mlgooRecalibrationIndicatorIds.length > 0 || mlgooRecalibrationMovFileIds.length > 0)
+      (selectedMlgooRecalibrationIndicatorIds.length > 0 ||
+        selectedMlgooRecalibrationMovFileIds.length > 0)
     ) {
       // First, handle explicitly selected indicators (by indicator ID)
-      mlgooRecalibrationIndicatorIds.forEach((indicatorId) => {
+      selectedMlgooRecalibrationIndicatorIds.forEach((indicatorId) => {
         const indicator = findIndicator(indicatorId);
         if (indicator) {
           indicatorMap.set(indicatorId, {
@@ -177,7 +184,7 @@ export function ReworkIndicatorsPanel({
       // Second, handle MOV file-level flagging (find indicators by flagged file IDs)
       // MOV files are associated with indicators, so we need to find which indicators
       // the flagged files belong to
-      if (mlgooRecalibrationMovFileIds.length > 0) {
+      if (selectedMlgooRecalibrationMovFileIds.length > 0) {
         // Search all governance areas to find indicators with the flagged files
         // Check mov_annotations_by_indicator for file-to-indicator mapping
         // Also iterate through all indicators to check if they have flagged files
@@ -201,7 +208,10 @@ export function ReworkIndicatorsPanel({
 
                 // Only add if the indicator needs attention (not complete)
                 // The backend marks indicators incomplete when their files are flagged
-                if (needsAttention || mlgooRecalibrationIndicatorIds.includes(indicatorId)) {
+                if (
+                  needsAttention ||
+                  selectedMlgooRecalibrationIndicatorIds.includes(indicatorId)
+                ) {
                   indicatorMap.set(indicatorId, {
                     indicator_id: indicatorId,
                     indicator_name: indicator.indicator_name,
@@ -211,7 +221,7 @@ export function ReworkIndicatorsPanel({
                     is_addressed: addressedIds.has(indicatorId),
                     comments: [],
                     annotations: [],
-                    total_feedback_items: mlgooRecalibrationMovFileIds.length,
+                    total_feedback_items: selectedMlgooRecalibrationMovFileIds.length,
                     has_mov_issues: true,
                     has_field_issues: false,
                     route_path: `/blgu/assessments?indicator=${indicatorId}`,
@@ -236,7 +246,7 @@ export function ReworkIndicatorsPanel({
           const indicatorId = Number(indicatorIdStr);
 
           // Only include if it's in the MLGOO recalibration list
-          if (mlgooRecalibrationIndicatorIds.includes(indicatorId)) {
+          if (selectedMlgooRecalibrationIndicatorIds.includes(indicatorId)) {
             const failed = indicatorMap.get(indicatorId);
             if (failed) {
               failed.annotations.push(...annotations);
@@ -308,10 +318,10 @@ export function ReworkIndicatorsPanel({
       );
     }
     // For CALIBRATION: Get all incomplete indicators from ALL calibrated governance areas
-    else if (isCalibration && calibrationAreaIds.size > 0) {
+    else if (isCalibration && activeCalibrationAreaIds.size > 0) {
       // Find ALL calibrated governance areas
       const calibratedAreas = dashboardData.governance_areas.filter((area) =>
-        calibrationAreaIds.has(area.governance_area_id)
+        activeCalibrationAreaIds.has(area.governance_area_id)
       );
 
       // Add all INCOMPLETE indicators from ALL calibrated areas
@@ -344,7 +354,7 @@ export function ReworkIndicatorsPanel({
           const indicator = findIndicator(indicatorId);
 
           // Only include if it's in one of the calibrated areas
-          if (indicator && calibrationAreaIds.has(indicator.governance_area_id)) {
+          if (indicator && activeCalibrationAreaIds.has(indicator.governance_area_id)) {
             if (!indicatorMap.has(indicatorId)) {
               indicatorMap.set(indicatorId, {
                 indicator_id: indicatorId,
@@ -474,14 +484,7 @@ export function ReworkIndicatorsPanel({
       has_mov_issues: failed.annotations.length > 0,
       has_field_issues: failed.comments.length > 0,
     }));
-  }, [
-    dashboardData,
-    isCalibration,
-    calibrationAreaIds,
-    isMlgooRecalibration,
-    mlgooRecalibrationIndicatorIds,
-    mlgooRecalibrationMovFileIds,
-  ]);
+  }, [dashboardData, isCalibration, isMlgooRecalibration]);
 
   // Compute progress - use is_addressed (new file uploaded after rework)
   // instead of is_complete to determine if an indicator is truly "Fixed"
@@ -538,30 +541,14 @@ export function ReworkIndicatorsPanel({
     return areaIdsWithRemainingItems.length > 0 ? areaIdsWithRemainingItems : sortedAreaIds;
   }, [failedByArea, isCalibration]);
 
-  const defaultExpandedAreaIdsKey = useMemo(
-    () => defaultExpandedAreaIds.join(","),
-    [defaultExpandedAreaIds]
+  const expandedAreas = useMemo(
+    () => manualExpandedAreas ?? new Set(defaultExpandedAreaIds),
+    [defaultExpandedAreaIds, manualExpandedAreas]
   );
 
-  useEffect(() => {
-    if (defaultExpandedAreaIds.length === 0) {
-      return;
-    }
-
-    setExpandedAreas((prev) => {
-      const prevKey = Array.from(prev)
-        .sort((a, b) => a - b)
-        .join(",");
-      if (prevKey === defaultExpandedAreaIdsKey) {
-        return prev;
-      }
-      return new Set(defaultExpandedAreaIds);
-    });
-  }, [defaultExpandedAreaIdsKey, defaultExpandedAreaIds]);
-
   const toggleArea = (areaId: number) => {
-    setExpandedAreas((prev) => {
-      const newSet = new Set(prev);
+    setManualExpandedAreas((prev) => {
+      const newSet = new Set(prev ?? defaultExpandedAreaIds);
       if (newSet.has(areaId)) {
         newSet.delete(areaId);
       } else {

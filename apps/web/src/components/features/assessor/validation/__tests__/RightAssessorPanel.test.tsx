@@ -214,6 +214,94 @@ describe("RightAssessorPanel", () => {
     );
   });
 
+  it("clears assessor general feedback after a rework resubmission boundary", () => {
+    mockUser = { role: "ASSESSOR", id: 2, username: "assessor" };
+    const assessment = {
+      success: true,
+      assessment_id: 1,
+      assessment: {
+        id: 1,
+        rework_count: 1,
+        rework_requested_at: "2024-01-03T00:00:00Z",
+        responses: [
+          {
+            id: 101,
+            indicator_id: 1,
+            requires_rework: true,
+            indicator: {
+              name: "Indicator A",
+              indicator_code: "1.1.1",
+              validation_rule: "ALL_ITEMS_REQUIRED",
+              checklist_items: [],
+            },
+            response_data: {},
+            movs: [],
+            feedback_comments: [
+              {
+                id: 11,
+                comment: "Old assessor comment",
+                comment_type: "validation",
+                is_internal_note: false,
+                created_at: "2024-01-02T00:00:00Z",
+                assessor: { role: "ASSESSOR" },
+              },
+            ],
+          },
+        ],
+      },
+    } as any;
+
+    renderWithProviders(
+      <RightAssessorPanel assessment={assessment} form={{}} setField={vi.fn()} expandedId={101} />
+    );
+
+    expect(screen.getByPlaceholderText(/Provide an overall summary/i)).toHaveValue("");
+  });
+
+  it("clears validator general feedback after a calibration resubmission boundary", () => {
+    mockUser = { role: "VALIDATOR", id: 1, username: "validator" };
+    const assessment = {
+      success: true,
+      assessment_id: 1,
+      assessment: {
+        id: 1,
+        calibration_requested_at: "2024-01-03T00:00:00Z",
+        responses: [
+          {
+            id: 101,
+            indicator_id: 1,
+            indicator: {
+              id: 1,
+              name: "Indicator A",
+              indicator_code: "1.1.1",
+              governance_area: { id: 2, name: "Disaster Preparedness" },
+              validation_rule: "ALL_ITEMS_REQUIRED",
+              checklist_items: [],
+            },
+            response_data: {},
+            movs: [],
+            feedback_comments: [
+              {
+                id: 12,
+                comment: "Old validator comment",
+                comment_type: "validation",
+                is_internal_note: false,
+                created_at: "2024-01-02T00:00:00Z",
+                assessor: { role: "VALIDATOR" },
+              },
+            ],
+          },
+        ],
+      },
+    } as any;
+
+    renderWithProviders(
+      <RightAssessorPanel assessment={assessment} form={{}} setField={vi.fn()} expandedId={101} />
+    );
+
+    expect(screen.getByPlaceholderText(/Provide an overall summary/i)).toHaveValue("");
+  });
+
   it("accepts numeric accomplishment inputs without crashing and auto-sets validator assessment", async () => {
     mockUser = { role: "VALIDATOR", id: 1, username: "validator" };
     const user = userEvent.setup();

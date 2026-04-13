@@ -305,7 +305,7 @@ export default function LoginPage() {
               isDarkMode ? "text-gray-400" : "text-gray-500"
             }`}
           >
-            <span>&copy; 2024 MLGRC Davao del Sur</span>
+            <span>&copy; 2026 MLGRC Davao del Sur</span>
             <span className="hidden md:inline">|</span>
             <span className="flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,8 +320,8 @@ export default function LoginPage() {
             </span>
           </div>
           <div className={`text-center text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-            <div>Support: (02) 1234-5678 | support.sinag@mlgrc.gov.ph</div>
-            <div className="text-xs opacity-75">Version 1.0.0 | Build 2024.01.15</div>
+            <div>Support: sulop.mlgoo@dilg.gov.ph</div>
+            <div className="text-xs opacity-75">Version 1.1.0 | Build 2026.04.13</div>
           </div>
         </div>
       </footer>

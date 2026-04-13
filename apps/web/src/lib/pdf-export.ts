@@ -1,6 +1,7 @@
 import {
   ReportsDataResponse,
   MunicipalComplianceSummary,
+  BarangayStatusList,
   AppSchemasMunicipalInsightsGovernanceAreaPerformance,
   FailingIndicator,
 } from "@sinag/shared";
@@ -33,11 +34,13 @@ export interface BBIAnalyticsItem {
   highly_functional_count: number;
   moderately_functional_count: number;
   low_functional_count: number;
+  non_functional_count?: number;
   total_barangays: number;
 }
 
 export interface MunicipalData {
   compliance_summary?: MunicipalComplianceSummary;
+  barangay_statuses?: BarangayStatusList;
   governance_area_performance?: {
     areas: GovernanceAreaPerformance[];
     core_areas_pass_rate: number;
@@ -218,6 +221,124 @@ function getAreaTypeColor(areaType: string): MutableRGBColor {
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength - 3) + "...";
+}
+
+export interface PdfAssessmentSummary {
+  totalAssessments: number;
+  passCount: number;
+  failCount: number;
+  passRate: number;
+  totalBarangays?: number;
+}
+
+export interface PdfAssessmentRow {
+  barangay_id?: number;
+  barangay_name?: string;
+  status?: string;
+  governance_areas_passed?: number | null;
+  total_governance_areas?: number | null;
+  indicators_passed?: number | null;
+  total_indicators?: number | null;
+}
+
+export function resolvePdfAssessmentSummary(
+  data: ReportsDataResponse,
+  municipalData?: MunicipalData,
+  preferMunicipalData = true
+): PdfAssessmentSummary {
+  const complianceSummary = municipalData?.compliance_summary;
+
+  if (preferMunicipalData && complianceSummary) {
+    return {
+      totalAssessments: complianceSummary.assessed_barangays,
+      passCount: complianceSummary.passed_barangays,
+      failCount: complianceSummary.failed_barangays,
+      passRate: complianceSummary.compliance_rate,
+      totalBarangays: complianceSummary.total_barangays,
+    };
+  }
+
+  const passCount = data.chart_data.pie_chart?.find((item) => item.status === "Pass")?.count || 0;
+  const failCount = data.chart_data.pie_chart?.find((item) => item.status === "Fail")?.count || 0;
+  const totalAssessments = passCount + failCount;
+  const passRate = totalAssessments > 0 ? (passCount / totalAssessments) * 100 : 0;
+
+  return {
+    totalAssessments,
+    passCount,
+    failCount,
+    passRate,
+    totalBarangays: undefined,
+  };
+}
+
+function resolveBarangayPdfStatus(status?: string, complianceStatus?: string | null): string {
+  if (complianceStatus === "PASSED") return "Pass";
+  if (complianceStatus === "FAILED") return "Fail";
+  if (status === "NO_ASSESSMENT" || status === "NO_USER_ASSIGNED") return "No Data";
+  return "In Progress";
+}
+
+export function resolvePdfAssessmentRows(
+  data: ReportsDataResponse,
+  municipalData?: MunicipalData,
+  preferMunicipalData = true
+): PdfAssessmentRow[] {
+  const barangays = municipalData?.barangay_statuses?.barangays;
+
+  if (preferMunicipalData && barangays?.length) {
+    return barangays.map((barangay) => {
+      const indicatorsPassed =
+        barangay.total_responses !== null && barangay.total_responses !== undefined
+          ? (barangay.pass_count || 0) + (barangay.conditional_count || 0)
+          : null;
+
+      return {
+        barangay_id: barangay.barangay_id,
+        barangay_name: barangay.barangay_name,
+        status: resolveBarangayPdfStatus(barangay.status, barangay.compliance_status),
+        governance_areas_passed: barangay.governance_areas_passed ?? null,
+        total_governance_areas: barangay.total_governance_areas ?? null,
+        indicators_passed: indicatorsPassed,
+        total_indicators: barangay.total_responses ?? null,
+      };
+    });
+  }
+
+  return (data.table_data.rows || []).map((row) => {
+    const totalGovernanceAreas = row.total_governance_areas ?? null;
+    const totalIndicators = row.total_indicators ?? null;
+    const hasGovernanceAreaResults = totalGovernanceAreas !== null && totalGovernanceAreas > 0;
+    const hasIndicatorResults = totalIndicators !== null && totalIndicators > 0;
+
+    return {
+      ...row,
+      governance_areas_passed: hasGovernanceAreaResults ? row.governance_areas_passed : null,
+      total_governance_areas: hasGovernanceAreaResults ? totalGovernanceAreas : null,
+      indicators_passed: hasIndicatorResults ? row.indicators_passed : null,
+      total_indicators: hasIndicatorResults ? totalIndicators : null,
+    };
+  });
+}
+
+export function resolvePdfAssessmentRecordCount(
+  data: ReportsDataResponse,
+  municipalData?: MunicipalData,
+  preferMunicipalData = true
+): number {
+  return preferMunicipalData
+    ? (municipalData?.barangay_statuses?.total_count ?? data.table_data.total_count ?? 0)
+    : (data.table_data.total_count ?? 0);
+}
+
+export function shouldUseMunicipalOverviewData(filters: FilterState): boolean {
+  return (
+    !filters.start_date &&
+    !filters.end_date &&
+    !filters.status &&
+    !filters.governance_area?.length &&
+    !filters.barangay_id?.length
+  );
 }
 
 /**
@@ -450,6 +571,14 @@ export async function exportReportToPDF(
     }
 
     yPos += 18;
+    if (metadata.dateRange) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Date Range:", col1X, yPos);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`${metadata.dateRange.start} to ${metadata.dateRange.end}`, col1X + 95, yPos);
+      yPos += 18;
+    }
+
     if (filters.governance_area && filters.governance_area.length > 0) {
       pdf.setFont("helvetica", "bold");
       pdf.text("Areas:", col1X, yPos);
@@ -468,12 +597,20 @@ export async function exportReportToPDF(
     pdf.setFont("helvetica", "bold");
     pdf.text("Assessment Summary", margin, statsY);
 
-    // Calculate statistics
-    const totalAssessments = data.table_data.total_count || 0;
-    const passCount = data.chart_data.pie_chart?.find((item) => item.status === "Pass")?.count || 0;
-    const failCount = data.chart_data.pie_chart?.find((item) => item.status === "Fail")?.count || 0;
-    const passRate =
-      totalAssessments > 0 ? ((passCount / totalAssessments) * 100).toFixed(1) : "0.0";
+    // Use municipal overview totals only when the export is not narrowed by report-only filters.
+    const useMunicipalOverviewData = shouldUseMunicipalOverviewData(filters);
+    const assessmentSummary = resolvePdfAssessmentSummary(
+      data,
+      municipalData,
+      useMunicipalOverviewData
+    );
+    const { totalAssessments, passCount, failCount } = assessmentSummary;
+    const passRateText = assessmentSummary.passRate.toFixed(1);
+    const totalRecordCount = resolvePdfAssessmentRecordCount(
+      data,
+      municipalData,
+      useMunicipalOverviewData
+    );
 
     // Stats cards layout - 4 cards
     const cardWidth = (contentWidth - 30) / 4;
@@ -506,7 +643,7 @@ export async function exportReportToPDF(
     drawStatCard(margin, "Total", totalAssessments.toString(), COLORS.dilgBlue);
     drawStatCard(margin + cardWidth + 10, "Passed", passCount.toString(), COLORS.passGreen);
     drawStatCard(margin + (cardWidth + 10) * 2, "Failed", failCount.toString(), COLORS.failRed);
-    drawStatCard(margin + (cardWidth + 10) * 3, "Pass Rate", `${passRate}%`, COLORS.dilgBlue);
+    drawStatCard(margin + (cardWidth + 10) * 3, "Pass Rate", `${passRateText}%`, COLORS.dilgBlue);
 
     // Decorative bottom border
     pdf.setFillColor(...COLORS.dilgGold);
@@ -528,8 +665,7 @@ export async function exportReportToPDF(
     pdf.setFont("helvetica", "normal");
     pdf.text("Overall Compliance Rate", pageWidth / 2, execY + 25, { align: "center" });
 
-    const complianceRate =
-      municipalData?.compliance_summary?.compliance_rate ?? parseFloat(passRate);
+    const complianceRate = assessmentSummary.passRate;
     const rateColor = getRateColor(complianceRate);
 
     pdf.setFontSize(48);
@@ -541,7 +677,7 @@ export async function exportReportToPDF(
     pdf.setTextColor(...COLORS.mediumGray);
     pdf.setFont("helvetica", "normal");
     pdf.text(
-      `${passCount} of ${totalAssessments} barangays passed the SGLGB assessment`,
+      `${passCount} of ${totalAssessments} completed barangays passed the SGLGB assessment`,
       pageWidth / 2,
       execY + 90,
       { align: "center" }
@@ -929,9 +1065,10 @@ export async function exportReportToPDF(
       const colW = {
         bbi: 120,
         compliance: 80,
-        high: 70,
-        moderate: 80,
-        low: 70,
+        high: 65,
+        moderate: 75,
+        low: 60,
+        non: 60,
       };
       const rowH = 25;
       const headerH = 28;
@@ -952,6 +1089,11 @@ export async function exportReportToPDF(
       pdf.text(
         "Low Func.",
         margin + colW.bbi + colW.compliance + colW.high + colW.moderate + 5,
+        hY
+      );
+      pdf.text(
+        "Non Func.",
+        margin + colW.bbi + colW.compliance + colW.high + colW.moderate + colW.low + 5,
         hY
       );
 
@@ -1012,6 +1154,14 @@ export async function exportReportToPDF(
         pdf.text(
           bbi.low_functional_count.toString(),
           margin + colW.bbi + colW.compliance + colW.high + colW.moderate + 30,
+          textY,
+          { align: "center" }
+        );
+
+        pdf.setTextColor(...COLORS.failRed);
+        pdf.text(
+          (bbi.non_functional_count ?? 0).toString(),
+          margin + colW.bbi + colW.compliance + colW.high + colW.moderate + colW.low + 30,
           textY,
           { align: "center" }
         );
@@ -1108,13 +1258,12 @@ export async function exportReportToPDF(
     // ===== Barangay Assessment Table =====
     let tableY = addSectionPage("Barangay Assessment Details");
 
-    // Table configuration - Enhanced columns with 3+1 breakdown
+    // Table configuration
     const colWidths = {
       barangay: 150,
       status: 80,
-      core: 70,
-      essential: 70,
-      indicators: 70,
+      governanceAreas: 120,
+      indicators: 120,
     };
     const tableStartX = margin;
     const rowHeight = 22;
@@ -1134,20 +1283,14 @@ export async function exportReportToPDF(
       const headerY = startY + headerHeight / 2 + 3;
       pdf.text("Barangay", tableStartX + 10, headerY);
       pdf.text("Status", tableStartX + colWidths.barangay + 10, headerY);
-      pdf.text("Core (3+)", tableStartX + colWidths.barangay + colWidths.status + 10, headerY);
       pdf.text(
-        "Essential (+1)",
-        tableStartX + colWidths.barangay + colWidths.status + colWidths.core + 5,
+        "Governance Areas",
+        tableStartX + colWidths.barangay + colWidths.status + 10,
         headerY
       );
       pdf.text(
         "Indicators",
-        tableStartX +
-          colWidths.barangay +
-          colWidths.status +
-          colWidths.core +
-          colWidths.essential +
-          5,
+        tableStartX + colWidths.barangay + colWidths.status + colWidths.governanceAreas + 10,
         headerY
       );
 
@@ -1156,7 +1299,7 @@ export async function exportReportToPDF(
 
     // Draw initial table header
     let tableYPos = drawTableHeader(tableY);
-    const rows = data.table_data.rows || [];
+    const rows = resolvePdfAssessmentRows(data, municipalData, useMunicipalOverviewData);
     const maxRowsPerPage = 22;
     let rowCount = 0;
 
@@ -1219,34 +1362,28 @@ export async function exportReportToPDF(
       pdf.setFontSize(7);
       pdf.text(statusText, statusX + 3, textY - 1);
 
-      // Core Areas Passed (3+1 classification)
+      // Governance Areas Passed
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8);
-      const coreText =
-        row.core_areas_passed !== null && row.core_areas_passed !== undefined
-          ? `${row.core_areas_passed}/${row.total_core_areas ?? 3}`
+      const governanceAreasText =
+        row.governance_areas_passed !== null && row.governance_areas_passed !== undefined
+          ? `${row.governance_areas_passed}/${row.total_governance_areas ?? 6}`
           : "N/A";
-      // Color code: green if all core areas passed (3+1 rule: all 3 core must pass)
-      const coreAllPassed = row.core_areas_passed === (row.total_core_areas ?? 3);
-      const coreColor = coreAllPassed ? COLORS.passGreen : COLORS.failRed;
-      pdf.setTextColor(coreColor[0], coreColor[1], coreColor[2]);
+      const governanceAreasComplete =
+        row.governance_areas_passed !== null &&
+        row.governance_areas_passed !== undefined &&
+        row.governance_areas_passed === (row.total_governance_areas ?? 6);
+      const governanceAreasColor =
+        row.governance_areas_passed === null || row.governance_areas_passed === undefined
+          ? COLORS.mediumGray
+          : governanceAreasComplete
+            ? COLORS.passGreen
+            : COLORS.failRed;
+      pdf.setTextColor(governanceAreasColor[0], governanceAreasColor[1], governanceAreasColor[2]);
       pdf.setFont("helvetica", "bold");
-      pdf.text(coreText, tableStartX + colWidths.barangay + colWidths.status + 35, textY, {
-        align: "center",
-      });
-
-      // Essential Areas Passed (3+1 classification)
-      const essentialText =
-        row.essential_areas_passed !== null && row.essential_areas_passed !== undefined
-          ? `${row.essential_areas_passed}/${row.total_essential_areas ?? 3}`
-          : "N/A";
-      // Color code: green if at least 1 essential area passed, red if 0
-      const essentialMet = (row.essential_areas_passed ?? 0) >= 1;
-      const essentialColor = essentialMet ? COLORS.passGreen : COLORS.failRed;
-      pdf.setTextColor(essentialColor[0], essentialColor[1], essentialColor[2]);
       pdf.text(
-        essentialText,
-        tableStartX + colWidths.barangay + colWidths.status + colWidths.core + 35,
+        governanceAreasText,
+        tableStartX + colWidths.barangay + colWidths.status + colWidths.governanceAreas / 2,
         textY,
         { align: "center" }
       );
@@ -1255,7 +1392,10 @@ export async function exportReportToPDF(
       pdf.setTextColor(...COLORS.darkGray);
       pdf.setFont("helvetica", "normal");
       const indicatorsText =
-        row.indicators_passed !== null && row.total_indicators !== null
+        row.indicators_passed !== null &&
+        row.indicators_passed !== undefined &&
+        row.total_indicators !== null &&
+        row.total_indicators !== undefined
           ? `${row.indicators_passed}/${row.total_indicators}`
           : "N/A";
       pdf.text(
@@ -1263,9 +1403,8 @@ export async function exportReportToPDF(
         tableStartX +
           colWidths.barangay +
           colWidths.status +
-          colWidths.core +
-          colWidths.essential +
-          35,
+          colWidths.governanceAreas +
+          colWidths.indicators / 2,
         textY,
         { align: "center" }
       );
@@ -1285,12 +1424,9 @@ export async function exportReportToPDF(
     pdf.setFontSize(9);
     pdf.setTextColor(...COLORS.mediumGray);
     pdf.setFont("helvetica", "italic");
-    pdf.text(
-      `Total Records: ${data.table_data.total_count || rows.length}`,
-      pageWidth - margin,
-      tableYPos,
-      { align: "right" }
-    );
+    pdf.text(`Total Records: ${totalRecordCount || rows.length}`, pageWidth - margin, tableYPos, {
+      align: "right",
+    });
 
     // ===== FINAL PAGE: Certification & Disclaimers =====
     pdf.addPage();
@@ -1375,12 +1511,12 @@ export async function exportReportToPDF(
 
     const dataQualityText = [
       "This report is based on data submitted by Barangay Local Government Units (BLGUs) through the",
-      "SINAG platform. All data has been validated by DILG-assigned Assessors and Validators following",
-      "the SGLGB Assessment Guidelines.",
+      "SINAG platform. Completed assessments have been reviewed by DILG-assigned Assessors and",
+      "Validators following the SGLGB Assessment Guidelines. In-progress records may still change.",
       "",
       `Assessment Period: ${filters.year ? `Calendar Year ${filters.year}` : "All available periods"}`,
       `Data Extraction: ${new Date(metadata.generatedAt).toLocaleString("en-PH")}`,
-      `Total Records: ${data.table_data.total_count || 0}`,
+      `Total Records: ${totalRecordCount}`,
       `Report Reference: ${reportNumber}`,
     ];
 
@@ -1438,7 +1574,10 @@ export async function exportReportToPDF(
 
     // ===== Download PDF =====
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
-    const filename = `SGLGB_Assessment_Report_${reportNumber}_${timestamp}.pdf`;
+    const municipalitySlug = (metadata.municipalityName || "Municipality")
+      .replace(/[^a-z0-9]+/gi, "_")
+      .replace(/^_+|_+$/g, "");
+    const filename = `SGLGB_Assessment_Report_${municipalitySlug}_${reportNumber}_${timestamp}.pdf`;
 
     pdf.save(filename);
   } catch (error) {

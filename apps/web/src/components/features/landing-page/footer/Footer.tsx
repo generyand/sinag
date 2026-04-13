@@ -373,7 +373,7 @@ export function Footer() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                  <span className="text-gray-300">Version 1.0</span>
+                  <span className="text-gray-300">Version 1.1</span>
                 </div>
               </div>
             </div>
@@ -402,7 +402,7 @@ export function Footer() {
               </div>
               <div>
                 <div className="font-medium text-white text-sm md:text-base">
-                  © 2025 Municipality of Sulop
+                  © 2026 Municipality of Sulop
                 </div>
                 <div className="text-xs">
                   All Rights Reserved • Developed by{" "}
