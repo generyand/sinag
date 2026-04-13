@@ -343,3 +343,103 @@ def test_get_assessment_details_keeps_all_mov_files_for_indicator_with_upload_or
         MOV_UPLOAD_ORIGIN_BLGU,
         MOV_UPLOAD_ORIGIN_VALIDATOR,
     ]
+
+
+def test_get_assessment_details_keeps_cumulative_assessor_progress_after_rework_resubmission(
+    db_session,
+    mlgoo_user: User,
+    mock_blgu_user: User,
+    active_assessment_year: AssessmentYear,
+    mock_governance_area,
+):
+    from app.db.enums import UserRole, ValidationStatus
+
+    assessor = User(
+        email="progress-assessor@test.gov.ph",
+        name="Progress Assessor",
+        hashed_password="test",
+        role=UserRole.ASSESSOR,
+        assessor_area_id=mock_governance_area.id,
+        is_active=True,
+    )
+    db_session.add(assessor)
+    db_session.flush()
+
+    parent = Indicator(
+        name="Progress Parent",
+        indicator_code="P",
+        governance_area_id=mock_governance_area.id,
+        sort_order=0,
+        description="Parent grouping",
+    )
+    db_session.add(parent)
+    db_session.flush()
+
+    indicators = []
+    for index in range(1, 10):
+        indicator = Indicator(
+            name=f"Progress Indicator {index}",
+            indicator_code=f"1.{index}",
+            governance_area_id=mock_governance_area.id,
+            parent_id=parent.id,
+            sort_order=index,
+            description=f"Indicator {index}",
+        )
+        db_session.add(indicator)
+        indicators.append(indicator)
+    db_session.flush()
+
+    rework_requested_at = datetime(2026, 4, 10, 8, 0, 0)
+    resubmitted_at = datetime(2026, 4, 11, 9, 0, 0)
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.SUBMITTED_FOR_REVIEW,
+        rework_count=1,
+        rework_requested_at=rework_requested_at,
+        area_submission_status={
+            str(mock_governance_area.id): {
+                "status": "submitted",
+                "assessor_id": assessor.id,
+                "submitted_at": resubmitted_at.isoformat(),
+                "resubmitted_after_rework": True,
+            }
+        },
+        area_assessor_approved={str(mock_governance_area.id): False},
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    for index, indicator in enumerate(indicators, start=1):
+        is_rework_indicator = index == 9
+        reviewed_at = resubmitted_at - timedelta(hours=2)
+        response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            response_data={"assessor_val_status": "complete"},
+            is_completed=not is_rework_indicator,
+            requires_rework=is_rework_indicator,
+            validation_status=ValidationStatus.PASS if not is_rework_indicator else None,
+            updated_at=reviewed_at,
+        )
+        db_session.add(response)
+
+    db_session.commit()
+
+    details = mlgoo_service.get_assessment_details(
+        db=db_session,
+        assessment_id=assessment.id,
+        mlgoo_user=mlgoo_user,
+    )
+
+    [area_progress] = [
+        area
+        for area in details["assessment_progress"]["governance_areas"]
+        if area["governance_area_id"] == mock_governance_area.id
+    ]
+
+    assert area_progress["total_indicators"] == 9
+    assert area_progress["assessor"]["reviewed_indicators"] == 8
+    assert area_progress["assessor"]["total_indicators"] == 9
+    assert area_progress["assessor"]["progress_percent"] == 89
+    assert area_progress["assessor"]["status"] == "in_progress"
