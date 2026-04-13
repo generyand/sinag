@@ -487,7 +487,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       return saveResponses(remainingResponseIds, options);
     }
 
-    const savePromise = (async () => {
+    let savePromise!: Promise<boolean>;
+    savePromise = (async () => {
       isSavingRef.current = true;
       setDraftSaveState("saving");
       let savedPayloadCount = 0;
