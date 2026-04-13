@@ -466,6 +466,87 @@ describe("AssessorValidationClient real panel integration", () => {
     expect(validateMutateAsync).not.toHaveBeenCalled();
   }, 15000);
 
+  it("keeps the feedback box blank after resubmission until a new-cycle comment is saved", async () => {
+    const initialData = makeAssessmentWithExistingValues();
+    initialData.assessment.rework_requested_at = "2024-01-02T00:00:00Z";
+    let currentDataUpdatedAt = Date.now();
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: initialData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: currentDataUpdatedAt,
+    });
+
+    const { rerender } = render(wrap(<AssessorValidationClient assessmentId={1} />));
+    const user = userEvent.setup();
+
+    const feedback = await screen.findByPlaceholderText(
+      /Provide an overall summary of the required changes or general instructions/i
+    );
+
+    expect(feedback).toHaveValue("");
+
+    await user.type(feedback, "Fresh re-review feedback");
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 3700));
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledWith({
+      responseId: 101,
+      data: {
+        public_comment: "Fresh re-review feedback",
+        response_data: {
+          assessor_val_item_1: true,
+          assessor_val_item_2: "111",
+        },
+      },
+    });
+
+    const refreshedData = makeAssessmentWithExistingValues();
+    refreshedData.assessment.rework_requested_at = "2024-01-02T00:00:00Z";
+    refreshedData.assessment.responses[0].feedback_comments = [
+      {
+        id: 10,
+        comment: "Old assessor feedback",
+        comment_type: "validation",
+        is_internal_note: false,
+        created_at: "2024-01-01T00:00:00Z",
+        assessor: { role: "ASSESSOR" },
+      },
+      {
+        id: 11,
+        comment: "Fresh re-review feedback",
+        comment_type: "validation",
+        is_internal_note: false,
+        created_at: "2024-01-03T00:00:00Z",
+        assessor: { role: "ASSESSOR" },
+      },
+    ];
+
+    currentDataUpdatedAt = Date.now();
+    validateMutateAsync.mockClear();
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: refreshedData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: currentDataUpdatedAt,
+    });
+
+    rerender(wrap(<AssessorValidationClient assessmentId={1} />));
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 3700));
+    });
+
+    expect(screen.getByDisplayValue("Fresh re-review feedback")).toBeTruthy();
+    expect(validateMutateAsync).not.toHaveBeenCalled();
+  }, 15000);
+
   it("preserves an unsaved checked checkbox across a stale refetch", async () => {
     const initialData = makeAssessment();
     let currentDataUpdatedAt = Date.now();
