@@ -207,7 +207,14 @@ class MLGOOService:
                 assessor_reviewed_indicators = total_indicators
                 assessor_progress_percent = 100
                 assessors_completed_count += 1
-            elif raw_area_status in {"submitted", "in_review", "rework"}:
+            elif raw_area_status == "rework":
+                assessor_status = "sent_for_rework"
+                assessor_progress_percent = (
+                    round((assessor_reviewed_indicators / total_indicators) * 100)
+                    if total_indicators > 0
+                    else 0
+                )
+            elif raw_area_status in {"submitted", "in_review"}:
                 if assessor_reviewed_indicators == 0:
                     assessor_status = "pending" if raw_area_status == "submitted" else "in_progress"
                     assessor_progress_percent = 0
@@ -1421,15 +1428,23 @@ class MLGOOService:
                 area_payload = assessment.area_submission_status.get(
                     str(indicator.governance_area_id), {}
                 )
-                if isinstance(area_payload, dict) and area_payload.get("resubmitted_after_rework"):
-                    submitted_at_raw = area_payload.get("submitted_at")
-                    if isinstance(submitted_at_raw, str):
-                        try:
-                            area_rework_resubmitted_at = datetime.fromisoformat(
-                                submitted_at_raw.replace("Z", "+00:00")
-                            ).replace(tzinfo=None)
-                        except ValueError:
-                            area_rework_resubmitted_at = None
+                if isinstance(area_payload, dict):
+                    is_rework_resubmission = bool(
+                        area_payload.get("resubmitted_after_rework")
+                        or area_payload.get("is_resubmission")
+                        or assessment.rework_submitted_at
+                    )
+                    if is_rework_resubmission:
+                        submitted_at_raw = area_payload.get("submitted_at")
+                        if isinstance(submitted_at_raw, str):
+                            try:
+                                area_rework_resubmitted_at = datetime.fromisoformat(
+                                    submitted_at_raw.replace("Z", "+00:00")
+                                ).replace(tzinfo=None)
+                            except ValueError:
+                                area_rework_resubmitted_at = None
+                        elif assessment.rework_submitted_at:
+                            area_rework_resubmitted_at = assessment.rework_submitted_at
 
             assessor_reviewed = bool(
                 response_data

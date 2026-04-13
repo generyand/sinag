@@ -410,7 +410,7 @@ class AssessorService:
                                     k.startswith("assessor_val_") for k in r.response_data.keys()
                                 )
                                 and r.updated_at
-                                and r.updated_at >= resubmit_timestamp
+                                and r.updated_at > resubmit_timestamp
                             )
                             re_review_progress = round(
                                 (re_reviewed_count / total_count * 100) if total_count > 0 else 0
@@ -428,7 +428,7 @@ class AssessorService:
                         for r in area_responses
                         if not r.requires_rework
                         and r.updated_at
-                        and r.updated_at >= a.calibration_submitted_at
+                        and r.updated_at > a.calibration_submitted_at
                         and (
                             r.validation_status is not None
                             or r.flagged_for_calibration
