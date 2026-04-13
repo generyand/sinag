@@ -29,7 +29,7 @@ import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
 
@@ -97,6 +97,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const [checklistState, setChecklistState] = useState<Record<string, any>>({});
   // Store calibration flag state (which indicators are flagged for calibration)
   const [calibrationFlags, setCalibrationFlags] = useState<Record<number, boolean>>({});
+  const [movAttentionByResponse, setMovAttentionByResponse] = useState<
+    Record<number, Record<number, boolean>>
+  >({});
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
   const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
   const [dirtyResponseIds, setDirtyResponseIds] = useState<number[]>([]);
@@ -337,7 +340,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const responseHasAttention = (response: AnyRecord): boolean => {
-    return responseHasServerMovAttention(response) || calibrationFlags[response.id] === true;
+    const localFileAttention = Object.values(movAttentionByResponse[response.id] ?? {}).some(
+      Boolean
+    );
+
+    return (
+      responseHasServerMovAttention(response) ||
+      localFileAttention ||
+      calibrationFlags[response.id] === true
+    );
   };
 
   // Helper: Check if an indicator is "reviewed"
@@ -898,6 +909,19 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     }, 0);
   };
 
+  const handleMovAttentionChange = useCallback(
+    (responseId: number, movFileId: number, hasAttention: boolean) => {
+      setMovAttentionByResponse((prev) => ({
+        ...prev,
+        [responseId]: {
+          ...(prev[responseId] ?? {}),
+          [movFileId]: hasAttention,
+        },
+      }));
+    },
+    []
+  );
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-muted-foreground">
@@ -1058,6 +1082,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                       handleCalibrationFlagChange(responseId, false);
                     }
                   }}
+                  onMovAttentionChange={handleMovAttentionChange}
                 />
               </div>
             )}
@@ -1149,6 +1174,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                           handleCalibrationFlagChange(responseId, false);
                         }
                       }}
+                      onMovAttentionChange={handleMovAttentionChange}
                     />
                   </div>
                 )}
@@ -1208,6 +1234,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                     handleCalibrationFlagChange(responseId, false);
                   }
                 }}
+                onMovAttentionChange={handleMovAttentionChange}
               />
             </div>
 

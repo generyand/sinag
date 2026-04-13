@@ -78,7 +78,16 @@ vi.mock("next/dynamic", () => ({
 }));
 
 vi.mock("../../assessor/validation/MiddleMovFilesPanel", () => ({
-  MiddleMovFilesPanel: () => <div data-testid="mov-panel" />,
+  MiddleMovFilesPanel: (props: any) => (
+    <div data-testid="mov-panel">
+      <button onClick={() => props.onMovAttentionChange?.(201, 1, true)}>
+        Add validator MOV note
+      </button>
+      <button onClick={() => props.onMovAttentionChange?.(201, 1, false)}>
+        Clear validator MOV note
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/features/assessments/tree-navigation", () => ({
@@ -356,6 +365,63 @@ describe("ValidatorValidationClient autosave", () => {
     });
 
     render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    expectSidebarAttention(201, true);
+  });
+
+  it("updates the validator sidebar warning state immediately when a MOV note is added locally", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    expectSidebarAttention(201, false);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Add validator MOV note" })[0]);
+
+    expectSidebarAttention(201, true);
+  });
+
+  it("clears the validator sidebar warning state when the only local MOV attention is removed", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Add validator MOV note" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Clear validator MOV note" })[0]);
+
+    expectSidebarAttention(201, false);
+  });
+
+  it("keeps saved server MOV attention after a local override is cleared", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({
+        movs: [
+          {
+            id: 1,
+            uploaded_at: "2024-01-01T00:00:00Z",
+            validator_notes: "saved note",
+            flagged_for_calibration: false,
+          },
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Clear validator MOV note" })[0]);
 
     expectSidebarAttention(201, true);
   });

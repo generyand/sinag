@@ -260,6 +260,8 @@ interface MiddleMovFilesPanelProps {
   onReworkFlagSaved?: (responseId: number, movFileId: number, flagged: boolean) => void;
   /** Callback when validator toggles calibration flag (validators only) */
   onCalibrationFlagChange?: (responseId: number, flagged: boolean) => void;
+  /** Callback while validator MOV note/flag edits make one open file need attention */
+  onMovAttentionChange?: (responseId: number, movFileId: number, hasAttention: boolean) => void;
 }
 
 type AnyRecord = Record<string, any>;
@@ -431,6 +433,7 @@ export function MiddleMovFilesPanel({
   onAnnotationDeleted,
   onReworkFlagSaved,
   onCalibrationFlagChange,
+  onMovAttentionChange,
 }: MiddleMovFilesPanelProps) {
   const { user } = useAuthStore();
   const isValidator = user?.role === "VALIDATOR";
@@ -682,6 +685,20 @@ export function MiddleMovFilesPanel({
       setFeedbackDirty(false);
     }
   }, [isAnnotating]);
+
+  React.useEffect(() => {
+    if (!isValidator || !expandedId || !selectedFile?.id || !onMovAttentionChange) return;
+
+    const currentResponseId = expandedId;
+    const currentMovFileId = selectedFile.id;
+    const hasAttention = movFlagged || movNotes.trim().length > 0;
+
+    onMovAttentionChange(currentResponseId, currentMovFileId, hasAttention);
+
+    return () => {
+      onMovAttentionChange(currentResponseId, currentMovFileId, false);
+    };
+  }, [movNotes, movFlagged, isValidator, expandedId, selectedFile?.id, onMovAttentionChange]);
 
   // Auto-toggle flag when notes are added
   const handleNotesChange = (value: string) => {
