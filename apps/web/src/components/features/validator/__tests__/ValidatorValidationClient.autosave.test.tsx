@@ -69,6 +69,12 @@ vi.mock("next/dynamic", () => ({
           <button onClick={() => props.setField(201, "publicComment", "validator latest draft")}>
             Edit validator comment twice
           </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_1", true)}>
+            Toggle validator checklist
+          </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_1", false)}>
+            Set validator checklist false
+          </button>
         </div>
       );
     }
@@ -314,6 +320,55 @@ describe("ValidatorValidationClient autosave", () => {
     });
 
     expect(finalizeMutateAsync).toHaveBeenCalledWith({ assessmentId: 1 });
+  });
+
+  it("re-saves the latest validator checklist edit made while the previous auto-save is still in flight", async () => {
+    const firstSave = deferred<unknown>();
+    validateMutateAsync
+      .mockImplementationOnce(() => firstSave.promise)
+      .mockResolvedValueOnce({ success: true });
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Set validator checklist false" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist" })[0]);
+
+    await act(async () => {
+      firstSave.resolve({ success: true });
+      await Promise.resolve();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(2);
+    expect(validateMutateAsync).toHaveBeenNthCalledWith(2, {
+      responseId: 201,
+      data: {
+        validation_status: "PASS",
+        public_comment: null,
+        response_data: { validator_val_requirement_1: true },
+        flagged_for_calibration: false,
+      },
+    });
   });
 
   it("renders loading state without entering an update loop before assessment data arrives", () => {
