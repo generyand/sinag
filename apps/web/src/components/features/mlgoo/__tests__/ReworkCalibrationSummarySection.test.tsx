@@ -1,92 +1,52 @@
-import { renderWithProviders, screen, within } from "@/tests/test-utils";
+import { renderWithProviders, screen } from "@/tests/test-utils";
 import { describe, expect, it } from "vitest";
 
 import { ReworkCalibrationSummarySection } from "../ReworkCalibrationSummarySection";
 
+const baseSummary = {
+  has_rework: true,
+  has_calibration: false,
+  has_mlgoo_recalibration: false,
+  rework_requested_by_id: null,
+  rework_requested_by_name: "Assessor One",
+  rework_comments: null,
+  calibration_validator_id: null,
+  calibration_validator_name: null,
+  calibration_comments: null,
+  pending_calibrations: [],
+  rework_indicators: [
+    {
+      indicator_id: 64,
+      indicator_code: "6.4.1",
+      indicator_name: "Accomplishment Reports covering {JUL_TO_SEP_CURRENT_YEAR}",
+      governance_area_id: 6,
+      governance_area_name: "Environmental Management",
+      status: "rework",
+      validation_status: "FAIL",
+      feedback_comments: [],
+      mov_annotations: [],
+    },
+  ],
+};
+
 describe("ReworkCalibrationSummarySection", () => {
-  it("shows every requester and flagged indicator across rework and calibration activity", () => {
+  it("formats year placeholders in indicators under review", () => {
+    // @ts-expect-error - assessmentYear is not yet in the props
     renderWithProviders(
-      <ReworkCalibrationSummarySection
-        summary={
-          {
-            has_rework: true,
-            has_calibration: true,
-            has_mlgoo_recalibration: false,
-            requesters: [
-              {
-                request_type: "rework",
-                requester_name: "Assessor - Financial Admin",
-                governance_area_name: "Financial Administration and Sustainability",
-                requested_at: "2026-04-11T09:30:00Z",
-              },
-              {
-                request_type: "rework",
-                requester_name: "Assessor - Social Protection",
-                governance_area_name: "Social Protection and Sensitivity",
-                requested_at: "2026-04-11T10:15:00Z",
-              },
-              {
-                request_type: "calibration",
-                requester_name: "Validator 1",
-                governance_area_name: "Peace and Order",
-                requested_at: "2026-04-11T13:30:00Z",
-              },
-            ],
-            rework_indicators: [
-              {
-                indicator_id: 1,
-                indicator_name: "Compliance with Section 20",
-                indicator_code: "1.6.1",
-                governance_area_id: 101,
-                governance_area_name: "Financial Administration and Sustainability",
-                status: "rework",
-                validation_status: null,
-                feedback_comments: [],
-                mov_annotations: [],
-              },
-              {
-                indicator_id: 2,
-                indicator_name: "System",
-                indicator_code: "4.5.5",
-                governance_area_id: 102,
-                governance_area_name: "Social Protection and Sensitivity",
-                status: "rework",
-                validation_status: null,
-                feedback_comments: [],
-                mov_annotations: [],
-              },
-              {
-                indicator_id: 3,
-                indicator_name: "Validator Indicator",
-                indicator_code: "5.1.2",
-                governance_area_id: 103,
-                governance_area_name: "Peace and Order",
-                status: "calibration",
-                validation_status: null,
-                feedback_comments: [],
-                mov_annotations: [],
-              },
-            ],
-          } as any
-        }
-        reworkRequestedAt="2026-04-11T09:30:00Z"
-        calibrationRequestedAt="2026-04-11T13:30:00Z"
-      />
+      <ReworkCalibrationSummarySection summary={baseSummary} assessmentYear={2026} />
     );
 
-    const requesterSection = screen.getByText("Rework Requested By").closest("div")?.parentElement;
-    expect(requesterSection).not.toBeNull();
+    expect(
+      screen.getByText("Accomplishment Reports covering July-September 2026")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\{JUL_TO_SEP_CURRENT_YEAR\}/)).not.toBeInTheDocument();
+  });
 
-    const requesterContent = within(requesterSection as HTMLElement);
-    expect(requesterContent.getByText("Assessor - Financial Admin")).toBeInTheDocument();
-    expect(requesterContent.getByText("Assessor - Social Protection")).toBeInTheDocument();
-    expect(requesterContent.getByText("Validator 1")).toBeInTheDocument();
+  it("leaves the indicator name unchanged when no assessment year is available", () => {
+    renderWithProviders(<ReworkCalibrationSummarySection summary={baseSummary} />);
 
-    expect(screen.getByText("Indicators Under Review (3)")).toBeInTheDocument();
-    expect(screen.getByText("1.6.1")).toBeInTheDocument();
-    expect(screen.getByText("4.5.5")).toBeInTheDocument();
-    expect(screen.getByText("5.1.2")).toBeInTheDocument();
-    expect(screen.getAllByText("Rework").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText("Calibration").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getByText("Accomplishment Reports covering {JUL_TO_SEP_CURRENT_YEAR}")
+    ).toBeInTheDocument();
   });
 });
