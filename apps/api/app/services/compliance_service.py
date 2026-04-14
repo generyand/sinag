@@ -353,10 +353,7 @@ class ComplianceService:
 
             # Fallback: Auto-calculate compliance from values if explicit CHECKBOX is missing
             # For indicators: 2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4
-            if (
-                not has_passing_option
-                and indicator.indicator_code in PHYSICAL_FINANCIAL_INDICATORS
-            ):
+            if not has_passing_option and indicator.indicator_code in PHYSICAL_FINANCIAL_INDICATORS:
                 code_safe = indicator.indicator_code.replace(".", "_")
 
                 # Check Physical (Option A) keys

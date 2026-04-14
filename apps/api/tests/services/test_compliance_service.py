@@ -5,7 +5,6 @@ import pytest
 
 from app.services.compliance_service import ComplianceService
 
-
 REPORT_OR_INDICATOR_CODES = ["2.1.4", "3.2.3", "4.1.6", "4.3.4", "4.5.6", "4.8.4", "6.1.4"]
 
 
