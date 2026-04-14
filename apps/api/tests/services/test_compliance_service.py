@@ -1,7 +1,12 @@
 from types import SimpleNamespace
 from typing import Any, cast
 
+import pytest
+
 from app.services.compliance_service import ComplianceService
+
+
+REPORT_OR_INDICATOR_CODES = ["2.1.4", "3.2.3", "4.1.6", "4.3.4", "4.5.6", "4.8.4", "6.1.4"]
 
 
 def make_report_indicator(code: str = "4.1.6") -> SimpleNamespace:
@@ -33,14 +38,18 @@ def make_response(response_data: dict) -> SimpleNamespace:
     return SimpleNamespace(response_data=response_data)
 
 
-def test_report_or_indicator_is_complete_when_physical_yes_and_financial_no():
+@pytest.mark.parametrize("indicator_code", REPORT_OR_INDICATOR_CODES)
+def test_report_or_indicator_is_complete_when_physical_yes_and_financial_no(
+    indicator_code: str,
+):
     service = ComplianceService()
-    indicator = make_report_indicator("4.1.6")
+    indicator = make_report_indicator(indicator_code)
+    code_safe = indicator_code.replace(".", "_")
     response = make_response(
         {
-            "validator_val_4_1_6_report": True,
-            "validator_val_4_1_6_option_a_yes": True,
-            "validator_val_4_1_6_option_b_no": True,
+            f"validator_val_{code_safe}_report": True,
+            f"validator_val_{code_safe}_option_a_yes": True,
+            f"validator_val_{code_safe}_option_b_no": True,
         }
     )
 
@@ -54,14 +63,18 @@ def test_report_or_indicator_is_complete_when_physical_yes_and_financial_no():
     assert has_any_checked is True
 
 
-def test_report_or_indicator_is_complete_when_physical_no_and_financial_yes():
+@pytest.mark.parametrize("indicator_code", REPORT_OR_INDICATOR_CODES)
+def test_report_or_indicator_is_complete_when_physical_no_and_financial_yes(
+    indicator_code: str,
+):
     service = ComplianceService()
-    indicator = make_report_indicator("4.1.6")
+    indicator = make_report_indicator(indicator_code)
+    code_safe = indicator_code.replace(".", "_")
     response = make_response(
         {
-            "validator_val_4_1_6_report": True,
-            "validator_val_4_1_6_option_a_no": True,
-            "validator_val_4_1_6_option_b_yes": True,
+            f"validator_val_{code_safe}_report": True,
+            f"validator_val_{code_safe}_option_a_no": True,
+            f"validator_val_{code_safe}_option_b_yes": True,
         }
     )
 
@@ -75,14 +88,18 @@ def test_report_or_indicator_is_complete_when_physical_no_and_financial_yes():
     assert has_any_checked is True
 
 
-def test_report_or_indicator_is_incomplete_when_physical_and_financial_are_no():
+@pytest.mark.parametrize("indicator_code", REPORT_OR_INDICATOR_CODES)
+def test_report_or_indicator_is_incomplete_when_physical_and_financial_are_no(
+    indicator_code: str,
+):
     service = ComplianceService()
-    indicator = make_report_indicator("4.1.6")
+    indicator = make_report_indicator(indicator_code)
+    code_safe = indicator_code.replace(".", "_")
     response = make_response(
         {
-            "validator_val_4_1_6_report": True,
-            "validator_val_4_1_6_option_a_no": True,
-            "validator_val_4_1_6_option_b_no": True,
+            f"validator_val_{code_safe}_report": True,
+            f"validator_val_{code_safe}_option_a_no": True,
+            f"validator_val_{code_safe}_option_b_no": True,
         }
     )
 
