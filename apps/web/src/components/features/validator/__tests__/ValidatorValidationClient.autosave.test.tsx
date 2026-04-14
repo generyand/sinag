@@ -726,4 +726,26 @@ describe("ValidatorValidationClient autosave", () => {
       expect(indicator).toHaveAttribute("data-has-mov-notes", "true");
     });
   });
+
+  it("disables calibration submission when every governance area has already been calibrated", async () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({}, { calibrated_area_ids: [1, 2, 3, 4, 5, 6] }),
+      isLoading: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    const calibrationButton = screen.getByRole("button", { name: /all areas calibrated/i });
+
+    expect(calibrationButton).toBeDisabled();
+    expect(calibrationButton.parentElement).toHaveAttribute(
+      "title",
+      "All governance areas have already been calibrated (max 1 calibration per area)"
+    );
+
+    fireEvent.click(calibrationButton);
+
+    expect(screen.queryByText("Submit for Calibration?")).not.toBeInTheDocument();
+  });
 });
