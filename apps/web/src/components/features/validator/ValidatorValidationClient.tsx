@@ -29,7 +29,7 @@ import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { toast } from "sonner";
 import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
 import { getValidatorIndicatorProgress, hasExistingValidationStatus } from "./validator-progress";
@@ -53,6 +53,37 @@ interface ValidatorValidationClientProps {
 type AnyRecord = Record<string, any>;
 type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 const AUTOSAVE_DEBOUNCE_MS = 3500;
+
+function upsertValidatorValidationFeedbackComment(
+  feedbackComments: AnyRecord[],
+  comment: string | null
+): AnyRecord[] {
+  const withoutValidatorValidationComments = feedbackComments.filter((existingComment) => {
+    if (existingComment.comment_type !== "validation" || existingComment.is_internal_note) {
+      return true;
+    }
+    const commenterRole = existingComment.assessor?.role?.toLowerCase() || "";
+    return commenterRole !== "validator";
+  });
+
+  if (!comment || comment.trim().length === 0) {
+    return withoutValidatorValidationComments;
+  }
+
+  return [
+    {
+      id: `local-validator-validation-${Date.now()}`,
+      comment,
+      comment_type: "validation",
+      is_internal_note: false,
+      created_at: new Date().toISOString(),
+      assessor: {
+        role: "VALIDATOR",
+      },
+    },
+    ...withoutValidatorValidationComments,
+  ];
+}
 
 /**
  * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
@@ -372,12 +403,21 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       responseChecklistData[`validator_val_${fieldName}`] = checklistStateRef.current[key];
     });
 
+    const sortedKeys = Object.keys(responseChecklistData).sort();
+    const sortedChecklistData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedChecklistData[k] = responseChecklistData[k];
+    });
+
+    const rawComment = formData?.publicComment ?? null;
+    const normalizedComment = rawComment && rawComment.trim().length > 0 ? rawComment : null;
+
     return JSON.stringify({
       validation_status: formData?.status
         ? (formData.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
         : null,
-      public_comment: formData?.publicComment ?? null,
-      response_data: responseChecklistData,
+      public_comment: normalizedComment,
+      response_data: sortedChecklistData,
       flagged_for_calibration: calibrationFlagsRef.current[responseId] ?? false,
     });
   };
@@ -402,10 +442,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       snapshotData[key] = responseData[key];
     });
 
+    const sortedKeys = Object.keys(snapshotData).sort();
+    const sortedSnapshotData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedSnapshotData[k] = snapshotData[k];
+    });
+
     return JSON.stringify({
       validation_status: response.validation_status ?? null,
       public_comment: validationComments[0]?.comment ?? null,
-      response_data: snapshotData,
+      response_data: sortedSnapshotData,
       flagged_for_calibration: response.flagged_for_calibration === true,
     });
   };
@@ -434,6 +480,71 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         flagged_for_calibration: parsed.flagged_for_calibration,
       },
     };
+  };
+
+  const patchCachedAssessmentResponse = (
+    responseId: number,
+    payload: {
+      validation_status?: "PASS" | "FAIL" | "CONDITIONAL";
+      public_comment: string | null;
+      response_data?: Record<string, any>;
+      flagged_for_calibration: boolean;
+    }
+  ) => {
+    qc.setQueryData(
+      getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+      (current: AnyRecord | undefined) => {
+        if (!current) return current;
+
+        const assessmentData = (current.assessment as AnyRecord) ?? current;
+        const currentResponses = (assessmentData.responses as AnyRecord[]) ?? [];
+
+        const nextResponses = currentResponses.map((response) => {
+          if (response.id !== responseId) return response;
+
+          const nextResponseData = {
+            ...((response.response_data as Record<string, any>) || {}),
+            ...(payload.response_data || {}),
+          };
+
+          if (payload.response_data) {
+            Object.entries(payload.response_data).forEach(([key, value]) => {
+              if (value === null || value === undefined || value === "" || value === false) {
+                delete nextResponseData[key];
+              }
+            });
+          }
+
+          return {
+            ...response,
+            validation_status: payload.validation_status ?? response.validation_status,
+            flagged_for_calibration: payload.flagged_for_calibration,
+            response_data: nextResponseData,
+            feedback_comments: upsertValidatorValidationFeedbackComment(
+              ((response.feedback_comments as AnyRecord[]) || []).map((comment) => ({
+                ...comment,
+              })),
+              payload.public_comment
+            ),
+          };
+        });
+
+        if ("assessment" in current) {
+          return {
+            ...current,
+            assessment: {
+              ...assessmentData,
+              responses: nextResponses,
+            },
+          };
+        }
+
+        return {
+          ...assessmentData,
+          responses: nextResponses,
+        };
+      }
+    );
   };
 
   const syncDirtyStateForResponse = (responseId: number) => {
@@ -503,6 +614,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           });
           savedPayloadCount += 1;
 
+          patchCachedAssessmentResponse(responseId, payload.data);
           lastSavedSnapshotRef.current[responseId] = payload.snapshot;
           setDirtyResponseIds((prev) => {
             const currentSnapshot = getResponseSnapshot(responseId);
@@ -520,6 +632,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             return next;
           });
         }
+
+        await qc.invalidateQueries({
+          queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+          exact: true,
+        });
 
         if (savedPayloadCount > 0) {
           setCompletedAutosaveCount((count) => count + 1);
@@ -586,14 +703,39 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   useEffect(() => {
     const nextSnapshots: Record<number, string> = {};
+    let nextDirtyIds = [...dirtyResponseIdsRef.current];
+
     responses.forEach((response) => {
-      nextSnapshots[response.id] = getServerSnapshot(response);
+      const serverSnapshot = getServerSnapshot(response);
+      const isDirty = nextDirtyIds.includes(response.id);
+
+      if (isDirty) {
+        const localSnapshot = getResponseSnapshot(response.id);
+        if (serverSnapshot === localSnapshot) {
+          nextSnapshots[response.id] = serverSnapshot;
+          nextDirtyIds = nextDirtyIds.filter((id) => id !== response.id);
+        } else {
+          // Preserve optimistic dirty state across this hydration
+          nextSnapshots[response.id] = lastSavedSnapshotRef.current[response.id] ?? serverSnapshot;
+        }
+      } else {
+        nextSnapshots[response.id] = serverSnapshot;
+      }
     });
+
     lastSavedSnapshotRef.current = nextSnapshots;
     hydratedRef.current = true;
-    dirtyResponseIdsRef.current = [];
-    setDirtyResponseIds([]);
-    setDraftSaveState("idle");
+
+    // Only update state if dirty IDs actually changed
+    if (
+      nextDirtyIds.length !== dirtyResponseIdsRef.current.length ||
+      !nextDirtyIds.every((id, i) => id === dirtyResponseIdsRef.current[i])
+    ) {
+      dirtyResponseIdsRef.current = nextDirtyIds;
+      setDirtyResponseIds(nextDirtyIds);
+    }
+
+    setDraftSaveState(nextDirtyIds.length > 0 ? "dirty" : "idle");
   }, [responses]);
 
   useEffect(() => {
@@ -816,42 +958,56 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     field: "status" | "publicComment",
     value: string
   ) => {
-    setForm((prev) => ({
-      ...prev,
+    const currentEntry = formRef.current[responseId] ?? {};
+    if (currentEntry[field] === value) return;
+
+    const nextForm = {
+      ...formRef.current,
       [responseId]: {
-        ...prev[responseId],
+        ...currentEntry,
         [field]: value,
       },
-    }));
+    };
 
-    window.setTimeout(() => {
-      syncDirtyStateForResponse(responseId);
-    }, 0);
+    formRef.current = nextForm;
+    syncDirtyStateForResponse(responseId);
+    startTransition(() => {
+      setForm(nextForm);
+    });
   };
 
   const handleChecklistChange = (key: string, value: any) => {
-    setChecklistState((prev) => ({
-      ...prev,
+    if (checklistStateRef.current[key] === value) return;
+
+    const nextChecklistState = {
+      ...checklistStateRef.current,
       [key]: value,
-    }));
+    };
+
+    checklistStateRef.current = nextChecklistState;
 
     const match = key.match(/^checklist_(\d+)_/);
     if (!match) return;
 
-    window.setTimeout(() => {
-      syncDirtyStateForResponse(Number(match[1]));
-    }, 0);
+    syncDirtyStateForResponse(Number(match[1]));
+    startTransition(() => {
+      setChecklistState(nextChecklistState);
+    });
   };
 
   const handleCalibrationFlagChange = (responseId: number, flagged: boolean) => {
-    setCalibrationFlags((prev) => ({
-      ...prev,
-      [responseId]: flagged,
-    }));
+    if (calibrationFlagsRef.current[responseId] === flagged) return;
 
-    window.setTimeout(() => {
-      syncDirtyStateForResponse(responseId);
-    }, 0);
+    const nextCalibrationFlags = {
+      ...calibrationFlagsRef.current,
+      [responseId]: flagged,
+    };
+
+    calibrationFlagsRef.current = nextCalibrationFlags;
+    syncDirtyStateForResponse(responseId);
+    startTransition(() => {
+      setCalibrationFlags(nextCalibrationFlags);
+    });
   };
 
   const handleMovAttentionChange = useCallback(

@@ -6,6 +6,7 @@ import {
   useGetAssessorAssessmentsAssessmentId,
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
+  getGetAssessorAssessmentsAssessmentIdQueryKey,
 } from "@sinag/shared";
 import { ValidatorValidationClient } from "../ValidatorValidationClient";
 
@@ -74,6 +75,9 @@ vi.mock("next/dynamic", () => ({
           </button>
           <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_1", false)}>
             Set validator checklist false
+          </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_2", true)}>
+            Toggle validator checklist 2
           </button>
         </div>
       );
@@ -348,7 +352,7 @@ describe("ValidatorValidationClient autosave", () => {
     expect(validateMutateAsync).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getAllByRole("button", { name: "Set validator checklist false" })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist 2" })[0]);
 
     await act(async () => {
       firstSave.resolve({ success: true });
@@ -365,9 +369,66 @@ describe("ValidatorValidationClient autosave", () => {
       data: {
         validation_status: "PASS",
         public_comment: null,
-        response_data: { validator_val_requirement_1: true },
+        response_data: { validator_val_requirement_1: false, validator_val_requirement_2: true },
         flagged_for_calibration: false,
       },
+    });
+  });
+
+  it("patches the cached assessment and invalidates queries after a successful validator autosave", async () => {
+    validateMutateAsync.mockResolvedValue({ success: true });
+
+    const assessment = makeAssessment();
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: assessment,
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    client.setQueryData(getGetAssessorAssessmentsAssessmentIdQueryKey(1), assessment);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    render(
+      <QueryClientProvider client={client}>
+        <ValidatorValidationClient assessmentId={1} />
+      </QueryClientProvider>
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    const cached = client.getQueryData(getGetAssessorAssessmentsAssessmentIdQueryKey(1)) as any;
+    const cachedResponse = cached.assessment.responses[0];
+
+    // Assert cache was patched (matching assessor behavior)
+    expect(cachedResponse.response_data.validator_val_requirement_1).toBe(true);
+    // Comment should be in feedback_comments
+    const validatorComment = cachedResponse.feedback_comments.find(
+      (c: any) => c.comment_type === "validation" && c.assessor?.role === "VALIDATOR"
+    );
+    expect(validatorComment?.comment).toBe("validator first draft");
+
+    // Assert invalidation was called
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(1),
+      exact: true,
     });
   });
 
