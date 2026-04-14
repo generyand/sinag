@@ -2113,6 +2113,7 @@ export default function SubmissionDetailsPage() {
               {/* Rework/Calibration Summary Section */}
               <ReworkCalibrationSummarySection
                 summary={assessment.rework_calibration_summary}
+                assessmentYear={assessment.cycle_year}
                 reworkRequestedAt={assessment.rework_requested_at}
                 calibrationRequestedAt={assessment.calibration_requested_at}
                 mlgooRecalibrationComments={assessment.mlgoo_recalibration_comments}
