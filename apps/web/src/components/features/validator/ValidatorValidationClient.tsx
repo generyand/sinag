@@ -25,7 +25,7 @@ import {
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { classifyError } from "@/lib/error-utils";
-import { ChevronLeft, ClipboardCheck } from "lucide-react";
+import { ChevronLeft, ClipboardCheck, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -53,6 +53,12 @@ interface ValidatorValidationClientProps {
 type AnyRecord = Record<string, any>;
 type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 const AUTOSAVE_DEBOUNCE_MS = 3500;
+const COMPLIANCE_OVERVIEW_LOADING_MESSAGES = [
+  "Opening overview",
+  "Saving your changes",
+  "Preparing suggestions",
+] as const;
+const COMPLIANCE_OVERVIEW_LOADING_MESSAGE_MS = 2500;
 
 function upsertValidatorValidationFeedbackComment(
   feedbackComments: AnyRecord[],
@@ -133,6 +139,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     Record<number, Record<number, boolean>>
   >({});
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
+  const [isOpeningComplianceOverview, setIsOpeningComplianceOverview] = useState(false);
+  const [complianceOverviewLoadingStep, setComplianceOverviewLoadingStep] = useState(0);
   const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
   const [dirtyResponseIds, setDirtyResponseIds] = useState<number[]>([]);
   const hydratedRef = useRef(false);
@@ -311,6 +319,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     "") as string;
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
   const statusText: string = core?.status ?? core?.assessment_status ?? "";
+  const complianceOverviewLoadingMessage =
+    COMPLIANCE_OVERVIEW_LOADING_MESSAGES[complianceOverviewLoadingStep];
 
   // Per-area calibration tracking: each governance area can only be calibrated ONCE
   // calibrated_area_ids contains the IDs of areas that have already been calibrated
@@ -703,6 +713,21 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   useEffect(() => {
+    if (!isOpeningComplianceOverview) {
+      setComplianceOverviewLoadingStep(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setComplianceOverviewLoadingStep((step) =>
+        Math.min(step + 1, COMPLIANCE_OVERVIEW_LOADING_MESSAGES.length - 1)
+      );
+    }, COMPLIANCE_OVERVIEW_LOADING_MESSAGE_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [isOpeningComplianceOverview]);
+
+  useEffect(() => {
     const nextSnapshots: Record<number, string> = {};
     let nextDirtyIds = [...dirtyResponseIdsRef.current];
 
@@ -1093,17 +1118,37 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               variant="default"
               size="sm"
               className="gap-1 sm:gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-4"
-              disabled={draftSaveState === "saving"}
+              disabled={draftSaveState === "saving" || isOpeningComplianceOverview}
+              aria-busy={isOpeningComplianceOverview}
+              aria-label={
+                isOpeningComplianceOverview
+                  ? complianceOverviewLoadingMessage
+                  : "Compliance Overview"
+              }
               onClick={async () => {
                 // Save draft first, then navigate to compliance overview
+                setIsOpeningComplianceOverview(true);
                 const saved = await flushPendingChanges({ quiet: true });
-                if (!saved) return;
+                if (!saved) {
+                  setIsOpeningComplianceOverview(false);
+                  return;
+                }
                 router.push(`/validator/submissions/${assessmentId}/compliance`);
               }}
             >
-              <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Compliance Overview</span>
-              <span className="sm:hidden">Compliance</span>
+              {isOpeningComplianceOverview ? (
+                <Loader2 className="h-3 w-3 animate-spin sm:h-4 sm:w-4" />
+              ) : (
+                <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isOpeningComplianceOverview
+                  ? complianceOverviewLoadingMessage
+                  : "Compliance Overview"}
+              </span>
+              <span className="sm:hidden">
+                {isOpeningComplianceOverview ? complianceOverviewLoadingMessage : "Compliance"}
+              </span>
             </Button>
           </div>
         </div>

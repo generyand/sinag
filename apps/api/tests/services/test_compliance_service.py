@@ -25,8 +25,18 @@ def make_report_indicator(code: str = "4.1.6") -> SimpleNamespace:
                 "required": False,
             },
             {
+                "item_id": f"{code_safe}_cert_physical",
+                "item_type": "checkbox",
+                "required": False,
+            },
+            {
                 "item_id": f"{code_safe}_option_b",
                 "item_type": "assessment_field",
+                "required": False,
+            },
+            {
+                "item_id": f"{code_safe}_cert_financial",
+                "item_type": "checkbox",
                 "required": False,
             },
         ],
@@ -99,6 +109,29 @@ def test_report_or_indicator_is_incomplete_when_physical_and_financial_are_no(
             f"validator_val_{code_safe}_report": True,
             f"validator_val_{code_safe}_option_a_no": True,
             f"validator_val_{code_safe}_option_b_no": True,
+        }
+    )
+
+    is_complete, has_any_checked = service._is_checklist_complete(
+        db=SimpleNamespace(),
+        indicator=cast(Any, indicator),
+        response=cast(Any, response),
+    )
+
+    assert is_complete is False
+    assert has_any_checked is True
+
+
+def test_report_or_indicator_is_incomplete_when_certifications_are_checked_but_rates_are_no():
+    service = ComplianceService()
+    indicator = make_report_indicator("4.1.6")
+    response = make_response(
+        {
+            "validator_val_4_1_6_report": True,
+            "validator_val_4_1_6_cert_physical": True,
+            "validator_val_4_1_6_option_a_no": True,
+            "validator_val_4_1_6_cert_financial": True,
+            "validator_val_4_1_6_option_b_no": True,
         }
     )
 

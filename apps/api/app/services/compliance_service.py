@@ -316,6 +316,9 @@ class ComplianceService:
             # b) Any assessment_field with _yes checked
 
             has_passing_option = False
+            is_physical_financial_indicator = (
+                indicator.indicator_code in PHYSICAL_FINANCIAL_INDICATORS
+            )
 
             # Get all item IDs defined for this indicator
             all_item_ids = {item.get("item_id") for item in checklist_items_data}
@@ -323,10 +326,14 @@ class ComplianceService:
             # Get checkbox items (regular options like option_1, option_2)
             # IMPORTANT: Exclude required items (shared requirements) from option checkboxes
             # e.g., 4_1_6_report is a required SHARED item, not an OR option
+            # Physical/Financial report indicators use checkbox rows for supporting certifications,
+            # so their pass/fail result must come from the auto YES/NO fields or numeric fallback.
             checkbox_items = [
                 item.get("item_id")
                 for item in checklist_items_data
-                if item.get("item_type") == "checkbox" and not item.get("required", False)
+                if not is_physical_financial_indicator
+                and item.get("item_type") == "checkbox"
+                and not item.get("required", False)
             ]
 
             # Check if any checkbox option is checked
@@ -353,7 +360,7 @@ class ComplianceService:
 
             # Fallback: Auto-calculate compliance from values if explicit CHECKBOX is missing
             # For indicators: 2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4
-            if not has_passing_option and indicator.indicator_code in PHYSICAL_FINANCIAL_INDICATORS:
+            if not has_passing_option and is_physical_financial_indicator:
                 code_safe = indicator.indicator_code.replace(".", "_")
 
                 # Check Physical (Option A) keys

@@ -288,6 +288,74 @@ describe("ValidatorValidationClient autosave", () => {
     });
   });
 
+  it("shows rotating feedback while opening the compliance overview", async () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    const complianceButton = screen.getByRole("button", {
+      name: /compliance overview/i,
+    });
+
+    await act(async () => {
+      fireEvent.click(complianceButton);
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: /opening overview/i,
+      })
+    ).toBeDisabled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(1200);
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: /opening overview/i,
+      })
+    ).toBeDisabled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(1300);
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: /saving your changes/i,
+      })
+    ).toBeDisabled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: /preparing suggestions/i,
+      })
+    ).toBeDisabled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    expect(
+      screen.getByRole("button", {
+        name: /preparing suggestions/i,
+      })
+    ).toBeDisabled();
+
+    expect(routerPush).toHaveBeenCalledWith("/validator/submissions/1/compliance");
+  });
+
   it("waits for an active auto-save before finalizing", async () => {
     const firstSave = deferred<unknown>();
 
