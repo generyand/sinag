@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { AlertCircle, CheckCircle2, LoaderCircle, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -37,7 +37,7 @@ const STATUS_CONFIG: Record<
   },
   dirty: {
     label: "Unsaved changes",
-    detail: "Latest edits are queued and will save automatically.",
+    detail: "Please wait for the autosave to complete.",
     icon: AlertCircle,
     shellClassName:
       "border-amber-200/90 bg-amber-50/95 text-amber-900 shadow-amber-950/10 dark:border-amber-900 dark:bg-amber-950/70 dark:text-amber-100",
@@ -46,7 +46,7 @@ const STATUS_CONFIG: Record<
   },
   saving: {
     label: "Saving...",
-    detail: "Saving your latest edits.",
+    detail: "Please wait while we save your changes.",
     icon: LoaderCircle,
     shellClassName:
       "border-sky-200/90 bg-sky-50/95 text-sky-950 shadow-sky-950/10 dark:border-sky-900 dark:bg-sky-950/70 dark:text-sky-50",
@@ -87,7 +87,7 @@ export function AutosaveStatusPill({
   useEffect(() => {
     let animationFrameId: number | null = null;
 
-    if (state === "error") {
+    if (state === "error" || state === "dirty" || state === "saving") {
       animationFrameId = window.requestAnimationFrame(() => {
         setIsExpanded(true);
       });
@@ -121,34 +121,36 @@ export function AutosaveStatusPill({
       )}
     >
       {useIconOnly ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Autosave status"
-              className={cn(
-                "pointer-events-auto flex size-11 items-center justify-center rounded-full border backdrop-blur-md shadow-lg",
-                "transition-[transform,opacity,background-color,border-color] duration-200 motion-reduce:transition-none",
-                config.shellClassName
-              )}
-            >
-              <Icon
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Autosave status"
                 className={cn(
-                  "h-4 w-4 shrink-0",
-                  state === "saving" && "animate-spin motion-reduce:animate-none",
-                  config.iconClassName
+                  "pointer-events-auto flex size-11 items-center justify-center rounded-full border backdrop-blur-md shadow-lg",
+                  "transition-[transform,opacity,background-color,border-color] duration-200 motion-reduce:transition-none",
+                  config.shellClassName
                 )}
-                aria-hidden="true"
-              />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="left" className="max-w-xs">
-            <div className="space-y-0.5">
-              <div className="font-medium">{config.label}</div>
-              <div className="text-xs text-muted-foreground">{config.detail}</div>
-            </div>
-          </TooltipContent>
-        </Tooltip>
+              >
+                <Icon
+                  className={cn(
+                    "h-4 w-4 shrink-0",
+                    state === "saving" && "animate-spin motion-reduce:animate-none",
+                    config.iconClassName
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs pointer-events-none z-[100]">
+              <div className="space-y-0.5">
+                <div className="font-medium">{config.label}</div>
+                <div className="text-xs text-muted-foreground">{config.detail}</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       ) : (
         <div
           role="status"

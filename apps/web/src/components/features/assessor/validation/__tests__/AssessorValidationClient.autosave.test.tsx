@@ -116,6 +116,9 @@ vi.mock("next/dynamic", () => ({
           <button onClick={() => props.onChecklistChange?.("checklist_101_item_1", false)}>
             Set assessor checklist false
           </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_101_item_2", true)}>
+            Toggle assessor checklist 2
+          </button>
           <button onClick={() => props.onReworkFlagChange?.(101, true)}>Flag for rework</button>
         </div>
       );
@@ -520,5 +523,52 @@ describe("AssessorValidationClient autosave", () => {
     });
 
     invalidateQueriesSpy.mockRestore();
+  });
+
+  it("re-saves the latest assessor checklist edit made while the previous auto-save is still in flight", async () => {
+    const firstSave = deferred<unknown>();
+    validateMutateAsync
+      .mockImplementationOnce(() => firstSave.promise)
+      .mockResolvedValueOnce({ success: true });
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<AssessorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle assessor checklist" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Set assessor checklist false" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle assessor checklist 2" })[0]);
+
+    await act(async () => {
+      firstSave.resolve({ success: true });
+      await Promise.resolve();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(2);
+    expect(validateMutateAsync).toHaveBeenNthCalledWith(2, {
+      responseId: 101,
+      data: {
+        public_comment: null,
+        response_data: { assessor_val_item_2: true },
+      },
+    });
   });
 });

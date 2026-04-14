@@ -516,9 +516,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     // snapshot (the server never stores empty comments in feedback_comments).
     const normalizedComment = rawComment && rawComment.trim().length > 0 ? rawComment : null;
 
+    const responseDataSnapshot = buildAssessorResponseDataSnapshot(responseId);
+    const sortedKeys = Object.keys(responseDataSnapshot).sort();
+    const sortedResponseData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedResponseData[k] = responseDataSnapshot[k];
+    });
+
     return JSON.stringify({
       public_comment: normalizedComment,
-      response_data: buildAssessorResponseDataSnapshot(responseId),
+      response_data: sortedResponseData,
     });
   };
 
@@ -537,6 +544,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       snapshotData.assessor_manual_rework_flag = true;
     }
 
+    const sortedKeys = Object.keys(snapshotData).sort();
+    const sortedSnapshotData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedSnapshotData[k] = snapshotData[k];
+    });
+
     const validationComments = ((response.feedback_comments as any[]) || [])
       .filter((fc: any) => {
         if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
@@ -551,7 +564,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
     return JSON.stringify({
       public_comment: validationComments[0]?.comment ?? null,
-      response_data: snapshotData,
+      response_data: sortedSnapshotData,
     });
   };
 
@@ -1105,14 +1118,39 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   useEffect(() => {
     const nextSnapshots: Record<number, string> = {};
+    let nextDirtyIds = [...dirtyResponseIdsRef.current];
+
     responses.forEach((response) => {
-      nextSnapshots[response.id] = getServerSnapshot(response);
+      const serverSnapshot = getServerSnapshot(response);
+      const isDirty = nextDirtyIds.includes(response.id);
+
+      if (isDirty) {
+        const localSnapshot = getResponseSnapshot(response.id);
+        if (serverSnapshot === localSnapshot) {
+          nextSnapshots[response.id] = serverSnapshot;
+          nextDirtyIds = nextDirtyIds.filter((id) => id !== response.id);
+        } else {
+          // Preserve optimistic dirty state across this hydration
+          nextSnapshots[response.id] = lastSavedSnapshotRef.current[response.id] ?? serverSnapshot;
+        }
+      } else {
+        nextSnapshots[response.id] = serverSnapshot;
+      }
     });
+
     lastSavedSnapshotRef.current = nextSnapshots;
     hydratedRef.current = true;
-    dirtyResponseIdsRef.current = [];
-    setDirtyResponseIds([]);
-    setDraftSaveState("idle");
+
+    // Only update state if dirty IDs actually changed
+    if (
+      nextDirtyIds.length !== dirtyResponseIdsRef.current.length ||
+      !nextDirtyIds.every((id, i) => id === dirtyResponseIdsRef.current[i])
+    ) {
+      dirtyResponseIdsRef.current = nextDirtyIds;
+      setDirtyResponseIds(nextDirtyIds);
+    }
+
+    setDraftSaveState(nextDirtyIds.length > 0 ? "dirty" : "idle");
   }, [responses, dataUpdatedAt]);
 
   useEffect(() => {

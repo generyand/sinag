@@ -6,6 +6,7 @@ import {
   useGetAssessorAssessmentsAssessmentId,
   usePostAssessorAssessmentResponsesResponseIdValidate,
   usePostAssessorAssessmentsAssessmentIdFinalize,
+  getGetAssessorAssessmentsAssessmentIdQueryKey,
 } from "@sinag/shared";
 import { ValidatorValidationClient } from "../ValidatorValidationClient";
 
@@ -68,6 +69,15 @@ vi.mock("next/dynamic", () => ({
           </button>
           <button onClick={() => props.setField(201, "publicComment", "validator latest draft")}>
             Edit validator comment twice
+          </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_1", true)}>
+            Toggle validator checklist
+          </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_1", false)}>
+            Set validator checklist false
+          </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_2", true)}>
+            Toggle validator checklist 2
           </button>
         </div>
       );
@@ -316,6 +326,112 @@ describe("ValidatorValidationClient autosave", () => {
     expect(finalizeMutateAsync).toHaveBeenCalledWith({ assessmentId: 1 });
   });
 
+  it("re-saves the latest validator checklist edit made while the previous auto-save is still in flight", async () => {
+    const firstSave = deferred<unknown>();
+    validateMutateAsync
+      .mockImplementationOnce(() => firstSave.promise)
+      .mockResolvedValueOnce({ success: true });
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Set validator checklist false" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist 2" })[0]);
+
+    await act(async () => {
+      firstSave.resolve({ success: true });
+      await Promise.resolve();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(2);
+    expect(validateMutateAsync).toHaveBeenNthCalledWith(2, {
+      responseId: 201,
+      data: {
+        validation_status: "PASS",
+        public_comment: null,
+        response_data: { validator_val_requirement_1: false, validator_val_requirement_2: true },
+        flagged_for_calibration: false,
+      },
+    });
+  });
+
+  it("patches the cached assessment and invalidates queries after a successful validator autosave", async () => {
+    validateMutateAsync.mockResolvedValue({ success: true });
+
+    const assessment = makeAssessment();
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: assessment,
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    client.setQueryData(getGetAssessorAssessmentsAssessmentIdQueryKey(1), assessment);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    render(
+      <QueryClientProvider client={client}>
+        <ValidatorValidationClient assessmentId={1} />
+      </QueryClientProvider>
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle validator checklist" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    const cached = client.getQueryData(getGetAssessorAssessmentsAssessmentIdQueryKey(1)) as any;
+    const cachedResponse = cached.assessment.responses[0];
+
+    // Assert cache was patched (matching assessor behavior)
+    expect(cachedResponse.response_data.validator_val_requirement_1).toBe(true);
+    // Comment should be in feedback_comments
+    const validatorComment = cachedResponse.feedback_comments.find(
+      (c: any) => c.comment_type === "validation" && c.assessor?.role === "VALIDATOR"
+    );
+    expect(validatorComment?.comment).toBe("validator first draft");
+
+    // Assert invalidation was called
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(1),
+      exact: true,
+    });
+  });
+
   it("renders loading state without entering an update loop before assessment data arrives", () => {
     mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
       data: undefined,
@@ -505,7 +621,7 @@ describe("ValidatorValidationClient autosave", () => {
     mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
       data: makeAssessment(
         {
-          validation_status: "PASS",
+          validation_status: null,
           response_data: {
             validator_val_requirement_1: true,
           },
