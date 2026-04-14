@@ -510,13 +510,6 @@ def get_blgu_dashboard(
         # Calculate addressed_indicator_ids for flagged indicators only.
         # A flagged indicator is addressed only after a new upload in the current cycle
         # and once the response is complete again.
-        addressed_indicator_ids = []
-        flagged_indicator_ids = {
-            response.indicator_id
-            for response in assessment.responses
-            if response.requires_rework and response.indicator_id is not None
-        }
-
         def should_include_feedback_indicator(indicator_id: int | None) -> bool:
             if indicator_id is None:
                 return False
@@ -532,6 +525,15 @@ def get_blgu_dashboard(
                 return True
 
             return area_id in active_rework_area_ids or area_id in active_calibration_area_ids
+
+        addressed_indicator_ids = []
+        flagged_indicator_ids = {
+            response.indicator_id
+            for response in assessment.responses
+            if response.requires_rework
+            and response.indicator_id is not None
+            and should_include_feedback_indicator(response.indicator_id)
+        }
 
         # Build per-governance-area rework timestamps for per-area assessor workflow.
         area_rework_requested_at: dict[int, datetime] = {}

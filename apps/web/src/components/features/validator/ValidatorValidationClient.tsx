@@ -330,18 +330,19 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const reworkRequestedAt: string | null = (core?.rework_requested_at ?? null) as string | null;
   // Default label (MiddleMovFilesPanel will override based on indicator context)
   const separationLabel = calibrationRequestedAt ? "After Calibration" : "After Rework";
-  const isPostCalibrationReview = Boolean(calibrationRequestedAt);
 
   useEffect(() => {
     responsesRef.current = responses;
   }, [responses]);
 
-  const getProgressForResponse = (response: AnyRecord) =>
-    getValidatorIndicatorProgress(response, {
+  const getProgressForResponse = (response: AnyRecord) => {
+    const wasCalibrated = Boolean(calibrationRequestedAt) && response.validation_status === null;
+    return getValidatorIndicatorProgress(response, {
       checklistState,
       localMovAttentionByFileId: movAttentionByResponse[response.id] ?? {},
-      strictChecklistRequired: isPostCalibrationReview,
+      strictChecklistRequired: wasCalibrated,
     });
+  };
 
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
