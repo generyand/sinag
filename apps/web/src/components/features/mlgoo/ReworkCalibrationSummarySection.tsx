@@ -25,10 +25,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
 import type { ReworkCalibrationSummary, ReworkCalibrationIndicatorItem } from "@sinag/shared";
 
 interface ReworkCalibrationSummarySectionProps {
   summary: ReworkCalibrationSummary | null;
+  assessmentYear?: number | string | null;
   reworkRequestedAt?: string | null;
   calibrationRequestedAt?: string | null;
   mlgooRecalibrationComments?: string | null;
@@ -84,11 +86,22 @@ function ValidationStatusBadge({ status }: { status: string | null }) {
   );
 }
 
-function IndicatorFeedbackCard({ indicator }: { indicator: ReworkCalibrationIndicatorItem }) {
+function IndicatorFeedbackCard({
+  indicator,
+  assessmentYear,
+}: {
+  indicator: ReworkCalibrationIndicatorItem;
+  assessmentYear?: number | string | null;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const feedbackComments = indicator.feedback_comments ?? [];
   const movAnnotations = indicator.mov_annotations ?? [];
   const hasFeedback = feedbackComments.length > 0 || movAnnotations.length > 0;
+
+  const displayIndicatorName =
+    assessmentYear === null || assessmentYear === undefined || assessmentYear === ""
+      ? indicator.indicator_name
+      : formatIndicatorName(indicator.indicator_name, assessmentYear);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -104,7 +117,7 @@ function IndicatorFeedbackCard({ indicator }: { indicator: ReworkCalibrationIndi
                     </span>
                   )}
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100 text-left">
-                    {indicator.indicator_name}
+                    {displayIndicatorName}
                   </span>
                 </div>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -233,6 +246,7 @@ function IndicatorFeedbackCard({ indicator }: { indicator: ReworkCalibrationIndi
 
 export function ReworkCalibrationSummarySection({
   summary,
+  assessmentYear,
   reworkRequestedAt,
   calibrationRequestedAt,
   mlgooRecalibrationComments,
@@ -240,65 +254,60 @@ export function ReworkCalibrationSummarySection({
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Memoize derived summary data to avoid recalculating on every render
-  const {
-    totalIndicators,
-    reworkCount,
-    calibrationCount,
-    mlgooRecalCount,
-    requesters,
-  } = useMemo(() => {
-    const indicators = summary?.rework_indicators ?? [];
-    const requesters: RequesterSummaryItem[] = [];
-    const seenRequesterKeys = new Set<string>();
+  const { totalIndicators, reworkCount, calibrationCount, mlgooRecalCount, requesters } =
+    useMemo(() => {
+      const indicators = summary?.rework_indicators ?? [];
+      const requesters: RequesterSummaryItem[] = [];
+      const seenRequesterKeys = new Set<string>();
 
-    const pushRequester = (requester: RequesterSummaryItem | null) => {
-      if (!requester?.requester_name?.trim()) return;
+      const pushRequester = (requester: RequesterSummaryItem | null) => {
+        if (!requester?.requester_name?.trim()) return;
 
-      const key = [
-        requester.request_type,
-        requester.requester_name.trim(),
-        requester.governance_area_name ?? "",
-        requester.requested_at ?? "",
-      ].join("|");
+        const key = [
+          requester.request_type,
+          requester.requester_name.trim(),
+          requester.governance_area_name ?? "",
+          requester.requested_at ?? "",
+        ].join("|");
 
-      if (seenRequesterKeys.has(key)) return;
-      seenRequesterKeys.add(key);
-      requesters.push({
-        ...requester,
-        requester_name: requester.requester_name.trim(),
-      });
-    };
+        if (seenRequesterKeys.has(key)) return;
+        seenRequesterKeys.add(key);
+        requesters.push({
+          ...requester,
+          requester_name: requester.requester_name.trim(),
+        });
+      };
 
-    for (const requester of (summary?.requesters ?? []) as RequesterSummaryItem[]) {
-      pushRequester(requester);
-    }
+      for (const requester of (summary?.requesters ?? []) as RequesterSummaryItem[]) {
+        pushRequester(requester);
+      }
 
-    if (requesters.length === 0 && summary?.rework_requested_by_name?.trim()) {
-      pushRequester({
-        request_type: "rework",
-        requester_name: summary.rework_requested_by_name,
-        requested_at: reworkRequestedAt ?? null,
-        comments: summary.rework_comments ?? null,
-      });
-    }
+      if (requesters.length === 0 && summary?.rework_requested_by_name?.trim()) {
+        pushRequester({
+          request_type: "rework",
+          requester_name: summary.rework_requested_by_name,
+          requested_at: reworkRequestedAt ?? null,
+          comments: summary.rework_comments ?? null,
+        });
+      }
 
-    if (requesters.length === 0 && summary?.calibration_validator_name?.trim()) {
-      pushRequester({
-        request_type: "calibration",
-        requester_name: summary.calibration_validator_name,
-        requested_at: calibrationRequestedAt ?? null,
-        comments: summary.calibration_comments ?? null,
-      });
-    }
+      if (requesters.length === 0 && summary?.calibration_validator_name?.trim()) {
+        pushRequester({
+          request_type: "calibration",
+          requester_name: summary.calibration_validator_name,
+          requested_at: calibrationRequestedAt ?? null,
+          comments: summary.calibration_comments ?? null,
+        });
+      }
 
-    return {
-      totalIndicators: indicators.length,
-      reworkCount: indicators.filter((i) => i.status === "rework").length,
-      calibrationCount: indicators.filter((i) => i.status === "calibration").length,
-      mlgooRecalCount: indicators.filter((i) => i.status === "mlgoo_recalibration").length,
-      requesters,
-    };
-  }, [calibrationRequestedAt, reworkRequestedAt, summary]);
+      return {
+        totalIndicators: indicators.length,
+        reworkCount: indicators.filter((i) => i.status === "rework").length,
+        calibrationCount: indicators.filter((i) => i.status === "calibration").length,
+        mlgooRecalCount: indicators.filter((i) => i.status === "mlgoo_recalibration").length,
+        requesters,
+      };
+    }, [calibrationRequestedAt, reworkRequestedAt, summary]);
 
   // Don't render if no summary data
   if (!summary) return null;
@@ -424,7 +433,11 @@ export function ReworkCalibrationSummarySection({
               </h4>
               <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                 {(summary.rework_indicators ?? []).map((indicator) => (
-                  <IndicatorFeedbackCard key={indicator.indicator_id} indicator={indicator} />
+                  <IndicatorFeedbackCard
+                    key={indicator.indicator_id}
+                    indicator={indicator}
+                    assessmentYear={assessmentYear}
+                  />
                 ))}
               </div>
             </div>
