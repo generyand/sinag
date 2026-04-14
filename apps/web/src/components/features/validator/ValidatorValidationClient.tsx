@@ -332,6 +332,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const TOTAL_GOVERNANCE_AREAS = 6;
   const allAreasCalibrated: boolean = calibratedAreaIds.length >= TOTAL_GOVERNANCE_AREAS;
 
+  const isCalibrationSubmitDisabled: boolean = calibrateMut.isPending || allAreasCalibrated;
+  const calibrationSubmitTitle = allAreasCalibrated
+    ? "All governance areas have already been calibrated (max 1 calibration per area)"
+    : !Object.values(calibrationFlags).some((v) => v === true)
+      ? "Flag at least one indicator for calibration using the toggle in the MOV viewer"
+      : calibratedAreaIds.length > 0
+        ? `${calibratedAreaIds.length} area(s) already calibrated. Only flag indicators from uncalibrated areas.`
+        : undefined;
+
   // Get timestamps for MOV file separation (new vs old files)
   // These are passed to MiddleMovFilesPanel which determines per-indicator which timestamp to use
   const calibrationRequestedAt: string | null = (core?.calibration_requested_at ?? null) as
@@ -1426,62 +1435,63 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             Indicators Reviewed: {reviewed}/{total}
           </div>
           <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2">
-            <Button
-              size="sm"
-              type="button"
-              onClick={() => setShowCalibrationConfirm(true)}
-              disabled={calibrateMut.isPending}
-              className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
-              style={{
-                background: "var(--cityscape-yellow)",
-              }}
-              title={
-                allAreasCalibrated
-                  ? "All governance areas have already been calibrated (max 1 calibration per area)"
-                  : !Object.values(calibrationFlags).some((v) => v === true)
-                    ? "Flag at least one indicator for calibration using the toggle in the MOV viewer"
-                    : calibratedAreaIds.length > 0
-                      ? `${calibratedAreaIds.length} area(s) already calibrated. Only flag indicators from uncalibrated areas.`
-                      : undefined
-              }
+            <span
+              className={`inline-flex w-full sm:w-auto ${
+                isCalibrationSubmitDisabled ? "cursor-not-allowed" : ""
+              }`}
+              title={calibrationSubmitTitle}
             >
-              {calibrateMut.isPending ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <span className="hidden sm:inline">Submitting...</span>
-                  <span className="sm:hidden">Processing...</span>
-                </>
-              ) : allAreasCalibrated ? (
-                <>
-                  <span className="hidden sm:inline">All Areas Calibrated</span>
-                  <span className="sm:hidden">All Used</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">Submit for Calibration</span>
-                  <span className="sm:hidden">Calibration</span>
-                </>
-              )}
-            </Button>
+              <Button
+                size="sm"
+                type="button"
+                onClick={() => {
+                  if (allAreasCalibrated) return;
+                  setShowCalibrationConfirm(true);
+                }}
+                disabled={isCalibrationSubmitDisabled}
+                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
+                style={{
+                  background: "var(--cityscape-yellow)",
+                }}
+              >
+                {calibrateMut.isPending ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">Submitting...</span>
+                    <span className="sm:hidden">Processing...</span>
+                  </>
+                ) : allAreasCalibrated ? (
+                  <>
+                    <span className="hidden sm:inline">All Areas Calibrated</span>
+                    <span className="sm:hidden">All Used</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Submit for Calibration</span>
+                    <span className="sm:hidden">Calibration</span>
+                  </>
+                )}
+              </Button>
+            </span>
             <Button
               size="sm"
               type="button"
