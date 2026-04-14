@@ -31,7 +31,6 @@ const baseSummary = {
 
 describe("ReworkCalibrationSummarySection", () => {
   it("formats year placeholders in indicators under review", () => {
-    // @ts-expect-error - assessmentYear is not yet in the props
     renderWithProviders(
       <ReworkCalibrationSummarySection summary={baseSummary} assessmentYear={2026} />
     );
