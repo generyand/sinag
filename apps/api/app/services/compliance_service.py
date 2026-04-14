@@ -22,6 +22,7 @@ from app.schemas.compliance import (
     SubIndicatorStatus,
 )
 from app.services.bbi_service import BBI_CONFIG, get_bbi_rating_by_count
+from app.services.checklist_utils import PHYSICAL_FINANCIAL_INDICATORS
 
 
 class ComplianceService:
@@ -128,21 +129,25 @@ class ComplianceService:
         # immediately return FAIL (Unmet). This handles all assessment_field items
         # with YES/NO options where NO indicates failure.
         indicator_code_safe = (indicator.indicator_code or "").replace(".", "_")
+        validation_rule = indicator.validation_rule or "ALL_ITEMS_REQUIRED"
 
-        for key, value in response_data.items():
-            # Check if this is a NO response for this indicator from VALIDATOR only
-            # Key format: validator_val_{item_id}_no (NOT assessor - we only care about validator's decision)
-            # where item_id contains indicator code
-            if (
-                key.startswith("validator_val_")
-                and key.endswith("_no")
-                and indicator_code_safe in key
-                and (value is True or value == 1 or str(value).lower() in ("true", "1"))
-            ):
-                self.logger.debug(
-                    f"Indicator {indicator.indicator_code}: Unmet - NO checked: {key}"
-                )
-                return False, True  # Not complete, but has checklist data
+        should_fail_fast_on_no = validation_rule == "ALL_ITEMS_REQUIRED"
+
+        if should_fail_fast_on_no:
+            for key, value in response_data.items():
+                # Check if this is a NO response for this indicator from VALIDATOR only
+                # Key format: validator_val_{item_id}_no (NOT assessor - we only care about validator's decision)
+                # where item_id contains indicator code
+                if (
+                    key.startswith("validator_val_")
+                    and key.endswith("_no")
+                    and indicator_code_safe in key
+                    and (value is True or value == 1 or str(value).lower() in ("true", "1"))
+                ):
+                    self.logger.debug(
+                        f"Indicator {indicator.indicator_code}: Unmet - NO checked: {key}"
+                    )
+                    return False, True  # Not complete, but has checklist data
 
         # Find all validator checklist items with meaningful values
         # Key format: validator_val_{item_id} (e.g., validator_val_1_2_1_a)
@@ -235,8 +240,6 @@ class ComplianceService:
         if not checklist_items_data:
             return True, True
 
-        validation_rule = indicator.validation_rule or "ALL_ITEMS_REQUIRED"
-
         if validation_rule == "ANY_OPTION_GROUP_REQUIRED":
             # OR logic with option groups: at least one COMPLETE option group
             # Items in the same option_group must ALL be completed for that group to count
@@ -313,6 +316,9 @@ class ComplianceService:
             # b) Any assessment_field with _yes checked
 
             has_passing_option = False
+            is_physical_financial_indicator = (
+                indicator.indicator_code in PHYSICAL_FINANCIAL_INDICATORS
+            )
 
             # Get all item IDs defined for this indicator
             all_item_ids = {item.get("item_id") for item in checklist_items_data}
@@ -320,10 +326,14 @@ class ComplianceService:
             # Get checkbox items (regular options like option_1, option_2)
             # IMPORTANT: Exclude required items (shared requirements) from option checkboxes
             # e.g., 4_1_6_report is a required SHARED item, not an OR option
+            # Physical/Financial report indicators use checkbox rows for supporting certifications,
+            # so their pass/fail result must come from the auto YES/NO fields or numeric fallback.
             checkbox_items = [
                 item.get("item_id")
                 for item in checklist_items_data
-                if item.get("item_type") == "checkbox" and not item.get("required", False)
+                if not is_physical_financial_indicator
+                and item.get("item_type") == "checkbox"
+                and not item.get("required", False)
             ]
 
             # Check if any checkbox option is checked
@@ -350,15 +360,7 @@ class ComplianceService:
 
             # Fallback: Auto-calculate compliance from values if explicit CHECKBOX is missing
             # For indicators: 2.1.4, 3.2.3, 4.1.6, 4.3.4, 4.5.6, 4.8.4, 6.1.4
-            if not has_passing_option and indicator.indicator_code in [
-                "2.1.4",
-                "3.2.3",
-                "4.1.6",
-                "4.3.4",
-                "4.5.6",
-                "4.8.4",
-                "6.1.4",
-            ]:
+            if not has_passing_option and is_physical_financial_indicator:
                 code_safe = indicator.indicator_code.replace(".", "_")
 
                 # Check Physical (Option A) keys
