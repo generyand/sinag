@@ -107,6 +107,20 @@ class MLGOOService:
             if area_id is not None
         }
 
+    def _get_active_rework_area_ids(self, assessment: Assessment) -> set[int]:
+        """Return governance areas currently participating in assessor rework feedback."""
+        active_rework_area_ids: set[int] = set()
+        for area_id, area_data in (assessment.area_submission_status or {}).items():
+            if not isinstance(area_data, dict):
+                continue
+            if str(area_data.get("status", "")).lower() != "rework":
+                continue
+            try:
+                active_rework_area_ids.add(int(area_id))
+            except (TypeError, ValueError):
+                continue
+        return active_rework_area_ids
+
     def _is_effective_calibration_indicator(
         self,
         assessment: Assessment,
@@ -133,6 +147,27 @@ class MLGOOService:
             and response.requires_rework
             and response_area_id is not None
             and response_area_id in calibration_area_ids
+        )
+
+    def _is_effective_rework_indicator(
+        self,
+        assessment: Assessment,
+        response: AssessmentResponse | None,
+        active_rework_area_ids: set[int],
+        feedback_indicator_ids: set[int],
+    ) -> bool:
+        """Detect active assessor rework indicators even when the legacy response flag is absent."""
+        if not response or response.indicator_id is None:
+            return False
+
+        if response.requires_rework:
+            return True
+
+        response_area_id = response.indicator.governance_area_id if response.indicator else None
+        return bool(
+            response_area_id is not None
+            and response_area_id in active_rework_area_ids
+            and response.indicator_id in feedback_indicator_ids
         )
 
     def _build_assessment_progress_overview(
@@ -1472,6 +1507,7 @@ class MLGOOService:
         # Group MOV files by indicator_id
         # For recalibration targets, show ALL files with is_new and is_rejected flags
         mov_files_by_indicator: dict[int, list[dict[str, Any]]] = {}
+        feedback_indicator_ids: set[int] = set()
         for mov_file in mov_files_query:
             # Determine the effective timestamp for this indicator
             is_recalibration_target = mov_file.indicator_id in recalibration_indicator_ids
@@ -1509,6 +1545,13 @@ class MLGOOService:
             if mov_file.indicator_id not in mov_files_by_indicator:
                 mov_files_by_indicator[mov_file.indicator_id] = []
 
+            if mov_file.indicator_id is not None and (
+                mov_file.flagged_for_rework
+                or bool(mov_file.assessor_notes and mov_file.assessor_notes.strip())
+                or bool(mov_file.annotations)
+            ):
+                feedback_indicator_ids.add(mov_file.indicator_id)
+
             mov_files_by_indicator[mov_file.indicator_id].append(
                 {
                     "id": mov_file.id,
@@ -1534,6 +1577,7 @@ class MLGOOService:
         for response in assessment.responses:
             if response.indicator_id:
                 response_by_indicator[response.indicator_id] = response
+        active_rework_area_ids = self._get_active_rework_area_ids(assessment)
         active_calibration_area_ids = self._get_active_calibration_area_ids(assessment)
 
         # Get ALL active child indicators applicable to this assessment year
@@ -1616,7 +1660,12 @@ class MLGOOService:
             effective_calibration_flag = self._is_effective_calibration_indicator(
                 assessment, response, active_calibration_area_ids
             )
-            requires_assessor_rereview = bool(response and response.requires_rework)
+            requires_assessor_rereview = self._is_effective_rework_indicator(
+                assessment,
+                response,
+                active_rework_area_ids,
+                feedback_indicator_ids,
+            )
             requires_validator_rereview = effective_calibration_flag
             requires_mlgoo_rereview = bool(
                 response
@@ -1690,7 +1739,7 @@ class MLGOOService:
                     assessment.mlgoo_recalibration_indicator_ids
                     and indicator.id in assessment.mlgoo_recalibration_indicator_ids
                 ),
-                "requires_rework": response.requires_rework if response else False,
+                "requires_rework": requires_assessor_rereview,
                 "flagged_for_calibration": effective_calibration_flag,
                 "mov_files": mov_files_by_indicator.get(indicator.id, []),
             }

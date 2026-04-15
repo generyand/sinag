@@ -816,6 +816,125 @@ def test_get_assessment_details_marks_active_calibration_indicators_in_progress_
     assert calibration_detail["validator_reviewed"] is False
 
 
+def test_get_assessment_details_marks_feedback_backed_rework_indicators_in_progress_detail(
+    db_session,
+    mlgoo_user: User,
+    mock_blgu_user: User,
+    active_assessment_year: AssessmentYear,
+):
+    financial_area = GovernanceArea(
+        id=104,
+        name="Financial Administration and Sustainability",
+        code="FI",
+        area_type=AreaType.CORE,
+    )
+    parent = Indicator(
+        name="Financial Parent",
+        indicator_code="2",
+        governance_area_id=financial_area.id,
+        parent_id=None,
+        sort_order=1,
+        description="Parent",
+    )
+    db_session.add_all([financial_area, parent])
+    db_session.flush()
+
+    flagged_indicator = Indicator(
+        name="Flagged Rework Indicator",
+        indicator_code="2.1.1",
+        governance_area_id=financial_area.id,
+        parent_id=parent.id,
+        sort_order=1,
+        description="Needs revision",
+    )
+    clean_indicator = Indicator(
+        name="Clean Indicator",
+        indicator_code="2.1.2",
+        governance_area_id=financial_area.id,
+        parent_id=parent.id,
+        sort_order=2,
+        description="Already okay",
+    )
+    db_session.add_all([flagged_indicator, clean_indicator])
+    db_session.flush()
+
+    rework_requested_at = datetime(2026, 4, 15, 10, 0, 0)
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.REWORK,
+        rework_requested_at=rework_requested_at,
+        area_submission_status={
+            str(financial_area.id): {
+                "status": "rework",
+                "assessor_id": 501,
+                "rework_requested_at": "2026-04-15T10:00:00",
+                "rework_comments": "Financial MOVs need updates.",
+                "rework_used": True,
+            }
+        },
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    flagged_response = AssessmentResponse(
+        assessment_id=assessment.id,
+        indicator_id=flagged_indicator.id,
+        response_data={"assessor_val_status": "complete"},
+        is_completed=False,
+        requires_rework=False,
+    )
+    clean_response = AssessmentResponse(
+        assessment_id=assessment.id,
+        indicator_id=clean_indicator.id,
+        response_data={"assessor_val_status": "complete"},
+        is_completed=True,
+        requires_rework=False,
+    )
+    db_session.add_all([flagged_response, clean_response])
+    db_session.flush()
+
+    db_session.add(
+        MOVFile(
+            assessment_id=assessment.id,
+            indicator_id=flagged_indicator.id,
+            field_id="mov-1",
+            file_name="financial-proof.pdf",
+            file_url="https://example.com/financial-proof.pdf",
+            file_type="application/pdf",
+            file_size=2048,
+            upload_origin=MOV_UPLOAD_ORIGIN_BLGU,
+            flagged_for_rework=True,
+            assessor_notes="Please replace this MOV with the updated ordinance.",
+        )
+    )
+    db_session.commit()
+
+    details = mlgoo_service.get_assessment_details(
+        db=db_session,
+        assessment_id=assessment.id,
+        mlgoo_user=mlgoo_user,
+    )
+
+    [flagged_detail] = [
+        indicator
+        for area in details["governance_areas"]
+        for indicator in area["indicators"]
+        if indicator["indicator_id"] == flagged_indicator.id
+    ]
+    [clean_detail] = [
+        indicator
+        for area in details["governance_areas"]
+        for indicator in area["indicators"]
+        if indicator["indicator_id"] == clean_indicator.id
+    ]
+
+    assert flagged_detail["requires_rework"] is True
+    assert flagged_detail["assessor_reviewed"] is False
+    assert clean_detail["requires_rework"] is False
+    assert clean_detail["assessor_reviewed"] is True
+
+
 def test_get_assessment_details_summarizes_all_rework_and_calibration_requesters(
     db_session,
     mlgoo_user: User,
