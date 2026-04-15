@@ -13,6 +13,7 @@ import { ValidatorValidationClient } from "../ValidatorValidationClient";
 const routerPush = vi.fn();
 const validateMutateAsync = vi.fn();
 const finalizeMutateAsync = vi.fn();
+const calibrateMutateAsync = vi.fn();
 
 vi.mock("@sinag/shared", () => ({
   getGetAssessorAssessmentsAssessmentIdQueryKey: (id: number) => ["assessor", "assessments", id],
@@ -26,7 +27,7 @@ vi.mock("@sinag/shared", () => ({
     isPending: false,
   })),
   usePostAssessorAssessmentsAssessmentIdCalibrate: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: calibrateMutateAsync,
     isPending: false,
   }),
   useGetAssessorMovsMovFileIdAnnotations: () => ({
@@ -70,6 +71,12 @@ vi.mock("next/dynamic", () => ({
           <button onClick={() => props.setField(201, "publicComment", "validator latest draft")}>
             Edit validator comment twice
           </button>
+          <button onClick={() => props.setField(202, "publicComment", "response 202 draft")}>
+            Edit response 202 comment
+          </button>
+          <button onClick={() => props.setField(202, "publicComment", "")}>
+            Revert response 202 comment
+          </button>
           <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_1", true)}>
             Toggle validator checklist
           </button>
@@ -78,6 +85,9 @@ vi.mock("next/dynamic", () => ({
           </button>
           <button onClick={() => props.onChecklistChange?.("checklist_201_requirement_2", true)}>
             Toggle validator checklist 2
+          </button>
+          <button onClick={() => props.onCalibrationFlagChange?.(201, true)}>
+            Flag validator calibration
           </button>
         </div>
       );
@@ -170,8 +180,50 @@ function expectSidebarAttention(responseId: number, hasAttention: boolean) {
 
 function makeAssessment(
   responseOverrides: Record<string, any> = {},
-  assessmentOverrides: Record<string, any> = {}
+  assessmentOverrides: Record<string, any> = {},
+  options: { includeSecondResponse?: boolean } = {}
 ) {
+  const responses = [
+    {
+      id: 201,
+      indicator_id: 1,
+      indicator: {
+        id: 1,
+        name: "Test Indicator",
+        indicator_code: "2.1.1",
+        governance_area: { id: 2, name: "Disaster Preparedness" },
+        checklist_items: [{ item_id: "requirement_1", item_type: "checkbox", required: true }],
+        validation_rule: "ALL_ITEMS_REQUIRED",
+      },
+      movs: [{ id: 1, uploaded_at: "2024-01-01T00:00:00Z" }],
+      response_data: {},
+      feedback_comments: [],
+      validation_status: "PASS",
+      flagged_for_calibration: false,
+      ...responseOverrides,
+    },
+  ];
+
+  if (options.includeSecondResponse) {
+    responses.push({
+      id: 202,
+      indicator_id: 2,
+      indicator: {
+        id: 2,
+        name: "Second Test Indicator",
+        indicator_code: "2.1.2",
+        governance_area: { id: 2, name: "Disaster Preparedness" },
+        checklist_items: [{ item_id: "requirement_1", item_type: "checkbox", required: true }],
+        validation_rule: "ALL_ITEMS_REQUIRED",
+      },
+      movs: [{ id: 2, uploaded_at: "2024-01-01T00:00:00Z" }],
+      response_data: {},
+      feedback_comments: [],
+      validation_status: "PASS",
+      flagged_for_calibration: false,
+    });
+  }
+
   return {
     success: true,
     assessment_id: 1,
@@ -186,26 +238,7 @@ function makeAssessment(
       },
       calibrated_area_ids: [],
       ...assessmentOverrides,
-      responses: [
-        {
-          id: 201,
-          indicator_id: 1,
-          indicator: {
-            id: 1,
-            name: "Test Indicator",
-            indicator_code: "2.1.1",
-            governance_area: { id: 2, name: "Disaster Preparedness" },
-            checklist_items: [{ item_id: "requirement_1", item_type: "checkbox", required: true }],
-            validation_rule: "ALL_ITEMS_REQUIRED",
-          },
-          movs: [{ id: 1, uploaded_at: "2024-01-01T00:00:00Z" }],
-          response_data: {},
-          feedback_comments: [],
-          validation_status: "PASS",
-          flagged_for_calibration: false,
-          ...responseOverrides,
-        },
-      ],
+      responses,
     },
   };
 }
@@ -223,6 +256,7 @@ describe("ValidatorValidationClient autosave", () => {
       isPending: false,
     });
     finalizeMutateAsync.mockResolvedValue({ new_status: "AWAITING_MLGOO_APPROVAL" });
+    calibrateMutateAsync.mockResolvedValue({ calibrated_indicators_count: 1 });
   });
 
   afterEach(() => {
@@ -373,6 +407,98 @@ describe("ValidatorValidationClient autosave", () => {
         flagged_for_calibration: false,
       },
     });
+  });
+
+  it("keeps the global dirty status when one dirty validator response is reverted but another remains dirty", async () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({}, {}, { includeSecondResponse: true }),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit response 202 comment" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Revert response 202 comment" })[0]);
+
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+  });
+
+  it("force-saves dirty validator edits when the autosave status action is clicked", async () => {
+    validateMutateAsync.mockResolvedValue({ success: true });
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /save changes now/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledWith({
+      responseId: 201,
+      data: {
+        validation_status: "PASS",
+        public_comment: "validator first draft",
+        response_data: undefined,
+        flagged_for_calibration: false,
+      },
+    });
+  });
+
+  it("flushes pending validator edits before internal navigation", async () => {
+    validateMutateAsync.mockResolvedValue({ success: true });
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+    fireEvent.click(screen.getByRole("link", { name: /queue/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalled();
+    expect(routerPush).toHaveBeenCalledWith("/validator/submissions");
+  });
+
+  it("submits for calibration after pending validator edits are saved", async () => {
+    validateMutateAsync.mockResolvedValue({ success: true });
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Flag validator calibration" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /submit for calibration/i }));
+    fireEvent.click(screen.getByRole("button", { name: /yes, submit for calibration/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalled();
+    expect(calibrateMutateAsync).toHaveBeenCalledWith({ assessmentId: 1 });
   });
 
   it("patches the cached assessment and invalidates queries after a successful validator autosave", async () => {

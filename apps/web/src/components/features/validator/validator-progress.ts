@@ -4,6 +4,7 @@ export interface ValidatorProgressInput {
   checklistState: Record<string, any>;
   localMovAttentionByFileId: Record<number, boolean | undefined>;
   strictChecklistRequired: boolean;
+  localForm?: { status?: "Pass" | "Fail" | "Conditional"; publicComment?: string };
 }
 
 export interface ValidatorChecklistCompletion {
@@ -156,6 +157,14 @@ export function hasExistingValidationStatus(response: AnyRecord): boolean {
   return ["PASS", "FAIL", "CONDITIONAL"].includes(String(status).toUpperCase());
 }
 
+function hasLocalValidationStatus(localForm?: ValidatorProgressInput["localForm"]): boolean {
+  return (
+    localForm?.status === "Pass" ||
+    localForm?.status === "Fail" ||
+    localForm?.status === "Conditional"
+  );
+}
+
 export function hasActiveValidatorMovAttention(
   response: AnyRecord,
   options: { localMovAttentionByFileId: Record<number, boolean | undefined> }
@@ -182,10 +191,12 @@ export function getValidatorIndicatorProgress(
     localMovAttentionByFileId: input.localMovAttentionByFileId,
   });
   const checklistCompletion = getValidatorChecklistCompletion(response, input.checklistState);
+  const hasValidationStatus =
+    hasLocalValidationStatus(input.localForm) || hasExistingValidationStatus(response);
 
   const reviewed = input.strictChecklistRequired
     ? checklistCompletion.isComplete && !hasMovNotes
-    : checklistCompletion.isComplete || hasMovNotes || hasExistingValidationStatus(response);
+    : checklistCompletion.isComplete || hasMovNotes || hasValidationStatus;
 
   return {
     status: reviewed ? "completed" : "not_started",

@@ -708,7 +708,8 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return saveResponses(remainingResponseIds, options);
     }
 
-    const savePromise = (async () => {
+    let savePromise!: Promise<boolean>;
+    savePromise = (async () => {
       isSavingRef.current = true;
       setIsSaving(true);
       setDraftSaveState("saving");

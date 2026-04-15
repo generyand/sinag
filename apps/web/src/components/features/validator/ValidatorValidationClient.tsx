@@ -140,6 +140,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const lastSavedSnapshotRef = useRef<Record<number, string>>({});
   const isSavingRef = useRef(false);
   const activeSavePromiseRef = useRef<Promise<boolean> | null>(null);
+  const isInterceptingNavigationRef = useRef(false);
   const formRef = useRef(form);
   const checklistStateRef = useRef(checklistState);
   const calibrationFlagsRef = useRef(calibrationFlags);
@@ -341,6 +342,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       checklistState,
       localMovAttentionByFileId: movAttentionByResponse[response.id] ?? {},
       strictChecklistRequired: wasCalibrated,
+      localForm: form[response.id],
     });
   };
 
@@ -563,9 +565,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         next = alreadyDirty ? prev : [...prev, responseId];
       }
       dirtyResponseIdsRef.current = next;
+      setDraftSaveState(next.length > 0 ? "dirty" : "saved");
       return next;
     });
-    setDraftSaveState(nextSnapshot === savedSnapshot ? "saved" : "dirty");
   };
 
   const saveResponses = async (
@@ -591,6 +593,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       if (remainingResponseIds.length === 0) {
         if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
           setDraftSaveState("saved");
+          toast.success("Assessment progress saved", { duration: 2500 });
         }
         return true;
       }
@@ -756,6 +759,58 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
     };
   }, [dirtyResponseIds, form, checklistState, calibrationFlags]);
+
+  useEffect(() => {
+    const handleDocumentNavigation = (event: MouseEvent) => {
+      if (isInterceptingNavigationRef.current) return;
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.hasAttribute("download")) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.href === window.location.href) return;
+
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      isInterceptingNavigationRef.current = true;
+
+      void (async () => {
+        const saved = await flushPendingChanges({ quiet: true });
+        if (saved) {
+          router.push(`${url.pathname}${url.search}${url.hash}`);
+        } else {
+          isInterceptingNavigationRef.current = false;
+        }
+      })();
+    };
+
+    document.addEventListener("click", handleDocumentNavigation, true);
+    return () => {
+      document.removeEventListener("click", handleDocumentNavigation, true);
+    };
+  }, [router]);
 
   const onFinalize = async () => {
     // Prevent double-clicking by checking if already in progress
