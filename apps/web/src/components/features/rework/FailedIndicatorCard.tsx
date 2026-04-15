@@ -26,13 +26,6 @@ interface FailedIndicatorCardProps {
 }
 
 export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardProps) {
-  // Get first comment preview
-  const firstComment = failed.comments[0]?.comment || failed.annotations[0]?.comment;
-  const commentPreview =
-    firstComment && firstComment.length > 100
-      ? firstComment.substring(0, 100) + "..."
-      : firstComment;
-
   // Use is_addressed to determine if indicator is "Fixed"
   // An indicator is addressed when BLGU uploads new files after rework was requested
   const isFixed = failed.is_addressed;
@@ -104,10 +97,17 @@ export function FailedIndicatorCard({ failed, onFixClick }: FailedIndicatorCardP
           </div>
         )}
 
-        {/* Comment Preview - show only if not fixed */}
-        {commentPreview && !isFixed && (
-          <div className="text-xs text-gray-600 dark:text-gray-400 italic leading-relaxed bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-sm border-l-2 border-orange-300 dark:border-orange-600">
-            "{commentPreview}"
+        {/* Comment List - show all feedback notes if not fixed */}
+        {!isFixed && failed.comments.length > 0 && (
+          <div className="space-y-2">
+            {failed.comments.map((comment, index) => (
+              <div
+                key={`${failed.indicator_id}-comment-${index}`}
+                className="text-xs text-gray-600 dark:text-gray-400 italic leading-relaxed bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-sm border-l-2 border-orange-300 dark:border-orange-600"
+              >
+                "{comment.comment}"
+              </div>
+            ))}
           </div>
         )}
       </div>

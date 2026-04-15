@@ -1,5 +1,12 @@
 import type { IndicatorDetailItem } from "@sinag/shared";
 
+type ProgressBreakdown = {
+  completedCount: number;
+  flaggedCount: number;
+  processedCount: number;
+  pendingCount: number;
+};
+
 export function isAssessorIndicatorCompleted(indicator: IndicatorDetailItem): boolean {
   const indicatorWithProgress = indicator as IndicatorDetailItem & {
     assessor_reviewed?: boolean;
@@ -84,4 +91,41 @@ export function getValidatorIndicatorDetail(indicator: IndicatorDetailItem): {
   }
 
   return { label: "Pending", isPositive: false };
+}
+
+function buildProgressBreakdown(
+  indicators: IndicatorDetailItem[],
+  getDetail: (indicator: IndicatorDetailItem) => { label: string; isPositive: boolean }
+): ProgressBreakdown {
+  let completedCount = 0;
+  let flaggedCount = 0;
+
+  for (const indicator of indicators) {
+    const detail = getDetail(indicator);
+    if (detail.isPositive) {
+      completedCount += 1;
+      continue;
+    }
+
+    if (detail.label === "Flagged for Rework" || detail.label === "Flagged for Calibration") {
+      flaggedCount += 1;
+    }
+  }
+
+  return {
+    completedCount,
+    flaggedCount,
+    processedCount: completedCount + flaggedCount,
+    pendingCount: Math.max(0, indicators.length - completedCount - flaggedCount),
+  };
+}
+
+export function getAssessorProgressBreakdown(indicators: IndicatorDetailItem[]): ProgressBreakdown {
+  return buildProgressBreakdown(indicators, getAssessorIndicatorDetail);
+}
+
+export function getValidatorProgressBreakdown(
+  indicators: IndicatorDetailItem[]
+): ProgressBreakdown {
+  return buildProgressBreakdown(indicators, getValidatorIndicatorDetail);
 }
