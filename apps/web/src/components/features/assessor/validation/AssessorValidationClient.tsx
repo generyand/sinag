@@ -667,7 +667,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
     dirtyResponseIdsRef.current = nextDirtyIds;
     setDirtyResponseIds(nextDirtyIds);
-    setDraftSaveState(nextSnapshot === savedSnapshot ? "saved" : "dirty");
+    setDraftSaveState(nextDirtyIds.length > 0 ? "dirty" : "saved");
   };
 
   const saveResponses = async (
@@ -695,6 +695,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       if (remainingResponseIds.length === 0) {
         if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
           setDraftSaveState("saved");
+          toast({
+            title: "Saved",
+            description: "Assessment progress saved",
+            duration: 2000,
+            className: "bg-green-600 text-white border-none",
+          });
         }
         return true;
       }
