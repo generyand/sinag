@@ -149,6 +149,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const isSavingRef = useRef(false);
   const activeSavePromiseRef = useRef<Promise<boolean> | null>(null);
   const isInterceptingNavigationRef = useRef(false);
+  const navigationIntentRef = useRef(0);
   const formRef = useRef(form);
   const checklistStateRef = useRef(checklistState);
   const calibrationFlagsRef = useRef(calibrationFlags);
@@ -743,6 +744,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     await flushPendingChanges();
   };
 
+  const claimNavigationIntent = () => {
+    navigationIntentRef.current += 1;
+    return navigationIntentRef.current;
+  };
+
   useEffect(() => {
     if (!isOpeningComplianceOverview) {
       setComplianceOverviewLoadingStep(0);
@@ -866,17 +872,17 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
       event.preventDefault();
       isInterceptingNavigationRef.current = true;
+      const navigationIntent = claimNavigationIntent();
 
       void (async () => {
         const saved = await flushPendingChanges({ quiet: true });
-        if (saved) {
+        if (saved && navigationIntentRef.current === navigationIntent) {
           router.push(`${url.pathname}${url.search}${url.hash}`);
-          window.setTimeout(() => {
-            isInterceptingNavigationRef.current = false;
-          }, 0);
-        } else {
-          isInterceptingNavigationRef.current = false;
         }
+
+        window.setTimeout(() => {
+          isInterceptingNavigationRef.current = false;
+        }, 0);
       })();
     };
 
@@ -1216,7 +1222,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               variant="default"
               size="sm"
               className="gap-1 sm:gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-4"
-              disabled={draftSaveState === "saving" || isOpeningComplianceOverview}
+              disabled={isOpeningComplianceOverview}
               aria-busy={isOpeningComplianceOverview}
               aria-label={
                 isOpeningComplianceOverview
@@ -1227,13 +1233,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                 if (isOpeningComplianceOverview) return;
 
                 // Save draft first, then navigate to compliance overview
+                const navigationIntent = claimNavigationIntent();
                 setIsOpeningComplianceOverview(true);
                 const saved = await flushPendingChanges({ quiet: true });
                 if (!saved) {
                   setIsOpeningComplianceOverview(false);
                   return;
                 }
-                router.push(`/validator/submissions/${assessmentId}/compliance`);
+                if (navigationIntentRef.current === navigationIntent) {
+                  router.push(`/validator/submissions/${assessmentId}/compliance`);
+                }
               }}
             >
               {isOpeningComplianceOverview ? (
