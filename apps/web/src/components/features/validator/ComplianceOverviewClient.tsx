@@ -34,7 +34,6 @@ const COMPLIANCE_OVERVIEW_INITIALIZATION_MESSAGES = [
   "Preparing governance areas",
   "Checking validation results",
   "Building compliance suggestions",
-  "Analyzing BBI functionality levels",
   "Aggregating area summaries",
   "Finalizing compliance report",
   "Almost there...",

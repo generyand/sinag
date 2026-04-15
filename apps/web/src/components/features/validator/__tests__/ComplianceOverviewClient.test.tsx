@@ -118,7 +118,7 @@ describe("ComplianceOverviewClient", () => {
     expect(screen.getByText(/checking validation results/i)).toBeInTheDocument();
 
     await act(async () => {
-      vi.advanceTimersByTime(2500 * 5);
+      vi.advanceTimersByTime(2500 * 4);
     });
 
     expect(screen.getByText(/almost there.../i)).toBeInTheDocument();
