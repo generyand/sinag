@@ -16,18 +16,27 @@ import {
   Clock,
   FileCheck,
   Info,
+  Loader2,
   RotateCcw,
   Sparkles,
   TrendingUp,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 interface ComplianceOverviewClientProps {
   assessmentId: number;
 }
+
+const COMPLIANCE_OVERVIEW_INITIALIZATION_MESSAGES = [
+  "Preparing governance areas",
+  "Checking validation results",
+  "Building compliance suggestions",
+] as const;
+
+const COMPLIANCE_OVERVIEW_INITIALIZATION_MESSAGE_MS = 2500;
 
 // BBI functionality level colors and labels
 const BBI_LEVEL_CONFIG = {
@@ -69,6 +78,24 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
     useGetComplianceAssessmentsAssessmentIdComplianceOverview(assessmentId);
   const validateMut = usePostAssessorAssessmentResponsesResponseIdValidate();
   const [isConfirmingAll, setIsConfirmingAll] = useState(false);
+
+  const [loadingMessageStep, setLoadingMessageStep] = useState(0);
+  const loadingMessage = COMPLIANCE_OVERVIEW_INITIALIZATION_MESSAGES[loadingMessageStep];
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingMessageStep(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setLoadingMessageStep((step) =>
+        Math.min(step + 1, COMPLIANCE_OVERVIEW_INITIALIZATION_MESSAGES.length - 1)
+      );
+    }, COMPLIANCE_OVERVIEW_INITIALIZATION_MESSAGE_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [isLoading]);
 
   // Calculate summary stats
   const stats = useMemo(() => {
@@ -224,23 +251,54 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
         <div className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800">
           <div className="max-w-6xl mx-auto px-6 h-16 flex items-center">
-            <Skeleton className="h-8 w-48" />
+            <Button asChild variant="ghost" size="sm" className="gap-2">
+              <Link href={`/validator/submissions/${assessmentId}/validation`}>
+                <ChevronLeft className="h-4 w-4" />
+                Back to Validation
+              </Link>
+            </Button>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-4 w-96" />
-          <div className="grid grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-sm" />
-            ))}
+
+        <main className="max-w-6xl mx-auto px-6 py-8" aria-busy="true" aria-live="polite">
+          <section className="mb-8 rounded-sm border border-indigo-100 bg-white p-6 shadow-sm dark:border-indigo-900/50 dark:bg-slate-800/50">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+                <Loader2 className="h-6 w-6 animate-spin text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+                  Compliance Overview
+                </p>
+                <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  Preparing Compliance Overview...
+                </h1>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  Please wait while we load validation results across governance areas.
+                </p>
+                <div className="mt-5">
+                  <Progress value={undefined} className="h-2" />
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    {loadingMessage}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div aria-hidden="true" className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-sm" />
+              ))}
+            </div>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-48 w-full rounded-sm" />
+              ))}
+            </div>
           </div>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-48 w-full rounded-sm" />
-            ))}
-          </div>
-        </div>
+        </main>
       </div>
     );
   }
