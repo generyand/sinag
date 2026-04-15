@@ -19,6 +19,22 @@ describe("AutosaveStatusPill", () => {
     expect(screen.queryByRole("button", { name: /retry save/i })).not.toBeInTheDocument();
   });
 
+  it("calls onRetry when the dirty status action is clicked", () => {
+    const onRetry = vi.fn();
+
+    render(<AutosaveStatusPill state="dirty" onRetry={onRetry} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes now/i }));
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not offer manual save while already saving", () => {
+    render(<AutosaveStatusPill state="saving" onRetry={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: /save changes now/i })).not.toBeInTheDocument();
+  });
+
   it("shows an inline retry action when autosave fails", () => {
     const onRetry = vi.fn();
 

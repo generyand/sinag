@@ -79,10 +79,14 @@ export function AutosaveStatusPill({
   onRetry,
   className,
 }: AutosaveStatusPillProps) {
-  const [isExpanded, setIsExpanded] = useState(state === "error");
+  const [isExpanded, setIsExpanded] = useState(state === "error" || state === "dirty");
   const config = STATUS_CONFIG[state];
   const Icon = config.icon;
   const useIconOnly = completedSaveCount >= 3 && state !== "error";
+  const canForceSave = state === "dirty" && Boolean(onRetry);
+  const canRetry = state === "error" && Boolean(onRetry);
+  const isActionable = canForceSave || canRetry;
+  const actionLabel = canRetry ? "Retry save" : "Save changes now";
 
   useEffect(() => {
     let animationFrameId: number | null = null;
@@ -173,10 +177,12 @@ export function AutosaveStatusPill({
             <span className="text-sm font-medium">{config.label}</span>
           </div>
 
-          {isExpanded ? (
+          {isExpanded || isActionable ? (
             <div className="flex items-center gap-3 border-l border-current/10 pl-3">
-              <span className="hidden text-xs text-current/80 sm:inline">{config.detail}</span>
-              {state === "error" && onRetry ? (
+              {isExpanded ? (
+                <span className="hidden text-xs text-current/80 sm:inline">{config.detail}</span>
+              ) : null}
+              {isActionable ? (
                 <Button
                   type="button"
                   size="sm"
@@ -186,10 +192,10 @@ export function AutosaveStatusPill({
                     "h-8 rounded-full border-current/20 bg-background/80 px-3 text-xs text-current shadow-none",
                     "hover:bg-background focus-visible:ring-2"
                   )}
-                  aria-label="Retry save"
+                  aria-label={actionLabel}
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Retry
+                  {canRetry ? "Retry" : "Save now"}
                 </Button>
               ) : null}
             </div>
