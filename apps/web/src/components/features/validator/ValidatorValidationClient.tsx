@@ -25,13 +25,14 @@ import {
 } from "@sinag/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { classifyError } from "@/lib/error-utils";
-import { ChevronLeft, ClipboardCheck } from "lucide-react";
+import { ChevronLeft, ClipboardCheck, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { toast } from "sonner";
 import { MiddleMovFilesPanel } from "../assessor/validation/MiddleMovFilesPanel";
+import { getValidatorIndicatorProgress, hasExistingValidationStatus } from "./validator-progress";
 
 // Lazy load heavy RightAssessorPanel component (1400+ LOC)
 const RightAssessorPanel = dynamic(
@@ -52,6 +53,43 @@ interface ValidatorValidationClientProps {
 type AnyRecord = Record<string, any>;
 type DraftSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 const AUTOSAVE_DEBOUNCE_MS = 3500;
+const COMPLIANCE_OVERVIEW_LOADING_MESSAGES = [
+  "Opening overview",
+  "Saving your changes",
+  "Preparing suggestions",
+] as const;
+const COMPLIANCE_OVERVIEW_LOADING_MESSAGE_MS = 2500;
+
+function upsertValidatorValidationFeedbackComment(
+  feedbackComments: AnyRecord[],
+  comment: string | null
+): AnyRecord[] {
+  const withoutValidatorValidationComments = feedbackComments.filter((existingComment) => {
+    if (existingComment.comment_type !== "validation" || existingComment.is_internal_note) {
+      return true;
+    }
+    const commenterRole = existingComment.assessor?.role?.toLowerCase() || "";
+    return commenterRole !== "validator";
+  });
+
+  if (!comment || comment.trim().length === 0) {
+    return withoutValidatorValidationComments;
+  }
+
+  return [
+    {
+      id: `local-validator-validation-${Date.now()}`,
+      comment,
+      comment_type: "validation",
+      is_internal_note: false,
+      created_at: new Date().toISOString(),
+      assessor: {
+        role: "VALIDATOR",
+      },
+    },
+    ...withoutValidatorValidationComments,
+  ];
+}
 
 /**
  * Sort indicator codes numerically (e.g., 1.1.1, 1.1.2, 1.2.1, etc.)
@@ -101,6 +139,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     Record<number, Record<number, boolean>>
   >({});
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
+  const [isOpeningComplianceOverview, setIsOpeningComplianceOverview] = useState(false);
+  const [complianceOverviewLoadingStep, setComplianceOverviewLoadingStep] = useState(0);
   const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
   const [dirtyResponseIds, setDirtyResponseIds] = useState<number[]>([]);
   const hydratedRef = useRef(false);
@@ -108,6 +148,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const lastSavedSnapshotRef = useRef<Record<number, string>>({});
   const isSavingRef = useRef(false);
   const activeSavePromiseRef = useRef<Promise<boolean> | null>(null);
+  const isInterceptingNavigationRef = useRef(false);
   const formRef = useRef(form);
   const checklistStateRef = useRef(checklistState);
   const calibrationFlagsRef = useRef(calibrationFlags);
@@ -231,7 +272,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
 
       if (Object.keys(initialChecklistState).length > 0) {
-        console.log("[Validator] Loading saved checklist state:", initialChecklistState);
         setChecklistState(initialChecklistState);
       }
     }
@@ -248,19 +288,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
       for (const resp of responses) {
         // Debug: log the flagged_for_calibration value from each response
-        console.log(
-          `[Init] Response ${resp.id}: flagged_for_calibration =`,
-          resp.flagged_for_calibration
-        );
         // Load flagged_for_calibration from database
         if (resp.flagged_for_calibration === true) {
           initialFlags[resp.id] = true;
         }
-      }
-
-      if (Object.keys(initialFlags).length > 0) {
-        console.log("[Validator] Loading saved calibration flags:", initialFlags);
-        setCalibrationFlags(initialFlags);
       }
     }
   }, [data, calibrationFlags]);
@@ -279,6 +310,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     "") as string;
   const cycleYear: string = String(core?.cycle_year ?? core?.year ?? "");
   const statusText: string = core?.status ?? core?.assessment_status ?? "";
+  const complianceOverviewLoadingMessage =
+    COMPLIANCE_OVERVIEW_LOADING_MESSAGES[complianceOverviewLoadingStep];
 
   // Per-area calibration tracking: each governance area can only be calibrated ONCE
   // calibrated_area_ids contains the IDs of areas that have already been calibrated
@@ -289,6 +322,15 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   // Check if ALL 6 governance areas have been calibrated (no more areas left to calibrate)
   const TOTAL_GOVERNANCE_AREAS = 6;
   const allAreasCalibrated: boolean = calibratedAreaIds.length >= TOTAL_GOVERNANCE_AREAS;
+
+  const isCalibrationSubmitDisabled: boolean = calibrateMut.isPending || allAreasCalibrated;
+  const calibrationSubmitTitle = allAreasCalibrated
+    ? "All governance areas have already been calibrated (max 1 calibration per area)"
+    : !Object.values(calibrationFlags).some((v) => v === true)
+      ? "Flag at least one indicator for calibration using the toggle in the MOV viewer"
+      : calibratedAreaIds.length > 0
+        ? `${calibratedAreaIds.length} area(s) already calibrated. Only flag indicators from uncalibrated areas.`
+        : undefined;
 
   // Get timestamps for MOV file separation (new vs old files)
   // These are passed to MiddleMovFilesPanel which determines per-indicator which timestamp to use
@@ -303,75 +345,56 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     responsesRef.current = responses;
   }, [responses]);
 
-  // Helper: Check if a response has any checklist items checked by the validator
-  const hasChecklistItemsChecked = (responseId: number): boolean => {
-    return Object.keys(checklistState).some(
-      (key) => key.startsWith(`checklist_${responseId}_`) && checklistState[key] === true
-    );
+  const isMeaningfulChecklistValue = (value: unknown): boolean => {
+    if (value === true) return true;
+    if (typeof value === "string") return value.trim().length > 0;
+    return false;
   };
 
-  // Helper: Check if a response already has a validation status from database
-  const hasExistingValidationStatus = (responseId: number): boolean => {
-    const response = responses.find((r: any) => r.id === responseId);
-    if (!response) return false;
-    const status = (response as any).validation_status;
-    // Check if status is PASS, FAIL, or CONDITIONAL (case-insensitive)
-    if (!status) return false;
-    const statusUpper = String(status).toUpperCase();
-    return statusUpper === "PASS" || statusUpper === "FAIL" || statusUpper === "CONDITIONAL";
-  };
+  const buildValidatorResponseDataSnapshot = (responseId: number): Record<string, any> => {
+    const response = responsesRef.current.find((item) => item.id === responseId);
+    if (!response) return {};
 
-  // Helper: Check if validator has entered a comment/finding for this response
-  const hasValidatorComment = (responseId: number): boolean => {
-    const formData = form[responseId];
-    return !!(formData?.publicComment && formData.publicComment.trim().length > 0);
-  };
+    const snapshotData: Record<string, any> = {};
+    const previousResponseData = (response as AnyRecord).response_data || {};
 
-  const responseHasServerMovAttention = (response: AnyRecord): boolean => {
-    const movs = Array.isArray(response.movs) ? response.movs : [];
+    Object.keys(checklistStateRef.current).forEach((key) => {
+      if (!key.startsWith(`checklist_${responseId}_`)) return;
 
-    return movs.some((mov: AnyRecord) => {
-      const hasValidatorNotes = Boolean(
-        mov.validator_notes && String(mov.validator_notes).trim().length > 0
-      );
+      const fieldName = key.replace(`checklist_${responseId}_`, "");
+      const snapshotKey = `validator_val_${fieldName}`;
+      const currentValue = checklistStateRef.current[key];
+      const previousValue = previousResponseData[snapshotKey];
 
-      return hasValidatorNotes || mov.flagged_for_calibration === true;
+      if (isMeaningfulChecklistValue(currentValue)) {
+        snapshotData[snapshotKey] = currentValue;
+        return;
+      }
+
+      if (previousValue !== undefined && previousValue !== currentValue) {
+        snapshotData[snapshotKey] = currentValue;
+      }
     });
+
+    return snapshotData;
   };
 
-  const responseHasAttention = (response: AnyRecord): boolean => {
-    const localFileAttention = Object.values(movAttentionByResponse[response.id] ?? {}).some(
-      Boolean
-    );
-
-    return (
-      responseHasServerMovAttention(response) ||
-      localFileAttention ||
-      calibrationFlags[response.id] === true
-    );
-  };
-
-  // Helper: Check if an indicator is "reviewed"
-  // An indicator is reviewed if:
-  // 1. Has checklist items checked in current session, OR
-  // 2. Flagged for calibration, OR
-  // 3. Already has a validation status from database (PASS/FAIL/CONDITIONAL - e.g., after calibration), OR
-  // 4. Validator has entered a comment/finding
-  const isIndicatorReviewed = (responseId: number): boolean => {
-    const response = responses.find((r: AnyRecord) => r.id === responseId);
-
-    return (
-      hasChecklistItemsChecked(responseId) ||
-      (response ? responseHasAttention(response) : calibrationFlags[responseId] === true) ||
-      hasExistingValidationStatus(responseId) ||
-      hasValidatorComment(responseId)
-    );
+  const getProgressForResponse = (response: AnyRecord) => {
+    const wasCalibrated = Boolean(calibrationRequestedAt) && response.validation_status === null;
+    return getValidatorIndicatorProgress(response, {
+      checklistState,
+      localMovAttentionByFileId: movAttentionByResponse[response.id] ?? {},
+      strictChecklistRequired: wasCalibrated,
+      localForm: form[response.id],
+    });
   };
 
   // Transform to match BLGU assessment structure for TreeNavigator
   const transformedAssessment = {
     id: assessmentId,
-    completedIndicators: responses.filter((r: any) => isIndicatorReviewed(r.id)).length,
+    completedIndicators: responses.filter(
+      (r: AnyRecord) => getProgressForResponse(r).status === "completed"
+    ).length,
     totalIndicators: responses.length,
     governanceAreas: responses.reduce((acc: any[], resp: any) => {
       const indicator = resp.indicator || {};
@@ -396,9 +419,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         id: String(resp.id),
         code: indicator.indicator_code || indicator.code || String(resp.id),
         name: indicator.name || "Unnamed Indicator",
-        // For validators: Show completed if checklist items checked OR flagged for calibration
-        status: isIndicatorReviewed(resp.id) ? "completed" : "not_started",
-        hasMovNotes: responseHasAttention(resp),
+        status: getProgressForResponse(resp).status,
+        hasMovNotes: getProgressForResponse(resp).hasMovNotes,
       });
 
       // Sort indicators by code after adding
@@ -409,33 +431,33 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   const total = responses.length;
-  // For validators: "reviewed" means checklist items checked OR flagged for calibration
-  const reviewed = responses.filter((r) => isIndicatorReviewed(r.id as number)).length;
+  const reviewed = responses.filter((r) => getProgressForResponse(r).status === "completed").length;
   const progressPct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
   // Check if ALL responses have validation_status confirmed (via Compliance Overview)
   // This is required before finalization - validators must confirm each indicator status
-  const confirmedCount = responses.filter((r) =>
-    hasExistingValidationStatus(r.id as number)
-  ).length;
+  const confirmedCount = responses.filter((r) => hasExistingValidationStatus(r)).length;
   const allConfirmed = total > 0 && confirmedCount === total;
 
   const getResponseSnapshot = (responseId: number): string => {
     const formData = formRef.current[responseId];
-    const responseChecklistData: Record<string, any> = {};
+    const responseChecklistData = buildValidatorResponseDataSnapshot(responseId);
 
-    Object.keys(checklistStateRef.current).forEach((key) => {
-      if (!key.startsWith(`checklist_${responseId}_`)) return;
-      const fieldName = key.replace(`checklist_${responseId}_`, "");
-      responseChecklistData[`validator_val_${fieldName}`] = checklistStateRef.current[key];
+    const sortedKeys = Object.keys(responseChecklistData).sort();
+    const sortedChecklistData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedChecklistData[k] = responseChecklistData[k];
     });
+
+    const rawComment = formData?.publicComment ?? null;
+    const normalizedComment = rawComment && rawComment.trim().length > 0 ? rawComment : null;
 
     return JSON.stringify({
       validation_status: formData?.status
         ? (formData.status.toUpperCase() as "PASS" | "FAIL" | "CONDITIONAL")
         : null,
-      public_comment: formData?.publicComment ?? null,
-      response_data: responseChecklistData,
+      public_comment: normalizedComment,
+      response_data: sortedChecklistData,
       flagged_for_calibration: calibrationFlagsRef.current[responseId] ?? false,
     });
   };
@@ -457,13 +479,20 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     const snapshotData: Record<string, any> = {};
     Object.keys(responseData).forEach((key) => {
       if (!key.startsWith("validator_val_")) return;
+      if (!isMeaningfulChecklistValue(responseData[key])) return;
       snapshotData[key] = responseData[key];
+    });
+
+    const sortedKeys = Object.keys(snapshotData).sort();
+    const sortedSnapshotData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedSnapshotData[k] = snapshotData[k];
     });
 
     return JSON.stringify({
       validation_status: response.validation_status ?? null,
       public_comment: validationComments[0]?.comment ?? null,
-      response_data: snapshotData,
+      response_data: sortedSnapshotData,
       flagged_for_calibration: response.flagged_for_calibration === true,
     });
   };
@@ -494,6 +523,71 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     };
   };
 
+  const patchCachedAssessmentResponse = (
+    responseId: number,
+    payload: {
+      validation_status?: "PASS" | "FAIL" | "CONDITIONAL";
+      public_comment: string | null;
+      response_data?: Record<string, any>;
+      flagged_for_calibration: boolean;
+    }
+  ) => {
+    qc.setQueryData(
+      getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+      (current: AnyRecord | undefined) => {
+        if (!current) return current;
+
+        const assessmentData = (current.assessment as AnyRecord) ?? current;
+        const currentResponses = (assessmentData.responses as AnyRecord[]) ?? [];
+
+        const nextResponses = currentResponses.map((response) => {
+          if (response.id !== responseId) return response;
+
+          const nextResponseData = {
+            ...((response.response_data as Record<string, any>) || {}),
+            ...(payload.response_data || {}),
+          };
+
+          if (payload.response_data) {
+            Object.entries(payload.response_data).forEach(([key, value]) => {
+              if (value === null || value === undefined || value === "" || value === false) {
+                delete nextResponseData[key];
+              }
+            });
+          }
+
+          return {
+            ...response,
+            validation_status: payload.validation_status ?? response.validation_status,
+            flagged_for_calibration: payload.flagged_for_calibration,
+            response_data: nextResponseData,
+            feedback_comments: upsertValidatorValidationFeedbackComment(
+              ((response.feedback_comments as AnyRecord[]) || []).map((comment) => ({
+                ...comment,
+              })),
+              payload.public_comment
+            ),
+          };
+        });
+
+        if ("assessment" in current) {
+          return {
+            ...current,
+            assessment: {
+              ...assessmentData,
+              responses: nextResponses,
+            },
+          };
+        }
+
+        return {
+          ...assessmentData,
+          responses: nextResponses,
+        };
+      }
+    );
+  };
+
   const syncDirtyStateForResponse = (responseId: number) => {
     if (!hydratedRef.current) return;
 
@@ -509,9 +603,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         next = alreadyDirty ? prev : [...prev, responseId];
       }
       dirtyResponseIdsRef.current = next;
+      setDraftSaveState(next.length > 0 ? "dirty" : "saved");
       return next;
     });
-    setDraftSaveState(nextSnapshot === savedSnapshot ? "saved" : "dirty");
   };
 
   const saveResponses = async (
@@ -537,6 +631,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       if (remainingResponseIds.length === 0) {
         if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
           setDraftSaveState("saved");
+          toast.success("Assessment progress saved", { duration: 2500 });
         }
         return true;
       }
@@ -544,7 +639,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       return saveResponses(remainingResponseIds, options);
     }
 
-    const savePromise = (async () => {
+    let savePromise!: Promise<boolean>;
+    savePromise = (async () => {
       isSavingRef.current = true;
       setDraftSaveState("saving");
       let savedPayloadCount = 0;
@@ -560,6 +656,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
           });
           savedPayloadCount += 1;
 
+          patchCachedAssessmentResponse(responseId, payload.data);
           lastSavedSnapshotRef.current[responseId] = payload.snapshot;
           setDirtyResponseIds((prev) => {
             const currentSnapshot = getResponseSnapshot(responseId);
@@ -577,6 +674,11 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             return next;
           });
         }
+
+        await qc.invalidateQueries({
+          queryKey: getGetAssessorAssessmentsAssessmentIdQueryKey(assessmentId),
+          exact: true,
+        });
 
         if (savedPayloadCount > 0) {
           setCompletedAutosaveCount((count) => count + 1);
@@ -642,15 +744,55 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   };
 
   useEffect(() => {
+    if (!isOpeningComplianceOverview) {
+      setComplianceOverviewLoadingStep(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setComplianceOverviewLoadingStep((step) =>
+        Math.min(step + 1, COMPLIANCE_OVERVIEW_LOADING_MESSAGES.length - 1)
+      );
+    }, COMPLIANCE_OVERVIEW_LOADING_MESSAGE_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [isOpeningComplianceOverview]);
+
+  useEffect(() => {
     const nextSnapshots: Record<number, string> = {};
+    let nextDirtyIds = [...dirtyResponseIdsRef.current];
+
     responses.forEach((response) => {
-      nextSnapshots[response.id] = getServerSnapshot(response);
+      const serverSnapshot = getServerSnapshot(response);
+      const isDirty = nextDirtyIds.includes(response.id);
+
+      if (isDirty) {
+        const localSnapshot = getResponseSnapshot(response.id);
+        if (serverSnapshot === localSnapshot) {
+          nextSnapshots[response.id] = serverSnapshot;
+          nextDirtyIds = nextDirtyIds.filter((id) => id !== response.id);
+        } else {
+          // Preserve optimistic dirty state across this hydration
+          nextSnapshots[response.id] = lastSavedSnapshotRef.current[response.id] ?? serverSnapshot;
+        }
+      } else {
+        nextSnapshots[response.id] = serverSnapshot;
+      }
     });
+
     lastSavedSnapshotRef.current = nextSnapshots;
     hydratedRef.current = true;
-    dirtyResponseIdsRef.current = [];
-    setDirtyResponseIds([]);
-    setDraftSaveState("idle");
+
+    // Only update state if dirty IDs actually changed
+    if (
+      nextDirtyIds.length !== dirtyResponseIdsRef.current.length ||
+      !nextDirtyIds.every((id, i) => id === dirtyResponseIdsRef.current[i])
+    ) {
+      dirtyResponseIdsRef.current = nextDirtyIds;
+      setDirtyResponseIds(nextDirtyIds);
+    }
+
+    setDraftSaveState(nextDirtyIds.length > 0 ? "dirty" : "idle");
   }, [responses]);
 
   useEffect(() => {
@@ -671,24 +813,91 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     };
   }, [dirtyResponseIds, form, checklistState, calibrationFlags]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleDocumentNavigation = (event: MouseEvent) => {
+      if (isInterceptingNavigationRef.current) return;
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.hasAttribute("download")) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.href === window.location.href) return;
+
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      isInterceptingNavigationRef.current = true;
+
+      void (async () => {
+        const saved = await flushPendingChanges({ quiet: true });
+        if (saved) {
+          router.push(`${url.pathname}${url.search}${url.hash}`);
+          window.setTimeout(() => {
+            isInterceptingNavigationRef.current = false;
+          }, 0);
+        } else {
+          isInterceptingNavigationRef.current = false;
+        }
+      })();
+    };
+
+    document.addEventListener("click", handleDocumentNavigation, true);
+    return () => {
+      document.removeEventListener("click", handleDocumentNavigation, true);
+    };
+  }, [router]);
+
   const onFinalize = async () => {
     // Prevent double-clicking by checking if already in progress
-    if (finalizeMut.isPending) {
-      console.log("Finalize already in progress, ignoring duplicate click");
-      return;
-    }
 
     // Show immediate feedback that the process started
     toast.loading("Finalizing validation...", { id: "finalize-toast" });
 
     try {
       // Save any pending changes first
-      console.log("Saving draft before finalize...");
       const saved = await flushPendingChanges({ quiet: true });
       if (!saved) return;
 
       // Then finalize
-      console.log("Finalizing assessment...");
       const result = (await finalizeMut.mutateAsync({ assessmentId })) as {
         new_status?: string;
         already_finalized?: boolean;
@@ -873,42 +1082,56 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     field: "status" | "publicComment",
     value: string
   ) => {
-    setForm((prev) => ({
-      ...prev,
+    const currentEntry = formRef.current[responseId] ?? {};
+    if (currentEntry[field] === value) return;
+
+    const nextForm = {
+      ...formRef.current,
       [responseId]: {
-        ...prev[responseId],
+        ...currentEntry,
         [field]: value,
       },
-    }));
+    };
 
-    window.setTimeout(() => {
-      syncDirtyStateForResponse(responseId);
-    }, 0);
+    formRef.current = nextForm;
+    syncDirtyStateForResponse(responseId);
+    startTransition(() => {
+      setForm(nextForm);
+    });
   };
 
   const handleChecklistChange = (key: string, value: any) => {
-    setChecklistState((prev) => ({
-      ...prev,
+    if (checklistStateRef.current[key] === value) return;
+
+    const nextChecklistState = {
+      ...checklistStateRef.current,
       [key]: value,
-    }));
+    };
+
+    checklistStateRef.current = nextChecklistState;
 
     const match = key.match(/^checklist_(\d+)_/);
     if (!match) return;
 
-    window.setTimeout(() => {
-      syncDirtyStateForResponse(Number(match[1]));
-    }, 0);
+    syncDirtyStateForResponse(Number(match[1]));
+    startTransition(() => {
+      setChecklistState(nextChecklistState);
+    });
   };
 
   const handleCalibrationFlagChange = (responseId: number, flagged: boolean) => {
-    setCalibrationFlags((prev) => ({
-      ...prev,
-      [responseId]: flagged,
-    }));
+    if (calibrationFlagsRef.current[responseId] === flagged) return;
 
-    window.setTimeout(() => {
-      syncDirtyStateForResponse(responseId);
-    }, 0);
+    const nextCalibrationFlags = {
+      ...calibrationFlagsRef.current,
+      [responseId]: flagged,
+    };
+
+    calibrationFlagsRef.current = nextCalibrationFlags;
+    syncDirtyStateForResponse(responseId);
+    startTransition(() => {
+      setCalibrationFlags(nextCalibrationFlags);
+    });
   };
 
   const handleMovAttentionChange = useCallback(
@@ -993,17 +1216,39 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
               variant="default"
               size="sm"
               className="gap-1 sm:gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-4"
-              disabled={draftSaveState === "saving"}
+              disabled={draftSaveState === "saving" || isOpeningComplianceOverview}
+              aria-busy={isOpeningComplianceOverview}
+              aria-label={
+                isOpeningComplianceOverview
+                  ? complianceOverviewLoadingMessage
+                  : "Compliance Overview"
+              }
               onClick={async () => {
+                if (isOpeningComplianceOverview) return;
+
                 // Save draft first, then navigate to compliance overview
+                setIsOpeningComplianceOverview(true);
                 const saved = await flushPendingChanges({ quiet: true });
-                if (!saved) return;
+                if (!saved) {
+                  setIsOpeningComplianceOverview(false);
+                  return;
+                }
                 router.push(`/validator/submissions/${assessmentId}/compliance`);
               }}
             >
-              <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Compliance Overview</span>
-              <span className="sm:hidden">Compliance</span>
+              {isOpeningComplianceOverview ? (
+                <Loader2 className="h-3 w-3 animate-spin sm:h-4 sm:w-4" />
+              ) : (
+                <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isOpeningComplianceOverview
+                  ? complianceOverviewLoadingMessage
+                  : "Compliance Overview"}
+              </span>
+              <span className="sm:hidden">
+                {isOpeningComplianceOverview ? complianceOverviewLoadingMessage : "Compliance"}
+              </span>
             </Button>
           </div>
         </div>
@@ -1281,62 +1526,63 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
             Indicators Reviewed: {reviewed}/{total}
           </div>
           <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2">
-            <Button
-              size="sm"
-              type="button"
-              onClick={() => setShowCalibrationConfirm(true)}
-              disabled={calibrateMut.isPending}
-              className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
-              style={{
-                background: "var(--cityscape-yellow)",
-              }}
-              title={
-                allAreasCalibrated
-                  ? "All governance areas have already been calibrated (max 1 calibration per area)"
-                  : !Object.values(calibrationFlags).some((v) => v === true)
-                    ? "Flag at least one indicator for calibration using the toggle in the MOV viewer"
-                    : calibratedAreaIds.length > 0
-                      ? `${calibratedAreaIds.length} area(s) already calibrated. Only flag indicators from uncalibrated areas.`
-                      : undefined
-              }
+            <span
+              className={`inline-flex w-full sm:w-auto ${
+                isCalibrationSubmitDisabled ? "cursor-not-allowed" : ""
+              }`}
+              title={calibrationSubmitTitle}
             >
-              {calibrateMut.isPending ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <span className="hidden sm:inline">Submitting...</span>
-                  <span className="sm:hidden">Processing...</span>
-                </>
-              ) : allAreasCalibrated ? (
-                <>
-                  <span className="hidden sm:inline">All Areas Calibrated</span>
-                  <span className="sm:hidden">All Used</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">Submit for Calibration</span>
-                  <span className="sm:hidden">Calibration</span>
-                </>
-              )}
-            </Button>
+              <Button
+                size="sm"
+                type="button"
+                onClick={() => {
+                  if (allAreasCalibrated) return;
+                  setShowCalibrationConfirm(true);
+                }}
+                disabled={isCalibrationSubmitDisabled}
+                className="w-full sm:w-auto text-[var(--cityscape-accent-foreground)] hover:opacity-90 text-xs sm:text-sm h-9 sm:h-10"
+                style={{
+                  background: "var(--cityscape-yellow)",
+                }}
+              >
+                {calibrateMut.isPending ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-1.5 h-3 w-3 sm:h-4 sm:w-4 inline-block"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">Submitting...</span>
+                    <span className="sm:hidden">Processing...</span>
+                  </>
+                ) : allAreasCalibrated ? (
+                  <>
+                    <span className="hidden sm:inline">All Areas Calibrated</span>
+                    <span className="sm:hidden">All Used</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Submit for Calibration</span>
+                    <span className="sm:hidden">Calibration</span>
+                  </>
+                )}
+              </Button>
+            </span>
             <Button
               size="sm"
               type="button"

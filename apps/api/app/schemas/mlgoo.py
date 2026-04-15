@@ -254,6 +254,18 @@ class PendingCalibrationItem(BaseModel):
     comments: str | None = None
 
 
+class ReworkCalibrationRequesterItem(BaseModel):
+    """Single assessor or validator who requested action on the assessment."""
+
+    request_type: str  # 'rework' or 'calibration'
+    requester_id: int | None = None
+    requester_name: str
+    governance_area_id: int | None = None
+    governance_area_name: str | None = None
+    requested_at: str | None = None
+    comments: str | None = None
+
+
 class ReworkCalibrationSummary(BaseModel):
     """Summary of all rework/calibration requests for an assessment."""
 
@@ -270,6 +282,8 @@ class ReworkCalibrationSummary(BaseModel):
     calibration_comments: str | None = None
     # Pending calibrations (parallel calibration support)
     pending_calibrations: list[PendingCalibrationItem] = Field(default_factory=list)
+    # Unified requester activity list shown in the MLGOO executive overview
+    requesters: list[ReworkCalibrationRequesterItem] = Field(default_factory=list)
     # Indicators being reworked/calibrated with their feedback
     rework_indicators: list[ReworkCalibrationIndicatorItem] = Field(default_factory=list)
 

@@ -25,14 +25,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { formatIndicatorName } from "@/lib/utils/text-formatter";
 import type { ReworkCalibrationSummary, ReworkCalibrationIndicatorItem } from "@sinag/shared";
 
 interface ReworkCalibrationSummarySectionProps {
   summary: ReworkCalibrationSummary | null;
+  assessmentYear?: number | string | null;
   reworkRequestedAt?: string | null;
   calibrationRequestedAt?: string | null;
   mlgooRecalibrationComments?: string | null;
 }
+
+type RequesterSummaryItem = {
+  request_type: string;
+  requester_name: string;
+  governance_area_name?: string | null;
+  requested_at?: string | null;
+  comments?: string | null;
+};
 
 function StatusBadge({ status }: { status: string }) {
   const config = {
@@ -76,11 +86,22 @@ function ValidationStatusBadge({ status }: { status: string | null }) {
   );
 }
 
-function IndicatorFeedbackCard({ indicator }: { indicator: ReworkCalibrationIndicatorItem }) {
+function IndicatorFeedbackCard({
+  indicator,
+  assessmentYear,
+}: {
+  indicator: ReworkCalibrationIndicatorItem;
+  assessmentYear?: number | string | null;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const feedbackComments = indicator.feedback_comments ?? [];
   const movAnnotations = indicator.mov_annotations ?? [];
   const hasFeedback = feedbackComments.length > 0 || movAnnotations.length > 0;
+
+  const displayIndicatorName =
+    assessmentYear === null || assessmentYear === undefined || assessmentYear === ""
+      ? indicator.indicator_name
+      : formatIndicatorName(indicator.indicator_name, assessmentYear);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -96,7 +117,7 @@ function IndicatorFeedbackCard({ indicator }: { indicator: ReworkCalibrationIndi
                     </span>
                   )}
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100 text-left">
-                    {indicator.indicator_name}
+                    {displayIndicatorName}
                   </span>
                 </div>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -225,6 +246,7 @@ function IndicatorFeedbackCard({ indicator }: { indicator: ReworkCalibrationIndi
 
 export function ReworkCalibrationSummarySection({
   summary,
+  assessmentYear,
   reworkRequestedAt,
   calibrationRequestedAt,
   mlgooRecalibrationComments,
@@ -232,49 +254,60 @@ export function ReworkCalibrationSummarySection({
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Memoize derived summary data to avoid recalculating on every render
-  const {
-    totalIndicators,
-    reworkCount,
-    calibrationCount,
-    mlgooRecalCount,
-    reworkRequesters,
-    reworkRequesterNames,
-  } = useMemo(() => {
-    const indicators = summary?.rework_indicators ?? [];
-    const assessorNameSet = new Set<string>();
+  const { totalIndicators, reworkCount, calibrationCount, mlgooRecalCount, requesters } =
+    useMemo(() => {
+      const indicators = summary?.rework_indicators ?? [];
+      const requesters: RequesterSummaryItem[] = [];
+      const seenRequesterKeys = new Set<string>();
 
-    for (const indicator of indicators) {
-      if (indicator.status !== "rework") continue;
+      const pushRequester = (requester: RequesterSummaryItem | null) => {
+        if (!requester?.requester_name?.trim()) return;
 
-      for (const comment of indicator.feedback_comments ?? []) {
-        if (comment.assessor_name?.trim()) {
-          assessorNameSet.add(comment.assessor_name.trim());
-        }
+        const key = [
+          requester.request_type,
+          requester.requester_name.trim(),
+          requester.governance_area_name ?? "",
+          requester.requested_at ?? "",
+        ].join("|");
+
+        if (seenRequesterKeys.has(key)) return;
+        seenRequesterKeys.add(key);
+        requesters.push({
+          ...requester,
+          requester_name: requester.requester_name.trim(),
+        });
+      };
+
+      for (const requester of (summary?.requesters ?? []) as RequesterSummaryItem[]) {
+        pushRequester(requester);
       }
 
-      for (const annotation of indicator.mov_annotations ?? []) {
-        if (annotation.assessor_name?.trim()) {
-          assessorNameSet.add(annotation.assessor_name.trim());
-        }
+      if (requesters.length === 0 && summary?.rework_requested_by_name?.trim()) {
+        pushRequester({
+          request_type: "rework",
+          requester_name: summary.rework_requested_by_name,
+          requested_at: reworkRequestedAt ?? null,
+          comments: summary.rework_comments ?? null,
+        });
       }
-    }
 
-    // Keep legacy single-requester value as fallback.
-    if (assessorNameSet.size === 0 && summary?.rework_requested_by_name?.trim()) {
-      assessorNameSet.add(summary.rework_requested_by_name.trim());
-    }
+      if (requesters.length === 0 && summary?.calibration_validator_name?.trim()) {
+        pushRequester({
+          request_type: "calibration",
+          requester_name: summary.calibration_validator_name,
+          requested_at: calibrationRequestedAt ?? null,
+          comments: summary.calibration_comments ?? null,
+        });
+      }
 
-    const reworkRequesters = Array.from(assessorNameSet).sort((a, b) => a.localeCompare(b));
-
-    return {
-      totalIndicators: indicators.length,
-      reworkCount: indicators.filter((i) => i.status === "rework").length,
-      calibrationCount: indicators.filter((i) => i.status === "calibration").length,
-      mlgooRecalCount: indicators.filter((i) => i.status === "mlgoo_recalibration").length,
-      reworkRequesters,
-      reworkRequesterNames: reworkRequesters.join(", "),
-    };
-  }, [summary]);
+      return {
+        totalIndicators: indicators.length,
+        reworkCount: indicators.filter((i) => i.status === "rework").length,
+        calibrationCount: indicators.filter((i) => i.status === "calibration").length,
+        mlgooRecalCount: indicators.filter((i) => i.status === "mlgoo_recalibration").length,
+        requesters,
+      };
+    }, [calibrationRequestedAt, reworkRequestedAt, summary]);
 
   // Don't render if no summary data
   if (!summary) return null;
@@ -331,80 +364,44 @@ export function ReworkCalibrationSummarySection({
         <CardContent className="space-y-4">
           {/* Requester Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Rework Requester */}
-            {summary.has_rework && reworkRequesters.length > 0 && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-orange-200 dark:border-orange-800">
+            {requesters.length > 0 && (
+              <div className="md:col-span-2 bg-white dark:bg-slate-800 rounded-lg p-3 border border-orange-200 dark:border-orange-800">
                 <div className="flex items-center gap-2 mb-1">
                   <User className="h-4 w-4 text-orange-600" />
                   <span className="text-xs font-semibold text-orange-700 dark:text-orange-300 uppercase">
                     Rework Requested By
                   </span>
                 </div>
-                <p
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
-                  title={reworkRequesterNames}
-                >
-                  {reworkRequesterNames}
-                </p>
-                {reworkRequestedAt && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {new Date(reworkRequestedAt).toLocaleString()}
-                  </p>
-                )}
-                {summary.rework_comments && (
-                  <div className="mt-2 pt-2 border-t border-orange-100 dark:border-orange-900">
-                    <p className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                      &ldquo;{summary.rework_comments}&rdquo;
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Calibration Validator */}
-            {summary.has_calibration && summary.calibration_validator_name && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <User className="h-4 w-4 text-purple-600" />
-                  <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase">
-                    Calibration Requested By
-                  </span>
-                </div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {summary.calibration_validator_name}
-                </p>
-                {calibrationRequestedAt && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {new Date(calibrationRequestedAt).toLocaleString()}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Pending Calibrations (parallel calibration) */}
-            {(summary.pending_calibrations?.length ?? 0) > 0 && (
-              <div className="md:col-span-2 bg-white dark:bg-slate-800 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="h-4 w-4 text-purple-600" />
-                  <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase">
-                    Pending Calibrations
-                  </span>
-                </div>
                 <div className="space-y-2">
-                  {(summary.pending_calibrations ?? []).map((cal, idx) => (
+                  {requesters.map((requester, index) => (
                     <div
-                      key={idx}
-                      className="flex items-center justify-between text-sm bg-purple-50 dark:bg-purple-900/20 rounded px-2 py-1"
+                      key={`${requester.request_type}-${requester.requester_name}-${requester.requested_at ?? index}`}
+                      className="rounded-md border border-orange-100 dark:border-orange-900 bg-orange-50/70 dark:bg-orange-950/20 px-3 py-2"
                     >
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {cal.validator_name}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="text-xs bg-purple-100 text-purple-700 border-purple-200"
-                      >
-                        {cal.governance_area_name}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {requester.requester_name}
+                        </span>
+                        <StatusBadge status={requester.request_type} />
+                        {requester.governance_area_name && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-white/80 text-gray-700 border-orange-200"
+                          >
+                            {requester.governance_area_name}
+                          </Badge>
+                        )}
+                      </div>
+                      {requester.requested_at && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {new Date(requester.requested_at).toLocaleString()}
+                        </p>
+                      )}
+                      {requester.comments && (
+                        <p className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap mt-1">
+                          &ldquo;{requester.comments}&rdquo;
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -436,7 +433,11 @@ export function ReworkCalibrationSummarySection({
               </h4>
               <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                 {(summary.rework_indicators ?? []).map((indicator) => (
-                  <IndicatorFeedbackCard key={indicator.indicator_id} indicator={indicator} />
+                  <IndicatorFeedbackCard
+                    key={indicator.indicator_id}
+                    indicator={indicator}
+                    assessmentYear={assessmentYear}
+                  />
                 ))}
               </div>
             </div>

@@ -41,6 +41,7 @@
 
   --animate-accordion-down: accordion-down 0.3s ease-in-out;
   --animate-accordion-up: accordion-up 0.3s ease-in-out;
+  --animate-progress-loading: progress-loading 2s infinite linear;
 
   @keyframes accordion-down {
     from {
@@ -56,6 +57,14 @@
     }
     to {
       height: 0;
+    }
+  }
+  @keyframes progress-loading {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
     }
   }
 }

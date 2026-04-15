@@ -134,7 +134,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   >({});
   const [checklistData, setChecklistData] = useState<Record<string, any>>({}); // Store checklist checkbox/input data
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
   const isSavingRef = useRef(false); // Prevent multiple concurrent saves
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
   const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
@@ -406,7 +405,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // Track if any action is in progress to disable all buttons
   // This prevents users from clicking other buttons while an action is processing
   const isAnyActionPending: boolean =
-    isSaving ||
     areaApproveMut.isPending ||
     areaReworkMut.isPending ||
     finalizeMut.isPending ||
@@ -516,9 +514,16 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     // snapshot (the server never stores empty comments in feedback_comments).
     const normalizedComment = rawComment && rawComment.trim().length > 0 ? rawComment : null;
 
+    const responseDataSnapshot = buildAssessorResponseDataSnapshot(responseId);
+    const sortedKeys = Object.keys(responseDataSnapshot).sort();
+    const sortedResponseData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedResponseData[k] = responseDataSnapshot[k];
+    });
+
     return JSON.stringify({
       public_comment: normalizedComment,
-      response_data: buildAssessorResponseDataSnapshot(responseId),
+      response_data: sortedResponseData,
     });
   };
 
@@ -537,6 +542,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       snapshotData.assessor_manual_rework_flag = true;
     }
 
+    const sortedKeys = Object.keys(snapshotData).sort();
+    const sortedSnapshotData: Record<string, any> = {};
+    sortedKeys.forEach((k) => {
+      sortedSnapshotData[k] = snapshotData[k];
+    });
+
     const validationComments = ((response.feedback_comments as any[]) || [])
       .filter((fc: any) => {
         if (fc.comment_type !== "validation" || fc.is_internal_note) return false;
@@ -551,7 +562,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
     return JSON.stringify({
       public_comment: validationComments[0]?.comment ?? null,
-      response_data: snapshotData,
+      response_data: sortedSnapshotData,
     });
   };
 
@@ -654,7 +665,7 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
     dirtyResponseIdsRef.current = nextDirtyIds;
     setDirtyResponseIds(nextDirtyIds);
-    setDraftSaveState(nextSnapshot === savedSnapshot ? "saved" : "dirty");
+    setDraftSaveState(nextDirtyIds.length > 0 ? "dirty" : "saved");
   };
 
   const saveResponses = async (
@@ -682,6 +693,12 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       if (remainingResponseIds.length === 0) {
         if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
           setDraftSaveState("saved");
+          toast({
+            title: "Saved",
+            description: "Assessment progress saved",
+            duration: 2000,
+            className: "bg-green-600 text-white border-none",
+          });
         }
         return true;
       }
@@ -689,9 +706,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       return saveResponses(remainingResponseIds, options);
     }
 
-    const savePromise = (async () => {
+    let savePromise!: Promise<boolean>;
+    savePromise = (async () => {
       isSavingRef.current = true;
-      setIsSaving(true);
       setDraftSaveState("saving");
       let savedPayloadCount = 0;
 
@@ -780,7 +797,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         return false;
       } finally {
         isSavingRef.current = false;
-        setIsSaving(false);
         if (activeSavePromiseRef.current === savePromise) {
           activeSavePromiseRef.current = null;
         }
@@ -1105,14 +1121,39 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
 
   useEffect(() => {
     const nextSnapshots: Record<number, string> = {};
+    let nextDirtyIds = [...dirtyResponseIdsRef.current];
+
     responses.forEach((response) => {
-      nextSnapshots[response.id] = getServerSnapshot(response);
+      const serverSnapshot = getServerSnapshot(response);
+      const isDirty = nextDirtyIds.includes(response.id);
+
+      if (isDirty) {
+        const localSnapshot = getResponseSnapshot(response.id);
+        if (serverSnapshot === localSnapshot) {
+          nextSnapshots[response.id] = serverSnapshot;
+          nextDirtyIds = nextDirtyIds.filter((id) => id !== response.id);
+        } else {
+          // Preserve optimistic dirty state across this hydration
+          nextSnapshots[response.id] = lastSavedSnapshotRef.current[response.id] ?? serverSnapshot;
+        }
+      } else {
+        nextSnapshots[response.id] = serverSnapshot;
+      }
     });
+
     lastSavedSnapshotRef.current = nextSnapshots;
     hydratedRef.current = true;
-    dirtyResponseIdsRef.current = [];
-    setDirtyResponseIds([]);
-    setDraftSaveState("idle");
+
+    // Only update state if dirty IDs actually changed
+    if (
+      nextDirtyIds.length !== dirtyResponseIdsRef.current.length ||
+      !nextDirtyIds.every((id, i) => id === dirtyResponseIdsRef.current[i])
+    ) {
+      dirtyResponseIdsRef.current = nextDirtyIds;
+      setDirtyResponseIds(nextDirtyIds);
+    }
+
+    setDraftSaveState(nextDirtyIds.length > 0 ? "dirty" : "idle");
   }, [responses, dataUpdatedAt]);
 
   useEffect(() => {
@@ -1139,6 +1180,24 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
       syncDirtyStateForResponse(responseId);
     });
   }, [autoFlaggedEmptyIds]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   useEffect(() => {
     const handleDocumentNavigation = (event: MouseEvent) => {
@@ -1180,6 +1239,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         const saved = await flushPendingChanges({ quiet: true });
         if (saved) {
           router.push(`${url.pathname}${url.search}${url.hash}`);
+          window.setTimeout(() => {
+            isInterceptingNavigationRef.current = false;
+          }, 0);
         } else {
           isInterceptingNavigationRef.current = false;
         }

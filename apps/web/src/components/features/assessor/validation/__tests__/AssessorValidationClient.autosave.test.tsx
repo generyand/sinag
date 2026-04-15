@@ -110,11 +110,20 @@ vi.mock("next/dynamic", () => ({
           <button onClick={() => props.setField(101, "publicComment", "latest draft")}>
             Edit assessor comment twice
           </button>
+          <button onClick={() => props.setField(102, "publicComment", "response 102 draft")}>
+            Edit response 102 comment
+          </button>
+          <button onClick={() => props.setField(102, "publicComment", "")}>
+            Revert response 102 comment
+          </button>
           <button onClick={() => props.onChecklistChange?.("checklist_101_item_1", true)}>
             Toggle assessor checklist
           </button>
           <button onClick={() => props.onChecklistChange?.("checklist_101_item_1", false)}>
             Set assessor checklist false
+          </button>
+          <button onClick={() => props.onChecklistChange?.("checklist_101_item_2", true)}>
+            Toggle assessor checklist 2
           </button>
           <button onClick={() => props.onReworkFlagChange?.(101, true)}>Flag for rework</button>
         </div>
@@ -190,7 +199,44 @@ function makeAssessment(overrides?: {
   feedbackComments?: any[];
   responseData?: Record<string, unknown>;
   requiresRework?: boolean;
+  includeSecondResponse?: boolean;
 }) {
+  const responses = [
+    {
+      id: 101,
+      indicator_id: 1,
+      indicator: {
+        id: 1,
+        name: "Test Indicator",
+        indicator_code: "2.1.1",
+        governance_area: { id: 2, name: "Disaster Preparedness" },
+      },
+      movs: [{ id: 1, uploaded_at: "2024-01-01T00:00:00Z" }],
+      response_data: overrides?.responseData ?? {},
+      feedback_comments: overrides?.feedbackComments ?? [],
+      flagged_mov_file_ids: [],
+      requires_rework: overrides?.requiresRework ?? false,
+    },
+  ];
+
+  if (overrides?.includeSecondResponse) {
+    responses.push({
+      id: 102,
+      indicator_id: 2,
+      indicator: {
+        id: 2,
+        name: "Second Test Indicator",
+        indicator_code: "2.1.2",
+        governance_area: { id: 2, name: "Disaster Preparedness" },
+      },
+      movs: [{ id: 2, uploaded_at: "2024-01-01T00:00:00Z" }],
+      response_data: {},
+      feedback_comments: [],
+      flagged_mov_file_ids: [],
+      requires_rework: false,
+    });
+  }
+
   return {
     success: true,
     assessment_id: 1,
@@ -207,23 +253,7 @@ function makeAssessment(overrides?: {
         email: "test@example.com",
         barangay: { id: 1, name: "Test Barangay" },
       },
-      responses: [
-        {
-          id: 101,
-          indicator_id: 1,
-          indicator: {
-            id: 1,
-            name: "Test Indicator",
-            indicator_code: "2.1.1",
-            governance_area: { id: 2, name: "Disaster Preparedness" },
-          },
-          movs: [{ id: 1, uploaded_at: "2024-01-01T00:00:00Z" }],
-          response_data: overrides?.responseData ?? {},
-          feedback_comments: overrides?.feedbackComments ?? [],
-          flagged_mov_file_ids: [],
-          requires_rework: overrides?.requiresRework ?? false,
-        },
-      ],
+      responses,
     },
   };
 }
@@ -520,5 +550,130 @@ describe("AssessorValidationClient autosave", () => {
     });
 
     invalidateQueriesSpy.mockRestore();
+  });
+
+  it("re-saves the latest assessor checklist edit made while the previous auto-save is still in flight", async () => {
+    const firstSave = deferred<unknown>();
+    validateMutateAsync
+      .mockImplementationOnce(() => firstSave.promise)
+      .mockResolvedValueOnce({ success: true });
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<AssessorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle assessor checklist" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Set assessor checklist false" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Toggle assessor checklist 2" })[0]);
+
+    await act(async () => {
+      firstSave.resolve({ success: true });
+      await Promise.resolve();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(2);
+    expect(validateMutateAsync).toHaveBeenNthCalledWith(2, {
+      responseId: 101,
+      data: {
+        public_comment: null,
+        response_data: { assessor_val_item_2: true },
+      },
+    });
+  });
+
+  it("keeps the global dirty status when one dirty assessor response is reverted but another remains dirty", async () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment({ includeSecondResponse: true }),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<AssessorValidationClient assessmentId={1} />));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit assessor comment once" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit response 102 comment" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Revert response 102 comment" })[0]);
+
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+  });
+
+  it("force-saves dirty assessor edits when the autosave status action is clicked", async () => {
+    validateMutateAsync.mockResolvedValue({ success: true });
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<AssessorValidationClient assessmentId={1} />));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit assessor comment once" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /save changes now/i }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledWith({
+      responseId: 101,
+      data: {
+        public_comment: "first draft",
+        response_data: undefined,
+      },
+    });
+  });
+
+  it("blocks browser unload while assessor edits are pending", async () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<AssessorValidationClient assessmentId={1} />));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit assessor comment once" })[0]);
+
+    const event = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
   });
 });

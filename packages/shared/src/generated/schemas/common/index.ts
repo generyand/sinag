@@ -1500,6 +1500,50 @@ export type ReviewHistoryItemSubmittedAt = string | null;
 
 
 /**
+ * ReworkCalibrationRequesterItem
+ */
+export interface ReworkCalibrationRequesterItem {
+  request_type: string;
+  requester_id?: ReworkCalibrationRequesterItemRequesterId;
+  requester_name: string;
+  governance_area_id?: ReworkCalibrationRequesterItemGovernanceAreaId;
+  governance_area_name?: ReworkCalibrationRequesterItemGovernanceAreaName;
+  requested_at?: ReworkCalibrationRequesterItemRequestedAt;
+  comments?: ReworkCalibrationRequesterItemComments;
+}
+
+
+/**
+ * ReworkCalibrationRequesterItemComments
+ */
+export type ReworkCalibrationRequesterItemComments = string | null;
+
+
+/**
+ * ReworkCalibrationRequesterItemGovernanceAreaId
+ */
+export type ReworkCalibrationRequesterItemGovernanceAreaId = number | null;
+
+
+/**
+ * ReworkCalibrationRequesterItemGovernanceAreaName
+ */
+export type ReworkCalibrationRequesterItemGovernanceAreaName = string | null;
+
+
+/**
+ * ReworkCalibrationRequesterItemRequestedAt
+ */
+export type ReworkCalibrationRequesterItemRequestedAt = string | null;
+
+
+/**
+ * ReworkCalibrationRequesterItemRequesterId
+ */
+export type ReworkCalibrationRequesterItemRequesterId = number | null;
+
+
+/**
  * ReworkCalibrationSummary
  */
 export interface ReworkCalibrationSummary {
@@ -1513,6 +1557,7 @@ export interface ReworkCalibrationSummary {
   calibration_validator_name?: ReworkCalibrationSummaryCalibrationValidatorName;
   calibration_comments?: ReworkCalibrationSummaryCalibrationComments;
   pending_calibrations?: PendingCalibrationItem[];
+  requesters?: ReworkCalibrationRequesterItem[];
   rework_indicators?: ReworkCalibrationIndicatorItem[];
 }
 
