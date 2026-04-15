@@ -262,10 +262,7 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
 
         <main className="max-w-6xl mx-auto px-6 py-8" aria-busy="true" aria-live="polite">
           <section className="mb-8 rounded-sm border border-indigo-100 bg-white p-6 shadow-sm dark:border-indigo-900/50 dark:bg-slate-800/50">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-                <Loader2 className="h-6 w-6 animate-spin text-indigo-600 dark:text-indigo-400" />
-              </div>
+            <div className="flex flex-col gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
                   Compliance Overview
@@ -276,9 +273,11 @@ export function ComplianceOverviewClient({ assessmentId }: ComplianceOverviewCli
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   Please wait while we load validation results across governance areas.
                 </p>
-                <div className="mt-5">
-                  <Progress value={undefined} className="h-2" />
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                <div className="mt-6">
+                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div className="animate-progress-loading absolute inset-0 h-full w-1/2 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
+                  </div>
+                  <p className="mt-3 text-center text-sm font-medium text-slate-600 dark:text-slate-300">
                     {loadingMessage}
                   </p>
                 </div>

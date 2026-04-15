@@ -271,7 +271,6 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
 
       if (Object.keys(initialChecklistState).length > 0) {
-        console.log("[Validator] Loading saved checklist state:", initialChecklistState);
         setChecklistState(initialChecklistState);
       }
     }
@@ -288,19 +287,10 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
       for (const resp of responses) {
         // Debug: log the flagged_for_calibration value from each response
-        console.log(
-          `[Init] Response ${resp.id}: flagged_for_calibration =`,
-          resp.flagged_for_calibration
-        );
         // Load flagged_for_calibration from database
         if (resp.flagged_for_calibration === true) {
           initialFlags[resp.id] = true;
         }
-      }
-
-      if (Object.keys(initialFlags).length > 0) {
-        console.log("[Validator] Loading saved calibration flags:", initialFlags);
-        setCalibrationFlags(initialFlags);
       }
     }
   }, [data, calibrationFlags]);
@@ -793,22 +783,16 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   const onFinalize = async () => {
     // Prevent double-clicking by checking if already in progress
-    if (finalizeMut.isPending) {
-      console.log("Finalize already in progress, ignoring duplicate click");
-      return;
-    }
 
     // Show immediate feedback that the process started
     toast.loading("Finalizing validation...", { id: "finalize-toast" });
 
     try {
       // Save any pending changes first
-      console.log("Saving draft before finalize...");
       const saved = await flushPendingChanges({ quiet: true });
       if (!saved) return;
 
       // Then finalize
-      console.log("Finalizing assessment...");
       const result = (await finalizeMut.mutateAsync({ assessmentId })) as {
         new_status?: string;
         already_finalized?: boolean;
