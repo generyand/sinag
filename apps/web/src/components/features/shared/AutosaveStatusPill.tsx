@@ -82,7 +82,7 @@ export function AutosaveStatusPill({
   const [isExpanded, setIsExpanded] = useState(state === "error" || state === "dirty");
   const config = STATUS_CONFIG[state];
   const Icon = config.icon;
-  const useIconOnly = completedSaveCount >= 3 && state !== "error";
+  const useIconOnly = completedSaveCount >= 3 && state !== "error" && state !== "dirty";
   const canForceSave = state === "dirty" && Boolean(onRetry);
   const canRetry = state === "error" && Boolean(onRetry);
   const isActionable = canForceSave || canRetry;

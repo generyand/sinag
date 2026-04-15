@@ -403,7 +403,80 @@ describe("ValidatorValidationClient autosave", () => {
       data: {
         validation_status: "PASS",
         public_comment: null,
-        response_data: { validator_val_requirement_1: false, validator_val_requirement_2: true },
+        response_data: { validator_val_requirement_2: true },
+        flagged_for_calibration: false,
+      },
+    });
+  });
+
+  it("does not include a cleared validator checklist item in later saves after server hydration removes it", async () => {
+    validateMutateAsync.mockResolvedValue({ success: true });
+    let assessmentData = makeAssessment({
+      response_data: { validator_val_requirement_1: true },
+    });
+
+    mockUseGetAssessorAssessmentsAssessmentId.mockImplementation(() => ({
+      data: assessmentData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    }));
+
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const { rerender } = render(
+      <QueryClientProvider client={client}>
+        <ValidatorValidationClient assessmentId={1} />
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Set validator checklist false" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(1);
+    expect(validateMutateAsync).toHaveBeenLastCalledWith({
+      responseId: 201,
+      data: {
+        validation_status: "PASS",
+        public_comment: null,
+        response_data: { validator_val_requirement_1: false },
+        flagged_for_calibration: false,
+      },
+    });
+
+    assessmentData = makeAssessment({
+      response_data: {},
+    });
+
+    rerender(
+      <QueryClientProvider client={client}>
+        <ValidatorValidationClient assessmentId={1} />
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(validateMutateAsync).toHaveBeenCalledTimes(2);
+    expect(validateMutateAsync).toHaveBeenLastCalledWith({
+      responseId: 201,
+      data: {
+        validation_status: "PASS",
+        public_comment: "validator first draft",
+        response_data: undefined,
         flagged_for_calibration: false,
       },
     });
@@ -475,6 +548,25 @@ describe("ValidatorValidationClient autosave", () => {
 
     expect(validateMutateAsync).toHaveBeenCalled();
     expect(routerPush).toHaveBeenCalledWith("/validator/submissions");
+  });
+
+  it("blocks browser unload while validator edits are pending", () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+
+    const event = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it("submits for calibration after pending validator edits are saved", async () => {

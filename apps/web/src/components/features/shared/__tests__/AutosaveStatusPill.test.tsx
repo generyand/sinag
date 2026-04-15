@@ -35,6 +35,16 @@ describe("AutosaveStatusPill", () => {
     expect(screen.queryByRole("button", { name: /save changes now/i })).not.toBeInTheDocument();
   });
 
+  it("keeps the manual save action visible for dirty state after repeated autosaves", () => {
+    const onRetry = vi.fn();
+
+    render(<AutosaveStatusPill state="dirty" completedSaveCount={3} onRetry={onRetry} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes now/i }));
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it("shows an inline retry action when autosave fails", () => {
     const onRetry = vi.fn();
 

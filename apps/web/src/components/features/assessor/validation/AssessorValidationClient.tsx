@@ -134,7 +134,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   >({});
   const [checklistData, setChecklistData] = useState<Record<string, any>>({}); // Store checklist checkbox/input data
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false); // Local loading state instead of relying on mutation
   const isSavingRef = useRef(false); // Prevent multiple concurrent saves
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
   const [completedAutosaveCount, setCompletedAutosaveCount] = useState(0);
@@ -406,7 +405,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   // Track if any action is in progress to disable all buttons
   // This prevents users from clicking other buttons while an action is processing
   const isAnyActionPending: boolean =
-    isSaving ||
     areaApproveMut.isPending ||
     areaReworkMut.isPending ||
     finalizeMut.isPending ||
@@ -711,7 +709,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
     let savePromise!: Promise<boolean>;
     savePromise = (async () => {
       isSavingRef.current = true;
-      setIsSaving(true);
       setDraftSaveState("saving");
       let savedPayloadCount = 0;
 
@@ -800,7 +797,6 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         return false;
       } finally {
         isSavingRef.current = false;
-        setIsSaving(false);
         if (activeSavePromiseRef.current === savePromise) {
           activeSavePromiseRef.current = null;
         }
@@ -1186,6 +1182,24 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
   }, [autoFlaggedEmptyIds]);
 
   useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleDocumentNavigation = (event: MouseEvent) => {
       if (isInterceptingNavigationRef.current) return;
 
@@ -1225,6 +1239,9 @@ export function AssessorValidationClient({ assessmentId }: AssessorValidationCli
         const saved = await flushPendingChanges({ quiet: true });
         if (saved) {
           router.push(`${url.pathname}${url.search}${url.hash}`);
+          window.setTimeout(() => {
+            isInterceptingNavigationRef.current = false;
+          }, 0);
         } else {
           isInterceptingNavigationRef.current = false;
         }

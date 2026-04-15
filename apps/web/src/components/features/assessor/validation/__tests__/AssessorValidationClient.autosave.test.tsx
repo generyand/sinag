@@ -653,4 +653,27 @@ describe("AssessorValidationClient autosave", () => {
       },
     });
   });
+
+  it("blocks browser unload while assessor edits are pending", async () => {
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+      dataUpdatedAt: Date.now(),
+    });
+
+    render(wrap(<AssessorValidationClient assessmentId={1} />));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit assessor comment once" })[0]);
+
+    const event = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
 });
