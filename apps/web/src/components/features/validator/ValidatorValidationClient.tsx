@@ -1135,6 +1135,8 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
                   : "Compliance Overview"
               }
               onClick={async () => {
+                if (isOpeningComplianceOverview) return;
+
                 // Save draft first, then navigate to compliance overview
                 setIsOpeningComplianceOverview(true);
                 const saved = await flushPendingChanges({ quiet: true });
