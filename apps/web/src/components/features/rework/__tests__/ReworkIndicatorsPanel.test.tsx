@@ -206,4 +206,90 @@ describe("ReworkIndicatorsPanel", () => {
       "Note 2: Document is blurred",
     ]);
   });
+
+  it("shows validator calibration notes instead of generic feedback in action items", () => {
+    capturedFailedIndicators.length = 0;
+
+    const dashboardData = {
+      is_calibration_rework: true,
+      is_mlgoo_recalibration: false,
+      governance_areas: [
+        {
+          governance_area_id: 1,
+          governance_area_name: "Environmental Management",
+          indicators: [{ indicator_id: 301, indicator_name: "Indicator 301", is_complete: false }],
+        },
+      ],
+      flagged_indicator_ids: [301],
+      addressed_indicator_ids: [],
+      rework_comments: [
+        {
+          indicator_id: 301,
+          indicator_name: "Indicator 301",
+          comment: "please see comments",
+          comment_type: "validation",
+        },
+      ],
+      mov_annotations_by_indicator: {},
+      mov_notes_by_indicator: {
+        301: [
+          {
+            note: "Validator note: Uploaded document is outdated",
+            note_type: "validator_calibration",
+            indicator_id: 301,
+            indicator_name: "Indicator 301",
+          },
+        ],
+      },
+      calibration_governance_areas: [
+        {
+          governance_area_id: 1,
+          governance_area_name: "Environmental Management",
+        },
+      ],
+    } as any;
+
+    render(<ReworkIndicatorsPanel dashboardData={dashboardData} assessmentId={31} />);
+
+    expect(screen.getByText("Validator note: Uploaded document is outdated")).toBeInTheDocument();
+    expect(screen.queryByText("please see comments")).not.toBeInTheDocument();
+    expect(capturedFailedIndicators[0].comments.map((comment: any) => comment.comment)).toEqual([
+      "Validator note: Uploaded document is outdated",
+    ]);
+  });
+
+  it("falls back to generic feedback when no MOV notes exist for the indicator", () => {
+    capturedFailedIndicators.length = 0;
+
+    const dashboardData = {
+      is_calibration_rework: false,
+      is_mlgoo_recalibration: false,
+      governance_areas: [
+        {
+          governance_area_id: 1,
+          governance_area_name: "Financial Administration",
+          indicators: [{ indicator_id: 401, indicator_name: "Indicator 401", is_complete: false }],
+        },
+      ],
+      flagged_indicator_ids: [401],
+      addressed_indicator_ids: [],
+      rework_comments: [
+        {
+          indicator_id: 401,
+          indicator_name: "Indicator 401",
+          comment: "General feedback remains visible here",
+          comment_type: "validation",
+        },
+      ],
+      mov_annotations_by_indicator: {},
+      mov_notes_by_indicator: {},
+    } as any;
+
+    render(<ReworkIndicatorsPanel dashboardData={dashboardData} assessmentId={31} />);
+
+    expect(screen.getByText("General feedback remains visible here")).toBeInTheDocument();
+    expect(capturedFailedIndicators[0].comments.map((comment: any) => comment.comment)).toEqual([
+      "General feedback remains visible here",
+    ]);
+  });
 });
