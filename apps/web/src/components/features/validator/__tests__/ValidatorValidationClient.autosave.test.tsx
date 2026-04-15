@@ -356,6 +356,55 @@ describe("ValidatorValidationClient autosave", () => {
     expect(routerPush).toHaveBeenCalledWith("/validator/submissions/1/compliance");
   });
 
+  it("does not allow duplicate compliance overview opens while busy", async () => {
+    const activeSave = deferred<unknown>();
+    validateMutateAsync.mockImplementationOnce(() => activeSave.promise);
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    // Wait for hydration
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Make it dirty so flushPendingChanges has to wait
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+
+    const complianceButton = screen.getByRole("button", {
+      name: /compliance overview/i,
+    });
+
+    await act(async () => {
+      fireEvent.click(complianceButton);
+      await Promise.resolve();
+    });
+
+    // The first click is now waiting for activeSave. The second click should be ignored.
+    const busyButton = screen.getByRole("button", { name: /opening overview/i });
+    expect(busyButton).toBeDisabled();
+
+    await act(async () => {
+      fireEvent.click(busyButton);
+      await Promise.resolve();
+    });
+
+    expect(routerPush).not.toHaveBeenCalled();
+
+    await act(async () => {
+      activeSave.resolve({ success: true });
+      await activeSave.promise;
+      await Promise.resolve();
+    });
+
+    expect(routerPush).toHaveBeenCalledTimes(1);
+  });
+
   it("waits for an active auto-save before finalizing", async () => {
     const firstSave = deferred<unknown>();
 
