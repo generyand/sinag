@@ -108,6 +108,10 @@ export function ReworkIndicatorsPanel({
         created_at?: string | null;
       }>
     >;
+    const indicatorHasMovNotes = (indicatorId: number) =>
+      (movNotesByIndicator[String(indicatorId)] || []).some(
+        (note) => typeof note?.note === "string" && note.note.trim().length > 0
+      );
 
     // Get addressed indicator IDs from backend - these are indicators where
     // BLGU uploaded new files AFTER rework was requested
@@ -305,6 +309,19 @@ export function ReworkIndicatorsPanel({
       });
 
       dashboardData.rework_comments?.forEach((comment: any) => {
+        if (
+          indicatorHasMovNotes(comment.indicator_id) ||
+          ["assessor_rework", "validator_calibration", "mov_note"].includes(
+            String(comment.comment_type || "")
+          )
+        ) {
+          const failed =
+            indicatorMap.get(comment.indicator_id) ??
+            addIndicatorToMap(comment.indicator_id, comment.indicator_name, true);
+          void failed;
+          return;
+        }
+
         const failed =
           indicatorMap.get(comment.indicator_id) ??
           addIndicatorToMap(comment.indicator_id, comment.indicator_name, true);
@@ -417,6 +434,35 @@ export function ReworkIndicatorsPanel({
       // For REWORK: Use the original logic (feedback-based)
       // Add indicators from rework comments
       dashboardData.rework_comments?.forEach((comment: any) => {
+        if (
+          indicatorHasMovNotes(comment.indicator_id) ||
+          ["assessor_rework", "validator_calibration", "mov_note"].includes(
+            String(comment.comment_type || "")
+          )
+        ) {
+          if (!indicatorMap.has(comment.indicator_id)) {
+            const indicator = findIndicator(comment.indicator_id);
+
+            if (indicator) {
+              indicatorMap.set(comment.indicator_id, {
+                indicator_id: comment.indicator_id,
+                indicator_name: comment.indicator_name,
+                governance_area_id: indicator.governance_area_id,
+                governance_area_name: indicator.governance_area_name,
+                is_complete: indicator.is_complete,
+                is_addressed: addressedIds.has(comment.indicator_id),
+                comments: [],
+                annotations: [],
+                total_feedback_items: 0,
+                has_mov_issues: false,
+                has_field_issues: false,
+                route_path: `/blgu/assessments?indicator=${comment.indicator_id}`,
+              });
+            }
+          }
+          return;
+        }
+
         if (!indicatorMap.has(comment.indicator_id)) {
           const indicator = findIndicator(comment.indicator_id);
 
