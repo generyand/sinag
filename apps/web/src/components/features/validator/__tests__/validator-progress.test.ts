@@ -248,4 +248,15 @@ describe("validator-progress", () => {
       })
     ).toEqual({ status: "completed", hasMovNotes: false });
   });
+
+  it("uses local validator form status before stale server validation status", () => {
+    expect(
+      getValidatorIndicatorProgress(response({ validation_status: null }), {
+        checklistState: {},
+        localMovAttentionByFileId: {},
+        strictChecklistRequired: false,
+        localForm: { status: "Pass", publicComment: "" },
+      }).status
+    ).toBe("completed");
+  });
 });

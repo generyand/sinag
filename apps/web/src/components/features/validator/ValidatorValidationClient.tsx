@@ -148,6 +148,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
   const lastSavedSnapshotRef = useRef<Record<number, string>>({});
   const isSavingRef = useRef(false);
   const activeSavePromiseRef = useRef<Promise<boolean> | null>(null);
+  const isInterceptingNavigationRef = useRef(false);
   const formRef = useRef(form);
   const checklistStateRef = useRef(checklistState);
   const calibrationFlagsRef = useRef(calibrationFlags);
@@ -344,12 +345,47 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     responsesRef.current = responses;
   }, [responses]);
 
+  const isMeaningfulChecklistValue = (value: unknown): boolean => {
+    if (value === true) return true;
+    if (typeof value === "string") return value.trim().length > 0;
+    return false;
+  };
+
+  const buildValidatorResponseDataSnapshot = (responseId: number): Record<string, any> => {
+    const response = responsesRef.current.find((item) => item.id === responseId);
+    if (!response) return {};
+
+    const snapshotData: Record<string, any> = {};
+    const previousResponseData = (response as AnyRecord).response_data || {};
+
+    Object.keys(checklistStateRef.current).forEach((key) => {
+      if (!key.startsWith(`checklist_${responseId}_`)) return;
+
+      const fieldName = key.replace(`checklist_${responseId}_`, "");
+      const snapshotKey = `validator_val_${fieldName}`;
+      const currentValue = checklistStateRef.current[key];
+      const previousValue = previousResponseData[snapshotKey];
+
+      if (isMeaningfulChecklistValue(currentValue)) {
+        snapshotData[snapshotKey] = currentValue;
+        return;
+      }
+
+      if (previousValue !== undefined && previousValue !== currentValue) {
+        snapshotData[snapshotKey] = currentValue;
+      }
+    });
+
+    return snapshotData;
+  };
+
   const getProgressForResponse = (response: AnyRecord) => {
     const wasCalibrated = Boolean(calibrationRequestedAt) && response.validation_status === null;
     return getValidatorIndicatorProgress(response, {
       checklistState,
       localMovAttentionByFileId: movAttentionByResponse[response.id] ?? {},
       strictChecklistRequired: wasCalibrated,
+      localForm: form[response.id],
     });
   };
 
@@ -405,13 +441,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
 
   const getResponseSnapshot = (responseId: number): string => {
     const formData = formRef.current[responseId];
-    const responseChecklistData: Record<string, any> = {};
-
-    Object.keys(checklistStateRef.current).forEach((key) => {
-      if (!key.startsWith(`checklist_${responseId}_`)) return;
-      const fieldName = key.replace(`checklist_${responseId}_`, "");
-      responseChecklistData[`validator_val_${fieldName}`] = checklistStateRef.current[key];
-    });
+    const responseChecklistData = buildValidatorResponseDataSnapshot(responseId);
 
     const sortedKeys = Object.keys(responseChecklistData).sort();
     const sortedChecklistData: Record<string, any> = {};
@@ -449,6 +479,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
     const snapshotData: Record<string, any> = {};
     Object.keys(responseData).forEach((key) => {
       if (!key.startsWith("validator_val_")) return;
+      if (!isMeaningfulChecklistValue(responseData[key])) return;
       snapshotData[key] = responseData[key];
     });
 
@@ -572,9 +603,9 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
         next = alreadyDirty ? prev : [...prev, responseId];
       }
       dirtyResponseIdsRef.current = next;
+      setDraftSaveState(next.length > 0 ? "dirty" : "saved");
       return next;
     });
-    setDraftSaveState(nextSnapshot === savedSnapshot ? "saved" : "dirty");
   };
 
   const saveResponses = async (
@@ -600,6 +631,7 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       if (remainingResponseIds.length === 0) {
         if (!options.quiet && dirtyResponseIdsRef.current.length === 0) {
           setDraftSaveState("saved");
+          toast.success("Assessment progress saved", { duration: 2500 });
         }
         return true;
       }
@@ -780,6 +812,79 @@ export function ValidatorValidationClient({ assessmentId }: ValidatorValidationC
       }
     };
   }, [dirtyResponseIds, form, checklistState, calibrationFlags]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleDocumentNavigation = (event: MouseEvent) => {
+      if (isInterceptingNavigationRef.current) return;
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.hasAttribute("download")) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.href === window.location.href) return;
+
+      const hasPendingChanges =
+        dirtyResponseIdsRef.current.length > 0 ||
+        activeSavePromiseRef.current !== null ||
+        autoSaveTimerRef.current !== null;
+      if (!hasPendingChanges) return;
+
+      event.preventDefault();
+      isInterceptingNavigationRef.current = true;
+
+      void (async () => {
+        const saved = await flushPendingChanges({ quiet: true });
+        if (saved) {
+          router.push(`${url.pathname}${url.search}${url.hash}`);
+          window.setTimeout(() => {
+            isInterceptingNavigationRef.current = false;
+          }, 0);
+        } else {
+          isInterceptingNavigationRef.current = false;
+        }
+      })();
+    };
+
+    document.addEventListener("click", handleDocumentNavigation, true);
+    return () => {
+      document.removeEventListener("click", handleDocumentNavigation, true);
+    };
+  }, [router]);
 
   const onFinalize = async () => {
     // Prevent double-clicking by checking if already in progress
