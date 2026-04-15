@@ -55,9 +55,9 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import {
   getAssessorIndicatorDetail,
+  getAssessorProgressBreakdown,
   getValidatorIndicatorDetail,
-  isAssessorIndicatorCompleted,
-  isValidatorIndicatorCompleted,
+  getValidatorProgressBreakdown,
 } from "./assessment-progress-status";
 import {
   getGetMlgooAssessmentsAssessmentIdQueryKey,
@@ -324,19 +324,6 @@ function getProgressBadgeClass(status?: string): string {
       return "bg-blue-100 text-blue-700 border border-blue-200";
     default:
       return "bg-gray-100 text-gray-700 border border-gray-200";
-  }
-}
-
-function getProgressFillClass(status?: string): string {
-  switch ((status || "pending").toLowerCase()) {
-    case "reviewed":
-      return "bg-green-500";
-    case "sent_for_rework":
-      return "bg-orange-500";
-    case "in_progress":
-      return "bg-blue-500";
-    default:
-      return "bg-gray-400";
   }
 }
 
@@ -2387,25 +2374,48 @@ export default function SubmissionDetailsPage() {
                         sensitivity: "base",
                       })
                     );
-                    const apiAssessorReviewedIndicators = areaProgress.assessor.reviewed_indicators;
-                    const assessorReviewedIndicators =
-                      typeof apiAssessorReviewedIndicators === "number"
-                        ? apiAssessorReviewedIndicators
-                        : sortedIndicators.length > 0
-                          ? sortedIndicators.filter(isAssessorIndicatorCompleted).length
-                          : fallbackAssessorReviewedIndicators;
-                    const validatorReviewedIndicators =
+                    const assessorBreakdown =
                       sortedIndicators.length > 0
-                        ? sortedIndicators.filter(isValidatorIndicatorCompleted).length
-                        : fallbackValidatorReviewedIndicators;
-                    const assessorProgressPercent =
+                        ? getAssessorProgressBreakdown(sortedIndicators)
+                        : {
+                            completedCount: fallbackAssessorReviewedIndicators,
+                            flaggedCount: 0,
+                            processedCount: fallbackAssessorReviewedIndicators,
+                            pendingCount: Math.max(
+                              0,
+                              assessorTotalIndicators - fallbackAssessorReviewedIndicators
+                            ),
+                          };
+                    const validatorBreakdown =
+                      sortedIndicators.length > 0
+                        ? getValidatorProgressBreakdown(sortedIndicators)
+                        : {
+                            completedCount: fallbackValidatorReviewedIndicators,
+                            flaggedCount: 0,
+                            processedCount: fallbackValidatorReviewedIndicators,
+                            pendingCount: Math.max(
+                              0,
+                              validatorTotalIndicators - fallbackValidatorReviewedIndicators
+                            ),
+                          };
+                    const assessorReviewedIndicators = assessorBreakdown.processedCount;
+                    const validatorReviewedIndicators = validatorBreakdown.processedCount;
+                    const assessorCompletedPercent =
                       assessorTotalIndicators > 0
-                        ? Math.round((assessorReviewedIndicators / assessorTotalIndicators) * 100)
-                        : Math.max(0, Math.min(100, areaProgress.assessor.progress_percent || 0));
-                    const validatorProgressPercent =
+                        ? (assessorBreakdown.completedCount / assessorTotalIndicators) * 100
+                        : 0;
+                    const assessorFlaggedPercent =
+                      assessorTotalIndicators > 0
+                        ? (assessorBreakdown.flaggedCount / assessorTotalIndicators) * 100
+                        : 0;
+                    const validatorCompletedPercent =
                       validatorTotalIndicators > 0
-                        ? Math.round((validatorReviewedIndicators / validatorTotalIndicators) * 100)
-                        : Math.max(0, Math.min(100, areaProgress.validator.progress_percent || 0));
+                        ? (validatorBreakdown.completedCount / validatorTotalIndicators) * 100
+                        : 0;
+                    const validatorFlaggedPercent =
+                      validatorTotalIndicators > 0
+                        ? (validatorBreakdown.flaggedCount / validatorTotalIndicators) * 100
+                        : 0;
                     const areaDone =
                       ["reviewed", "sent_for_rework"].includes(assessorStatus) &&
                       validatorStatus === "reviewed";
@@ -2502,14 +2512,30 @@ export default function SubmissionDetailsPage() {
                                 </div>
                               </div>
                               <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-2 ${getProgressFillClass(assessorStatus)} rounded-full transition-all duration-300`}
-                                  style={{ width: `${assessorProgressPercent}%` }}
-                                />
+                                <div className="flex h-full w-full">
+                                  <div
+                                    className="h-2 bg-emerald-500 transition-all duration-300"
+                                    style={{ width: `${assessorCompletedPercent}%` }}
+                                    title={`Complete: ${assessorBreakdown.completedCount}`}
+                                  />
+                                  <div
+                                    className="h-2 bg-orange-500 transition-all duration-300"
+                                    style={{ width: `${assessorFlaggedPercent}%` }}
+                                    title={`Flagged: ${assessorBreakdown.flaggedCount}`}
+                                  />
+                                </div>
                               </div>
-                              <p className="text-xs text-[var(--muted-foreground)] text-right">
+                              <p
+                                className="text-xs text-[var(--muted-foreground)] text-right"
+                                title={`Complete ${assessorBreakdown.completedCount}, Flagged ${assessorBreakdown.flaggedCount}`}
+                              >
                                 {assessorReviewedIndicators}/{assessorTotalIndicators}
                               </p>
+                              {assessorBreakdown.flaggedCount > 0 && (
+                                <p className="text-[10px] text-orange-600 text-right">
+                                  Orange = flagged for action
+                                </p>
+                              )}
                             </button>
 
                             <button
@@ -2547,14 +2573,30 @@ export default function SubmissionDetailsPage() {
                                 </div>
                               </div>
                               <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-2 ${getProgressFillClass(validatorStatus)} rounded-full transition-all duration-300`}
-                                  style={{ width: `${validatorProgressPercent}%` }}
-                                />
+                                <div className="flex h-full w-full">
+                                  <div
+                                    className="h-2 bg-emerald-500 transition-all duration-300"
+                                    style={{ width: `${validatorCompletedPercent}%` }}
+                                    title={`Complete: ${validatorBreakdown.completedCount}`}
+                                  />
+                                  <div
+                                    className="h-2 bg-orange-500 transition-all duration-300"
+                                    style={{ width: `${validatorFlaggedPercent}%` }}
+                                    title={`Flagged: ${validatorBreakdown.flaggedCount}`}
+                                  />
+                                </div>
                               </div>
-                              <p className="text-xs text-[var(--muted-foreground)] text-right">
+                              <p
+                                className="text-xs text-[var(--muted-foreground)] text-right"
+                                title={`Complete ${validatorBreakdown.completedCount}, Flagged ${validatorBreakdown.flaggedCount}`}
+                              >
                                 {validatorReviewedIndicators}/{validatorTotalIndicators} indicators
                               </p>
+                              {validatorBreakdown.flaggedCount > 0 && (
+                                <p className="text-[10px] text-orange-600 text-right">
+                                  Orange = flagged for action
+                                </p>
+                              )}
                             </button>
                           </div>
 
