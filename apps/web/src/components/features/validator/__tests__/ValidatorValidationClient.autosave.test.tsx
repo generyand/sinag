@@ -439,6 +439,41 @@ describe("ValidatorValidationClient autosave", () => {
     expect(routerPush).toHaveBeenCalledTimes(1);
   });
 
+  it("cancels a stale pending queue navigation when opening compliance overview", async () => {
+    const activeSave = deferred<unknown>();
+    validateMutateAsync.mockImplementationOnce(() => activeSave.promise);
+    mockUseGetAssessorAssessmentsAssessmentId.mockReturnValue({
+      data: makeAssessment(),
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(wrap(<ValidatorValidationClient assessmentId={1} />));
+
+    // Make the page dirty so link navigation is intercepted and waits for the save.
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit validator comment once" })[0]);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("link", { name: /queue/i }));
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /compliance overview/i }));
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      activeSave.resolve({ success: true });
+      await activeSave.promise;
+      await Promise.resolve();
+    });
+
+    expect(routerPush).toHaveBeenCalledTimes(1);
+    expect(routerPush).toHaveBeenCalledWith("/validator/submissions/1/compliance");
+  });
+
   it("waits for an active auto-save before finalizing", async () => {
     const firstSave = deferred<unknown>();
 
