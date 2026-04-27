@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.db.enums import AreaType, AssessmentStatus
+from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import (
     MOV_UPLOAD_ORIGIN_BLGU,
     MOV_UPLOAD_ORIGIN_VALIDATOR,
@@ -1131,3 +1131,82 @@ def test_get_assessment_details_summarizes_all_rework_and_calibration_requesters
         "4.5.5": "rework",
         "5.1.2": "calibration",
     }
+
+
+def test_override_validation_status_recomputes_classification_results(
+    db_session,
+    mlgoo_user: User,
+    mock_blgu_user: User,
+    active_assessment_year: AssessmentYear,
+):
+    """
+    SNG-45: MLGOO overrides must update area_results and final_compliance_status immediately.
+    """
+    area_defs = [
+        ("Financial Administration and Sustainability", "FI", AreaType.CORE, "1.1"),
+        ("Disaster Preparedness", "DI", AreaType.CORE, "2.1"),
+        ("Safety, Peace and Order", "SA", AreaType.CORE, "3.1"),
+        ("Social Protection and Sensitivity", "SO", AreaType.ESSENTIAL, "4.1"),
+        ("Business-Friendliness and Competitiveness", "BU", AreaType.ESSENTIAL, "5.1"),
+        ("Environmental Management", "EN", AreaType.ESSENTIAL, "6.1"),
+    ]
+
+    governance_areas: list[GovernanceArea] = []
+    indicators: list[Indicator] = []
+    for idx, (name, code, area_type, indicator_code) in enumerate(area_defs, start=1):
+        area = GovernanceArea(name=name, code=code, area_type=area_type)
+        db_session.add(area)
+        db_session.flush()
+        governance_areas.append(area)
+
+        indicator = Indicator(
+            name=f"{name} Indicator",
+            description="SNG-45 classification recompute test",
+            indicator_code=indicator_code,
+            governance_area_id=area.id,
+            sort_order=idx,
+        )
+        db_session.add(indicator)
+        db_session.flush()
+        indicators.append(indicator)
+
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        assessment_year=active_assessment_year.year,
+        status=AssessmentStatus.AWAITING_MLGOO_APPROVAL,
+        final_compliance_status=ComplianceStatus.PASSED,
+        area_results={area.name: "Passed" for area in governance_areas},
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    responses: list[AssessmentResponse] = []
+    for indicator in indicators:
+        response = AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=indicator.id,
+            validation_status=ValidationStatus.PASS,
+            response_data={},
+            is_completed=True,
+        )
+        db_session.add(response)
+        responses.append(response)
+
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    core_response = responses[0]
+    result = mlgoo_service.override_validation_status(
+        db=db_session,
+        response_id=core_response.id,
+        mlgoo_user=mlgoo_user,
+        validation_status="FAIL",
+        remarks="Force fail for SNG-45 regression test",
+    )
+
+    db_session.refresh(assessment)
+
+    assert result["new_status"] == "FAIL"
+    assert assessment.final_compliance_status == ComplianceStatus.FAILED
+    assert assessment.area_results is not None
+    assert assessment.area_results["Financial Administration and Sustainability"] == "Failed"

@@ -1339,6 +1339,25 @@ class IntelligenceService:
         # Build a map of indicator_id -> response for O(1) lookup
         response_map = {r.indicator_id: r for r in responses}
 
+        # CRITICAL (SNG-45):
+        # Respect explicit validator/MLGOO decisions on parent/main indicators.
+        # A forced FAIL on a parent indicator must fail the governance area,
+        # even if its leaf children pass.
+        non_leaf_indicator_ids = {ind.id for ind in all_indicators if ind.id in parent_ids}
+        if non_leaf_indicator_ids:
+            non_leaf_responses = (
+                db.query(AssessmentResponse)
+                .filter(
+                    AssessmentResponse.assessment_id == assessment_id,
+                    AssessmentResponse.indicator_id.in_(list(non_leaf_indicator_ids)),
+                    AssessmentResponse.validation_status.isnot(None),
+                )
+                .all()
+            )
+            for non_leaf_response in non_leaf_responses:
+                if non_leaf_response.validation_status == ValidationStatus.FAIL:
+                    return False
+
         # Get BBI results for this assessment to check BBI 4-tier status
         # Only query if there are BBI indicators in this area
         bbi_indicator_ids = [ind.id for ind in leaf_indicators if ind.is_bbi]

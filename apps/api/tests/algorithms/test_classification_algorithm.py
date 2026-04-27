@@ -3,12 +3,15 @@
 Test the "3+1" SGLGB compliance rule with comprehensive edge cases
 """
 
+from datetime import datetime
+
 import pytest
 
 from app.db.enums import AreaType, AssessmentStatus, ComplianceStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.barangay import Barangay
 from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.db.models.user import User
 from app.services.intelligence_service import intelligence_service
 
@@ -24,11 +27,23 @@ def test_data(db_session):
     db_session.query(GovernanceArea).delete()
     db_session.query(User).delete()
     db_session.query(Barangay).delete()
+    db_session.query(AssessmentYear).delete()
     db_session.commit()
 
     # Create barangay
     barangay = Barangay(id=1, name="Test Barangay")
     db_session.add(barangay)
+    db_session.flush()
+
+    db_session.add(
+        AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1),
+            assessment_period_end=datetime(2026, 12, 31),
+            is_active=True,
+            is_published=True,
+        )
+    )
     db_session.flush()
 
     # Create BLGU user
@@ -98,6 +113,7 @@ def test_data(db_session):
         id=1,
         status=AssessmentStatus.VALIDATED,
         blgu_user_id=1,
+        assessment_year=2026,
         rework_count=0,
     )
     db_session.add(assessment)
@@ -302,4 +318,140 @@ def test_zero_indicators_treated_as_failed(test_data):
     # The 3 core areas should have no indicators, so they fail
     # Essential areas have no indicators, so they fail
     # Result should be FAILED
+    assert result["final_compliance_status"] == ComplianceStatus.FAILED.value
+
+
+def test_parent_override_fail_causes_area_failure_even_if_leaf_passes(db_session):
+    """
+    Parent/main indicator FAIL override must fail the area even when child leaf indicators pass.
+
+    Regression for SNG-45: classification previously considered only leaf indicators, which allowed
+    forced FAIL on a parent indicator to be ignored.
+    """
+    db_session.query(AssessmentResponse).delete()
+    db_session.query(Assessment).delete()
+    db_session.query(Indicator).delete()
+    db_session.query(GovernanceArea).delete()
+    db_session.query(User).delete()
+    db_session.query(Barangay).delete()
+    db_session.query(AssessmentYear).delete()
+    db_session.commit()
+
+    db_session.add(
+        AssessmentYear(
+            year=2026,
+            assessment_period_start=datetime(2026, 1, 1),
+            assessment_period_end=datetime(2026, 12, 31),
+            is_active=True,
+            is_published=True,
+        )
+    )
+    db_session.flush()
+
+    barangay = Barangay(name="SNG-45 Classification Barangay")
+    db_session.add(barangay)
+    db_session.flush()
+
+    user = User(
+        email="sng45.classification@example.com",
+        name="SNG-45 BLGU",
+        hashed_password="hashed",
+        role="BLGU_USER",
+        barangay_id=barangay.id,
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    area_defs = [
+        ("Financial Administration and Sustainability", "FI", AreaType.CORE),
+        ("Disaster Preparedness", "DI", AreaType.CORE),
+        ("Safety, Peace and Order", "SA", AreaType.CORE),
+        ("Social Protection and Sensitivity", "SO", AreaType.ESSENTIAL),
+        ("Business-Friendliness and Competitiveness", "BU", AreaType.ESSENTIAL),
+        ("Environmental Management", "EN", AreaType.ESSENTIAL),
+    ]
+    areas: list[GovernanceArea] = []
+    for name, code, area_type in area_defs:
+        area = GovernanceArea(name=name, code=code, area_type=area_type)
+        db_session.add(area)
+        db_session.flush()
+        areas.append(area)
+
+    parent_indicator = Indicator(
+        name="Parent Indicator",
+        description="Parent",
+        indicator_code="1.1",
+        form_schema={"type": "object"},
+        governance_area_id=areas[0].id,
+    )
+    child_indicator = Indicator(
+        name="Child Indicator",
+        description="Child",
+        indicator_code="1.1.1",
+        form_schema={"type": "object"},
+        governance_area_id=areas[0].id,
+        parent_id=None,
+    )
+    db_session.add(parent_indicator)
+    db_session.flush()
+    child_indicator.parent_id = parent_indicator.id
+    db_session.add(child_indicator)
+    db_session.flush()
+
+    other_indicators: list[Indicator] = []
+    for idx, area in enumerate(areas[1:], start=2):
+        ind = Indicator(
+            name=f"Indicator {idx}",
+            description="Test indicator",
+            indicator_code=f"{idx}.1",
+            form_schema={"type": "object"},
+            governance_area_id=area.id,
+        )
+        db_session.add(ind)
+        db_session.flush()
+        other_indicators.append(ind)
+
+    assessment = Assessment(
+        status=AssessmentStatus.VALIDATED,
+        blgu_user_id=user.id,
+        assessment_year=2026,
+        rework_count=0,
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    db_session.add(
+        AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=parent_indicator.id,
+            response_data={},
+            is_completed=True,
+            validation_status=ValidationStatus.FAIL,
+        )
+    )
+    db_session.add(
+        AssessmentResponse(
+            assessment_id=assessment.id,
+            indicator_id=child_indicator.id,
+            response_data={},
+            is_completed=True,
+            validation_status=ValidationStatus.PASS,
+        )
+    )
+    for ind in other_indicators:
+        db_session.add(
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=ind.id,
+                response_data={},
+                is_completed=True,
+                validation_status=ValidationStatus.PASS,
+            )
+        )
+
+    db_session.commit()
+
+    result = intelligence_service.classify_assessment(db_session, assessment.id)
+
+    assert result["area_results"]["Financial Administration and Sustainability"] == "Failed"
     assert result["final_compliance_status"] == ComplianceStatus.FAILED.value
