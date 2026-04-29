@@ -2161,9 +2161,12 @@ class MLGOOService:
             if indicator_id in response_map:
                 db.add(response_map[indicator_id])
 
-        # Commit and flush to ensure changes are persisted
+        # Persist overrides then recompute classification outputs so
+        # area_results/final_compliance_status reflect MLGOO decisions immediately.
         db.flush()
-        db.commit()
+        from app.services.intelligence_service import intelligence_service
+
+        intelligence_service.classify_assessment(db, assessment_id)
 
         # Log post-commit verification
         self.logger.info(f"Committed validation updates for assessment {assessment_id}")
@@ -2259,7 +2262,13 @@ class MLGOOService:
             else:
                 response.assessor_remarks = mlgoo_remark
 
-        db.commit()
+        # Recompute classification immediately so detailed assessment/BGAR
+        # reflects this override without waiting for a later workflow step.
+        db.flush()
+        from app.services.intelligence_service import intelligence_service
+
+        intelligence_service.classify_assessment(db, assessment.id)
+
         db.refresh(response)
 
         # Get indicator details

@@ -410,3 +410,100 @@ def test_get_gar_data_sets_non_blank_overall_result_when_statuses_are_partial(db
 
     assert gar_data.governance_areas[0].overall_result == "Passed"
     assert gar_data.summary[0].result == "Passed"
+
+
+def test_get_gar_data_fails_area_when_parent_indicator_is_forced_fail(db_session):
+    """
+    SNG-45: GAR fallback aggregation must honor parent/main indicator FAIL overrides.
+
+    Even when child/leaf indicators pass, a forced FAIL on the parent should render
+    area overall result as Failed.
+    """
+    assessment_year_value = 2026
+
+    assessment_year = AssessmentYear(
+        year=assessment_year_value,
+        assessment_period_start=datetime(2026, 1, 1),
+        assessment_period_end=datetime(2026, 10, 31),
+        is_active=True,
+        is_published=True,
+    )
+    db_session.add(assessment_year)
+
+    barangay = Barangay(name="SNG-45 GAR Barangay")
+    db_session.add(barangay)
+    db_session.flush()
+
+    blgu_user = User(
+        email="sng45.gar@example.com",
+        name="SNG-45 GAR BLGU",
+        hashed_password=pwd_context.hash("password123"),
+        role=UserRole.BLGU_USER,
+        barangay_id=barangay.id,
+        is_active=True,
+    )
+    db_session.add(blgu_user)
+    db_session.flush()
+
+    governance_area = GovernanceArea(
+        name="SNG-45 Governance Area",
+        code="FI",
+        area_type=AreaType.CORE,
+    )
+    db_session.add(governance_area)
+    db_session.flush()
+
+    parent_indicator = Indicator(
+        name="Main indicator",
+        description="Parent indicator",
+        indicator_code="1.1",
+        governance_area_id=governance_area.id,
+        sort_order=1,
+    )
+    db_session.add(parent_indicator)
+    db_session.flush()
+
+    child_indicator = Indicator(
+        name="Child indicator",
+        description="Leaf indicator",
+        indicator_code="1.1.1",
+        governance_area_id=governance_area.id,
+        parent_id=parent_indicator.id,
+        sort_order=2,
+    )
+    db_session.add(child_indicator)
+    db_session.flush()
+
+    assessment = Assessment(
+        blgu_user_id=blgu_user.id,
+        assessment_year=assessment_year_value,
+        status=AssessmentStatus.COMPLETED,
+        area_results=None,
+    )
+    db_session.add(assessment)
+    db_session.flush()
+
+    db_session.add_all(
+        [
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=parent_indicator.id,
+                validation_status=ValidationStatus.FAIL,
+                response_data={},
+                is_completed=True,
+            ),
+            AssessmentResponse(
+                assessment_id=assessment.id,
+                indicator_id=child_indicator.id,
+                validation_status=ValidationStatus.PASS,
+                response_data={},
+                is_completed=True,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    gar_data = gar_service.get_gar_data(db_session, assessment.id)
+
+    assert gar_data.governance_areas[0].overall_result == "Failed"
+    assert gar_data.summary[0].result == "Failed"

@@ -247,6 +247,7 @@ class GARService:
         met_count = 0
         considered_count = 0
         unmet_count = 0
+        header_indicators_with_explicit_status: set[int] = set()
 
         for indicator in indicators:
             # Get checklist items for this indicator
@@ -329,6 +330,9 @@ class GARService:
                     for i in indicators
                 )
 
+            if is_header and response and response.validation_status:
+                header_indicators_with_explicit_status.add(indicator.id)
+
             gar_indicators.append(
                 GARIndicator(
                     indicator_id=indicator.id,
@@ -346,17 +350,6 @@ class GARService:
                     is_profiling_only=indicator.is_profiling_only,
                 )
             )
-
-            # Count validation statuses (only for leaf indicators)
-            # Note: ValidationStatus enum values are uppercase (PASS, FAIL, CONDITIONAL)
-            # EXCLUDE profiling-only indicators from counts - they don't affect pass/fail
-            if not is_header and validation_status and not indicator.is_profiling_only:
-                if validation_status == "PASS":
-                    met_count += 1
-                elif validation_status == "CONDITIONAL":
-                    considered_count += 1
-                elif validation_status == "FAIL":
-                    unmet_count += 1
 
         # Post-process: Calculate validation status for header indicators from their children
         # This handles indicators like 1.6.1 that have depth-4 children (hidden from GAR)
@@ -426,7 +419,28 @@ class GARService:
 
             # Build effective statuses then use shared area-result calculation helper.
             # This avoids blank/null results in export when some indicators have no explicit status.
+            # Include explicit parent/main indicator decisions so MLGOO overrides
+            # propagate to governance area verdicts.
             effective_statuses: list[str | None] = []
+            explicit_parent_statuses: list[str] = []
+
+            for indicator_row in gar_indicators:
+                if indicator_row.is_profiling_only:
+                    continue
+                if not indicator_row.is_header:
+                    continue
+                if indicator_row.indicator_id not in header_indicators_with_explicit_status:
+                    continue
+
+                if is_indicator_failed(indicator_row):
+                    explicit_parent_statuses.append("FAIL")
+                elif is_indicator_passed(indicator_row):
+                    explicit_parent_statuses.append(
+                        "CONDITIONAL"
+                        if indicator_row.validation_status == "CONDITIONAL"
+                        else "PASS"
+                    )
+
             for leaf_indicator in leaf_indicators:
                 if is_indicator_failed(leaf_indicator):
                     effective_statuses.append("FAIL")
@@ -439,7 +453,29 @@ class GARService:
                 else:
                     effective_statuses.append(None)
 
-            overall_result = calculate_governance_area_result(effective_statuses)
+            all_statuses_for_area = explicit_parent_statuses + effective_statuses
+            overall_result = calculate_governance_area_result(all_statuses_for_area)
+
+            # Keep legend counts consistent with overall result:
+            # include explicit parent/main statuses that were manually decided.
+            met_count = 0
+            considered_count = 0
+            unmet_count = 0
+            countable_indicators = [
+                row
+                for row in gar_indicators
+                if not row.is_profiling_only
+                and (
+                    not row.is_header or row.indicator_id in header_indicators_with_explicit_status
+                )
+            ]
+            for indicator_row in countable_indicators:
+                if is_indicator_failed(indicator_row):
+                    unmet_count += 1
+                elif indicator_row.validation_status == "CONDITIONAL":
+                    considered_count += 1
+                elif is_indicator_passed(indicator_row):
+                    met_count += 1
 
         # Determine area type and number
         # Convert enum value to title case ("CORE" -> "Core") for consistent display
