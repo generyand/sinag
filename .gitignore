@@ -164,6 +164,7 @@ dmypy.json
 apps/api/test.db
 test.db
 *.db
+apps/api/backups/
 docs/temporary/
 .gemini/
 .worktrees/

@@ -2,6 +2,8 @@
 Tests for BBI service layer (app/services/bbi_service.py)
 """
 
+from datetime import datetime
+
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -10,6 +12,7 @@ from app.db.enums import AssessmentStatus, BBIStatus, ValidationStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import GovernanceArea, Indicator
+from app.db.models.system import AssessmentYear
 from app.services.bbi_service import bbi_service
 
 # ====================================================================
@@ -128,6 +131,65 @@ def test_get_bbi_not_found(db_session: Session):
     result = bbi_service.get_bbi(db_session, 99999)
 
     assert result is None
+
+
+def test_get_assessment_bbi_compliance_builds_gar_embedded_response(
+    db_session: Session,
+    sample_bbi: BBI,
+    sample_indicators,
+    mock_blgu_user,
+):
+    """GAR uses this service helper to embed BBI compliance in the report."""
+    assessment_year = AssessmentYear(
+        year=2025,
+        assessment_period_start=datetime(2025, 1, 1),
+        assessment_period_end=datetime(2025, 10, 31),
+        is_active=True,
+        is_published=True,
+    )
+    db_session.add(assessment_year)
+    db_session.commit()
+
+    assessment = Assessment(
+        blgu_user_id=mock_blgu_user.id,
+        assessment_year=2025,
+        status=AssessmentStatus.COMPLETED,
+    )
+    db_session.add(assessment)
+    db_session.commit()
+    db_session.refresh(assessment)
+
+    result_row = BBIResult(
+        barangay_id=mock_blgu_user.barangay_id,
+        assessment_year=assessment.assessment_year,
+        assessment_id=assessment.id,
+        bbi_id=sample_bbi.id,
+        indicator_id=sample_indicators[0].id,
+        compliance_percentage=50.0,
+        compliance_rating=BBIStatus.MODERATELY_FUNCTIONAL.value,
+        sub_indicators_passed=1,
+        sub_indicators_total=2,
+        sub_indicator_results=[
+            {
+                "code": "1.1.1",
+                "name": "Test sub indicator",
+                "passed": True,
+                "validation_rule": "ALL_ITEMS_REQUIRED",
+                "checklist_summary": None,
+            }
+        ],
+    )
+    db_session.add(result_row)
+    db_session.commit()
+
+    result = bbi_service.get_assessment_bbi_compliance(db_session, assessment.id)
+
+    assert result.assessment_id == assessment.id
+    assert result.barangay_id == mock_blgu_user.barangay_id
+    assert result.summary.total_bbis == 1
+    assert result.summary.moderately_functional_count == 1
+    assert result.bbi_results[0].bbi_id == sample_bbi.id
+    assert result.bbi_results[0].sub_indicator_results[0].code == "1.1.1"
 
 
 def test_list_bbis_all(db_session: Session, sample_bbi: BBI):
