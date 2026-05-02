@@ -30,6 +30,13 @@ from app.db.enums import AssessmentStatus, BBIStatus
 from app.db.models.assessment import Assessment, AssessmentResponse
 from app.db.models.bbi import BBI, BBIResult
 from app.db.models.governance_area import ChecklistItem, GovernanceArea, Indicator
+from app.db.models.user import User
+from app.schemas.bbi import (
+    AssessmentBBIComplianceResponse,
+    BBIComplianceResult,
+    BBIComplianceSummary,
+    SubIndicatorResult,
+)
 from app.services.checklist_utils import (
     calculate_indicator_status_from_checklist,
     clean_checklist_label,
@@ -958,9 +965,132 @@ class BBIService:
         """
         return (
             db.query(BBIResult)
-            .options(joinedload(BBIResult.bbi), joinedload(BBIResult.barangay))
+            .options(
+                joinedload(BBIResult.bbi).joinedload(BBI.governance_area),
+                joinedload(BBIResult.barangay),
+                joinedload(BBIResult.indicator),
+            )
             .filter(BBIResult.assessment_id == assessment_id)
             .all()
+        )
+
+    def get_assessment_bbi_compliance(
+        self,
+        db: Session,
+        assessment_id: int,
+    ) -> AssessmentBBIComplianceResponse:
+        """
+        Build BBI compliance response for an assessment.
+
+        This mirrors the BBI API response and is used by GAR generation to embed
+        the BBI section in exported report data.
+        """
+        assessment = (
+            db.query(Assessment)
+            .options(joinedload(Assessment.blgu_user).joinedload(User.barangay))
+            .filter(Assessment.id == assessment_id)
+            .first()
+        )
+        if not assessment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Assessment with ID {assessment_id} not found",
+            )
+
+        barangay_id = 0
+        barangay_name = None
+        if assessment.blgu_user and assessment.blgu_user.barangay_id:
+            barangay_id = assessment.blgu_user.barangay_id
+            if assessment.blgu_user.barangay:
+                barangay_name = assessment.blgu_user.barangay.name
+
+        bbi_results = self.get_bbi_results(db, assessment_id)
+        if not bbi_results:
+            bbi_results = self.calculate_all_bbi_compliance(db, assessment)
+            db.flush()
+
+        compliance_results: list[BBIComplianceResult] = []
+        highly_functional_count = 0
+        moderately_functional_count = 0
+        low_functional_count = 0
+        non_functional_count = 0
+        total_percentage = 0.0
+
+        for result in bbi_results:
+            bbi = result.bbi
+            governance_area_name = bbi.governance_area.name if bbi and bbi.governance_area else None
+            indicator_code = result.indicator.indicator_code if result.indicator else None
+
+            raw_sub_results = result.sub_indicator_results or []
+            if isinstance(raw_sub_results, dict):
+                raw_sub_results = list(raw_sub_results.values())
+
+            sub_results = [
+                SubIndicatorResult(
+                    code=item.get("code", ""),
+                    name=item.get("name", ""),
+                    passed=item.get("passed", False),
+                    validation_rule=item.get("validation_rule"),
+                    checklist_summary=item.get("checklist_summary"),
+                )
+                for item in raw_sub_results
+                if isinstance(item, dict)
+            ]
+
+            compliance_results.append(
+                BBIComplianceResult(
+                    bbi_id=result.bbi_id,
+                    bbi_name=bbi.name if bbi else "",
+                    bbi_abbreviation=bbi.abbreviation if bbi else "",
+                    indicator_code=indicator_code,
+                    governance_area_id=bbi.governance_area_id if bbi else 0,
+                    governance_area_name=governance_area_name,
+                    assessment_id=assessment_id,
+                    barangay_id=result.barangay_id,
+                    assessment_year=result.assessment_year,
+                    compliance_percentage=result.compliance_percentage,
+                    compliance_rating=result.compliance_rating,
+                    sub_indicators_passed=result.sub_indicators_passed,
+                    sub_indicators_total=result.sub_indicators_total,
+                    sub_indicator_results=sub_results,
+                    calculated_at=result.calculated_at,
+                )
+            )
+
+            rating = result.compliance_rating
+            if rating == BBIStatus.HIGHLY_FUNCTIONAL.value:
+                highly_functional_count += 1
+            elif rating == BBIStatus.MODERATELY_FUNCTIONAL.value:
+                moderately_functional_count += 1
+            elif rating == BBIStatus.LOW_FUNCTIONAL.value:
+                low_functional_count += 1
+            elif rating == BBIStatus.NON_FUNCTIONAL.value:
+                non_functional_count += 1
+
+            total_percentage += result.compliance_percentage
+
+        total_bbis = len(compliance_results)
+        avg_percentage = (total_percentage / total_bbis) if total_bbis > 0 else 0.0
+        latest_calculated_at = max(
+            (result.calculated_at for result in bbi_results if result.calculated_at),
+            default=datetime.utcnow(),
+        )
+
+        return AssessmentBBIComplianceResponse(
+            assessment_id=assessment_id,
+            barangay_id=barangay_id,
+            barangay_name=barangay_name,
+            assessment_year=assessment.assessment_year,
+            bbi_results=compliance_results,
+            summary=BBIComplianceSummary(
+                total_bbis=total_bbis,
+                highly_functional_count=highly_functional_count,
+                moderately_functional_count=moderately_functional_count,
+                low_functional_count=low_functional_count,
+                non_functional_count=non_functional_count,
+                average_compliance_percentage=round(avg_percentage, 2),
+            ),
+            calculated_at=latest_calculated_at,
         )
 
     def get_bbi_results_by_barangay(
